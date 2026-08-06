@@ -69,7 +69,7 @@ export function CaseStudyContent({
             className="
               rounded-full
               border border-border
-              bg-[#BBFF1B/40]
+              bg-[#BBFF1B]/40
               px-3 py-1
               text-xs font-medium
               text-muted-foreground
