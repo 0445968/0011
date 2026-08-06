@@ -199,7 +199,7 @@ export function Footer() {
                       border-white/20
                       text-white/80
                       transition-all
-                      duration-300
+                      duration-150
                       hover:border-[#BBFF1B]
                       hover:text-[#BBFF1B]
                     "
