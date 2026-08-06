@@ -1,11 +1,11 @@
 import { Hero } from '@/components/portfolio/Hero';
 import { About } from '@/components/portfolio/About';
-import { Services } from '@/components/portfolio/Services';
 import { Projects } from '@/components/portfolio/Projects';
 import { ResourceLibraryPreview } from '@/components/portfolio/ResourceLibraryPreview';
 import { CaseStudy } from '@/components/portfolio/CaseStudy';
 import { FeaturedCaseStudies } from '@/components/portfolio/FeaturedCaseStudies'
-import { ServicesMarquee } from '@/components/portfolio/ServicesMarquee';
+import { ServicesCarousel } from '@/components/portfolio/services/ServicesCarousel';
+
 
 export default function Home() {
   return (
@@ -13,7 +13,6 @@ export default function Home() {
       <Hero />
       <About />
       <ServicesCarousel />
-      <Services />
       <FeaturedCaseStudies />
       <ResourceLibraryPreview />
     </>
