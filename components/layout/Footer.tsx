@@ -200,8 +200,8 @@ export function Footer() {
                       text-white/80
                       transition-all
                       duration-300
-                      hover:border-secondary
-                      hover:text-secondary
+                      hover:border-[#BBFF1B]
+                      hover:text-[#BBFF1B]
                     "
                   >
 
