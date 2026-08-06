@@ -28,10 +28,12 @@ function ProjectCard({
       <div className="relative aspect-[16/10] w-full overflow-hidden bg-secondary">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={project.image}
-          alt={project.name}
-          className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
-        />
+  src={project.image}
+  alt={project.name}
+  loading="eager"
+  decoding="sync"
+  className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
+/>
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
         <div className="absolute right-4 top-4 flex h-10 w-10 translate-y-2 items-center justify-center rounded-full bg-background/90 text-foreground opacity-0 backdrop-blur transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
           <ArrowUpRight size={18} />
