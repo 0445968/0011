@@ -141,7 +141,12 @@ export function Footer() {
 
                 <Mail
                   size={18}
-                  className="text-secondary"
+                  className="
+                  text-secondary
+                  transition-colors
+                  duration-150
+                  hover:text-[#BBFF1B]
+                "
                 />
 
                 {contactInfo.email}
