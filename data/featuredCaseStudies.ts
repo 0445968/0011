@@ -239,7 +239,7 @@ export const featuredCaseStudies: FeaturedCaseStudy[] = [
     preview: {
       type: 'video',
       src: '/videos/projects/arc.mp4',
-      poster: '/images/projects/arc-architecture.webp',
+      poster: '/images/projects/arc-architecture.jpg',
     },
 
     client: 'ARC Studio',
