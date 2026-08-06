@@ -18,11 +18,15 @@ function ProjectCard({
   return (
     <motion.a
       href={project.liveUrl ?? '#'}
+      initial={{ opacity: 0, y: 32 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-80px' }}
+      transition={{
         duration: 0.7,
         delay: (index % 2) * 0.1,
         ease: [0.16, 1, 0.3, 1],
       }}
-      className={`group relative flex flex-col overflow-hidden rounded-3xl border border-border bg-card ${
+      className={`group relative flex flex-col overflow-hidden rounded-3xl border border-border bg-card will-change-transform ${
         large ? 'md:col-span-2' : ''
       }`}
     >
@@ -31,8 +35,8 @@ function ProjectCard({
         <img
           src={project.image}
           alt={project.name}
-          loading="eager"
-          decoding="sync"
+          loading="lazy"
+          decoding="async"
           onLoad={() => console.log('Loaded:', project.image)}
           onError={() => console.log('Failed:', project.image)}
           className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
@@ -46,7 +50,45 @@ function ProjectCard({
       </div>
 
       <div className="flex flex-1 flex-col p-6 md:p-8">
-        ...
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-xs font-semibold uppercase tracking-widest text-accent">
+            {project.category}
+          </span>
+
+          <span className="text-xs font-medium text-muted-foreground">
+            {project.year}
+          </span>
+        </div>
+
+        <h3 className="mt-4 font-serif text-2xl font-semibold tracking-tight md:text-3xl">
+          {project.name}
+        </h3>
+
+        <p className="mt-3 flex-1 text-sm leading-relaxed text-muted-foreground">
+          {project.description}
+        </p>
+
+        <div className="mt-6 flex flex-wrap gap-2">
+          {project.technologies.map((tech) => (
+            <span
+              key={tech}
+              className="rounded-full border border-border bg-secondary/40 px-3 py-1 text-xs font-medium text-muted-foreground"
+            >
+              {tech}
+            </span>
+          ))}
+        </div>
+
+        <div className="mt-6 flex items-center justify-between border-t border-border pt-5">
+          <span className="text-xs uppercase tracking-widest text-muted-foreground">
+            {project.role}
+          </span>
+
+          <span className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground transition-colors group-hover:text-accent">
+            View project
+            <ArrowUpRight size={14} />
+          </span>
+        </div>
       </div>
     </motion.a>
   );
@@ -62,18 +104,21 @@ export function Projects() {
               <span className="h-px w-8 bg-secondary" />
               Selected Work
             </Reveal>
+
             <Reveal delay={0.1}>
               <h2 className="mt-8 max-w-2xl text-balance font-serif text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl md:text-6xl">
                 Projects shipped, not just dreamed up.
               </h2>
             </Reveal>
           </div>
+
           <Reveal delay={0.2}>
             <a
               href="#contact"
               className="group inline-flex items-center gap-2 text-sm font-medium text-foreground"
             >
               Discuss your project
+
               <ArrowUpRight
                 size={16}
                 className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
@@ -84,7 +129,11 @@ export function Projects() {
 
         <div className="mt-16 grid gap-6 md:grid-cols-2">
           {featuredProjects.map((project, i) => (
-            <ProjectCard key={project.id} project={project} index={i} />
+            <ProjectCard
+              key={project.id}
+              project={project}
+              index={i}
+            />
           ))}
         </div>
       </div>
