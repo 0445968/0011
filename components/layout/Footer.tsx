@@ -105,7 +105,7 @@ export function Footer() {
           >
             {t('footer.tagline')}
 
-            <span className="block text-secondary">
+            <span className="block text-[#BBFF1B]">
               {t('footer.taglineAccent')}
             </span>
 
