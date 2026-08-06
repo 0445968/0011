@@ -58,18 +58,20 @@ export function ServiceCard({
         "
       />
 
-      {/* Gradient overlay */}
-      <div
-        className="
-          pointer-events-none
-          absolute
-          inset-0
-          bg-gradient-to-t
-          from-black/85
-          via-black/10
-          to-transparent
-        "
-      />
+      {/* Bottom gradient */}
+<div
+  className="
+    pointer-events-none
+    absolute
+    inset-x-0
+    bottom-0
+    h-48
+    bg-gradient-to-t
+    from-black/90
+    via-black/50
+    to-transparent
+  "
+/>
 
       {/* Hover overlay */}
       <div
@@ -84,17 +86,17 @@ export function ServiceCard({
         "
       />
 
-      {/* Title */}
       <div
-        className="
-          pointer-events-none
-          absolute
-          inset-x-0
-          bottom-0
-          p-6
-          md:p-7
-        "
-      >
+  className="
+    pointer-events-none
+    absolute
+    inset-x-0
+    bottom-0
+    z-10
+    p-6
+    md:p-7
+  "
+>
         <h3
           className="
             font-heading
