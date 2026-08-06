@@ -7,7 +7,6 @@ import {
   Megaphone,
   Smartphone,
   Layers,
-  Film,
   Presentation,
   Image,
   Package,
