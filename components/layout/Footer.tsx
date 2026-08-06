@@ -141,7 +141,7 @@ export function Footer() {
 
                 <Mail
                   size={18}
-                  className="text-secondary"
+                  className="text-[#BBFF1B]"
                 />
 
                 {contactInfo.email}
