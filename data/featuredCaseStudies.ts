@@ -65,7 +65,7 @@ export const featuredCaseStudies: FeaturedCaseStudy[] = [
     preview: {
       type: 'video',
       src: '/videos/projects/lumen.mp4',
-      poster: '/images/projects/lumen-analytics.webp',
+      poster: '/images/projects/lumen-analytics.gif',
     },
 
     client: 'Lumen Inc.',
