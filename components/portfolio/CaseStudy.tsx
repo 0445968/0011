@@ -97,7 +97,7 @@ export function CaseStudy() {
               {study.technologies.map((tech) => (
                 <span
                   key={tech}
-                  className="rounded-full border border-border bg-secondary/40 px-4 py-2 text-sm font-medium text-foreground/90"
+                  className="rounded-full border border-border bg-[#BBFF1B]/40 px-4 py-2 text-sm font-medium text-foreground/90"
                 >
                   {tech}
                 </span>
