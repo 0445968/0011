@@ -26,7 +26,7 @@ export function ProjectNavigation({
           onClick={() => onChange(index)}
           className={`rounded-full border px-5 py-3 text-sm transition ${
             current === index
-              ? 'border-accent bg-accent text-background'
+              ? 'border-accent bg-[#BBFF1B] text-background'
               : 'border-border hover:bg-secondary'
           }`}
         >
