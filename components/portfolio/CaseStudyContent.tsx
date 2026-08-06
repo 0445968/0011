@@ -68,7 +68,7 @@ export function CaseStudyContent({
             key={tech}
             className="
               rounded-full
-              border border-border
+              border border-[#BBFF1B]
               bg-[#BBFF1B]/50
               px-3 py-1
               text-xs font-medium
