@@ -2,8 +2,8 @@
 
 import { ArrowRight } from 'lucide-react';
 import { resources } from '@/data/resources';
-import { Reveal } from './Reveal';
-import { ResourceCard } from './ResourceCard';
+import { Reveal } from '../Reveal';
+import { ResourceCard } from '../ResourceCard';
 
 const featuredResources = [
   resources.find((r) => r.type === 'article'),
