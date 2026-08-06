@@ -134,8 +134,8 @@ export function Footer() {
                   font-medium
                   text-white
                   transition-colors
-                  duration-300
-                  hover:text-secondary
+                  duration-150
+                  hover:text-[#BBFF1B]
                 "
               >
 
