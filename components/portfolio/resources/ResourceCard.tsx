@@ -1,93 +1,195 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { ArrowUpRight } from 'lucide-react';
+
 import type { Resource } from '@/data/resources';
 
 interface ResourceCardProps {
   resource: Resource;
-  index?: number;
 }
-
-const typeStyles = {
-  article: {
-    label: 'Article',
-    color: 'bg-sky-500 text-white',
-    cta: 'Read article',
-  },
-  guide: {
-    label: 'Guide',
-    color: 'bg-emerald-500 text-white',
-    cta: 'Open guide',
-  },
-  tool: {
-    label: 'Tool',
-    color: 'bg-amber-400 text-black',
-    cta: 'Launch tool',
-  },
-  link: {
-    label: 'Resource',
-    color: 'bg-violet-500 text-white',
-    cta: 'Visit resource',
-  },
-} as const;
 
 export function ResourceCard({
   resource,
-  index = 0,
 }: ResourceCardProps) {
-  const style = typeStyles[resource.type];
-
   return (
-    <motion.a
-      href={resource.href}
-      target={resource.external ? '_blank' : undefined}
-      rel={resource.external ? 'noopener noreferrer' : undefined}
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-80px' }}
-      transition={{
-        duration: 0.6,
-        delay: index * 0.08,
-        ease: [0.16, 1, 0.3, 1],
-      }}
-      whileHover={{ y: -6 }}
-      className="group flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-card"
+    <article
+      className="
+        group
+        h-full
+        overflow-hidden
+        rounded-3xl
+        border
+        border-border
+        bg-card
+        transition-all
+        duration-500
+
+        hover:-translate-y-1
+        hover:border-primary/30
+      "
     >
-      {resource.preview && (
-        <div className="relative aspect-[16/10] overflow-hidden bg-secondary">
-
-          <img
-            src={resource.preview}
-            alt={resource.title}
-            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-100"
-          />
-
+      <Link
+        href={resource.href}
+        className="
+          flex
+          h-full
+          flex-col
+        "
+      >
+        {/* Image */}
+        <div
+          className="
+            relative
+            aspect-[16/10]
+            overflow-hidden
+            bg-muted
+          "
+        >
+          {resource.image ? (
+            <Image
+              src={resource.image}
+              alt={resource.title}
+              fill
+              sizes="
+                (max-width: 768px) 90vw,
+                (max-width: 1280px) 45vw,
+                25vw
+              "
+              className="
+                object-cover
+                transition-transform
+                duration-700
+                group-hover:scale-105
+              "
+            />
+          ) : (
+            <div
+              className="
+                flex
+                h-full
+                items-center
+                justify-center
+                text-sm
+                text-muted-foreground
+              "
+            >
+              Resource Preview
+            </div>
+          )}
         </div>
-      )}
 
-      <div className="flex flex-1 flex-col p-7">        
-         
-        <h3 className="font-heading text-xl font-semibold leading-tight tracking-tight transition-colors duration-300 group-hover:text-primary">
-          {resource.title}
-        </h3>
+        {/* Content */}
+        <div
+          className="
+            flex
+            flex-1
+            flex-col
+            p-6
+          "
+        >
+          {/* Category */}
+          {resource.category && (
+            <span
+              className="
+                mb-4
+                w-fit
+                rounded-full
+                bg-muted
+                px-3
+                py-1
+                text-xs
+                font-medium
+                text-muted-foreground
+              "
+            >
+              {resource.category}
+            </span>
+          )}
 
-        <p className="mt-4 line-clamp-3 flex-1 text-sm leading-7 text-muted-foreground">
-          {resource.description}
-        </p>
+          {/* Title */}
+          <h3
+            className="
+              font-heading
+              text-xl
+              font-semibold
+              leading-tight
+              tracking-tight
+            "
+          >
+            {resource.title}
+          </h3>
 
-        <div className="mt-8 inline-flex items-center gap-2 text-sm font-medium">
+          {/* Description */}
+          {resource.description && (
+            <p
+              className="
+                mt-3
+                line-clamp-3
+                text-sm
+                leading-7
+                text-muted-foreground
+              "
+            >
+              {resource.description}
+            </p>
+          )}
 
-          <span>{style.cta}</span>
+          {/* Footer */}
+          <div
+            className="
+              mt-auto
+              flex
+              items-center
+              justify-between
+              pt-8
+            "
+          >
+            <span
+              className="
+                text-sm
+                font-medium
+                text-muted-foreground
+                transition-colors
+                duration-300
+                group-hover:text-foreground
+              "
+            >
+              View resource
+            </span>
 
-          <ArrowRight
-            size={15}
-            className="transition-transform duration-300 group-hover:translate-x-1"
-          />
+            <span
+              className="
+                flex
+                h-9
+                w-9
+                items-center
+                justify-center
+                rounded-full
+                border
+                border-border
+                transition-all
+                duration-300
 
+                group-hover:border-primary/40
+                group-hover:bg-primary
+                group-hover:text-primary-foreground
+              "
+            >
+              <ArrowUpRight
+                size={16}
+                className="
+                  transition-transform
+                  duration-300
+                  group-hover:-translate-y-0.5
+                  group-hover:translate-x-0.5
+                "
+              />
+            </span>
+          </div>
         </div>
-
-      </div>
-    </motion.a>
+      </Link>
+    </article>
   );
 }
