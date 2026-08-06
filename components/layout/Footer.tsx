@@ -259,8 +259,8 @@ export function Footer() {
                           text-sm
                           text-white/70
                           transition-colors
-                          duration-300
-                          hover:text-secondary
+                          duration-100
+                          hover:text-[#ffd400]
                         "
                       >
                         {t(link.labelKey)}
@@ -343,7 +343,7 @@ export function Footer() {
                 className="
                   transition-colors
                   duration-150
-                  hover:text-[#ffd400]
+                  hover:text-[secondary]
                 "
               >
                 {t(link.labelKey)}
