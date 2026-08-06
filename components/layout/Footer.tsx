@@ -260,7 +260,7 @@ export function Footer() {
                           text-white/70
                           transition-colors
                           duration-100
-                          hover:text-[#ffd400]
+                          hover:text-[#BBFF1B]
                         "
                       >
                         {t(link.labelKey)}
