@@ -85,7 +85,7 @@ export function Footer() {
   }, []);
 
   return (
-    <footer className="relative text-white">
+    <footer className="relative bg-primary text-white">
 
       <div className="container-page py-20 md:py-28">
 
@@ -114,7 +114,7 @@ export function Footer() {
         </div>
 
 
-        {/* Main Footer */}
+        {/* Footer Content */}
         <div className="mt-16 grid gap-12 lg:grid-cols-12">
 
 
@@ -134,6 +134,7 @@ export function Footer() {
                   font-medium
                   text-white
                   transition-colors
+                  duration-300
                   hover:text-secondary
                 "
               >
@@ -166,16 +167,16 @@ export function Footer() {
                   {contactInfo.location}
                 </p>
 
-                <span>
+                <p>
                   {t('footer.localTime')} — {time}
-                </span>
+                </p>
 
               </div>
 
             </div>
 
 
-            {/* Social */}
+            {/* Social Icons */}
             <ul className="mt-8 flex gap-3">
 
               {socialLinks.map((link) => (
@@ -214,7 +215,6 @@ export function Footer() {
 
             </ul>
 
-
           </div>
 
 
@@ -236,10 +236,10 @@ export function Footer() {
 
                 <h3
                   className="
-                    text-sm
+                    text-base
                     font-semibold
                     uppercase
-                    tracking-[0.18em]
+                    tracking-[0.15em]
                     text-white
                   "
                 >
@@ -272,7 +272,6 @@ export function Footer() {
 
                 </ul>
 
-
               </div>
 
             ))}
@@ -300,7 +299,6 @@ export function Footer() {
           "
         >
 
-
           {/* Logo */}
           <div>
 
@@ -326,7 +324,7 @@ export function Footer() {
 
 
 
-          {/* Legal */}
+          {/* Legal + Language */}
           <div
             className="
               flex
@@ -344,6 +342,7 @@ export function Footer() {
                 href={link.href}
                 className="
                   transition-colors
+                  duration-300
                   hover:text-secondary
                 "
               >
