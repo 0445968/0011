@@ -342,8 +342,8 @@ export function Footer() {
                 href={link.href}
                 className="
                   transition-colors
-                  duration-300
-                  hover:text-secondary
+                  duration-150
+                  hover:text-[#ffd400]
                 "
               >
                 {t(link.labelKey)}
