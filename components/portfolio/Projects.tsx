@@ -16,7 +16,7 @@ function ProjectCard({
   const large = index === 0;
 
   return (
-    <motion.a
+    <a
       href={project.liveUrl ?? '#'}
       initial={{ opacity: 0, y: 32 }}
       whileInView={{ opacity: 1, y: 0 }}
@@ -90,7 +90,7 @@ function ProjectCard({
           </span>
         </div>
       </div>
-    </motion.a>
+    </a>
   );
 }
 
