@@ -287,7 +287,7 @@ export const services: Service[] = [
     ],
 
     image:
-      '/images/services/email-design.jpg',
+      '/images/services/email-design.webp',
 
     href:
       '/services/email-design',
