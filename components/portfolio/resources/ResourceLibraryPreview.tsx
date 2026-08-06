@@ -2,14 +2,10 @@
 
 import { ArrowRight } from 'lucide-react';
 import { resources } from '@/data/resources';
-import { Reveal } from '../Reveal';
-import { ResourceCard } from '../ResourceCard';
+import { Reveal } from './Reveal';
+import { ResourceCarousel } from './ResourceCarousel';
 
-const featuredResources = [
-  resources.find((r) => r.type === 'article'),
-  resources.find((r) => r.type === 'guide'),
-  resources.find((r) => r.type === 'tool'),
-].filter(Boolean);
+const featuredResources = resources.slice(0, 12);
 
 export function ResourceLibraryPreview() {
   return (
@@ -18,12 +14,9 @@ export function ResourceLibraryPreview() {
       className="section-spacing relative overflow-hidden"
     >
       <div className="container-page">
-
-        {/* Section Heading */}
+        {/* Heading */}
         <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-
           <div className="max-w-3xl">
-
             <Reveal className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
               <span className="h-px w-8 bg-primary" />
               Resource Library
@@ -34,7 +27,6 @@ export function ResourceLibraryPreview() {
                 Everything you need to build a better brand.
               </h2>
             </Reveal>
-
           </div>
 
           <Reveal delay={0.2}>
@@ -45,26 +37,18 @@ export function ResourceLibraryPreview() {
               and creative teams do their best work.
             </p>
           </Reveal>
-
         </div>
 
-        {/* Featured Resources */}
-        <div className="mt-16 grid gap-8 lg:grid-cols-3">
-
-          {featuredResources.map((resource, index) => (
-            <ResourceCard
-              key={resource!.id}
-              resource={resource!}
-              index={index}
-            />
-          ))}
-
-        </div>
+        {/* Carousel */}
+        <Reveal delay={0.25}>
+          <div className="mt-16">
+            <ResourceCarousel resources={featuredResources} />
+          </div>
+        </Reveal>
 
         {/* Browse All */}
-        <Reveal delay={0.15}>
+        <Reveal delay={0.35}>
           <div className="mt-14 flex justify-center">
-
             <a
               href="/resources"
               className="
@@ -82,8 +66,8 @@ export function ResourceLibraryPreview() {
                 font-medium
                 transition-all
                 duration-300
-                hover:border-primary/40
                 hover:-translate-y-0.5
+                hover:border-primary/40
               "
             >
               Browse all {resources.length} resources
@@ -92,12 +76,9 @@ export function ResourceLibraryPreview() {
                 size={16}
                 className="transition-transform duration-300 group-hover:translate-x-1"
               />
-
             </a>
-
           </div>
         </Reveal>
-
       </div>
     </section>
   );
