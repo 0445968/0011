@@ -12,7 +12,7 @@ export default function Home() {
     <>
       <Hero />
       <About />
-      <ServicesMarquee />
+      <ServicesCarousel />
       <Services />
       <FeaturedCaseStudies />
       <ResourceLibraryPreview />
