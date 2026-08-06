@@ -17,7 +17,8 @@ export function ResourceCard({
     <article
       className="
         group
-        h-full
+        relative
+        aspect-[4/5]
         overflow-hidden
         rounded-3xl
         border
@@ -32,21 +33,10 @@ export function ResourceCard({
     >
       <Link
         href={resource.href}
-        className="
-          flex
-          h-full
-          flex-col
-        "
+        className="block h-full"
       >
         {/* Image */}
-        <div
-          className="
-            relative
-            aspect-[16/11]
-            overflow-hidden
-            bg-muted
-          "
-        >
+        <div className="absolute inset-0">
           {resource.image ? (
             <Image
               src={resource.image}
@@ -61,6 +51,7 @@ export function ResourceCard({
                 object-cover
                 transition-transform
                 duration-700
+
                 group-hover:scale-105
               "
             />
@@ -71,6 +62,7 @@ export function ResourceCard({
                 h-full
                 items-center
                 justify-center
+                bg-muted
                 text-sm
                 text-muted-foreground
               "
@@ -80,24 +72,50 @@ export function ResourceCard({
           )}
         </div>
 
-        {/* Content */}
+
+        {/* Bottom Gradient */}
         <div
           className="
-            relative
-            flex
-            min-h-[170px]
-            flex-1
-            flex-col
-            overflow-hidden
+            absolute
+            inset-x-0
+            bottom-0
+            h-1/2
+            bg-gradient-to-t
+            from-black/60
+            via-black/20
+            to-transparent
+          "
+        />
+
+
+        {/* Content Panel */}
+        <div
+          className="
+            absolute
+            inset-x-0
+            bottom-0
+
+            translate-y-[55px]
+
+            rounded-t-3xl
+            bg-background/95
             p-6
+            backdrop-blur-md
+
+            transition-transform
+            duration-500
+            ease-out
+
+            group-hover:translate-y-0
           "
         >
+
           {/* Category */}
           {resource.category && (
             <span
               className="
                 mb-3
-                w-fit
+                inline-flex
                 rounded-full
                 bg-muted
                 px-3
@@ -110,6 +128,7 @@ export function ResourceCard({
               {resource.category}
             </span>
           )}
+
 
           {/* Title */}
           <h3
@@ -125,47 +144,34 @@ export function ResourceCard({
           </h3>
 
 
-          {/* Hover Description */}
-          {resource.description && (
-            <div
-              className="
-                absolute
-                inset-x-6
-                top-[88px]
+          {/* Description */}
+          <p
+            className="
+              mt-4
+              line-clamp-3
+              text-sm
+              leading-7
+              text-muted-foreground
 
-                translate-y-8
-                opacity-0
+              opacity-0
+              transition-opacity
+              duration-300
+              delay-100
 
-                transition-all
-                duration-500
-                ease-out
-
-                group-hover:translate-y-0
-                group-hover:opacity-100
-              "
-            >
-              <p
-                className="
-                  line-clamp-3
-                  text-sm
-                  leading-7
-                  text-muted-foreground
-                "
-              >
-                {resource.description}
-              </p>
-            </div>
-          )}
+              group-hover:opacity-100
+            "
+          >
+            {resource.description}
+          </p>
 
 
           {/* Footer */}
           <div
             className="
-              mt-auto
+              mt-5
               flex
               items-center
               justify-between
-              pt-6
             "
           >
             <span
@@ -173,14 +179,11 @@ export function ResourceCard({
                 text-sm
                 font-medium
                 text-muted-foreground
-                transition-colors
-                duration-300
-
-                group-hover:text-foreground
               "
             >
               View resource
             </span>
+
 
             <span
               className="
@@ -213,6 +216,7 @@ export function ResourceCard({
               />
             </span>
           </div>
+
         </div>
       </Link>
     </article>
