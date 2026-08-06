@@ -24,7 +24,7 @@ export function ResultsStrip({
           "
         >
 
-          <p className="font-serif text-2xl font-semibold text-[#A4D62D]">
+          <p className="font-serif text-2xl font-semibold text-[#71D62D]">
             {result.value}
           </p>
 
