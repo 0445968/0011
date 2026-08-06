@@ -95,7 +95,7 @@ export function ResourceCard({
     inset-x-0
     bottom-0
 
-    h-[150px]
+    h-[250px]
 
     translate-y-[72px]
 
