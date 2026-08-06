@@ -19,7 +19,7 @@ export function ServicesCarousel() {
     },
     [
       AutoScroll({
-        speed: 1,
+        speed: .5,
         startDelay: 0,
         stopOnInteraction: true,
         stopOnMouseEnter: true,
