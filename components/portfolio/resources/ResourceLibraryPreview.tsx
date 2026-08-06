@@ -2,7 +2,7 @@
 
 import { ArrowRight } from 'lucide-react';
 import { resources } from '@/data/resources';
-import { Reveal } from './Reveal';
+import { Reveal } from '../Reveal';
 import { ResourceCarousel } from './ResourceCarousel';
 
 const featuredResources = resources.slice(0, 12);
