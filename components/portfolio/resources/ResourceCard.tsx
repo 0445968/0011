@@ -90,25 +90,25 @@ export function ResourceCard({
 
         {/* Content Panel */}
         <div
-          className="
-            absolute
-            inset-x-0
-            bottom-0
+  className="
+    absolute
+    inset-x-0
+    bottom-0
 
-            translate-y-[55px]
+    translate-y-[72px]
 
-            rounded-t-3xl
-            bg-background/95
-            p-6
-            backdrop-blur-md
+    rounded-t-3xl
+    bg-background/95
+    p-6
+    backdrop-blur-md
 
-            transition-transform
-            duration-500
-            ease-out
+    transition-all
+    duration-500
+    ease-out
 
-            group-hover:translate-y-0
-          "
-        >
+    group-hover:translate-y-0
+  "
+>
 
           {/* Category */}
           {resource.category && (
