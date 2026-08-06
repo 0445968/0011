@@ -59,44 +59,32 @@ export function ServiceCard({
       />
 
       {/* Bottom gradient */}
-<div
-  className="
-    pointer-events-none
-    absolute
-    inset-x-0
-    bottom-0
-    h-48
-    bg-gradient-to-t
-    from-black/90
-    via-black/50
-    to-transparent
-  "
-/>
-
-      {/* Hover overlay */}
       <div
         className="
           pointer-events-none
           absolute
-          inset-0
-          bg-primary/0
-          transition-colors
-          duration-500
-          group-hover:bg-primary/10
+          inset-x-0
+          bottom-0
+          h-48
+          bg-gradient-to-t
+          from-black/90
+          via-black/50
+          to-transparent
         "
       />
 
+      {/* Title */}
       <div
-  className="
-    pointer-events-none
-    absolute
-    inset-x-0
-    bottom-0
-    z-10
-    p-6
-    md:p-7
-  "
->
+        className="
+          pointer-events-none
+          absolute
+          inset-x-0
+          bottom-0
+          z-10
+          p-6
+          md:p-7
+        "
+      >
         <h3
           className="
             font-heading
