@@ -95,17 +95,21 @@ export function ResourceCard({
     inset-x-0
     bottom-0
 
+    h-[150px]
+
     translate-y-[72px]
 
     rounded-t-3xl
     bg-background/95
     p-6
     backdrop-blur-md
+    overflow-hidden
 
     transition-all
     duration-500
     ease-out
 
+    group-hover:h-[290px]
     group-hover:translate-y-0
   "
 >
