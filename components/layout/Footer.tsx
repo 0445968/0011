@@ -13,17 +13,9 @@ interface FooterGroup {
 
 const footerGroups: FooterGroup[] = [
   {
-    titleKey: 'footer.gettingStarted',
-    links: [
-      { labelKey: 'footer.home', href: '/' },
-      { labelKey: 'nav.services', href: '/services' },
-      { labelKey: 'footer.portfolio', href: '/portfolio' },
-      { labelKey: 'footer.templates', href: '/templates' },
-    ],
-  },
-  {
     titleKey: 'footer.company',
     links: [
+      { labelKey: 'footer.home', href: '/' },
       { labelKey: 'nav.about', href: '/about' },
       { labelKey: 'footer.contact', href: '/contact' },
       { labelKey: 'footer.faq', href: '/faq' },
@@ -33,6 +25,7 @@ const footerGroups: FooterGroup[] = [
   {
     titleKey: 'footer.resources',
     links: [
+      { labelKey: 'footer.portfolio', href: '/portfolio' },
       { labelKey: 'footer.blog', href: '/blog' },
       { labelKey: 'footer.guides', href: '/guides' },
       { labelKey: 'footer.inspiration', href: '/inspiration' },
@@ -42,6 +35,7 @@ const footerGroups: FooterGroup[] = [
   {
     titleKey: 'footer.solutions',
     links: [
+      { labelKey: 'nav.services', href: '/services' },
       { labelKey: 'footer.webDesign', href: '/services/web-design' },
       { labelKey: 'footer.brandSystems', href: '/services/branding' },
       { labelKey: 'footer.development', href: '/services/development' },
@@ -91,11 +85,13 @@ export function Footer() {
   }, []);
 
   return (
-    <footer className="relative bg-primary text-primary-foreground">
+    <footer className="relative text-white">
+
       <div className="container-page py-20 md:py-28">
 
         {/* Footer Hero */}
         <div className="max-w-5xl">
+
           <h2
             className="
               font-serif
@@ -103,21 +99,26 @@ export function Footer() {
               font-semibold
               leading-[0.9]
               tracking-tight
+              text-white
               md:text-6xl
             "
           >
             {t('footer.tagline')}
+
             <span className="block text-secondary">
               {t('footer.taglineAccent')}
             </span>
+
           </h2>
+
         </div>
 
 
         {/* Main Footer */}
         <div className="mt-16 grid gap-12 lg:grid-cols-12">
 
-          {/* Contact Column */}
+
+          {/* Contact */}
           <div className="lg:col-span-4">
 
             <div className="mt-2 space-y-5">
@@ -131,8 +132,12 @@ export function Footer() {
                   gap-2
                   text-lg
                   font-medium
+                  text-white
+                  transition-colors
+                  hover:text-secondary
                 "
               >
+
                 <Mail
                   size={18}
                   className="text-secondary"
@@ -151,32 +156,32 @@ export function Footer() {
                     group-hover:opacity-100
                   "
                 />
+
               </a>
 
 
-              <div className="space-y-2 text-sm text-primary-foreground/60">
+              <div className="space-y-2 text-sm text-white/60">
 
                 <p>
                   {contactInfo.location}
                 </p>
 
-
-                <div className="flex items-center gap-2">
-
-                  <span>
-                    {t('footer.localTime')} — {time}
-                  </span>
-                </div>
+                <span>
+                  {t('footer.localTime')} — {time}
+                </span>
 
               </div>
 
             </div>
 
 
-            {/* Social Icons */}
+            {/* Social */}
             <ul className="mt-8 flex gap-3">
+
               {socialLinks.map((link) => (
+
                 <li key={link.id}>
+
                   <a
                     href={link.href}
                     target="_blank"
@@ -190,67 +195,93 @@ export function Footer() {
                       justify-center
                       rounded-full
                       border
-                      border-primary-foreground/20
-                      text-primary-foreground/80
+                      border-white/20
+                      text-white/80
                       transition-all
                       duration-300
                       hover:border-secondary
-                      hover:bg-secondary
-                      hover:text-primary
+                      hover:text-secondary
                     "
                   >
+
                     <link.icon size={18} />
+
                   </a>
+
                 </li>
+
               ))}
+
             </ul>
+
 
           </div>
 
 
+
           {/* Sitemap */}
-          <div className="grid gap-10 sm:grid-cols-2 lg:col-span-8 lg:grid-cols-5">
+          <div
+            className="
+              grid
+              gap-10
+              sm:grid-cols-2
+              lg:col-span-8
+              lg:grid-cols-4
+            "
+          >
 
             {footerGroups.map((group) => (
+
               <div key={group.titleKey}>
 
                 <h3
                   className="
-                    text-xs
+                    text-sm
                     font-semibold
                     uppercase
-                    tracking-widest
-                    text-primary-foreground/50
+                    tracking-[0.18em]
+                    text-white
                   "
                 >
                   {t(group.titleKey)}
                 </h3>
 
 
-                <ul className="mt-5 space-y-3">
+                <ul className="mt-6 space-y-3">
+
                   {group.links.map((link) => (
+
                     <li key={link.labelKey}>
+
                       <a
                         href={link.href}
                         className="
                           text-sm
-                          text-primary-foreground/80
+                          text-white/70
                           transition-colors
+                          duration-300
                           hover:text-secondary
                         "
                       >
                         {t(link.labelKey)}
                       </a>
+
                     </li>
+
                   ))}
+
                 </ul>
 
+
               </div>
+
             ))}
 
           </div>
 
+
         </div>
+
 
 
         {/* Bottom Bar */}
@@ -260,21 +291,24 @@ export function Footer() {
             grid
             gap-6
             border-t
-            border-primary-foreground/20
+            border-white/20
             pt-8
             text-xs
-            text-primary-foreground/50
+            text-white/50
             md:grid-cols-3
             md:items-center
           "
         >
 
+
           {/* Logo */}
           <div>
+
             <a
               href="/"
               aria-label="Design Blade home"
             >
+
               <img
                 src="/images/logo.png"
                 alt={siteConfig.name}
@@ -285,44 +319,59 @@ export function Footer() {
                   invert
                 "
               />
+
             </a>
+
           </div>
 
 
-         {/* Legal + Language */}
-<div
-  className="
-    flex
-    items-center
-    justify-center
-    gap-x-5
-    whitespace-nowrap
-  "
->
-  {legalLinkKeys.map((link) => (
-    <a
-      key={link.labelKey}
-      href={link.href}
-      className="transition-colors hover:text-secondary"
-    >
-      {t(link.labelKey)}
-    </a>
-  ))}
 
-  
-    <LanguageSwitcher compact />
-  
-</div>
+          {/* Legal */}
+          <div
+            className="
+              flex
+              items-center
+              justify-center
+              gap-x-5
+              whitespace-nowrap
+            "
+          >
+
+            {legalLinkKeys.map((link) => (
+
+              <a
+                key={link.labelKey}
+                href={link.href}
+                className="
+                  transition-colors
+                  hover:text-secondary
+                "
+              >
+                {t(link.labelKey)}
+              </a>
+
+            ))}
+
+
+            <LanguageSwitcher compact />
+
+          </div>
+
 
 
           {/* Copyright */}
           <p className="md:text-right">
+
             © {new Date().getFullYear()} {siteConfig.name}. {t('footer.rights')}
+
           </p>
+
 
         </div>
 
+
       </div>
+
     </footer>
   );
 }
