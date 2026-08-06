@@ -18,14 +18,6 @@ function ProjectCard({
   return (
     <a
       href={project.liveUrl ?? '#'}
-      initial={{ opacity: 0, y: 32 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-80px' }}
-      transition={{
-        duration: 0.7,
-        delay: (index % 2) * 0.1,
-        ease: [0.16, 1, 0.3, 1],
-      }}
       className={`group relative flex flex-col overflow-hidden rounded-3xl border border-border bg-card will-change-transform ${
         large ? 'md:col-span-2' : ''
       }`}
