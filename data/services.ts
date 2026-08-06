@@ -156,7 +156,7 @@ export const services: Service[] = [
     ],
 
     image:
-      '/images/services/saas-product-design.jpg',
+      '/images/services/saas-product-design.webp',
 
     href:
       '/services/saas-product-design',
@@ -244,32 +244,10 @@ export const services: Service[] = [
     ],
 
     image:
-      '/images/services/presentation-design.jpg',
+      '/images/services/presentation-design.png',
 
     href:
       '/services/presentation-design',
-  },
-
-
-  {
-    id: 'motion-design',
-    title: 'Motion Design',
-    description:
-      'Animation and motion systems that bring brands and products to life.',
-    icon: Film,
-
-    capabilities: [
-      'Brand motion',
-      'Explainers',
-      'UI animation',
-      'Video assets',
-    ],
-
-    image:
-      '/images/services/motion-design.jpg',
-
-    href:
-      '/services/motion-design',
   },
 
 
