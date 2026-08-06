@@ -42,7 +42,7 @@ export function ResourceCard({
         <div
           className="
             relative
-            aspect-[16/10]
+            aspect-[16/11]
             overflow-hidden
             bg-muted
           "
@@ -83,9 +83,12 @@ export function ResourceCard({
         {/* Content */}
         <div
           className="
+            relative
             flex
+            min-h-[170px]
             flex-1
             flex-col
+            overflow-hidden
             p-6
           "
         >
@@ -93,7 +96,7 @@ export function ResourceCard({
           {resource.category && (
             <span
               className="
-                mb-4
+                mb-3
                 w-fit
                 rounded-full
                 bg-muted
@@ -121,20 +124,39 @@ export function ResourceCard({
             {resource.title}
           </h3>
 
-          {/* Description */}
+
+          {/* Hover Description */}
           {resource.description && (
-            <p
+            <div
               className="
-                mt-3
-                line-clamp-3
-                text-sm
-                leading-7
-                text-muted-foreground
+                absolute
+                inset-x-6
+                top-[88px]
+
+                translate-y-8
+                opacity-0
+
+                transition-all
+                duration-500
+                ease-out
+
+                group-hover:translate-y-0
+                group-hover:opacity-100
               "
             >
-              {resource.description}
-            </p>
+              <p
+                className="
+                  line-clamp-3
+                  text-sm
+                  leading-7
+                  text-muted-foreground
+                "
+              >
+                {resource.description}
+              </p>
+            </div>
           )}
+
 
           {/* Footer */}
           <div
@@ -143,7 +165,7 @@ export function ResourceCard({
               flex
               items-center
               justify-between
-              pt-8
+              pt-6
             "
           >
             <span
@@ -153,6 +175,7 @@ export function ResourceCard({
                 text-muted-foreground
                 transition-colors
                 duration-300
+
                 group-hover:text-foreground
               "
             >
@@ -169,6 +192,7 @@ export function ResourceCard({
                 rounded-full
                 border
                 border-border
+
                 transition-all
                 duration-300
 
@@ -182,6 +206,7 @@ export function ResourceCard({
                 className="
                   transition-transform
                   duration-300
+
                   group-hover:-translate-y-0.5
                   group-hover:translate-x-0.5
                 "
