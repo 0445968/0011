@@ -14,10 +14,18 @@ function ProjectCard({
   index: number;
 }) {
   const large = index === 0;
+
   return (
-    <a
-  href={project.liveUrl ?? '#'}
+    <motion.a
+      href={project.liveUrl ?? '#'}
+      initial={{ opacity: 0, y: 32 }}
+      whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-80px' }}
+      transition={{
+        duration: 0.7,
+        delay: (index % 2) * 0.1,
+        ease: [0.16, 1, 0.3, 1],
+      }}
       className={`group relative flex flex-col overflow-hidden rounded-3xl border border-border bg-card ${
         large ? 'md:col-span-2' : ''
       }`}
@@ -25,52 +33,24 @@ function ProjectCard({
       <div className="relative aspect-[16/10] w-full overflow-hidden bg-secondary">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-  src={project.image}
-  alt={project.name}
-  loading="eager"
-  decoding="sync"
-  className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
-/>
+          src={project.image}
+          alt={project.name}
+          loading="eager"
+          decoding="sync"
+          onLoad={() => console.log('Loaded:', project.image)}
+          onError={() => console.log('Failed:', project.image)}
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
+        />
+
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+
         <div className="absolute right-4 top-4 flex h-10 w-10 translate-y-2 items-center justify-center rounded-full bg-background/90 text-foreground opacity-0 backdrop-blur transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
           <ArrowUpRight size={18} />
         </div>
       </div>
 
       <div className="flex flex-1 flex-col p-6 md:p-8">
-        <div className="flex items-center justify-between gap-4">
-          <span className="text-xs font-semibold uppercase tracking-widest text-accent">
-            {project.category}
-          </span>
-          <span className="text-xs font-medium text-muted-foreground">
-            {project.year}
-          </span>
-        </div>
-        <h3 className="mt-4 font-serif text-2xl font-semibold tracking-tight md:text-3xl">
-          {project.name}
-        </h3>
-        <p className="mt-3 flex-1 text-sm leading-relaxed text-muted-foreground">
-          {project.description}
-        </p>
-        <div className="mt-6 flex flex-wrap gap-2">
-          {project.technologies.map((tech) => (
-            <span
-              key={tech}
-              className="rounded-full border border-border bg-secondary/40 px-3 py-1 text-xs font-medium text-muted-foreground"
-            >
-              {tech}
-            </span>
-          ))}
-        </div>
-        <div className="mt-6 flex items-center justify-between border-t border-border pt-5">
-          <span className="text-xs uppercase tracking-widest text-muted-foreground">
-            {project.role}
-          </span>
-          <span className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground transition-colors group-hover:text-accent">
-            View project
-            <ArrowUpRight size={14} />
-          </span>
-        </div>
+        ...
       </div>
     </motion.a>
   );
