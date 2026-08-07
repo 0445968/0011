@@ -102,7 +102,7 @@ export function ProcessNode({
             focus-visible:ring-2
             focus-visible:ring-[#bbff1b]
             focus-visible:ring-offset-2
-            focus-visible:ring-offset-[#1600a2]
+            focus-visible:ring-offset-[#bbff1b]
           "
         >
           {/* Hover border runner */}
