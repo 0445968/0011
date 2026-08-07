@@ -26,7 +26,7 @@ export function DifferenceOne() {
         grid
         gap-8
         border-b
-        border-white/[.12]
+        border-white/[.14]
         py-10
         md:py-12
         lg:grid-cols-12
