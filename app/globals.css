@@ -208,3 +208,101 @@
   animation: process-border-loop 3.2s linear infinite;
   transform: translate(-50%, -50%);
 }
+
+/* =========================================================
+   Brand process icon border runner
+   ========================================================= */
+
+.process-border-runner {
+  opacity: 0;
+  transition: opacity 80ms ease;
+}
+
+/* Shared animated border styles */
+.process-border-trail,
+.process-border-trail-glow,
+.process-border-head {
+  fill: none;
+  stroke: #bbff1b;
+  stroke-linecap: round;
+  animation-play-state: paused;
+}
+
+/* Main trail */
+.process-border-trail {
+  stroke-width: 1.35;
+  stroke-dasharray: 13 87;
+  opacity: 0.72;
+
+  animation:
+    process-border-travel
+    1.65s
+    linear
+    infinite;
+}
+
+/* Glow behind the trail */
+.process-border-trail-glow {
+  stroke-width: 3;
+  stroke-dasharray: 15 85;
+  opacity: 0.24;
+  filter: blur(2.5px);
+
+  animation:
+    process-border-travel
+    1.65s
+    linear
+    infinite;
+}
+
+/* Bright particle at front */
+.process-border-head {
+  stroke-width: 3.4;
+  stroke-dasharray: 0.7 99.3;
+  opacity: 1;
+
+  filter:
+    drop-shadow(0 0 2px #bbff1b)
+    drop-shadow(0 0 5px rgba(187, 255, 27, 0.8));
+
+  animation:
+    process-border-travel
+    1.65s
+    linear
+    infinite;
+}
+
+/* Activate only on hover/focus */
+.group:hover .process-border-runner,
+.group:focus-visible .process-border-runner {
+  opacity: 1;
+}
+
+.group:hover .process-border-trail,
+.group:hover .process-border-trail-glow,
+.group:hover .process-border-head,
+.group:focus-visible .process-border-trail,
+.group:focus-visible .process-border-trail-glow,
+.group:focus-visible .process-border-head {
+  animation-play-state: running;
+}
+
+/* Border travel */
+@keyframes process-border-travel {
+  from {
+    stroke-dashoffset: 0;
+  }
+
+  to {
+    stroke-dashoffset: -100;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .process-border-trail,
+  .process-border-trail-glow,
+  .process-border-head {
+    animation: none;
+  }
+}
