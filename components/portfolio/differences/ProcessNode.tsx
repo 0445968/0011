@@ -95,43 +95,80 @@ export function ProcessNode({
             border-white/40
             bg-[#1600a2]
             shadow-[0_12px_32px_rgba(0,0,0,0.12)]
-
-            transition-all
+            transition-transform
             duration-150
-
             hover:scale-[1.05]
-            hover:border-[#bbff1b]
-
-            focus-visible:border-[#bbff1b]
             focus-visible:outline-none
+            focus-visible:ring-2
+            focus-visible:ring-[#bbff1b]
+            focus-visible:ring-offset-2
+            focus-visible:ring-offset-[#1600a2]
           "
         >
-          {/* Moving border dot */}
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 64 64"
-            className="
-              pointer-events-none
-              absolute
-              inset-[-1px]
-              h-[66px]
-              w-[66px]
-              overflow-visible
-            "
-          >
-            <rect
-              x="1"
-              y="1"
-              width="62"
-              height="62"
-              rx="20"
-              ry="20"
-              pathLength="100"
-              className="process-border-dot"
-            />
-          </svg>
+          {/* Hover border runner */}
+<svg
+  aria-hidden="true"
+  viewBox="0 0 64 64"
+  className="
+    process-border-runner
+    pointer-events-none
+    absolute
+    inset-[-1px]
+    h-[66px]
+    w-[66px]
+    overflow-visible
+  "
+>
+  {/* Long soft fading tail */}
+  <rect
+    x="1"
+    y="1"
+    width="62"
+    height="62"
+    rx="20"
+    ry="20"
+    pathLength="100"
+    className="process-border-tail-far"
+  />
 
-          {/* Icon */}
+  {/* Middle section of trail */}
+  <rect
+    x="1"
+    y="1"
+    width="62"
+    height="62"
+    rx="20"
+    ry="20"
+    pathLength="100"
+    className="process-border-tail-mid"
+  />
+
+  {/* Brightest trail directly behind particle */}
+  <rect
+    x="1"
+    y="1"
+    width="62"
+    height="62"
+    rx="20"
+    ry="20"
+    pathLength="100"
+    className="process-border-tail-near"
+  />
+
+  {/* Bright leading particle */}
+  <rect
+    x="1"
+    y="1"
+    width="62"
+    height="62"
+    rx="20"
+    ry="20"
+    pathLength="100"
+    className="process-border-head"
+  />
+</svg>
+
+          {/* Icon image */}
           <div className="relative z-10 h-[42px] w-[42px]">
             <Image
               src={item.icon}
