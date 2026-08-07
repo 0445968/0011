@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" fill="none">
+<rect width="1600" height="1000" fill="#f4f1ec"/>
+
+  <rect x="120" y="180" width="1360" height="720" rx="24" fill="#ffffff" stroke="#e2dcd1" stroke-width="1.5"/>
+  <rect x="120" y="180" width="1360" height="56" rx="24" fill="#f4f1ec"/>
+  <rect x="120" y="212" width="1360" height="24" fill="#f4f1ec"/>
+  <circle cx="160" cy="208" r="7" fill="#e8825f"/>
+  <circle cx="184" cy="208" r="7" fill="#e8c35f"/>
+  <circle cx="208" cy="208" r="7" fill="#7fc28f"/>
+  <rect x="440" y="200" width="320" height="16" rx="8" fill="#e2dcd1"/>
+  <text x="200" y="320" font-family="Georgia, serif" font-size="46" font-weight="600" fill="#1c1917">Estate Pro</text>
+  
+    <text x="200" y="340" font-family="Georgia, serif" font-size="52" font-weight="600" fill="#1c1917">Find your place.</text>
+    <rect x="200" y="400" width="600" height="60" rx="30" fill="#ffffff" stroke="#e2dcd1"/>
+    <rect x="230" y="420" width="200" height="20" rx="10" fill="#e2dcd1"/>
+    <rect x="700" y="410" width="80" height="40" rx="20" fill="#5fa872"/>
+    <rect x="200" y="500" width="290" height="360" rx="16" fill="#5fa872" opacity="0.25"/>
+    <rect x="510" y="500" width="290" height="360" rx="16" fill="#5fa872" opacity="0.15"/>
+    <rect x="820" y="500" width="620" height="360" rx="16" fill="#1c1917"/>
+    <rect x="860" y="540" width="540" height="280" rx="12" fill="#2a2622"/>
+    <circle cx="1130" cy="680" r="60" fill="#5fa872" opacity="0.7"/>
+    
+  
+</svg>
