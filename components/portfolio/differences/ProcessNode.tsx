@@ -59,7 +59,7 @@ export function ProcessNode({
 
   return (
     <>
-      {/* Icon */}
+      {/* Icon node */}
       <div
         className={`
           absolute
@@ -73,77 +73,76 @@ export function ProcessNode({
         }}
       >
         <button
-  ref={refs.setReference}
-  type="button"
-  aria-label={`View ${item.title}`}
-  aria-expanded={isActive}
-  onPointerEnter={open}
-  onPointerLeave={close}
-  onFocus={open}
-  onBlur={close}
-  onClick={toggle}
-  className="
-    group
-    relative
-    flex
-    h-[64px]
-    w-[64px]
-    items-center
-    justify-center
-    rounded-[20px]
-    border
-    border-white/40
-    bg-[#1600a2]
-    shadow-[0_12px_32px_rgba(0,0,0,0.12)]
-    transition-transform
-    duration-150
+          ref={refs.setReference}
+          type="button"
+          aria-label={`View ${item.title}`}
+          aria-expanded={isActive}
+          onPointerEnter={open}
+          onPointerLeave={close}
+          onFocus={open}
+          onBlur={close}
+          onClick={toggle}
+          className="
+            group
+            relative
+            flex
+            h-[64px]
+            w-[64px]
+            items-center
+            justify-center
+            rounded-[20px]
+            border
+            border-white/40
+            bg-[#1600a2]
+            shadow-[0_12px_32px_rgba(0,0,0,0.12)]
+            transition-transform
+            duration-150
+            hover:scale-[1.05]
+            focus-visible:outline-none
+            focus-visible:ring-2
+            focus-visible:ring-[#bbff1b]
+            focus-visible:ring-offset-2
+            focus-visible:ring-offset-[#1600a2]
+          "
+        >
+          {/* Animated border particle */}
+          <span
+            aria-hidden="true"
+            className="
+              pointer-events-none
+              absolute
+              inset-[-1px]
+              rounded-[20px]
+            "
+          >
+            <span
+              className="
+                process-border-particle
+                absolute
+                h-[3px]
+                w-[3px]
+                rounded-full
+                bg-[#bbff1b]
+                shadow-[0_0_4px_#bbff1b,0_0_8px_rgba(187,255,27,0.65)]
+              "
+            />
+          </span>
 
-    hover:scale-[1.05]
-
-    focus-visible:outline-none
-    focus-visible:ring-2
-    focus-visible:ring-[#bbff1b]
-    focus-visible:ring-offset-2
-    focus-visible:ring-offset-[#1600a2]
-  "
->
-  {/* Animated border particle */}
-  <span
-    aria-hidden="true"
-    className="
-      pointer-events-none
-      absolute
-      inset-[-1px]
-      rounded-[20px]
-    "
-  >
-    <span
-      className="
-        process-border-particle
-        absolute
-        h-[4px]
-        w-[4px]
-        rounded-full
-        bg-[#bbff1b]
-        shadow-[0_0_5px_#bbff1b,0_0_10px_rgba(187,255,27,0.65)]
-      "
-    />
-  </span>
-
-  {/* Icon */}
-  <div className="relative h-[42px] w-[42px]">
-    <Image
-      src={item.icon}
-      alt=""
-      fill
-      sizes="42px"
-      className="
-        select-none
-        object-contain
-      "
-    />
-  </div>
-</button>
+          {/* Icon image */}
+          <div className="relative h-[42px] w-[42px]">
+            <Image
+              src={item.icon}
+              alt=""
+              fill
+              sizes="42px"
+              className="
+                select-none
+                object-contain
+              "
+            />
+          </div>
+        </button>
+      </div>
 
       {/* Popup */}
       {isActive && (
@@ -158,6 +157,9 @@ export function ProcessNode({
               rounded-[20px]
               bg-white
               shadow-[0_22px_70px_rgba(0,0,0,0.28)]
+              animate-in
+              fade-in
+              duration-75
             "
           >
             {/* Preview image */}
@@ -178,7 +180,7 @@ export function ProcessNode({
               />
             </div>
 
-            {/* Content */}
+            {/* Popup content */}
             <div className="p-4">
               <p
                 className="
