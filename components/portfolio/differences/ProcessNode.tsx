@@ -98,6 +98,7 @@ export function ProcessNode({
             transition-transform
             duration-150
             hover:scale-[1.05]
+            hover:border-[#bbff1b]
             focus-visible:outline-none
             focus-visible:ring-2
             focus-visible:ring-[#bbff1b]
