@@ -105,31 +105,59 @@ export function ProcessNode({
             focus-visible:ring-offset-[#1600a2]
           "
         >
-          {/* Animated border particle */}
-          <span
+          {/* Hover border runner */}
+          <svg
             aria-hidden="true"
+            viewBox="0 0 64 64"
             className="
+              process-border-runner
               pointer-events-none
               absolute
               inset-[-1px]
-              rounded-[20px]
+              h-[66px]
+              w-[66px]
+              overflow-visible
             "
           >
-            <span
-              className="
-                process-border-particle
-                absolute
-                h-[3px]
-                w-[3px]
-                rounded-full
-                bg-[#bbff1b]
-                shadow-[0_0_4px_#bbff1b,0_0_8px_rgba(187,255,27,0.65)]
-              "
+            {/* Soft glow trail */}
+            <rect
+              x="1"
+              y="1"
+              width="62"
+              height="62"
+              rx="20"
+              ry="20"
+              pathLength="100"
+              className="process-border-trail-glow"
             />
-          </span>
+
+            {/* Main trail */}
+            <rect
+              x="1"
+              y="1"
+              width="62"
+              height="62"
+              rx="20"
+              ry="20"
+              pathLength="100"
+              className="process-border-trail"
+            />
+
+            {/* Particle head */}
+            <rect
+              x="1"
+              y="1"
+              width="62"
+              height="62"
+              rx="20"
+              ry="20"
+              pathLength="100"
+              className="process-border-head"
+            />
+          </svg>
 
           {/* Icon image */}
-          <div className="relative h-[42px] w-[42px]">
+          <div className="relative z-10 h-[42px] w-[42px]">
             <Image
               src={item.icon}
               alt=""
