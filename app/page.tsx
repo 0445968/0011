@@ -1,5 +1,5 @@
 import { Hero } from '@/components/portfolio/Hero';
-import { About } from '@/components/portfolio/About';
+import { About } from '@/components/home/About';
 import { Projects } from '@/components/portfolio/Projects';
 import { Differences } from '@/components/portfolio/differences/Differences';
 import { ResourceLibraryPreview } from '@/components/portfolio/resources/ResourceLibraryPreview';
