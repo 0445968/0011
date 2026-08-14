@@ -1,125 +1,207 @@
 'use client';
 
 import Image from 'next/image';
-import { motion } from 'framer-motion';
-import { ArrowUpRight } from 'lucide-react';
+import { useState } from 'react';
+import {
+  AnimatePresence,
+  motion,
+} from 'framer-motion';
+import {
+  ArrowUpRight,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 
-const revealTransition = {
-  duration: 0.7,
-  ease: [0.16, 1, 0.3, 1],
-} as const;
+const features = [
+  {
+    eyebrow: 'Brand strategy',
+    title: 'Start with the clarity that makes every next move easier.',
+    description:
+      'We uncover what makes your business matter, then shape it into a focused foundation that guides your messaging, identity, and growth.',
+    image: '/images/about/design-philosophy-2.jpg',
+    imageAlt: 'Design Blade brand strategy work',
+    label: 'Positioning · Messaging · Direction',
+  },
+  {
+    eyebrow: 'Visual identity',
+    title: 'Build a brand people recognize before they read the name.',
+    description:
+      'From visual systems to flexible brand guidelines, we create distinctive identities that stay consistent while leaving room for your business to evolve.',
+    image: '/images/about/development-approach-2.webp',
+    imageAlt: 'Design Blade visual identity work',
+    label: 'Identity · Art Direction · Systems',
+  },
+  {
+    eyebrow: 'Digital experiences',
+    title: 'Turn your strongest ideas into a website built to perform.',
+    description:
+      'We design and build polished digital experiences that make your offer easier to understand, navigate, and choose.',
+    image: '/images/about/digital-experiences.jpg',
+    imageAlt: 'Design Blade website and digital experience work',
+    label: 'Web Design · Development · Launch',
+  },
+];
+
+const transitionEase = [0.16, 1, 0.3, 1] as const;
 
 export function AboutFeature() {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [direction, setDirection] = useState(1);
+
+  const activeFeature = features[activeIndex];
+
+  const goToSlide = (index: number) => {
+    if (index === activeIndex) {
+      return;
+    }
+
+    setDirection(index > activeIndex ? 1 : -1);
+    setActiveIndex(index);
+  };
+
+  const goToPrevious = () => {
+    setDirection(-1);
+
+    setActiveIndex((current) =>
+      current === 0
+        ? features.length - 1
+        : current - 1
+    );
+  };
+
+  const goToNext = () => {
+    setDirection(1);
+
+    setActiveIndex((current) =>
+      current === features.length - 1
+        ? 0
+        : current + 1
+    );
+  };
+
   return (
-    <div
+    <section
+      aria-label="Design Blade capabilities"
       className="
-        grid
-        items-center
-        gap-12
         border-t
         border-border
         pt-16
         sm:pt-20
-        lg:grid-cols-[0.8fr_1.2fr]
-        lg:gap-20
         lg:pt-24
       "
     >
-      <motion.div
-        initial={{ opacity: 0, y: 28 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '-100px' }}
-        transition={revealTransition}
-        className="max-w-xl"
+      <div
+        className="
+          grid
+          items-center
+          gap-12
+          lg:grid-cols-[0.8fr_1.2fr]
+          lg:gap-20
+        "
       >
-        <p
-          className="
-            text-xs
-            font-semibold
-            uppercase
-            tracking-[0.2em]
-            text-primary
-          "
-        >
-          Built for momentum
-        </p>
+        {/* Copy */}
 
-        <h3
-          className="
-            mt-5
-            text-balance
-            font-serif
-            text-4xl
-            font-medium
-            leading-[0.98]
-            tracking-[-0.045em]
-            sm:text-5xl
-            lg:text-6xl
-          "
-        >
-          Strategy that gives every creative decision a reason to exist.
-        </h3>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeFeature.eyebrow}
+            initial={{
+              opacity: 0,
+              x: direction * -20,
+            }}
+            animate={{
+              opacity: 1,
+              x: 0,
+            }}
+            exit={{
+              opacity: 0,
+              x: direction * 20,
+            }}
+            transition={{
+              duration: 0.42,
+              ease: transitionEase,
+            }}
+            className="max-w-xl"
+          >
+            <p
+              className="
+                text-xs
+                font-semibold
+                uppercase
+                tracking-[0.2em]
+                text-primary
+              "
+            >
+              {activeFeature.eyebrow}
+            </p>
 
-        <p
-          className="
-            mt-7
-            max-w-md
-            text-base
-            leading-7
-            text-muted-foreground
-            sm:text-lg
-            sm:leading-8
-          "
-        >
-          From the first positioning conversation to a polished site launch,
-          Design Blade helps you create a cohesive brand that is easier to
-          understand, choose, and grow.
-        </p>
+            <h3
+              className="
+                mt-5
+                text-balance
+                font-serif
+                text-4xl
+                font-medium
+                leading-[0.98]
+                tracking-[-0.045em]
+                sm:text-5xl
+                lg:text-6xl
+              "
+            >
+              {activeFeature.title}
+            </h3>
 
-        <a
-          href="/about"
-          className="
-            group
-            mt-9
-            inline-flex
-            h-[52px]
-            items-center
-            gap-2
-            rounded-full
-            bg-primary
-            px-7
-            text-sm
-            font-medium
-            text-primary-foreground
-            transition-transform
-            duration-300
-            hover:scale-[1.03]
-            active:scale-[0.98]
-          "
-        >
-          More about Design Blade
+            <p
+              className="
+                mt-7
+                max-w-md
+                text-base
+                leading-7
+                text-muted-foreground
+                sm:text-lg
+                sm:leading-8
+              "
+            >
+              {activeFeature.description}
+            </p>
 
-          <ArrowUpRight
-            size={17}
-            className="
-              transition-transform
-              duration-300
-              group-hover:translate-x-0.5
-              group-hover:-translate-y-0.5
-            "
-          />
-        </a>
-      </motion.div>
+            <a
+              href="/services"
+              className="
+                group
+                mt-9
+                inline-flex
+                h-[52px]
+                items-center
+                gap-2
+                rounded-full
+                bg-primary
+                px-7
+                text-sm
+                font-medium
+                text-primary-foreground
+                transition-transform
+                duration-300
+                hover:scale-[1.03]
+                active:scale-[0.98]
+              "
+            >
+              Explore services
 
-      <motion.div
-        initial={{ opacity: 0, y: 28 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '-100px' }}
-        transition={{
-          ...revealTransition,
-          delay: 0.12,
-        }}
-      >
+              <ArrowUpRight
+                size={17}
+                className="
+                  transition-transform
+                  duration-300
+                  group-hover:translate-x-0.5
+                  group-hover:-translate-y-0.5
+                "
+              />
+            </a>
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Image */}
+
         <div
           className="
             relative
@@ -130,30 +212,64 @@ export function AboutFeature() {
             sm:aspect-[16/10]
           "
         >
-          <Image
-            src="/images/about/design-philosophy-2.jpg"
-            alt="A Design Blade brand strategy and design project"
-            fill
-            sizes="(max-width: 1024px) 100vw, 58vw"
-            className="object-cover"
-          />
+          <AnimatePresence
+            initial={false}
+            custom={direction}
+            mode="popLayout"
+          >
+            <motion.div
+              key={activeFeature.image}
+              custom={direction}
+              initial={{
+                opacity: 0,
+                x: direction * 40,
+                scale: 1.03,
+              }}
+              animate={{
+                opacity: 1,
+                x: 0,
+                scale: 1,
+              }}
+              exit={{
+                opacity: 0,
+                x: direction * -40,
+                scale: 1.02,
+              }}
+              transition={{
+                duration: 0.58,
+                ease: transitionEase,
+              }}
+              className="absolute inset-0"
+            >
+              <Image
+                src={activeFeature.image}
+                alt={activeFeature.imageAlt}
+                fill
+                priority={activeIndex === 0}
+                sizes="(max-width: 1024px) 100vw, 58vw"
+                className="object-cover"
+              />
+
+              <div
+                className="
+                  absolute
+                  inset-0
+                  bg-gradient-to-t
+                  from-black/35
+                  via-transparent
+                  to-transparent
+                "
+              />
+            </motion.div>
+          </AnimatePresence>
 
           <div
             className="
-              absolute
-              inset-0
-              bg-gradient-to-t
-              from-black/30
-              via-transparent
-              to-transparent
-            "
-          />
-
-          <div
-            className="
+              pointer-events-none
               absolute
               bottom-5
               left-5
+              z-10
               rounded-full
               border
               border-white/25
@@ -170,10 +286,120 @@ export function AboutFeature() {
               sm:left-7
             "
           >
-            Strategy · Identity · Digital
+            {activeFeature.label}
           </div>
         </div>
-      </motion.div>
-    </div>
+      </div>
+
+      {/* Gallery controls */}
+
+      <div
+        className="
+          mt-10
+          flex
+          items-center
+          justify-between
+          gap-5
+          sm:mt-12
+        "
+      >
+        <button
+          type="button"
+          onClick={goToPrevious}
+          aria-label="Show previous capability"
+          className="
+            inline-flex
+            h-11
+            w-11
+            shrink-0
+            items-center
+            justify-center
+            rounded-full
+            border
+            border-border
+            text-foreground
+            transition-colors
+            duration-300
+            hover:bg-muted
+            active:scale-95
+          "
+        >
+          <ChevronLeft size={19} />
+        </button>
+
+        <div
+          role="tablist"
+          aria-label="Choose a Design Blade capability"
+          className="
+            flex
+            items-center
+            justify-center
+            gap-2
+          "
+        >
+          {features.map((feature, index) => {
+            const isActive = index === activeIndex;
+
+            return (
+              <button
+                key={feature.eyebrow}
+                type="button"
+                role="tab"
+                aria-label={`Show ${feature.eyebrow}`}
+                aria-selected={isActive}
+                onClick={() => {
+                  goToSlide(index);
+                }}
+                className="
+                  flex
+                  h-8
+                  items-center
+                  justify-center
+                  px-1
+                "
+              >
+                <motion.span
+                  animate={{
+                    width: isActive ? 32 : 8,
+                    backgroundColor: isActive
+                      ? 'hsl(var(--foreground))'
+                      : 'hsl(var(--muted-foreground) / 0.35)',
+                  }}
+                  transition={{
+                    duration: 0.35,
+                    ease: transitionEase,
+                  }}
+                  className="block h-2 rounded-full"
+                />
+              </button>
+            );
+          })}
+        </div>
+
+        <button
+          type="button"
+          onClick={goToNext}
+          aria-label="Show next capability"
+          className="
+            inline-flex
+            h-11
+            w-11
+            shrink-0
+            items-center
+            justify-center
+            rounded-full
+            border
+            border-border
+            text-foreground
+            transition-colors
+            duration-300
+            hover:bg-muted
+            active:scale-95
+          "
+        >
+          <ChevronRight size={19} />
+        </button>
+      </div>
+    </section>
   );
 }
