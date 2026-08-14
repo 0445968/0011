@@ -101,120 +101,106 @@ export function AboutFeature() {
       >
         {/* Copy */}
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeFeature.eyebrow}
-            initial={{
-              opacity: 0,
-              x: direction * -20,
-            }}
-            animate={{
-              opacity: 1,
-              x: 0,
-            }}
-            exit={{
-              opacity: 0,
-              x: direction * 20,
-            }}
-            transition={{
-              duration: 0.42,
-              ease: transitionEase,
-            }}
-            className="max-w-xl"
-          >
-            <p
-              className="
-                text-xs
-                font-semibold
-                uppercase
-                tracking-[0.2em]
-                text-primary
-              "
-            >
-              {activeFeature.eyebrow}
-            </p>
-
-            <div className="max-w-3xl">
-  <p
-    className="
-      flex
-      items-center
-      gap-3
-      text-xs
-      font-semibold
-      uppercase
-      tracking-[0.24em]
-      text-muted-foreground
-    "
+<AnimatePresence mode="wait">
+  <motion.div
+    key={activeFeature.eyebrow}
+    initial={{
+      opacity: 0,
+      x: direction * -20,
+    }}
+    animate={{
+      opacity: 1,
+      x: 0,
+    }}
+    exit={{
+      opacity: 0,
+      x: direction * 20,
+    }}
+    transition={{
+      duration: 0.42,
+      ease: transitionEase,
+    }}
+    className="max-w-3xl"
   >
-    <span className="h-px w-8 bg-primary" />
-    {activeFeature.eyebrow}
-  </p>
+    <p
+      className="
+        flex
+        items-center
+        gap-3
+        text-xs
+        font-semibold
+        uppercase
+        tracking-[0.24em]
+        text-muted-foreground
+      "
+    >
+      <span className="h-px w-8 bg-primary" />
+      {activeFeature.eyebrow}
+    </p>
 
-  <h3
-    className="
-      mt-8
-      text-balance
-      font-heading
-      text-4xl
-      font-semibold
-      leading-[1.05]
-      tracking-tight
-      sm:text-5xl
-      md:text-6xl
-    "
-  >
-    {activeFeature.title}
-  </h3>
+    <h3
+      className="
+        mt-8
+        text-balance
+        font-heading
+        text-4xl
+        font-semibold
+        leading-[1.05]
+        tracking-tight
+        sm:text-5xl
+        md:text-6xl
+      "
+    >
+      {activeFeature.title}
+    </h3>
 
-  <p
-    className="
-      mt-7
-      max-w-md
-      text-base
-      leading-8
-      text-muted-foreground
-    "
-  >
-    {activeFeature.description}
-  </p>
-</div>
+    <p
+      className="
+        mt-7
+        max-w-md
+        text-base
+        leading-8
+        text-muted-foreground
+      "
+    >
+      {activeFeature.description}
+    </p>
 
-            <a
-              href="/services"
-              className="
-                group
-                mt-9
-                inline-flex
-                h-[52px]
-                items-center
-                gap-2
-                rounded-full
-                bg-primary
-                px-7
-                text-sm
-                font-medium
-                text-primary-foreground
-                transition-transform
-                duration-300
-                hover:scale-[1.03]
-                active:scale-[0.98]
-              "
-            >
-              Explore services
+    <a
+      href="/services"
+      className="
+        group
+        mt-9
+        inline-flex
+        h-[52px]
+        items-center
+        gap-2
+        rounded-full
+        bg-primary
+        px-7
+        text-sm
+        font-medium
+        text-primary-foreground
+        transition-transform
+        duration-300
+        hover:scale-[1.03]
+        active:scale-[0.98]
+      "
+    >
+      Explore services
 
-              <ArrowUpRight
-                size={17}
-                className="
-                  transition-transform
-                  duration-300
-                  group-hover:translate-x-0.5
-                  group-hover:-translate-y-0.5
-                "
-              />
-            </a>
-          </motion.div>
-        </AnimatePresence>
+      <ArrowUpRight
+        size={17}
+        className="
+          transition-transform
+          duration-300
+          group-hover:translate-x-0.5
+          group-hover:-translate-y-0.5
+        "
+      />
+    </a>
+  </motion.div>
+</AnimatePresence>
 
         {/* Image */}
 
