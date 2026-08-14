@@ -120,6 +120,20 @@ export function AboutFeature() {
               duration: 0.42,
               ease: transitionEase,
             }}
+            className="max-w-xl"
+          >
+            <p
+              className="
+                text-xs
+                font-semibold
+                uppercase
+                tracking-[0.2em]
+                text-primary
+              "
+            >
+              {activeFeature.eyebrow}
+            </p>
+
             <div className="max-w-3xl">
   <p
     className="
