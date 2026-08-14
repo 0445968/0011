@@ -120,49 +120,51 @@ export function AboutFeature() {
               duration: 0.42,
               ease: transitionEase,
             }}
-            className="max-w-xl"
-          >
-            <p
-              className="
-                text-xs
-                font-semibold
-                uppercase
-                tracking-[0.2em]
-                text-primary
-              "
-            >
-              {activeFeature.eyebrow}
-            </p>
+            <div className="max-w-3xl">
+  <p
+    className="
+      flex
+      items-center
+      gap-3
+      text-xs
+      font-semibold
+      uppercase
+      tracking-[0.24em]
+      text-muted-foreground
+    "
+  >
+    <span className="h-px w-8 bg-primary" />
+    {activeFeature.eyebrow}
+  </p>
 
-            <h3
-              className="
-                mt-5
-                text-balance
-                font-serif
-                text-4xl
-                font-medium
-                leading-[0.98]
-                tracking-[-0.045em]
-                sm:text-5xl
-                lg:text-6xl
-              "
-            >
-              {activeFeature.title}
-            </h3>
+  <h3
+    className="
+      mt-8
+      text-balance
+      font-heading
+      text-4xl
+      font-semibold
+      leading-[1.05]
+      tracking-tight
+      sm:text-5xl
+      md:text-6xl
+    "
+  >
+    {activeFeature.title}
+  </h3>
 
-            <p
-              className="
-                mt-7
-                max-w-md
-                text-base
-                leading-7
-                text-muted-foreground
-                sm:text-lg
-                sm:leading-8
-              "
-            >
-              {activeFeature.description}
-            </p>
+  <p
+    className="
+      mt-7
+      max-w-md
+      text-base
+      leading-8
+      text-muted-foreground
+    "
+  >
+    {activeFeature.description}
+  </p>
+</div>
 
             <a
               href="/services"
