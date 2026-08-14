@@ -1,9 +1,13 @@
 'use client';
 
 import Image from 'next/image';
+import { motion } from 'framer-motion';
 import { ArrowUpRight } from 'lucide-react';
 
-import { Reveal } from '../../Reveal';
+const revealTransition = {
+  duration: 0.7,
+  ease: [0.16, 1, 0.3, 1],
+} as const;
 
 export function AboutFeature() {
   return (
@@ -21,7 +25,13 @@ export function AboutFeature() {
         lg:pt-24
       "
     >
-      <Reveal className="max-w-xl">
+      <motion.div
+        initial={{ opacity: 0, y: 28 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-100px' }}
+        transition={revealTransition}
+        className="max-w-xl"
+      >
         <p
           className="
             text-xs
@@ -99,16 +109,24 @@ export function AboutFeature() {
             "
           />
         </a>
-      </Reveal>
+      </motion.div>
 
-      <Reveal delay={0.12}>
+      <motion.div
+        initial={{ opacity: 0, y: 28 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-100px' }}
+        transition={{
+          ...revealTransition,
+          delay: 0.12,
+        }}
+      >
         <div
           className="
             relative
+            aspect-[4/3]
             overflow-hidden
             rounded-2xl
             bg-secondary
-            aspect-[4/3]
             sm:aspect-[16/10]
           "
         >
@@ -117,13 +135,7 @@ export function AboutFeature() {
             alt="A Design Blade brand strategy and design project"
             fill
             sizes="(max-width: 1024px) 100vw, 58vw"
-            className="
-              object-cover
-              transition-transform
-              duration-700
-              ease-[cubic-bezier(0.16,1,0.3,1)]
-              hover:scale-[1.025]
-            "
+            className="object-cover"
           />
 
           <div
@@ -161,7 +173,7 @@ export function AboutFeature() {
             Strategy · Identity · Digital
           </div>
         </div>
-      </Reveal>
+      </motion.div>
     </div>
   );
 }
