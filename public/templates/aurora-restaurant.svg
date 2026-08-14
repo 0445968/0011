@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" fill="none">
+<rect width="1600" height="1000" fill="#f4f1ec"/>
+
+  <rect x="120" y="180" width="1360" height="720" rx="24" fill="#ffffff" stroke="#e2dcd1" stroke-width="1.5"/>
+  <rect x="120" y="180" width="1360" height="56" rx="24" fill="#f4f1ec"/>
+  <rect x="120" y="212" width="1360" height="24" fill="#f4f1ec"/>
+  <circle cx="160" cy="208" r="7" fill="#e8825f"/>
+  <circle cx="184" cy="208" r="7" fill="#e8c35f"/>
+  <circle cx="208" cy="208" r="7" fill="#7fc28f"/>
+  <rect x="440" y="200" width="320" height="16" rx="8" fill="#e2dcd1"/>
+  <text x="200" y="320" font-family="Georgia, serif" font-size="46" font-weight="600" fill="#1c1917">Aurora Restaurant</text>
+  
+    <text x="200" y="340" font-family="Georgia, serif" font-size="56" font-weight="600" fill="#1c1917">Aurora</text>
+    <text x="200" y="390" font-family="Georgia, serif" font-size="22" font-style="italic" fill="#b8633f">Seasonal · Coastal</text>
+    <rect x="200" y="440" width="260" height="200" rx="12" fill="#b8633f" opacity="0.3"/>
+    <rect x="500" y="440" width="260" height="200" rx="12" fill="#1c1917"/>
+    <rect x="200" y="680" width="560" height="180" rx="12" fill="#efe6df"/>
+    <rect x="820" y="380" width="620" height="500" rx="16" fill="#1c1917"/>
+    <text x="860" y="450" font-family="Georgia, serif" font-size="24" fill="#f4f1ec">The Menu</text>
+    <rect x="860" y="490" width="300" height="14" rx="7" fill="#f4f1ec" opacity="0.5"/>
+    <rect x="860" y="520" width="260" height="14" rx="7" fill="#f4f1ec" opacity="0.4"/>
+    <rect x="860" y="560" width="300" height="14" rx="7" fill="#f4f1ec" opacity="0.4"/>
+    <rect x="860" y="590" width="220" height="14" rx="7" fill="#f4f1ec" opacity="0.3"/>
+    <rect x="860" y="760" width="160" height="44" rx="22" fill="#b8633f"/>
+    
+  
+</svg>
