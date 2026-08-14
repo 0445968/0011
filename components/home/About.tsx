@@ -2,7 +2,6 @@
 
 import { AboutCustomers } from './about/AboutCustomers';
 import { AboutFeature } from './about/AboutFeature';
-import { AboutIntro } from './about/AboutIntro';
 
 export function About() {
   return (
@@ -19,7 +18,6 @@ export function About() {
     >
       <div className="container-page">
         <AboutCustomers />
-        <AboutIntro />
         <AboutFeature />
       </div>
     </section>
