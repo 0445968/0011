@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { ArrowUpRight } from 'lucide-react';
 
-import { Reveal } from '../Reveal';
+import { Reveal } from '../../Reveal';
 
 export function AboutFeature() {
   return (
