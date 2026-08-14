@@ -7,26 +7,32 @@ const customers = [
   {
     name: 'Northline',
     logo: '/images/about/customers/northline.svg',
+    invertInDark: true,
   },
   {
     name: 'Vera Studio',
     logo: '/images/about/customers/vera-studio.svg',
+    invertInDark: false,
   },
   {
     name: 'Morrow',
     logo: '/images/about/customers/morrow.svg',
+    invertInDark: true,
   },
   {
     name: 'Sonder',
     logo: '/images/about/customers/sonder.svg',
+    invertInDark: false,
   },
   {
     name: 'Commonform',
     logo: '/images/about/customers/commonform.svg',
+    invertInDark: true,
   },
   {
     name: 'Fieldwork',
     logo: '/images/about/customers/fieldwork.svg',
+    invertInDark: false,
   },
 ];
 
@@ -98,7 +104,7 @@ export function AboutCustomers() {
               alt={customer.name}
               width={160}
               height={48}
-              className="
+              className={`
                 h-5
                 w-auto
                 max-w-[120px]
@@ -108,7 +114,12 @@ export function AboutCustomers() {
                 group-hover:grayscale
                 group-hover:opacity-50
                 sm:h-6
-              "
+                ${
+                  customer.invertInDark
+                    ? 'dark:brightness-0 dark:invert'
+                    : ''
+                }
+              `}
             />
           </motion.div>
         ))}
