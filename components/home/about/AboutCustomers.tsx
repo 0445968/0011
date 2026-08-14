@@ -56,7 +56,7 @@ export function AboutCustomers() {
       <p
         className="
           text-center
-          text-xs
+          text-sm
           font-medium
           text-muted-foreground
           sm:text-sm
