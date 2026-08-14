@@ -1,13 +1,33 @@
 'use client';
 
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 
 const customers = [
-  'Northline',
-  'Vera Studio',
-  'Morrow',
-  'Sonder',
-  'Commonform',
+  {
+    name: 'Northline',
+    logo: '/images/about/customers/northline.svg',
+  },
+  {
+    name: 'Vera Studio',
+    logo: '/images/about/customers/vera-studio.svg',
+  },
+  {
+    name: 'Morrow',
+    logo: '/images/about/customers/morrow.svg',
+  },
+  {
+    name: 'Sonder',
+    logo: '/images/about/customers/sonder.svg',
+  },
+  {
+    name: 'Commonform',
+    logo: '/images/about/customers/commonform.svg',
+  },
+  {
+    name: 'Fieldwork',
+    logo: '/images/about/customers/fieldwork.svg',
+  },
 ];
 
 export function AboutCustomers() {
@@ -23,17 +43,17 @@ export function AboutCustomers() {
       className="
         border-b
         border-border
-        pb-12
-        sm:pb-16
+        pb-10
+        sm:pb-12
       "
     >
       <p
         className="
           text-center
-          text-sm
+          text-xs
           font-medium
           text-muted-foreground
-          sm:text-base
+          sm:text-sm
         "
       >
         Trusted by ambitious teams building what&apos;s next.
@@ -41,19 +61,21 @@ export function AboutCustomers() {
 
       <div
         className="
-          mt-8
+          mt-7
           grid
           grid-cols-2
+          items-center
           gap-x-6
-          gap-y-7
+          gap-y-6
           sm:grid-cols-3
-          lg:mt-10
+          lg:mt-8
           lg:grid-cols-6
+          lg:gap-x-8
         "
       >
         {customers.map((customer, index) => (
-          <motion.span
-            key={customer}
+          <motion.div
+            key={customer.name}
             initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -63,21 +85,32 @@ export function AboutCustomers() {
               ease: [0.16, 1, 0.3, 1],
             }}
             className="
+              group
+              flex
+              h-8
               cursor-default
-              text-center
-              font-serif
-              text-xl
-              font-semibold
-              tracking-[-0.03em]
-              text-foreground
-              transition-colors
-              duration-300
-              hover:text-muted-foreground
-              sm:text-2xl
+              items-center
+              justify-center
             "
           >
-            {customer}
-          </motion.span>
+            <Image
+              src={customer.logo}
+              alt={customer.name}
+              width={160}
+              height={48}
+              className="
+                h-5
+                w-auto
+                max-w-[120px]
+                object-contain
+                transition-all
+                duration-300
+                group-hover:grayscale
+                group-hover:opacity-50
+                sm:h-6
+              "
+            />
+          </motion.div>
         ))}
       </div>
     </motion.div>
