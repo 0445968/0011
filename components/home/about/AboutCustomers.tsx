@@ -6,7 +6,6 @@ const customers = [
   'Northline',
   'Vera Studio',
   'Morrow',
-  'Fieldwork',
   'Sonder',
   'Commonform',
 ];
