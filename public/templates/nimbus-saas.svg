@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" fill="none">
+<rect width="1600" height="1000" fill="#f4f1ec"/>
+
+  <rect x="120" y="180" width="1360" height="720" rx="24" fill="#ffffff" stroke="#e2dcd1" stroke-width="1.5"/>
+  <rect x="120" y="180" width="1360" height="56" rx="24" fill="#f4f1ec"/>
+  <rect x="120" y="212" width="1360" height="24" fill="#f4f1ec"/>
+  <circle cx="160" cy="208" r="7" fill="#e8825f"/>
+  <circle cx="184" cy="208" r="7" fill="#e8c35f"/>
+  <circle cx="208" cy="208" r="7" fill="#7fc28f"/>
+  <rect x="440" y="200" width="320" height="16" rx="8" fill="#e2dcd1"/>
+  <text x="200" y="320" font-family="Georgia, serif" font-size="46" font-weight="600" fill="#1c1917">Nimbus SaaS</text>
+  
+    <text x="200" y="340" font-family="Georgia, serif" font-size="64" font-weight="600" fill="#1c1917">Ship faster.</text>
+    <rect x="200" y="400" width="440" height="16" rx="8" fill="#1c1917" opacity="0.5"/>
+    <rect x="200" y="430" width="380" height="16" rx="8" fill="#1c1917" opacity="0.4"/>
+    <rect x="200" y="490" width="200" height="48" rx="24" fill="#3a7a8c"/>
+    <rect x="430" y="490" width="180" height="48" rx="24" fill="#f4f1ec" stroke="#e2dcd1"/>
+    <rect x="820" y="380" width="620" height="500" rx="16" fill="#1c1917"/>
+    <rect x="860" y="420" width="540" height="60" rx="12" fill="#2a2622"/>
+    <rect x="860" y="500" width="260" height="160" rx="12" fill="#3a7a8c" opacity="0.3"/>
+    <rect x="1140" y="500" width="260" height="160" rx="12" fill="#2a2622"/>
+    <rect x="860" y="680" width="540" height="160" rx="12" fill="#2a2622"/>
+    <polyline points="890,810 960,780 1030,790 1100,750 1170,770 1240,730 1310,740 1380,700" stroke="#3a7a8c" stroke-width="3" fill="none"/>
+    <rect x="200" y="600" width="560" height="260" rx="16" fill="#f4f1ec"/>
+    <rect x="240" y="640" width="120" height="14" rx="7" fill="#3a7a8c"/>
+    <rect x="240" y="670" width="400" height="12" rx="6" fill="#e2dcd1"/>
+    <rect x="240" y="695" width="360" height="12" rx="6" fill="#e2dcd1"/>
+    
+  
+</svg>
