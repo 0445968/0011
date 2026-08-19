@@ -86,7 +86,7 @@ export function DifferenceFive() {
           <div className="flex items-center justify-between border-b border-white/15 pb-4">
             <div>
               <p className="text-[9px] font-semibold uppercase tracking-[0.24em] text-white/45">
-                System growth
+                System growth AAAAAAAAAAAA
               </p>
 
               <p className="mt-1 font-heading text-xl font-semibold text-white">
