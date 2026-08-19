@@ -10,7 +10,6 @@ import { brandProcessItems } from './brandProcessData';
 export function DifferenceTwo() {
   const [activeItem, setActiveItem] = useState<string | null>(null);
 
-  // Preload all popup preview images as soon as this section mounts.
   useEffect(() => {
     brandProcessItems.forEach((item) => {
       const image = new window.Image();
@@ -23,10 +22,8 @@ export function DifferenceTwo() {
       className="
         grid
         gap-8
-        border-b
-        border-white/10
-        py-10
-        md:py-12
+        pt-10
+        md:pt-12
         lg:grid-cols-12
         lg:items-center
         lg:gap-12
@@ -78,7 +75,7 @@ export function DifferenceTwo() {
               text-[#bbff1b]
             "
           >
-            02 · One connected process
+            One connected process
           </p>
 
           <h3
@@ -108,9 +105,7 @@ export function DifferenceTwo() {
               sm:text-base
             "
           >
-            Strategy sets direction. Discovery sharpens it. Concept,
-            identity, voice, and applications work together before becoming
-            one cohesive brand system designed around the people who
+            One cohesive brand system designed around the people who
             ultimately experience it.
           </p>
         </div>

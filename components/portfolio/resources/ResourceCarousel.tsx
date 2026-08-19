@@ -24,16 +24,24 @@ export function ResourceCarousel({
   return (
     <div className="relative">
       {/* Controls */}
-      <div className="mb-8 flex justify-end">
-        <CarouselArrows
-          onPrevious={scrollPrevious}
-          onNext={scrollNext}
-          canScrollPrevious={canScrollPrevious}
-          canScrollNext={canScrollNext}
-        />
+      <div className="container-page">
+        <div
+          className="
+            mb-5
+            flex
+            justify-end
+          "
+        >
+          <CarouselArrows
+            onPrevious={scrollPrevious}
+            onNext={scrollNext}
+            canScrollPrevious={canScrollPrevious}
+            canScrollNext={canScrollNext}
+          />
+        </div>
       </div>
 
-      {/* Cards */}
+      {/* Full-width carousel */}
       <CarouselViewport
         resources={resources}
         containerRef={containerRef}

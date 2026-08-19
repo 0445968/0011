@@ -1,8 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { ArrowUpRight, Mail } from 'lucide-react';
-import { socialLinks, contactInfo, siteConfig } from '@/data/site';
+
+import {
+  socialLinks,
+  contactInfo,
+  siteConfig,
+} from '@/data/site';
+
 import { useI18n } from '@/lib/i18n/context';
 import { LanguageSwitcher } from './LanguageSwitcher';
 
@@ -63,9 +70,16 @@ const legalLinkKeys = [
   { labelKey: 'footer.accessibility', href: '/accessibility' },
 ];
 
+const pagesWithoutTagline = [
+  '/',
+];
+
 export function Footer() {
   const { t } = useI18n();
+  const pathname = usePathname();
   const [time, setTime] = useState('');
+
+  const hideTagline = pagesWithoutTagline.includes(pathname);
 
   useEffect(() => {
     const updateTime = () => {
@@ -88,44 +102,56 @@ export function Footer() {
   }, []);
 
   return (
-    <footer className="relative bg-primary text-white">
-
-      <div className="container-page py-20 md:py-28">
-
+    <footer className="relative bg-[#1600A2] text-white">
+      <div
+        className={`
+          container-page
+          ${
+            hideTagline
+              ? 'pt-12 pb-20 md:pt-16 md:pb-28'
+              : 'py-20 md:py-28'
+          }
+        `}
+      >
         {/* Footer Hero */}
-        <div className="max-w-5xl">
+        {!hideTagline && (
+          <div className="max-w-5xl">
+            <h2
+              className="
+                font-serif
+                text-5xl
+                font-semibold
+                leading-[0.9]
+                tracking-tight
+                text-white
+                md:text-6xl
+              "
+            >
+              {t('footer.tagline')}
 
-          <h2
-            className="
-              font-serif
-              text-5xl
-              font-semibold
-              leading-[0.9]
-              tracking-tight
-              text-white
-              md:text-6xl
-            "
-          >
-            {t('footer.tagline')}
-
-            <span className="block text-[#BBFF1B]">
-              {t('footer.taglineAccent')}
-            </span>
-
-          </h2>
-
-        </div>
-
+              <span className="block text-[#BBFF1B]">
+                {t('footer.taglineAccent')}
+              </span>
+            </h2>
+          </div>
+        )}
 
         {/* Footer Content */}
-        <div className="mt-16 grid gap-12 lg:grid-cols-12">
-
-
+        <div
+          className={`
+            grid
+            gap-12
+            lg:grid-cols-12
+            ${
+              hideTagline
+                ? 'mt-0'
+                : 'mt-16'
+            }
+          `}
+        >
           {/* Contact */}
           <div className="lg:col-span-4">
-
             <div className="mt-2 space-y-5">
-
               <a
                 href={`mailto:${contactInfo.email}`}
                 className="
@@ -141,15 +167,14 @@ export function Footer() {
                   hover:text-[#BBFF1B]
                 "
               >
-
                 <Mail
                   size={18}
                   className="
-                  text-secondary
-                  transition-colors
-                  duration-150
-                  hover:text-[#BBFF1B]
-                "
+                    text-secondary
+                    transition-colors
+                    duration-150
+                    group-hover:text-[#BBFF1B]
+                  "
                 />
 
                 {contactInfo.email}
@@ -165,12 +190,9 @@ export function Footer() {
                     group-hover:opacity-100
                   "
                 />
-
               </a>
 
-
               <div className="space-y-2 text-sm text-white/60">
-
                 <p>
                   {contactInfo.location}
                 </p>
@@ -178,19 +200,13 @@ export function Footer() {
                 <p>
                   {t('footer.localTime')} — {time}
                 </p>
-
               </div>
-
             </div>
-
 
             {/* Social Icons */}
             <ul className="mt-8 flex gap-3">
-
               {socialLinks.map((link) => (
-
                 <li key={link.id}>
-
                   <a
                     href={link.href}
                     target="_blank"
@@ -212,20 +228,12 @@ export function Footer() {
                       hover:text-[#BBFF1B]
                     "
                   >
-
                     <link.icon size={18} />
-
                   </a>
-
                 </li>
-
               ))}
-
             </ul>
-
           </div>
-
-
 
           {/* Sitemap */}
           <div
@@ -237,11 +245,8 @@ export function Footer() {
               lg:grid-cols-4
             "
           >
-
             {footerGroups.map((group) => (
-
               <div key={group.titleKey}>
-
                 <h3
                   className="
                     text-base
@@ -254,13 +259,9 @@ export function Footer() {
                   {t(group.titleKey)}
                 </h3>
 
-
                 <ul className="mt-6 space-y-3">
-
                   {group.links.map((link) => (
-
                     <li key={link.labelKey}>
-
                       <a
                         href={link.href}
                         className="
@@ -273,23 +274,13 @@ export function Footer() {
                       >
                         {t(link.labelKey)}
                       </a>
-
                     </li>
-
                   ))}
-
                 </ul>
-
               </div>
-
             ))}
-
           </div>
-
-
         </div>
-
-
 
         {/* Bottom Bar */}
         <div
@@ -306,15 +297,12 @@ export function Footer() {
             md:items-center
           "
         >
-
           {/* Logo */}
           <div>
-
             <a
               href="/"
               aria-label="Design Blade home"
             >
-
               <img
                 src="/images/logo.png"
                 alt={siteConfig.name}
@@ -325,12 +313,8 @@ export function Footer() {
                   invert
                 "
               />
-
             </a>
-
           </div>
-
-
 
           {/* Legal + Language */}
           <div
@@ -342,43 +326,30 @@ export function Footer() {
               whitespace-nowrap
             "
           >
-
             {legalLinkKeys.map((link) => (
-
               <a
                 key={link.labelKey}
                 href={link.href}
                 className="
                   transition-colors
                   duration-150
-                  hover:text-[secondary]
+                  hover:text-[#BBFF1B]
                 "
               >
                 {t(link.labelKey)}
               </a>
-
             ))}
 
-
             <LanguageSwitcher compact />
-
           </div>
-
-
 
           {/* Copyright */}
           <p className="md:text-right">
-
-            © {new Date().getFullYear()} {siteConfig.name}. {t('footer.rights')}
-
+            © {new Date().getFullYear()} {siteConfig.name}.{' '}
+            {t('footer.rights')}
           </p>
-
-
         </div>
-
-
       </div>
-
     </footer>
   );
 }

@@ -1,9 +1,5 @@
-import { DifferenceHeader } from './DifferenceHeader';
 import { DifferenceOne } from './DifferenceOne';
 import { DifferenceTwo } from './DifferenceTwo';
-import { DifferenceThree } from './DifferenceThree';
-import { DifferenceFour } from './DifferenceFour';
-import { DifferenceFive } from './DifferenceFive';
 
 export function Differences() {
   return (
@@ -12,10 +8,30 @@ export function Differences() {
       className="
         relative
         overflow-hidden
-        bg-[#1600a2]
         text-white
       "
     >
+      {/* Background image */}
+      <div
+        className="
+          absolute
+          inset-0
+          bg-[url('/images/differences/differences-background-4.jpg')]
+          bg-cover
+          bg-center
+          bg-no-repeat
+        "
+      />
+
+      {/* Blue overlay */}
+      <div
+        className="
+          absolute
+          inset-0
+          bg-[#1600a2]/50
+        "
+      />
+
       {/* Subtle blue background accent */}
       <div
         className="
@@ -51,22 +67,13 @@ export function Differences() {
           container-page
           relative
           z-10
-          py-16
-          md:py-20
-          lg:py-24
+          py-10
+          md:py-12
+          lg:py-16
         "
       >
-        <DifferenceHeader />
-
         <DifferenceOne />
-
         <DifferenceTwo />
-
-        <DifferenceThree />
-
-        <DifferenceFour />
-
-        <DifferenceFive />
       </div>
     </section>
   );

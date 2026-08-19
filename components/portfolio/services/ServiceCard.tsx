@@ -20,7 +20,7 @@ export function ServiceCard({
         group
         relative
         block
-        h-[460px]
+        h-[345px]
         w-[260px]
         shrink-0
         cursor-grab
@@ -28,11 +28,11 @@ export function ServiceCard({
         overflow-hidden
         rounded-2xl
         active:cursor-grabbing
-        sm:h-[500px]
+        sm:h-[375px]
         sm:w-[280px]
-        md:h-[560px]
+        md:h-[420px]
         md:w-[310px]
-        lg:h-[600px]
+        lg:h-[450px]
         lg:w-[330px]
       "
     >

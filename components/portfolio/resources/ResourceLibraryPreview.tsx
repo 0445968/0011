@@ -1,7 +1,9 @@
 'use client';
 
 import { ArrowRight } from 'lucide-react';
+
 import { resources } from '@/data/resources';
+
 import { Reveal } from '../Reveal';
 import { ResourceCarousel } from './ResourceCarousel';
 
@@ -11,26 +13,74 @@ export function ResourceLibraryPreview() {
   return (
     <section
       id="resources"
-      className="section-spacing relative overflow-hidden"
+      className="
+        relative
+        overflow-hidden
+        pt-20
+        pb-24
+        md:pt-24
+        md:pb-28
+        lg:pt-28
+        lg:pb-32
+      "
     >
+      {/* Heading */}
       <div className="container-page">
-        {/* Heading */}
-        <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+        <div
+          className="
+            flex
+            flex-col
+            gap-8
+            lg:flex-row
+            lg:items-end
+            lg:justify-between
+          "
+        >
           <div className="max-w-3xl">
-            <Reveal className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+            <Reveal
+              className="
+                flex
+                items-center
+                gap-3
+                text-xs
+                font-semibold
+                uppercase
+                tracking-[0.24em]
+                text-muted-foreground
+              "
+            >
               <span className="h-px w-8 bg-primary" />
               Resource Library
             </Reveal>
 
             <Reveal delay={0.1}>
-              <h2 className="mt-8 text-balance font-heading text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl md:text-6xl">
+              <h2
+                className="
+                  mt-6
+                  text-balance
+                  font-heading
+                  text-4xl
+                  font-semibold
+                  leading-[1.02]
+                  tracking-tight
+                  sm:text-5xl
+                  md:text-6xl
+                "
+              >
                 Everything you need to build a better brand.
               </h2>
             </Reveal>
           </div>
 
           <Reveal delay={0.2}>
-            <p className="max-w-md text-base leading-8 text-muted-foreground">
+            <p
+              className="
+                max-w-md
+                text-base
+                leading-8
+                text-muted-foreground
+              "
+            >
               Explore a growing collection of thoughtful articles,
               downloadable guides, interactive tools, and curated
               resources designed to help founders, designers,
@@ -38,17 +88,28 @@ export function ResourceLibraryPreview() {
             </p>
           </Reveal>
         </div>
+      </div>
 
-        {/* Carousel */}
-        <Reveal delay={0.25}>
-          <div className="mt-16">
-            <ResourceCarousel resources={featuredResources} />
-          </div>
-        </Reveal>
+      {/* Carousel */}
+      <Reveal delay={0.25}>
+        <div className="mt-10 md:mt-12">
+          <ResourceCarousel
+            resources={featuredResources}
+          />
+        </div>
+      </Reveal>
 
-        {/* Browse All */}
+      {/* Browse All */}
+      <div className="container-page">
         <Reveal delay={0.35}>
-          <div className="mt-14 flex justify-center">
+          <div
+            className="
+              mt-10
+              flex
+              justify-center
+              md:mt-12
+            "
+          >
             <a
               href="/resources"
               className="
@@ -60,8 +121,8 @@ export function ResourceLibraryPreview() {
                 border
                 border-border
                 bg-card
-                px-7
-                py-4
+                px-6
+                py-3.5
                 text-sm
                 font-medium
                 transition-all
@@ -74,7 +135,11 @@ export function ResourceLibraryPreview() {
 
               <ArrowRight
                 size={16}
-                className="transition-transform duration-300 group-hover:translate-x-1"
+                className="
+                  transition-transform
+                  duration-300
+                  group-hover:translate-x-1
+                "
               />
             </a>
           </div>

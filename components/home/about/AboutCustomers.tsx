@@ -48,22 +48,23 @@ export function AboutCustomers() {
       }}
       className="
         border-b
-        border-border
+        border-border/20
         pb-10
         sm:pb-12
       "
     >
       <p
-        className="
-          text-center
-          text-sm
-          font-medium
-          text-muted-foreground
-          sm:text-sm
-        "
-      >
-        Trusted by ambitious teams building what&apos;s next.
-      </p>
+  className="
+    text-center
+    text-base
+    leading-7
+    text-muted-foreground
+    sm:text-lg
+    sm:leading-8
+  "
+>
+  Trusted by ambitious teams building the brands of the future.
+</p>
 
       <div
         className="

@@ -11,9 +11,12 @@ export function About() {
         relative
         overflow-hidden
         bg-background
-        py-20
-        sm:py-28
-        lg:py-36
+        pt-20
+        pb-8
+        sm:pt-28
+        sm:pb-10
+        lg:pt-36
+        lg:pb-12
       "
     >
       <div className="container-page">

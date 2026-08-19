@@ -2,7 +2,14 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowUpRight } from 'lucide-react';
+
+import {
+  ArrowUpRight,
+  BookOpen,
+  ExternalLink,
+  FileText,
+  Wrench,
+} from 'lucide-react';
 
 import type { Resource } from '@/data/resources';
 
@@ -10,15 +17,48 @@ interface ResourceCardProps {
   resource: Resource;
 }
 
+const typeConfig: Record<
+  Resource['type'],
+  {
+    label: string;
+    icon: typeof FileText;
+  }
+> = {
+  article: {
+    label: 'Article',
+    icon: BookOpen,
+  },
+  guide: {
+    label: 'Guide',
+    icon: FileText,
+  },
+  tool: {
+    label: 'Tool',
+    icon: Wrench,
+  },
+  link: {
+    label: 'Link',
+    icon: ExternalLink,
+  },
+};
+
 export function ResourceCard({
   resource,
 }: ResourceCardProps) {
+  const preview =
+    resource.previewVertical ??
+    resource.previewHorizontal ??
+    resource.preview;
+
+  const type = typeConfig[resource.type];
+  const TypeIcon = type.icon;
+
   return (
     <article
       className="
         group
         relative
-        aspect-[4/5]
+        aspect-[3/4]
         overflow-hidden
         rounded-3xl
         border
@@ -26,7 +66,6 @@ export function ResourceCard({
         bg-card
         transition-all
         duration-500
-
         hover:-translate-y-1
         hover:border-primary/30
       "
@@ -37,21 +76,21 @@ export function ResourceCard({
       >
         {/* Image */}
         <div className="absolute inset-0">
-          {resource.preview ? (
+          {preview ? (
             <Image
-              src={resource.preview}
+              src={preview}
               alt={resource.title}
               fill
               sizes="
-                (max-width: 768px) 90vw,
-                (max-width: 1280px) 45vw,
-                25vw
+                (max-width: 640px) 82vw,
+                (max-width: 768px) 58vw,
+                (max-width: 1024px) 42vw,
+                300px
               "
               className="
                 object-cover
                 transition-transform
                 duration-700
-
                 group-hover:scale-105
               "
             />
@@ -72,8 +111,7 @@ export function ResourceCard({
           )}
         </div>
 
-
-        {/* Bottom Gradient */}
+        {/* Bottom image gradient */}
         <div
           className="
             absolute
@@ -87,77 +125,85 @@ export function ResourceCard({
           "
         />
 
-
         {/* Content Panel */}
         <div
-  className="
-    absolute
-    inset-x-0
-    bottom-0
+          className="
+            absolute
+            inset-x-0
+            bottom-0
 
-    h-[220px]
+            h-[200px]
+            translate-y-[64px]
 
-    translate-y-[72px]
+            overflow-hidden
+            rounded-t-3xl
 
-    rounded-t-3xl
-    bg-background/95
-    p-6
-    backdrop-blur-md
-    overflow-hidden
+            bg-gradient-to-br
+            from-[#0B65F3]
+            to-[#1600A2]
 
-    transition-all
-    duration-500
-    ease-out
+            p-5
+            text-white
 
-    group-hover:h-[290px]
-    group-hover:translate-y-0
-  "
->
+            transition-all
+            duration-500
+            ease-out
 
-          {/* Category */}
-          {resource.category && (
-            <span
-              className="
-                mb-3
-                inline-flex
-                rounded-full
-                bg-muted
-                px-3
-                py-1
-                text-xs
-                font-medium
-                text-muted-foreground
-              "
-            >
-              {resource.category}
-            </span>
-          )}
+            group-hover:h-[275px]
+            group-hover:translate-y-0
+          "
+        >
+          {/* Resource Type */}
+          <span
+            className="
+              mb-3
+              inline-flex
+              items-center
+              gap-1.5
+              rounded-full
+              bg-[#BBFF1B]
+              px-2.5
+              py-1
+              text-[9px]
+              font-bold
+              uppercase
+              tracking-[0.13em]
+              text-black
+            "
+          >
+            <TypeIcon
+              size={11}
+              strokeWidth={2}
+            />
 
+            {type.label}
+          </span>
 
           {/* Title */}
           <h3
             className="
               font-heading
-              text-xl
+              text-lg
               font-semibold
-              leading-tight
+              leading-[1.15]
               tracking-tight
+              text-white
             "
           >
             {resource.title}
           </h3>
 
-
           {/* Description */}
           <p
             className="
-              mt-4
+              mt-3
               line-clamp-3
               text-sm
-              leading-7
-              text-muted-foreground
+              leading-6
+              text-white/70
 
               opacity-0
+
               transition-opacity
               duration-300
               delay-100
@@ -168,11 +214,10 @@ export function ResourceCard({
             {resource.description}
           </p>
 
-
           {/* Footer */}
           <div
             className="
-              mt-5
+              mt-4
               flex
               items-center
               justify-between
@@ -180,47 +225,42 @@ export function ResourceCard({
           >
             <span
               className="
-                text-sm
+                text-xs
                 font-medium
-                text-muted-foreground
+                text-white/70
               "
             >
               View resource
             </span>
 
-
             <span
               className="
                 flex
-                h-9
-                w-9
+                h-8
+                w-8
                 items-center
                 justify-center
                 rounded-full
-                border
-                border-border
+                bg-[#BBFF1B]
+                text-black
 
-                transition-all
+                transition-transform
                 duration-300
 
-                group-hover:border-primary/40
-                group-hover:bg-primary
-                group-hover:text-primary-foreground
+                group-hover:scale-105
               "
             >
               <ArrowUpRight
-                size={16}
+                size={14}
                 className="
                   transition-transform
                   duration-300
-
                   group-hover:-translate-y-0.5
                   group-hover:translate-x-0.5
                 "
               />
             </span>
           </div>
-
         </div>
       </Link>
     </article>

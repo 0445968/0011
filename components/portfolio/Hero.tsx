@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { ArrowUpRight } from 'lucide-react';
 
 const BACKGROUND_IMAGE =
-  '/images/hero/hero-background-2.jpg';
+  '/images/hero/hero-background-10.jpg';
 
 const FOREGROUND_IMAGE =
   '/images/hero/hero-foreground.png';
@@ -105,12 +105,12 @@ export function Hero() {
           flex-col
           items-center
           px-5
-          pt-28
+          pt-32
           text-center
           sm:px-8
-          sm:pt-32
-          md:pt-36
-          lg:pt-40
+          sm:pt-36
+          md:pt-40
+          lg:pt-44
         "
       >
         {/* Heading */}
@@ -120,7 +120,7 @@ export function Hero() {
             max-w-none
             text-balance
             font-serif
-            text-[clamp(3.25rem,5.6vw,7rem)]
+            text-[clamp(2.75rem,4.8vw,6rem)]
             font-medium
             leading-[0.94]
             tracking-[-0.055em]
@@ -129,67 +129,67 @@ export function Hero() {
           "
         >
           <motion.span
-            initial={{
-              opacity: 0,
-              y: 40,
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-            }}
-            transition={{
-              duration: 0.75,
-              delay: 0.2,
-              ease: transitionEase,
-            }}
-            className="inline"
-          >
-            Design that{' '}
-          </motion.span>
+    initial={{
+      opacity: 0,
+      y: 40,
+    }}
+    animate={{
+      opacity: 1,
+      y: 0,
+    }}
+    transition={{
+      duration: 0.75,
+      delay: 0.2,
+      ease: transitionEase,
+    }}
+    className="inline"
+  >
+    Design that{' '}
+  </motion.span>
 
-          <motion.span
-            initial={{
-              opacity: 0,
-              y: 40,
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-            }}
-            transition={{
-              duration: 0.75,
-              delay: 0.32,
-              ease: transitionEase,
-            }}
-            className="
-              inline
-              font-normal
-              italic
-              text-white/70
-            "
-          >
-            feels
-          </motion.span>{' '}
+  <motion.span
+    initial={{
+      opacity: 0,
+      y: 40,
+    }}
+    animate={{
+      opacity: 1,
+      y: 0,
+    }}
+    transition={{
+      duration: 0.75,
+      delay: 0.32,
+      ease: transitionEase,
+    }}
+    className="inline"
+  >
+    feels{' '}
+  </motion.span>
 
-          <motion.span
-            initial={{
-              opacity: 0,
-              y: 40,
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-            }}
-            transition={{
-              duration: 0.75,
-              delay: 0.44,
-              ease: transitionEase,
-            }}
-            className="inline"
-          >
-            inevitable.
-          </motion.span>
-        </h1>
+  <motion.span
+    initial={{
+      opacity: 0,
+      y: 40,
+    }}
+    animate={{
+      opacity: 1,
+      y: 0,
+    }}
+    transition={{
+      duration: 0.75,
+      delay: 0.44,
+      ease: transitionEase,
+    }}
+    className="
+      inline
+      font-normal
+      italic
+      text-white/70
+    "
+  >
+    inevitable.
+  </motion.span>
+</h1>
 
         {/* Description */}
 
@@ -211,15 +211,16 @@ export function Hero() {
             mt-7
             max-w-2xl
             text-balance
-            text-base
+            text-[16px]
             leading-7
             text-white/75
-            sm:text-lg
+            sm:text-[18px]
             sm:leading-8
           "
-        >
-          From powerful brand systems to meticulously crafted tools and
-          resources, we have your back.
+          >
+          From powerful brand systems to meticulously crafted tools
+          <br className="hidden sm:block" />
+          and resources, we have your back.
         </motion.p>
 
         {/* Actions */}

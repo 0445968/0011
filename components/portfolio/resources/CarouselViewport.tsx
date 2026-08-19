@@ -19,12 +19,22 @@ export function CarouselViewport({
       ref={containerRef as RefObject<HTMLDivElement>}
       className="
         flex
+        w-full
         snap-x
         snap-mandatory
-        gap-6
+        gap-5
         overflow-x-auto
         scroll-smooth
-        pb-6
+
+        pl-6
+        pr-0
+        pb-5
+
+        scroll-pl-6
+
+        md:gap-6
+        md:pl-[max(2.5rem,calc((100vw-88rem)/2+2.5rem))]
+        md:scroll-pl-[max(2.5rem,calc((100vw-88rem)/2+2.5rem))]
 
         [scrollbar-width:auto]
 
@@ -39,22 +49,34 @@ export function CarouselViewport({
         <div
           key={resource.id}
           className="
-            w-[85%]
+            w-[82vw]
             shrink-0
             snap-start
 
-            sm:w-[65%]
+            sm:w-[58vw]
 
-            md:w-[46%]
+            md:w-[42vw]
 
-            lg:w-[31%]
+            lg:w-[300px]
 
-            xl:w-[calc((100%-72px)/4)]
+            xl:w-[280px]
+
+            2xl:w-[300px]
           "
         >
           <ResourceCard resource={resource} />
         </div>
       ))}
+
+      {/* Small breathing room after final card */}
+      <div
+        aria-hidden="true"
+        className="
+          w-6
+          shrink-0
+          md:w-10
+        "
+      />
     </div>
   );
 }

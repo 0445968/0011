@@ -23,7 +23,7 @@ export function CarouselArrows({
       className="
         flex
         items-center
-        gap-3
+        gap-2
       "
     >
       <button
@@ -34,8 +34,8 @@ export function CarouselArrows({
         className="
           group
           flex
-          h-11
-          w-11
+          h-10
+          w-10
           items-center
           justify-center
           rounded-full
@@ -44,16 +44,14 @@ export function CarouselArrows({
           bg-card
           transition-all
           duration-300
-
           hover:-translate-x-0.5
           hover:border-primary/40
-
           disabled:pointer-events-none
           disabled:opacity-30
         "
       >
         <ChevronLeft
-          size={18}
+          size={17}
           className="
             transition-transform
             duration-300
@@ -70,8 +68,8 @@ export function CarouselArrows({
         className="
           group
           flex
-          h-11
-          w-11
+          h-10
+          w-10
           items-center
           justify-center
           rounded-full
@@ -80,16 +78,14 @@ export function CarouselArrows({
           bg-card
           transition-all
           duration-300
-
           hover:translate-x-0.5
           hover:border-primary/40
-
           disabled:pointer-events-none
           disabled:opacity-30
         "
       >
         <ChevronRight
-          size={18}
+          size={17}
           className="
             transition-transform
             duration-300

@@ -8,7 +8,6 @@ import { services } from '@/data/services';
 
 import { ServiceCard } from './ServiceCard';
 
-
 export function ServicesCarousel() {
   const [emblaRef, emblaApi] = useEmblaCarousel(
     {
@@ -19,14 +18,13 @@ export function ServicesCarousel() {
     },
     [
       AutoScroll({
-        speed: .5,
+        speed: 0.5,
         startDelay: 0,
         stopOnInteraction: true,
         stopOnMouseEnter: true,
       }),
     ]
   );
-
 
   const stopAutoScroll = useCallback(() => {
     const autoScroll =
@@ -37,7 +35,6 @@ export function ServicesCarousel() {
     }
   }, [emblaApi]);
 
-
   const startAutoScroll = useCallback(() => {
     const autoScroll =
       emblaApi?.plugins()?.autoScroll;
@@ -46,7 +43,6 @@ export function ServicesCarousel() {
       autoScroll.play();
     }
   }, [emblaApi]);
-
 
   useEffect(() => {
     if (!emblaApi) return;
@@ -62,23 +58,27 @@ export function ServicesCarousel() {
     stopAutoScroll,
   ]);
 
-
   return (
     <section
       className="
         overflow-hidden
-        py-24
+        pt-10
+        pb-24
+        sm:pt-12
+        sm:pb-28
+        lg:pt-32
+        lg:pb-32
       "
     >
-
       {/* Header */}
       <div
         className="
           container-page
           mb-12
+          text-center
+          md:mb-14
         "
       >
-
         <p
           className="
             text-xs
@@ -91,23 +91,23 @@ export function ServicesCarousel() {
           Services
         </p>
 
-
         <h2
           className="
+            mx-auto
             mt-4
             max-w-3xl
+            text-balance
             font-heading
-            text-4xl
+            text-5xl
             font-semibold
+            leading-[1]
             tracking-tight
-            md:text-5xl
+            md:text-6xl
           "
         >
           Creative solutions built for ambitious brands.
         </h2>
-
       </div>
-
 
       {/* Carousel */}
       <div
@@ -115,20 +115,15 @@ export function ServicesCarousel() {
           relative
           w-full
         "
-
         onMouseEnter={stopAutoScroll}
         onMouseLeave={startAutoScroll}
       >
-
-       
-
         <div
           className="
             overflow-hidden
           "
           ref={emblaRef}
         >
-
           <div
             className="
               flex
@@ -136,30 +131,21 @@ export function ServicesCarousel() {
               px-6
             "
           >
-
             {services.map((service) => (
-
               <div
                 key={service.id}
                 className="
                   shrink-0
                 "
               >
-
                 <ServiceCard
                   service={service}
                 />
-
               </div>
-
             ))}
-
           </div>
-
         </div>
-
       </div>
-
     </section>
   );
 }
