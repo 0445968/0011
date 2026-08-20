@@ -1,6 +1,7 @@
 'use client';
 
 import type { RefObject } from 'react';
+
 import type { Resource } from '@/data/resources';
 
 import { ResourceCard } from './ResourceCard';
@@ -15,68 +16,51 @@ export function CarouselViewport({
   containerRef,
 }: CarouselViewportProps) {
   return (
-    <div
-      ref={containerRef as RefObject<HTMLDivElement>}
-      className="
-        flex
-        w-full
-        snap-x
-        snap-mandatory
-        gap-5
-        overflow-x-auto
-        scroll-smooth
-
-        pl-6
-        pr-0
-        pb-5
-
-        scroll-pl-6
-
-        md:gap-6
-        md:pl-[max(2.5rem,calc((100vw-88rem)/2+2.5rem))]
-        md:scroll-pl-[max(2.5rem,calc((100vw-88rem)/2+2.5rem))]
-
-        [scrollbar-width:auto]
-
-        [&::-webkit-scrollbar]:h-2
-        [&::-webkit-scrollbar-track]:bg-transparent
-        [&::-webkit-scrollbar-thumb]:rounded-full
-        [&::-webkit-scrollbar-thumb]:bg-border
-        [&::-webkit-scrollbar-thumb:hover]:bg-muted-foreground/40
-      "
-    >
-      {resources.map((resource) => (
-        <div
-          key={resource.id}
-          className="
-            w-[82vw]
-            shrink-0
-            snap-start
-
-            sm:w-[58vw]
-
-            md:w-[42vw]
-
-            lg:w-[300px]
-
-            xl:w-[280px]
-
-            2xl:w-[300px]
-          "
-        >
-          <ResourceCard resource={resource} />
-        </div>
-      ))}
-
-      {/* Small breathing room after final card */}
+    <div className="container-page">
       <div
-        aria-hidden="true"
+        ref={
+          containerRef as RefObject<HTMLDivElement>
+        }
         className="
-          w-6
-          shrink-0
-          md:w-10
+          flex
+          w-full
+          snap-x
+          snap-mandatory
+          gap-5
+
+          overflow-x-auto
+          overflow-y-hidden
+
+          scroll-smooth
+
+          sm:gap-5
+          md:gap-6
+
+          [scrollbar-width:none]
+          [-ms-overflow-style:none]
+
+          [&::-webkit-scrollbar]:hidden
         "
-      />
+      >
+        {resources.map((resource) => (
+          <div
+            key={resource.id}
+            className="
+              w-[82%]
+              shrink-0
+              snap-start
+
+              sm:w-[48%]
+
+              lg:w-[calc((100%_-_4.5rem)/4)]
+            "
+          >
+            <ResourceCard
+              resource={resource}
+            />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

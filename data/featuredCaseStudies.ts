@@ -87,10 +87,10 @@ export const featuredCaseStudies: FeaturedCaseStudy[] = [
     ],
 
     challenge:
-      'Lumen had powerful reporting capabilities, but customers struggled to interpret dense tables, navigate inconsistent layouts, and uncover meaningful insights before abandoning the product.',
+      'Customers struggled to navigate inconsistent layouts and uncover meaningful insights before abandoning the product.',
 
     solution:
-      'We reimagined the dashboard as an editorial experience using strong typography, purposeful whitespace, contextual motion, and a scalable design system that guides users toward the information that matters most.',
+      'We reimagined the dashboard as an editorial experience through a scalable design system that guides users.',
 
     process: [
       {
@@ -173,10 +173,10 @@ export const featuredCaseStudies: FeaturedCaseStudy[] = [
     ],
 
     challenge:
-      'The previous website looked dated and failed to communicate the premium quality of the brand, resulting in poor conversions and low average order values.',
+      'The previous website looked dated and failed to communicate the premium quality of the brand.',
 
     solution:
-      'We created an editorial shopping experience centered around cinematic imagery, elegant typography, and streamlined purchasing that reflects the luxury in every arrangement.',
+      'We created an editorial shopping experience centered around cinematic imagery, elegant typography, and streamlined purchasing.',
 
     process: [
       {

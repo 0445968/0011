@@ -3,6 +3,7 @@
 import { useCallback, useEffect } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 import AutoScroll from 'embla-carousel-auto-scroll';
+import { ArrowUpRight } from 'lucide-react';
 
 import { services } from '@/data/services';
 
@@ -145,6 +146,43 @@ export function ServicesCarousel() {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Browse All Services */}
+      <div
+        className="
+          container-page
+          mt-12
+          flex
+          justify-center
+          md:mt-14
+        "
+      >
+        <a
+          href="/services"
+          className="
+            inline-flex
+            h-[52px]
+            items-center
+            justify-center
+            gap-2
+            rounded-[14px]
+            bg-[#0B65F3]
+            px-7
+            text-[16px]
+            font-bold
+            leading-none
+            text-white
+            hover:bg-[#1600A2]
+          "
+        >
+          Browse all services
+
+          <ArrowUpRight
+            size={17}
+            className="shrink-0"
+          />
+        </a>
       </div>
     </section>
   );

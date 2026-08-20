@@ -102,17 +102,17 @@ export function Footer() {
   }, []);
 
   return (
-    <footer className="relative bg-[#1600A2] text-white">
-      <div
-        className={`
-          container-page
-          ${
-            hideTagline
-              ? 'pt-12 pb-20 md:pt-16 md:pb-28'
-              : 'py-20 md:py-28'
-          }
-        `}
-      >
+         <footer className="relative bg-[#1600A2] text-white">
+  <div
+    className={`
+      container-page
+      ${
+        hideTagline
+          ? 'pt-12 pb-8 md:pt-16 md:pb-8'
+          : 'pt-20 pb-8 md:pt-28 md:pb-8'
+      }
+    `}
+  >
         {/* Footer Hero */}
         {!hideTagline && (
           <div className="max-w-5xl">

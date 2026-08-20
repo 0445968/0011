@@ -28,57 +28,59 @@ export function ResourceLibraryPreview() {
       <div className="container-page">
         <div
           className="
+            mx-auto
             flex
+            max-w-4xl
             flex-col
-            gap-8
-            lg:flex-row
-            lg:items-end
-            lg:justify-between
+            items-center
+            text-center
           "
         >
-          <div className="max-w-3xl">
-            <Reveal
+          <Reveal
+            className="
+              flex
+              items-center
+              justify-center
+              gap-3
+              text-xs
+              font-semibold
+              uppercase
+              tracking-[0.24em]
+              text-primary
+            "
+          >
+            Resource Library
+          </Reveal>
+
+          <Reveal delay={0.1}>
+            <h2
               className="
-                flex
-                items-center
-                gap-3
-                text-xs
+                mt-5
+                text-balance
+                font-heading
+                text-4xl
                 font-semibold
-                uppercase
-                tracking-[0.24em]
-                text-muted-foreground
+                leading-[1]
+                tracking-tight
+                sm:text-5xl
+                md:text-6xl
               "
             >
-              <span className="h-px w-8 bg-primary" />
-              Resource Library
-            </Reveal>
-
-            <Reveal delay={0.1}>
-              <h2
-                className="
-                  mt-6
-                  text-balance
-                  font-heading
-                  text-4xl
-                  font-semibold
-                  leading-[1.02]
-                  tracking-tight
-                  sm:text-5xl
-                  md:text-6xl
-                "
-              >
-                Everything you need to build a better brand.
-              </h2>
-            </Reveal>
-          </div>
+              Everything you need to build a better brand.
+            </h2>
+          </Reveal>
 
           <Reveal delay={0.2}>
             <p
               className="
-                max-w-md
-                text-base
-                leading-8
+                mx-auto
+                mt-6
+                max-w-2xl
+                text-[16px]
+                leading-[28px]
                 text-muted-foreground
+                sm:text-[17px]
+                sm:leading-[29px]
               "
             >
               Explore a growing collection of thoughtful articles,
@@ -90,61 +92,14 @@ export function ResourceLibraryPreview() {
         </div>
       </div>
 
-      {/* Carousel */}
-      <Reveal delay={0.25}>
+            {/* Carousel */}
+            <Reveal delay={0.25}>
         <div className="mt-10 md:mt-12">
           <ResourceCarousel
             resources={featuredResources}
           />
         </div>
       </Reveal>
-
-      {/* Browse All */}
-      <div className="container-page">
-        <Reveal delay={0.35}>
-          <div
-            className="
-              mt-10
-              flex
-              justify-center
-              md:mt-12
-            "
-          >
-            <a
-              href="/resources"
-              className="
-                group
-                inline-flex
-                items-center
-                gap-2
-                rounded-full
-                border
-                border-border
-                bg-card
-                px-6
-                py-3.5
-                text-sm
-                font-medium
-                transition-all
-                duration-300
-                hover:-translate-y-0.5
-                hover:border-primary/40
-              "
-            >
-              Browse all {resources.length} resources
-
-              <ArrowRight
-                size={16}
-                className="
-                  transition-transform
-                  duration-300
-                  group-hover:translate-x-1
-                "
-              />
-            </a>
-          </div>
-        </Reveal>
-      </div>
     </section>
   );
 }

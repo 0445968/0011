@@ -10,33 +10,84 @@ export function ChallengeSolution({
   solution,
 }: ChallengeSolutionProps) {
   return (
-    <div className="grid gap-6 md:grid-cols-2">
+    <div
+      className="
+        mt-5
+        overflow-hidden
+        rounded-2xl
+        border
+        border-border
+      "
+    >
+      {/* Challenge */}
 
-      <div className="rounded-3xl border border-border p-8">
-
-        <p className="text-xs uppercase tracking-widest text-accent">
+      <div
+        className="
+          border-b
+          border-border
+          px-5
+          py-4
+        "
+      >
+        <p
+          className="
+            text-[9px]
+            font-semibold
+            uppercase
+            tracking-[0.18em]
+            text-accent
+          "
+        >
           Challenge
         </p>
 
-        <p className="mt-5 leading-relaxed">
+        <p
+          className="
+            mt-2
+            text-[13px]
+            leading-[20px]
+            text-muted-foreground
+            md:text-[14px]
+            md:leading-[21px]
+          "
+        >
           {challenge}
         </p>
-
       </div>
 
+      {/* Solution */}
 
-      <div className="rounded-3xl border border-border p-8">
-
-        <p className="text-xs uppercase tracking-widest text-accent">
+      <div
+        className="
+          px-5
+          py-4
+        "
+      >
+        <p
+          className="
+            text-[9px]
+            font-semibold
+            uppercase
+            tracking-[0.18em]
+            text-accent
+          "
+        >
           Solution
         </p>
 
-        <p className="mt-5 leading-relaxed">
+        <p
+          className="
+            mt-2
+            text-[13px]
+            leading-[20px]
+            text-muted-foreground
+            md:text-[14px]
+            md:leading-[21px]
+          "
+        >
           {solution}
         </p>
-
       </div>
-
     </div>
   );
 }

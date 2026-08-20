@@ -23,6 +23,7 @@ export function CarouselArrows({
       className="
         flex
         items-center
+        justify-center
         gap-2
       "
     >
@@ -32,31 +33,27 @@ export function CarouselArrows({
         disabled={!canScrollPrevious}
         aria-label="Previous resources"
         className="
-          group
           flex
-          h-10
-          w-10
+          h-11
+          w-11
           items-center
           justify-center
           rounded-full
           border
-          border-border
-          bg-card
+          border-[#0B65F3]
+          bg-[#0B65F3]
+          text-white
           transition-all
           duration-300
-          hover:-translate-x-0.5
-          hover:border-primary/40
+          hover:scale-[1.04]
+          hover:bg-[#095BE0]
           disabled:pointer-events-none
           disabled:opacity-30
         "
       >
         <ChevronLeft
-          size={17}
-          className="
-            transition-transform
-            duration-300
-            group-hover:-translate-x-0.5
-          "
+          size={18}
+          strokeWidth={2}
         />
       </button>
 
@@ -66,31 +63,27 @@ export function CarouselArrows({
         disabled={!canScrollNext}
         aria-label="Next resources"
         className="
-          group
           flex
-          h-10
-          w-10
+          h-11
+          w-11
           items-center
           justify-center
           rounded-full
           border
-          border-border
-          bg-card
+          border-[#0B65F3]
+          bg-[#0B65F3]
+          text-white
           transition-all
           duration-300
-          hover:translate-x-0.5
-          hover:border-primary/40
+          hover:scale-[1.04]
+          hover:bg-[#095BE0]
           disabled:pointer-events-none
           disabled:opacity-30
         "
       >
         <ChevronRight
-          size={17}
-          className="
-            transition-transform
-            duration-300
-            group-hover:translate-x-0.5
-          "
+          size={18}
+          strokeWidth={2}
         />
       </button>
     </div>

@@ -83,7 +83,7 @@ export function DifferenceTwo() {
               mt-4
               font-heading
               text-[clamp(2.25rem,4vw,4rem)]
-              font-semibold
+              font-medium
               leading-[0.94]
               tracking-[-0.05em]
               text-[#f8f7f2]

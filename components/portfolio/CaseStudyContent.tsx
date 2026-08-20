@@ -26,141 +26,115 @@ export function CaseStudyContent({
   study,
 }: CaseStudyContentProps) {
   return (
-    <div className="flex flex-col justify-center">
-
+    <div>
       {/* Category */}
 
-      <p className="text-xs font-semibold uppercase tracking-widest text-accent">
+      <p
+        className="
+          text-[10px]
+          font-semibold
+          uppercase
+          tracking-[0.18em]
+          text-accent
+        "
+      >
         {study.category}
       </p>
-
 
       {/* Title */}
 
       <a
         href={study.liveUrl ?? '#'}
-        className="group mt-5 inline-flex items-center gap-3"
+        className="
+          group
+          mt-3
+          inline-flex
+          items-center
+          gap-2
+        "
       >
-        <h3 className="font-serif text-4xl font-semibold tracking-tight transition-colors group-hover:text-accent md:text-5xl">
+        <h3
+          className="
+            font-serif
+            text-[30px]
+            font-semibold
+            leading-[1]
+            tracking-[-0.035em]
+            transition-colors
+            group-hover:text-accent
+            md:text-[36px]
+          "
+        >
           {study.name}
         </h3>
 
         <ArrowUpRight
-          size={28}
+          size={21}
           className="
-            translate-y-1 opacity-0
-            transition-all duration-300
+            translate-y-1
+            opacity-0
+            transition-all
+            duration-300
             group-hover:translate-y-0
             group-hover:opacity-100
           "
         />
       </a>
 
-
-
       {/* Technologies */}
 
-      <div className="mt-5 flex flex-wrap gap-2">
-
+      <div
+        className="
+          mt-4
+          flex
+          flex-wrap
+          gap-1.5
+        "
+      >
         {study.technologies.map((tech) => (
-
           <span
             key={tech}
             className="
               rounded-full
-              border border-[#BBFF1B]
-              bg-[#BBFF1B]/50
-              px-3 py-1
-              text-xs font-medium
+              border
+              border-[#BBFF1B]
+              bg-[#BBFF1B]/20
+              px-2.5
+              py-1
+              text-[10px]
+              font-medium
+              leading-none
               text-muted-foreground
             "
           >
             {tech}
           </span>
-
         ))}
-
       </div>
-
-
 
       {/* Description */}
 
-      <p className="mt-6 leading-relaxed text-muted-foreground">
+      <p
+        className="
+          mt-5
+          max-w-xl
+          text-[14px]
+          leading-[22px]
+          text-muted-foreground
+          md:text-[15px]
+          md:leading-[24px]
+        "
+      >
         {study.description}
       </p>
 
-
-
-      {/* Metadata */}
-
-      <div className="mt-8 grid grid-cols-2 gap-5 text-sm">
-
-        <div>
-          <p className="text-muted-foreground">
-            Client
-          </p>
-
-          <p
-            className="
-              mt-1
-              font-medium
-              transition-colors
-              hover:text-muted-foreground
-            "
-          >
-            {study.client}
-          </p>
-        </div>
-
-
-        <div>
-          <p className="text-muted-foreground">
-            Timeline
-          </p>
-
-          <p className="mt-1 font-medium">
-            {study.timeline}
-          </p>
-        </div>
-
-
-        <div>
-          <p className="text-muted-foreground">
-            Year
-          </p>
-
-          <p className="mt-1 font-medium">
-            {study.year}
-          </p>
-        </div>
-
-
-        <div>
-          <p className="text-muted-foreground">
-            Role
-          </p>
-
-          <p className="mt-1 font-medium">
-            {study.role}
-          </p>
-        </div>
-
-      </div>
-
-
+      
 
       {/* Results */}
 
-      <div className="mt-8">
-
-        <ResultsStrip
-          results={study.results}
-        />
-
+      <div className="mt-5">
+        <ResultsStrip results={study.results} />
       </div>
-
-
     </div>
   );
 }

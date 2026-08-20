@@ -160,7 +160,7 @@ export function AboutFeature() {
             </p>
 
             <a
-              href="/services"
+              href="/process"
               className="
                 group
                 mt-9
@@ -168,11 +168,11 @@ export function AboutFeature() {
                 h-[52px]
                 items-center
                 gap-2
-                rounded-full
+                rounded-[14px]
                 bg-primary
                 px-7
-                text-sm
-                font-medium
+                text-[16px]
+                font-bold
                 text-primary-foreground
                 transition-transform
                 duration-300
@@ -180,7 +180,7 @@ export function AboutFeature() {
                 active:scale-[0.98]
               "
             >
-              Explore services
+              Explore our Process
 
               <ArrowUpRight
                 size={17}

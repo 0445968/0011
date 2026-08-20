@@ -8,13 +8,70 @@ import {
 } from 'react';
 
 export function useCarousel() {
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const containerRef =
+    useRef<HTMLDivElement | null>(null);
 
   const [canScrollPrevious, setCanScrollPrevious] =
     useState(false);
 
   const [canScrollNext, setCanScrollNext] =
     useState(true);
+
+  const [currentPage, setCurrentPage] =
+    useState(0);
+
+  const [pageCount, setPageCount] =
+    useState(1);
+
+  const getCarouselMeasurements = useCallback(() => {
+    const container = containerRef.current;
+
+    if (!container) {
+      return {
+        visibleCount: 1,
+        totalCards: 0,
+        gap: 0,
+        cardWidth: 0,
+      };
+    }
+
+    const cards = Array.from(
+      container.children
+    ) as HTMLElement[];
+
+    const firstCard = cards[0];
+
+    if (!firstCard) {
+      return {
+        visibleCount: 1,
+        totalCards: 0,
+        gap: 0,
+        cardWidth: 0,
+      };
+    }
+
+    const cardWidth =
+      firstCard.getBoundingClientRect().width;
+
+    const gap = Number.parseFloat(
+      getComputedStyle(container).gap || '0'
+    );
+
+    const visibleCount = Math.max(
+      1,
+      Math.round(
+        (container.clientWidth + gap) /
+          (cardWidth + gap)
+      )
+    );
+
+    return {
+      visibleCount,
+      totalCards: cards.length,
+      gap,
+      cardWidth,
+    };
+  }, []);
 
   const updateScrollState = useCallback(() => {
     const container = containerRef.current;
@@ -27,54 +84,86 @@ export function useCarousel() {
       clientWidth,
     } = container;
 
-    setCanScrollPrevious(scrollLeft > 10);
+    const {
+      visibleCount,
+      totalCards,
+      cardWidth,
+      gap,
+    } = getCarouselMeasurements();
+
+    const calculatedPageCount = Math.max(
+      1,
+      Math.ceil(totalCards / visibleCount)
+    );
+
+    setPageCount(calculatedPageCount);
+
+    setCanScrollPrevious(scrollLeft > 8);
 
     setCanScrollNext(
-      scrollLeft + clientWidth < scrollWidth - 10
-    );
-  }, []);
-
-  const getScrollAmount = useCallback(() => {
-    const container = containerRef.current;
-
-    if (!container) return 0;
-
-    const firstCard =
-      container.firstElementChild as HTMLElement | null;
-
-    if (!firstCard) return 0;
-
-    const cardWidth = firstCard.getBoundingClientRect().width;
-
-    const gap = Number.parseFloat(
-      getComputedStyle(container).gap || '0'
+      scrollLeft + clientWidth <
+        scrollWidth - 8
     );
 
-    // Move three cards per click
-    return (cardWidth + gap) * 3;
-  }, []);
+    const pageWidth =
+      (cardWidth + gap) * visibleCount;
+
+    if (pageWidth > 0) {
+      const page = Math.min(
+        calculatedPageCount - 1,
+        Math.max(
+          0,
+          Math.round(scrollLeft / pageWidth)
+        )
+      );
+
+      setCurrentPage(page);
+    }
+  }, [getCarouselMeasurements]);
+
+  const scrollToPage = useCallback(
+    (page: number) => {
+      const container = containerRef.current;
+
+      if (!container) return;
+
+      const {
+        visibleCount,
+        cardWidth,
+        gap,
+      } = getCarouselMeasurements();
+
+      const target =
+        page *
+        visibleCount *
+        (cardWidth + gap);
+
+      container.scrollTo({
+        left: target,
+        behavior: 'smooth',
+      });
+    },
+    [getCarouselMeasurements]
+  );
 
   const scrollNext = useCallback(() => {
-    const container = containerRef.current;
-
-    if (!container) return;
-
-    container.scrollBy({
-      left: getScrollAmount(),
-      behavior: 'smooth',
-    });
-  }, [getScrollAmount]);
+    scrollToPage(
+      Math.min(currentPage + 1, pageCount - 1)
+    );
+  }, [
+    currentPage,
+    pageCount,
+    scrollToPage,
+  ]);
 
   const scrollPrevious = useCallback(() => {
-    const container = containerRef.current;
-
-    if (!container) return;
-
-    container.scrollBy({
-      left: -getScrollAmount(),
-      behavior: 'smooth',
-    });
-  }, [getScrollAmount]);
+    scrollToPage(
+      Math.max(currentPage - 1, 0)
+    );
+  }, [
+    currentPage,
+    scrollToPage,
+  ]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -116,7 +205,10 @@ export function useCarousel() {
     containerRef,
     scrollNext,
     scrollPrevious,
+    scrollToPage,
     canScrollNext,
     canScrollPrevious,
+    currentPage,
+    pageCount,
   };
 }
