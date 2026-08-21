@@ -2,15 +2,16 @@
 // Swap any URL below to replace imagery site-wide.
 
 export const roamlyImages = {
-  hero: 'https://images.unsplash.com/photo-1555881400-74d7acaacd8c?auto=format&fit=crop&w=1600&q=80',
+  hero:
+  '/images/demos/travel-planner/hero.jpg',
   hotel: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
   tileFood: 'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?auto=format&fit=crop&w=800&q=80',
   tileCulture: 'https://images.unsplash.com/photo-1559494619-75bd60064934?auto=format&fit=crop&w=800&q=80',
   tileShopping: 'https://images.unsplash.com/photo-1567168544813-4b3a6f7d2c31?auto=format&fit=crop&w=800&q=80',
   tileNightlife: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&q=80',
   tileSight: 'https://images.unsplash.com/photo-1559429145-2df109b7c2c1?auto=format&fit=crop&w=800&q=80',
-  avatarA: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
-  avatarB: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
+  avatarA: '/images/demos/travel-planner/selfie.jpg',
+  avatarB: '/images/demos/travel-planner/couple.jpg',
   avatarC: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=200&q=80',
 };
 

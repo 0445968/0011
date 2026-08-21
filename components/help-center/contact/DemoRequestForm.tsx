@@ -6,10 +6,22 @@ import {
   useState,
 } from 'react';
 
+import Link from 'next/link';
+
+import {
+  useSearchParams,
+} from 'next/navigation';
+
 import {
   ArrowRight,
+  ArrowUpRight,
   CheckCircle2,
+  Monitor,
 } from 'lucide-react';
+
+import {
+  getDemoBySlug,
+} from '@/data/demos/registry';
 
 interface DemoFormData {
   name: string;
@@ -38,12 +50,28 @@ const initialFormData: DemoFormData = {
 };
 
 export function DemoRequestForm() {
+  const searchParams =
+    useSearchParams();
+
+  const sourceSlug =
+    searchParams.get(
+      'from'
+    );
+
+  const sourceDemo =
+    sourceSlug
+      ? getDemoBySlug(
+          sourceSlug
+        )
+      : undefined;
+
   const [
     formData,
     setFormData,
-  ] = useState<DemoFormData>(
-    initialFormData
-  );
+  ] =
+    useState<DemoFormData>(
+      initialFormData
+    );
 
   const [
     submitted,
@@ -77,10 +105,18 @@ export function DemoRequestForm() {
     /*
      * Submission endpoint will be
      * connected later.
+     *
+     * sourceDemo is already available here
+     * when you connect the backend, so it can
+     * be included with the submission.
      */
 
     setSubmitted(true);
   };
+
+  /* ================================================================== */
+  /* Success                                                            */
+  /* ================================================================== */
 
   if (submitted) {
     return (
@@ -136,17 +172,47 @@ export function DemoRequestForm() {
             text-muted-foreground
           "
         >
-          Your request has completed the
-          front-end flow. Once the
-          submission endpoint is
-          connected, Design Blade can
-          receive it automatically.
+          Your request has
+          completed the
+          front-end flow. Once
+          the submission
+          endpoint is connected,
+          Design Blade can
+          receive it
+          automatically.
         </p>
+
+        {sourceDemo && (
+          <p
+            className="
+              mt-3
+              text-sm
+              text-muted-foreground
+            "
+          >
+            Request originated
+            from{' '}
+            <span
+              className="
+                font-semibold
+                text-foreground
+              "
+            >
+              {
+                sourceDemo.productName
+              }
+            </span>
+            .
+          </p>
+        )}
 
         <button
           type="button"
           onClick={() => {
-            setSubmitted(false);
+            setSubmitted(
+              false
+            );
+
             setFormData(
               initialFormData
             );
@@ -158,7 +224,8 @@ export function DemoRequestForm() {
             text-primary
           "
         >
-          Submit another request
+          Submit another
+          request
         </button>
       </div>
     );
@@ -166,16 +233,176 @@ export function DemoRequestForm() {
 
   return (
     <form
-      onSubmit={handleSubmit}
+      onSubmit={
+        handleSubmit
+      }
       className="
         flex
         flex-col
         gap-8
       "
     >
-      {/* ------------------------------------------------------------ */}
+      {/* ============================================================ */}
+      {/* Source demo                                                  */}
+      {/* ============================================================ */}
+
+      {sourceDemo && (
+        <div
+          className={`
+            overflow-hidden
+            rounded-2xl
+            border
+            border-border
+            ${sourceDemo.presentation.stage}
+          `}
+        >
+          <div
+            className="
+              flex
+              flex-col
+              gap-5
+              p-5
+              sm:flex-row
+              sm:items-center
+              sm:justify-between
+              sm:p-6
+            "
+          >
+            <div
+              className="
+                flex
+                min-w-0
+                items-center
+                gap-4
+              "
+            >
+              <div
+                className={`
+                  flex
+                  h-12
+                  w-12
+                  shrink-0
+                  items-center
+                  justify-center
+                  rounded-xl
+                  border
+                  border-black/[0.06]
+                  shadow-sm
+                  dark:border-white/[0.07]
+                  ${sourceDemo.presentation.surface}
+                `}
+              >
+                <Monitor
+                  size={19}
+                />
+              </div>
+
+              <div
+                className="
+                  min-w-0
+                "
+              >
+                <p
+                  className="
+                    text-[10px]
+                    font-semibold
+                    uppercase
+                    tracking-[0.18em]
+                    text-muted-foreground
+                  "
+                >
+                  Currently
+                  viewing
+                </p>
+
+                <p
+                  className="
+                    mt-1
+                    truncate
+                    text-base
+                    font-semibold
+                    text-foreground
+                  "
+                >
+                  {
+                    sourceDemo.productName
+                  }
+                  {' — '}
+                  {
+                    sourceDemo.title
+                  }
+                </p>
+
+                <p
+                  className="
+                    mt-1
+                    line-clamp-1
+                    text-xs
+                    text-muted-foreground
+                  "
+                >
+                  {
+                    sourceDemo.shortDescription
+                  }
+                </p>
+              </div>
+            </div>
+
+            <Link
+              href={
+                sourceDemo.href
+              }
+              className="
+                group
+                inline-flex
+                shrink-0
+                items-center
+                gap-1.5
+                text-sm
+                font-semibold
+                text-foreground
+              "
+            >
+              View demo
+
+              <ArrowUpRight
+                size={14}
+                className="
+                  transition-transform
+                  duration-200
+                  group-hover:-translate-y-0.5
+                  group-hover:translate-x-0.5
+                "
+              />
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden context for future submission endpoint */}
+      {sourceDemo && (
+        <>
+          <input
+            type="hidden"
+            name="sourceDemoSlug"
+            value={
+              sourceDemo.slug
+            }
+          />
+
+          <input
+            type="hidden"
+            name="sourceDemoName"
+            value={
+              sourceDemo.productName
+            }
+          />
+        </>
+      )}
+
+      {/* ============================================================ */}
       {/* Contact details                                              */}
-      {/* ------------------------------------------------------------ */}
+      {/* ============================================================ */}
 
       <fieldset>
         <legend
@@ -197,8 +424,9 @@ export function DemoRequestForm() {
             text-muted-foreground
           "
         >
-          Tell us who you are and how to
-          follow up with you.
+          Tell us who you are
+          and how to follow up
+          with you.
         </p>
 
         <div
@@ -220,10 +448,16 @@ export function DemoRequestForm() {
               type="text"
               required
               autoComplete="name"
-              value={formData.name}
-              onChange={handleChange}
+              value={
+                formData.name
+              }
+              onChange={
+                handleChange
+              }
               placeholder="Your name"
-              className={inputClassName}
+              className={
+                inputClassName
+              }
             />
           </FormField>
 
@@ -238,10 +472,16 @@ export function DemoRequestForm() {
               type="email"
               required
               autoComplete="email"
-              value={formData.email}
-              onChange={handleChange}
+              value={
+                formData.email
+              }
+              onChange={
+                handleChange
+              }
               placeholder="you@company.com"
-              className={inputClassName}
+              className={
+                inputClassName
+              }
             />
           </FormField>
         </div>
@@ -249,9 +489,9 @@ export function DemoRequestForm() {
 
       <div className="h-px bg-border" />
 
-      {/* ------------------------------------------------------------ */}
+      {/* ============================================================ */}
       {/* Company                                                      */}
-      {/* ------------------------------------------------------------ */}
+      {/* ============================================================ */}
 
       <fieldset>
         <legend
@@ -273,9 +513,10 @@ export function DemoRequestForm() {
             text-muted-foreground
           "
         >
-          A little context about your
-          business helps us show work
-          that is actually relevant.
+          A little context about
+          your business helps us
+          show work that is
+          actually relevant.
         </p>
 
         <div
@@ -296,10 +537,16 @@ export function DemoRequestForm() {
               name="company"
               type="text"
               required
-              value={formData.company}
-              onChange={handleChange}
+              value={
+                formData.company
+              }
+              onChange={
+                handleChange
+              }
               placeholder="Company name"
-              className={inputClassName}
+              className={
+                inputClassName
+              }
             />
           </FormField>
 
@@ -312,10 +559,16 @@ export function DemoRequestForm() {
               id="website"
               name="website"
               type="url"
-              value={formData.website}
-              onChange={handleChange}
+              value={
+                formData.website
+              }
+              onChange={
+                handleChange
+              }
               placeholder="https://..."
-              className={inputClassName}
+              className={
+                inputClassName
+              }
             />
           </FormField>
         </div>
@@ -323,9 +576,9 @@ export function DemoRequestForm() {
 
       <div className="h-px bg-border" />
 
-      {/* ------------------------------------------------------------ */}
+      {/* ============================================================ */}
       {/* Area of interest                                             */}
-      {/* ------------------------------------------------------------ */}
+      {/* ============================================================ */}
 
       <fieldset>
         <legend
@@ -336,7 +589,8 @@ export function DemoRequestForm() {
             text-foreground
           "
         >
-          What are you interested in?
+          What are you
+          interested in?
         </legend>
 
         <p
@@ -347,9 +601,9 @@ export function DemoRequestForm() {
             text-muted-foreground
           "
         >
-          Choose the area that best
-          matches what you want to
-          explore.
+          Choose the area that
+          best matches what you
+          want to explore.
         </p>
 
         <div
@@ -366,9 +620,15 @@ export function DemoRequestForm() {
               id="interest"
               name="interest"
               required
-              value={formData.interest}
-              onChange={handleChange}
-              className={inputClassName}
+              value={
+                formData.interest
+              }
+              onChange={
+                handleChange
+              }
+              className={
+                inputClassName
+              }
             >
               <option value="">
                 Select an area
@@ -399,7 +659,8 @@ export function DemoRequestForm() {
               </option>
 
               <option value="creative-direction">
-                Creative Direction
+                Creative
+                Direction
               </option>
 
               <option value="other">
@@ -412,9 +673,9 @@ export function DemoRequestForm() {
 
       <div className="h-px bg-border" />
 
-      {/* ------------------------------------------------------------ */}
-      {/* Scope                                                        */}
-      {/* ------------------------------------------------------------ */}
+      {/* ============================================================ */}
+      {/* Project context                                              */}
+      {/* ============================================================ */}
 
       <fieldset>
         <legend
@@ -436,9 +697,9 @@ export function DemoRequestForm() {
             text-muted-foreground
           "
         >
-          Give us enough context to make
-          the demo useful rather than
-          generic.
+          Give us enough context
+          to make the demo useful
+          rather than generic.
         </p>
 
         <div
@@ -459,10 +720,16 @@ export function DemoRequestForm() {
               name="scope"
               required
               rows={6}
-              value={formData.scope}
-              onChange={handleChange}
+              value={
+                formData.scope
+              }
+              onChange={
+                handleChange
+              }
               placeholder="Describe the project, challenge, or opportunity you are exploring..."
-              className={textareaClassName}
+              className={
+                textareaClassName
+              }
             />
           </FormField>
 
@@ -476,10 +743,20 @@ export function DemoRequestForm() {
               name="demoFocus"
               required
               rows={5}
-              value={formData.demoFocus}
-              onChange={handleChange}
-              placeholder="For example: relevant case studies, process, strategy approach, identity systems, website capabilities..."
-              className={textareaClassName}
+              value={
+                formData.demoFocus
+              }
+              onChange={
+                handleChange
+              }
+              placeholder={
+                sourceDemo
+                  ? `Tell us what you'd like to see beyond ${sourceDemo.productName}, or what you would change for your own use case...`
+                  : 'For example: relevant product flows, interactions, layouts, capabilities, or a different demo concept...'
+              }
+              className={
+                textareaClassName
+              }
             />
           </FormField>
         </div>
@@ -487,9 +764,9 @@ export function DemoRequestForm() {
 
       <div className="h-px bg-border" />
 
-      {/* ------------------------------------------------------------ */}
+      {/* ============================================================ */}
       {/* Timing and budget                                            */}
-      {/* ------------------------------------------------------------ */}
+      {/* ============================================================ */}
 
       <fieldset>
         <legend
@@ -511,9 +788,11 @@ export function DemoRequestForm() {
             text-muted-foreground
           "
         >
-          These details help us determine
-          which capabilities and examples
-          are most relevant.
+          These details help us
+          determine which
+          capabilities and
+          examples are most
+          relevant.
         </p>
 
         <div
@@ -532,16 +811,23 @@ export function DemoRequestForm() {
             <select
               id="timeline"
               name="timeline"
-              value={formData.timeline}
-              onChange={handleChange}
-              className={inputClassName}
+              value={
+                formData.timeline
+              }
+              onChange={
+                handleChange
+              }
+              className={
+                inputClassName
+              }
             >
               <option value="">
                 Select timeline
               </option>
 
               <option value="asap">
-                As soon as possible
+                As soon as
+                possible
               </option>
 
               <option value="1-2-months">
@@ -570,9 +856,15 @@ export function DemoRequestForm() {
             <select
               id="budget"
               name="budget"
-              value={formData.budget}
-              onChange={handleChange}
-              className={inputClassName}
+              value={
+                formData.budget
+              }
+              onChange={
+                handleChange
+              }
+              className={
+                inputClassName
+              }
             >
               <option value="">
                 Select range
@@ -608,9 +900,9 @@ export function DemoRequestForm() {
 
       <div className="h-px bg-border" />
 
-      {/* ------------------------------------------------------------ */}
-      {/* Additional details                                           */}
-      {/* ------------------------------------------------------------ */}
+      {/* ============================================================ */}
+      {/* Additional details                                          */}
+      {/* ============================================================ */}
 
       <FormField
         label="Anything else we should know?"
@@ -621,16 +913,22 @@ export function DemoRequestForm() {
           id="details"
           name="details"
           rows={4}
-          value={formData.details}
-          onChange={handleChange}
+          value={
+            formData.details
+          }
+          onChange={
+            handleChange
+          }
           placeholder="Share any additional context, references, or questions..."
-          className={textareaClassName}
+          className={
+            textareaClassName
+          }
         />
       </FormField>
 
-      {/* ------------------------------------------------------------ */}
+      {/* ============================================================ */}
       {/* Submit                                                       */}
-      {/* ------------------------------------------------------------ */}
+      {/* ============================================================ */}
 
       <div
         className="
@@ -653,10 +951,10 @@ export function DemoRequestForm() {
             text-muted-foreground
           "
         >
-          Requesting a demo starts a
-          conversation. It does not
-          require you to commit to a
-          project.
+          Requesting a demo
+          starts a conversation.
+          It does not require you
+          to commit to a project.
         </p>
 
         <button
@@ -696,16 +994,17 @@ export function DemoRequestForm() {
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/* Shared local field                                                        */
-/* -------------------------------------------------------------------------- */
+/* ================================================================== */
+/* Shared local field                                                 */
+/* ================================================================== */
 
 interface FormFieldProps {
   label: string;
   htmlFor: string;
   hint?: string;
   required?: boolean;
-  children: React.ReactNode;
+  children:
+    React.ReactNode;
 }
 
 function FormField({
@@ -727,7 +1026,9 @@ function FormField({
         "
       >
         <label
-          htmlFor={htmlFor}
+          htmlFor={
+            htmlFor
+          }
           className="
             text-sm
             font-semibold
@@ -766,9 +1067,9 @@ function FormField({
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/* Styles                                                                    */
-/* -------------------------------------------------------------------------- */
+/* ================================================================== */
+/* Styles                                                             */
+/* ================================================================== */
 
 const inputClassName = `
   h-12
