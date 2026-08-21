@@ -6,45 +6,138 @@ import {
   useState,
 } from 'react';
 
-import { usePathname } from 'next/navigation';
-import { motion } from 'framer-motion';
+import Link from 'next/link';
 
-import { cn } from '@/lib/utils';
+import {
+  usePathname,
+} from 'next/navigation';
 
-import { NavbarMenu } from './NavbarMenu';
-import { MegaMenu } from './MegaMenu';
+import {
+  motion,
+} from 'framer-motion';
 
-import { NavbarBrand } from './navbar/NavbarBrand';
-import { NavbarDesktopUtilities } from './navbar/NavbarDesktopUtilities';
-import { NavbarMobileUtilities } from './navbar/NavbarMobileUtilities';
-import { NavbarMobileMenu } from './navbar/NavbarMobileMenu';
-import { NavbarUtilityPanel } from './navbar/NavbarUtilityPanel';
+import {
+  cn,
+} from '@/lib/utils';
+
+import {
+  NavbarMenu,
+} from './NavbarMenu';
+
+import {
+  MegaMenu,
+} from './MegaMenu';
+
+import {
+  NavbarBrand,
+} from './navbar/NavbarBrand';
+
+import {
+  NavbarDesktopUtilities,
+} from './navbar/NavbarDesktopUtilities';
+
+import {
+  NavbarMobileUtilities,
+} from './navbar/NavbarMobileUtilities';
+
+import {
+  NavbarMobileMenu,
+} from './navbar/NavbarMobileMenu';
+
+import {
+  NavbarUtilityPanel,
+} from './navbar/NavbarUtilityPanel';
+
+/* -------------------------------------------------------------------------- */
+/* Help Center navigation                                                     */
+/* -------------------------------------------------------------------------- */
+
+const helpNavigation = [
+  {
+    label: 'Resources',
+    href: '/help/resources',
+  },
+  {
+    label: 'Guides',
+    href: '/help/guides',
+  },
+  {
+    label: 'FAQ',
+    href: '/help/faq',
+  },
+  {
+    label: 'Free Tools',
+    href: '/help/tools',
+  },
+  {
+    label: 'Contact Us',
+    href: '/help/contact',
+  },
+];
 
 export function Navbar() {
-  const pathname = usePathname();
+  const pathname =
+    usePathname();
 
-  const [scrolled, setScrolled] =
-    useState(false);
+  const [
+    scrolled,
+    setScrolled,
+  ] = useState(false);
 
-  const [open, setOpen] =
-    useState(false);
+  const [
+    open,
+    setOpen,
+  ] = useState(false);
 
-  const [activeMega, setActiveMega] =
-    useState<string | null>(null);
+  const [
+    activeMega,
+    setActiveMega,
+  ] = useState<string | null>(
+    null
+  );
 
-  const [searchOpen, setSearchOpen] =
-    useState(false);
+  const [
+    searchOpen,
+    setSearchOpen,
+  ] = useState(false);
 
-  const [settingsOpen, setSettingsOpen] =
-    useState(false);
+  const [
+    settingsOpen,
+    setSettingsOpen,
+  ] = useState(false);
 
   const closeTimer =
-    useRef<ReturnType<
-      typeof setTimeout
-    > | null>(null);
+    useRef<
+      ReturnType<
+        typeof setTimeout
+      > | null
+    >(null);
 
+  /* ---------------------------------------------------------------------- */
+  /* Route state                                                            */
+  /* ---------------------------------------------------------------------- */
+
+  const isHelpCenter =
+    pathname === '/help' ||
+    pathname.startsWith(
+      '/help/'
+    );
+
+  /*
+   * Homepage and the main Help Center
+   * landing page can use the transparent
+   * navbar over their hero images.
+   *
+   * Inner Help Center pages use the
+   * normal theme navbar immediately.
+   */
   const allowTransparentNavbar =
-    pathname === '/';
+    pathname === '/' ||
+    pathname === '/help';
+
+  /* ---------------------------------------------------------------------- */
+  /* Overlay / utility state                                                */
+  /* ---------------------------------------------------------------------- */
 
   const megaOpen =
     Boolean(activeMega) ||
@@ -72,8 +165,9 @@ export function Navbar() {
   /*
    * Normal theme navbar appears when:
    *
+   * - the page does not support a transparent navbar
    * - the page has been scrolled
-   * - a main menu item is hovered
+   * - a main site menu is hovered
    * - Search is open
    * - Settings is open
    * - mobile navigation is open
@@ -109,6 +203,17 @@ export function Navbar() {
   }, []);
 
   /* ---------------------------------------------------------------------- */
+  /* Close route-specific navigation when pathname changes                  */
+  /* ---------------------------------------------------------------------- */
+
+  useEffect(() => {
+    setOpen(false);
+    setActiveMega(null);
+    setSearchOpen(false);
+    setSettingsOpen(false);
+  }, [pathname]);
+
+  /* ---------------------------------------------------------------------- */
   /* Mobile scroll lock                                                     */
   /* ---------------------------------------------------------------------- */
 
@@ -117,7 +222,8 @@ export function Navbar() {
       open ? 'hidden' : '';
 
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow =
+        '';
     };
   }, [open]);
 
@@ -125,10 +231,11 @@ export function Navbar() {
   /* Utility panel                                                          */
   /* ---------------------------------------------------------------------- */
 
-  const closeUtilityPanel = () => {
-    setSearchOpen(false);
-    setSettingsOpen(false);
-  };
+  const closeUtilityPanel =
+    () => {
+      setSearchOpen(false);
+      setSettingsOpen(false);
+    };
 
   /* ---------------------------------------------------------------------- */
   /* Mega menu                                                              */
@@ -137,7 +244,9 @@ export function Navbar() {
   const openMega = (
     id: string
   ) => {
-    if (closeTimer.current) {
+    if (
+      closeTimer.current
+    ) {
       clearTimeout(
         closeTimer.current
       );
@@ -147,6 +256,7 @@ export function Navbar() {
      * Opening a main mega menu closes
      * Search and Settings.
      */
+
     setSearchOpen(false);
     setSettingsOpen(false);
 
@@ -154,7 +264,9 @@ export function Navbar() {
   };
 
   const closeMega = () => {
-    if (closeTimer.current) {
+    if (
+      closeTimer.current
+    ) {
       clearTimeout(
         closeTimer.current
       );
@@ -178,41 +290,29 @@ export function Navbar() {
   /* Search                                                                 */
   /* ---------------------------------------------------------------------- */
 
-  const handleSearchOpen = () => {
-    /*
-     * The Search trigger itself sets
-     * searchOpen to true.
-     *
-     * We only need to close the other
-     * possible navigation states here.
-     */
-    setActiveMega(null);
-    setSettingsOpen(false);
+  const handleSearchOpen =
+    () => {
+      setActiveMega(null);
+      setSettingsOpen(false);
 
-    if (open) {
-      setOpen(false);
-    }
-  };
+      if (open) {
+        setOpen(false);
+      }
+    };
 
   /* ---------------------------------------------------------------------- */
   /* Settings                                                               */
   /* ---------------------------------------------------------------------- */
 
-  const handleSettingsOpen = () => {
-    /*
-     * The Settings trigger itself sets
-     * settingsOpen to true.
-     *
-     * Search is closed here so the shared
-     * panel simply swaps its content.
-     */
-    setActiveMega(null);
-    setSearchOpen(false);
+  const handleSettingsOpen =
+    () => {
+      setActiveMega(null);
+      setSearchOpen(false);
 
-    if (open) {
-      setOpen(false);
-    }
-  };
+      if (open) {
+        setOpen(false);
+      }
+    };
 
   /* ---------------------------------------------------------------------- */
   /* Render                                                                 */
@@ -236,10 +336,10 @@ export function Navbar() {
           onMouseEnter={() => {
             /*
              * Only close when a regular
-             * mega menu is active.
+             * site mega menu is active.
              *
-             * Search and Settings are handled
-             * by the shared utility panel.
+             * Search and Settings use
+             * the shared utility panel.
              */
             if (activeMega) {
               closeMega();
@@ -309,27 +409,47 @@ export function Navbar() {
             md:h-20
           "
         >
-          {/* Logo */}
+          {/* ----------------------------------------------------------- */}
+          {/* Brand                                                       */}
+          {/* ----------------------------------------------------------- */}
+
           <NavbarBrand
             surfaceActive={
               navbarSurfaceActive
             }
           />
 
-          {/* Main desktop navigation */}
-          <NavbarMenu
-            activeMega={
-              activeMega
-            }
-            onHover={
-              openMega
-            }
-            lightAtTop={
-              !navbarSurfaceActive
-            }
-          />
+          {/* ----------------------------------------------------------- */}
+          {/* Desktop navigation                                         */}
+          {/* ----------------------------------------------------------- */}
 
-          {/* Desktop utilities */}
+          {isHelpCenter ? (
+            <HelpCenterNavigation
+              pathname={
+                pathname
+              }
+              surfaceActive={
+                navbarSurfaceActive
+              }
+            />
+          ) : (
+            <NavbarMenu
+              activeMega={
+                activeMega
+              }
+              onHover={
+                openMega
+              }
+              lightAtTop={
+                !navbarSurfaceActive
+              }
+            />
+          )}
+
+          {/* ----------------------------------------------------------- */}
+          {/* Desktop utilities                                          */}
+          {/* ----------------------------------------------------------- */}
+
           <NavbarDesktopUtilities
             surfaceActive={
               navbarSurfaceActive
@@ -354,13 +474,18 @@ export function Navbar() {
             }
           />
 
-          {/* Mobile utilities */}
+          {/* ----------------------------------------------------------- */}
+          {/* Mobile utilities                                           */}
+          {/* ----------------------------------------------------------- */}
+
           <NavbarMobileUtilities
             surfaceActive={
               navbarSurfaceActive
             }
             open={open}
-            setOpen={setOpen}
+            setOpen={
+              setOpen
+            }
             searchOpen={
               searchOpen
             }
@@ -387,7 +512,9 @@ export function Navbar() {
         {/* ------------------------------------------------------------- */}
 
         <NavbarUtilityPanel
-          mode={utilityMode}
+          mode={
+            utilityMode
+          }
           onClose={
             closeUtilityPanel
           }
@@ -397,20 +524,22 @@ export function Navbar() {
         {/* Desktop mega menu                                            */}
         {/* ------------------------------------------------------------- */}
 
-        <MegaMenu
-          activeMega={
-            activeMega
-          }
-          closeTimer={
-            closeTimer
-          }
-          handleNav={
-            handleNav
-          }
-          onClose={
-            closeMega
-          }
-        />
+        {!isHelpCenter && (
+          <MegaMenu
+            activeMega={
+              activeMega
+            }
+            closeTimer={
+              closeTimer
+            }
+            handleNav={
+              handleNav
+            }
+            onClose={
+              closeMega
+            }
+          />
+        )}
 
         {/* ------------------------------------------------------------- */}
         {/* Mobile menu                                                   */}
@@ -424,5 +553,103 @@ export function Navbar() {
         />
       </motion.header>
     </>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Help Center desktop navigation                                             */
+/* -------------------------------------------------------------------------- */
+
+interface HelpCenterNavigationProps {
+  pathname: string;
+  surfaceActive: boolean;
+}
+
+function HelpCenterNavigation({
+  pathname,
+  surfaceActive,
+}: HelpCenterNavigationProps) {
+  return (
+    <div
+      className="
+        absolute
+        left-1/2
+        hidden
+        -translate-x-1/2
+        items-center
+        gap-1
+        lg:flex
+      "
+    >
+      {helpNavigation.map(
+        (item) => {
+          const active =
+            pathname ===
+              item.href ||
+            pathname.startsWith(
+              `${item.href}/`
+            );
+
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                `
+                  relative
+                  rounded-lg
+                  px-3
+                  py-2
+                  text-[13px]
+                  font-medium
+                  transition-colors
+                  duration-150
+                `,
+                surfaceActive
+                  ? active
+                    ? `
+                        text-foreground
+                      `
+                    : `
+                        text-muted-foreground
+                        hover:text-foreground
+                      `
+                  : active
+                    ? `
+                        text-white
+                      `
+                    : `
+                        text-white/75
+                        hover:text-white
+                      `
+              )}
+            >
+              {item.label}
+
+              {/* Active indicator */}
+
+              <span
+                className={cn(
+                  `
+                    absolute
+                    -bottom-[1px]
+                    left-3
+                    right-3
+                    h-[2px]
+                    rounded-full
+                    bg-[#BBFF1B]
+                    transition-opacity
+                    duration-150
+                  `,
+                  active
+                    ? 'opacity-100'
+                    : 'opacity-0'
+                )}
+              />
+            </Link>
+          );
+        }
+      )}
+    </div>
   );
 }

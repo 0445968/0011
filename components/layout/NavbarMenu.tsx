@@ -1,12 +1,23 @@
 'use client';
 
+import Link from 'next/link';
+
 import {
   ChevronDown,
 } from 'lucide-react';
 
-import { cn } from '@/lib/utils';
-import { navSections } from '@/data/site';
-import { useI18n } from '@/lib/i18n/context';
+import {
+  cn,
+} from '@/lib/utils';
+
+import {
+  megaPanels,
+  navSections,
+} from '@/data/site';
+
+import {
+  useI18n,
+} from '@/lib/i18n/context';
 
 interface NavbarMenuProps {
   activeMega: string | null;
@@ -19,7 +30,9 @@ export function NavbarMenu({
   onHover,
   lightAtTop = false,
 }: NavbarMenuProps) {
-  const { t } = useI18n();
+  const {
+    t,
+  } = useI18n();
 
   return (
     <ul
@@ -30,82 +43,119 @@ export function NavbarMenu({
         lg:flex
       "
     >
-      {navSections.map((link) => {
-        const isActive =
-          activeMega === link.id;
+      {navSections.map(
+        (link) => {
+          const hasMegaMenu =
+            Boolean(
+              megaPanels[
+                link.id
+              ]
+            );
 
-        return (
-          <li
-            key={link.id}
-            onMouseEnter={() =>
-              onHover(link.id)
-            }
-          >
-            <a
-              href={link.href}
-              className="
-                group
-                relative
-                inline-flex
-                items-center
-                gap-1.5
-                rounded-full
-                px-3.5
-                py-2
-                text-[14px]
-                font-medium
-              "
-            >
-              {/* Menu title */}
-              <span
-                className={cn(
-                  lightAtTop
-                    ? '!text-white/70'
-                    : '!text-foreground'
-                )}
-              >
-                {t(
+          const isActive =
+            activeMega ===
+            link.id;
+
+          /*
+           * Help Center is currently
+           * intentionally not part of
+           * the translation dictionary.
+           *
+           * All existing site navigation
+           * continues using i18n.
+           */
+          const label =
+            link.id ===
+            'helpCenter'
+              ? link.label
+              : t(
                   `nav.${link.id}`
-                )}
-              </span>
+                );
 
-              {/* Down arrow */}
-              <ChevronDown
-                size={15}
-                strokeWidth={2.5}
-                className={cn(
-                  `
-                    shrink-0
-                  `,
-                  lightAtTop
-                    ? '!text-white/70'
-                    : '!text-foreground'
-                )}
-              />
+          return (
+            <li
+              key={link.id}
+              onMouseEnter={() => {
+                if (
+                  hasMegaMenu
+                ) {
+                  onHover(
+                    link.id
+                  );
+                }
+              }}
+            >
+              <Link
+                href={link.href}
+                className="
+                  group
+                  relative
+                  inline-flex
+                  items-center
+                  gap-1.5
+                  rounded-full
+                  px-3.5
+                  py-2
+                  text-[14px]
+                  font-medium
+                "
+              >
+                {/* Menu title */}
 
-              {/* Underline */}
-              <span
-                className={cn(
-                  `
-                    absolute
-                    inset-x-3.5
-                    -bottom-0.5
-                    h-px
-                    origin-left
-                    bg-primary
-                  `,
-                  isActive
-                    ? 'scale-x-100'
-                    : `
-                        scale-x-0
-                        group-hover:scale-x-100
+                <span
+                  className={cn(
+                    lightAtTop
+                      ? '!text-white/70'
+                      : '!text-foreground'
+                  )}
+                >
+                  {label}
+                </span>
+
+                {/* Down arrow only for mega menus */}
+
+                {hasMegaMenu && (
+                  <ChevronDown
+                    size={15}
+                    strokeWidth={
+                      2.5
+                    }
+                    className={cn(
                       `
+                        shrink-0
+                      `,
+                      lightAtTop
+                        ? '!text-white/70'
+                        : '!text-foreground'
+                    )}
+                  />
                 )}
-              />
-            </a>
-          </li>
-        );
-      })}
+
+                {/* Underline */}
+
+                <span
+                  className={cn(
+                    `
+                      absolute
+                      inset-x-3.5
+                      -bottom-0.5
+                      h-px
+                      origin-left
+                      bg-primary
+                    `,
+                    isActive
+                      ? 'scale-x-100'
+                      : `
+                          scale-x-0
+                          group-hover:scale-x-100
+                        `
+                  )}
+                />
+              </Link>
+            </li>
+          );
+        }
+      )}
     </ul>
   );
 }

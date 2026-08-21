@@ -49,7 +49,7 @@ export const navSections: NavItem[] = [
   { id: 'services', label: 'Services', href: '/services' },
   { id: 'work', label: 'Work', href: '/work' },
   { id: 'resources', label: 'Resources', href: '/resources' },
-  { id: 'studioLab', label: 'Studio Lab', href: '/studio-lab' },
+  { id: 'helpCenter', label: 'Help Center', href: '/help' },
 ];
 
 // Per-item megamenu. Each section can have links plus preview cards (image + title + href).
@@ -153,27 +153,60 @@ export const megaPanels: Record<string, MegaPanel> = {
   },
   resources: {
     links: [
-      { label: 'Resource Library', href: '/resources', description: 'Every resource in one place' },
-      { label: 'Guides & PDFs', href: '/guides', description: 'Downloadable handbooks' },
-      { label: 'Inspiration', href: '/inspiration', description: 'Curated design references' },
-      { label: 'Journal', href: '/blog', description: 'Notes on craft & process' },
-      { label: 'Free Tools', href: '/resources?type=tool', description: 'Generators & utilities' },
-      { label: 'Curated Links', href: '/resources?type=link', description: 'Hand-picked sites' },
-    ],
-    previews: [
       {
-        title: 'Brand Identity Guide',
-        description: '32-page handbook on building identity systems.',
-        href: '/resources/brand-identity-guide',
-        image: '/images/resources/guide-brand.svg',
-        badge: 'PDF',
+        label: 'Resource Library',
+        href: '/resources',
+        description:
+          'Every resource in one place',
       },
       {
-        title: 'Design that feels inevitable',
-        description: 'Restraint, hierarchy, and a single organising idea.',
-        href: '/blog/design-that-feels-inevitable',
-        image: '/images/blog/inevitable-design.svg',
-        badge: '6 min',
+        label: 'Studio Lab',
+        href: '/studio-lab',
+        description:
+          'Interactive tools, assessments & experiments',
+      },
+      {
+        label: 'Guides & PDFs',
+        href: '/guides',
+        description:
+          'Downloadable handbooks',
+      },
+      {
+        label: 'Inspiration',
+        href: '/inspiration',
+        description:
+          'Curated design references',
+      },
+      {
+        label: 'Journal',
+        href: '/blog',
+        description:
+          'Notes on craft & process',
+      },
+      {
+        label: 'Curated Links',
+        href: '/resources?type=link',
+        description:
+          'Hand-picked sites',
+      },
+    ],
+  
+    previews: [
+      {
+        title: 'Studio Lab',
+        description:
+          'Explore interactive tools, brand assessments, and creative experiments.',
+        href: '/studio-lab',
+        badge: 'Explore',
+      },
+      {
+        title: 'Brand Identity Guide',
+        description:
+          '32-page handbook on building identity systems.',
+        href: '/resources/brand-identity-guide',
+        image:
+          '/images/resources/guide-brand.svg',
+        badge: 'PDF',
       },
     ],
   },
