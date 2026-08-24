@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { Minus, Plus } from 'lucide-react';
 
 import { Reveal } from '@/components/portfolio/Reveal';
 
@@ -9,200 +9,281 @@ const faqs = [
   {
     question: 'What does Bivi specialize in?',
     answer:
-      'Bivi focuses on graphic design and brand strategy, including visual identity, logo design, campaign creative, print design, social media design, and supporting brand systems.',
+      'Bivi specializes in brand strategy, visual identity, graphic design, campaign creative, print, and supporting brand systems.',
   },
   {
     question: 'Do you only work with businesses in Houston?',
     answer:
-      'No. Bivi is based in Houston, Texas, but we work with businesses and teams remotely as well. Most projects can be handled collaboratively regardless of location.',
+      'No. Bivi is based in Houston, Texas, but we work with teams and businesses remotely as well.',
   },
   {
     question: 'Can Bivi work with an existing brand?',
     answer:
-      'Yes. Not every project needs a complete rebrand. We can refine, extend, or strengthen an existing visual identity while preserving the parts that are already working.',
+      'Yes. We can refine, extend, or strengthen an existing identity without requiring a complete rebrand.',
   },
   {
     question: 'What does a typical project process look like?',
     answer:
-      'Most projects move through discovery, strategy, concept development, design, refinement, and final delivery. The exact process can shift depending on the scope and needs of the project.',
+      'Most projects move through discovery, strategy, concept development, design, refinement, and final delivery.',
+  },
+  {
+    question: 'Do you offer ongoing design support?',
+    answer:
+      'Yes. Depending on the project, Bivi can continue supporting your brand with campaigns, social design, print, and other ongoing creative needs.',
+  },
+  {
+    question: 'How long does a branding project take?',
+    answer:
+      'Timelines depend on scope, but most branding projects are planned around clear phases so expectations and milestones stay easy to follow.',
+  },
+  {
+    question: 'Can you help with both strategy and execution?',
+    answer:
+      'Yes. Strategy and design are developed together so the final work is visually strong and grounded in a clear reason for existing.',
   },
 ];
 
-function AboutFaq() {
+export function AboutFaq() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
+  const leftColumn = faqs.filter((_, index) => index % 2 === 0);
+  const rightColumn = faqs.filter((_, index) => index % 2 !== 0);
+
   return (
-    <section className="section-spacing relative">
+    <section className="relative py-12 sm:py-16 lg:py-20">
       <div className="container-page">
-        <div className="border-t border-border pt-10 sm:pt-12 lg:pt-16">
-          {/* ------------------------------------------------------------ */}
-          {/* Heading                                                      */}
-          {/* ------------------------------------------------------------ */}
-
-          <Reveal>
-            <div
-              className="
-                flex
-                items-center
-                gap-3
-                text-xs
-                font-semibold
-                uppercase
-                tracking-[0.18em]
-                text-muted-foreground
-              "
-            >
-              <span className="h-px w-8 bg-secondary" />
-              FAQ
-            </div>
-          </Reveal>
-
+        <Reveal>
           <div
             className="
-              mt-10
-              grid
-              gap-10
-              lg:grid-cols-12
-              lg:gap-16
+              rounded-[28px]
+              border
+              border-border
+              bg-card
+              p-6
+              sm:p-8
+              lg:p-10
             "
           >
-            <Reveal
-              delay={0.06}
-              className="lg:col-span-5"
-            >
+            {/* Header */}
+            <div className="max-w-3xl">
+              <div
+                className="
+                  inline-flex
+                  items-center
+                  gap-2
+                  rounded-lg
+                  border
+                  border-border
+                  bg-background
+                  px-3
+                  py-1.5
+                  text-xs
+                  font-semibold
+                "
+              >
+                FAQ
+
+                <span
+                  className="
+                    flex
+                    h-5
+                    w-5
+                    items-center
+                    justify-center
+                    rounded-md
+                    bg-[#FF7A4A]
+                    text-[11px]
+                    font-bold
+                    text-white
+                  "
+                >
+                  ?
+                </span>
+              </div>
+
               <h2
                 className="
-                  max-w-xl
+                  mt-6
                   text-balance
                   font-heading
                   text-4xl
                   font-semibold
-                  leading-[0.98]
+                  leading-tight
                   tracking-[-0.04em]
                   sm:text-5xl
-                  md:text-6xl
                 "
               >
-                A few things you might be wondering.
+                Common questions about working with Bivi.
               </h2>
-            </Reveal>
 
-            {/* ---------------------------------------------------------- */}
-            {/* Accordion                                                  */}
-            {/* ---------------------------------------------------------- */}
+              <p
+                className="
+                  mt-4
+                  max-w-2xl
+                  text-base
+                  leading-relaxed
+                  text-muted-foreground
+                  sm:text-lg
+                "
+              >
+                A few useful answers about our services, process, and how we
+                work with teams near and far.
+              </p>
+            </div>
 
-            <Reveal
-              delay={0.12}
-              className="lg:col-span-7"
+            {/* Accordion grid */}
+            <div
+              className="
+                mt-12
+                grid
+                gap-4
+                lg:grid-cols-2
+                lg:gap-5
+              "
             >
-              <div className="border-t border-border">
-                {faqs.map((faq, index) => {
-                  const isOpen = openIndex === index;
+              <div className="space-y-4">
+                {leftColumn.map((faq) => {
+                  const index = faqs.indexOf(faq);
 
                   return (
-                    <div
+                    <FaqItem
                       key={faq.question}
-                      className="border-b border-border"
-                    >
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setOpenIndex(isOpen ? null : index)
-                        }
-                        className="
-                          flex
-                          w-full
-                          items-center
-                          justify-between
-                          gap-6
-                          py-6
-                          text-left
-                          sm:py-7
-                        "
-                        aria-expanded={isOpen}
-                      >
-                        <span
-                          className="
-                            font-heading
-                            text-xl
-                            font-semibold
-                            leading-tight
-                            tracking-tight
-                            sm:text-2xl
-                          "
-                        >
-                          {faq.question}
-                        </span>
-
-                        <span
-                          className="
-                            flex
-                            h-9
-                            w-9
-                            shrink-0
-                            items-center
-                            justify-center
-                            rounded-full
-                            border
-                            border-border
-                            bg-card
-                          "
-                        >
-                          <ChevronDown
-                            size={17}
-                            strokeWidth={1.8}
-                            className={`
-                              transition-transform
-                              duration-200
-                              ${
-                                isOpen
-                                  ? 'rotate-180'
-                                  : 'rotate-0'
-                              }
-                            `}
-                          />
-                        </span>
-                      </button>
-
-                      <div
-                        className={`
-                          grid
-                          transition-[grid-template-rows,opacity]
-                          duration-300
-                          ease-out
-                          ${
-                            isOpen
-                              ? 'grid-rows-[1fr] opacity-100'
-                              : 'grid-rows-[0fr] opacity-0'
-                          }
-                        `}
-                      >
-                        <div className="overflow-hidden">
-                          <p
-                            className="
-                              max-w-2xl
-                              pb-7
-                              pr-12
-                              text-base
-                              leading-relaxed
-                              text-muted-foreground
-                              sm:text-lg
-                            "
-                          >
-                            {faq.answer}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
+                      faq={faq}
+                      index={index}
+                      openIndex={openIndex}
+                      setOpenIndex={setOpenIndex}
+                    />
                   );
                 })}
               </div>
-            </Reveal>
+
+              <div className="space-y-4">
+                {rightColumn.map((faq) => {
+                  const index = faqs.indexOf(faq);
+
+                  return (
+                    <FaqItem
+                      key={faq.question}
+                      faq={faq}
+                      index={index}
+                      openIndex={openIndex}
+                      setOpenIndex={setOpenIndex}
+                    />
+                  );
+                })}
+              </div>
+            </div>
           </div>
-        </div>
+        </Reveal>
       </div>
     </section>
   );
 }
 
-export { AboutFaq };
+function FaqItem({
+  faq,
+  index,
+  openIndex,
+  setOpenIndex,
+}: {
+  faq: {
+    question: string;
+    answer: string;
+  };
+  index: number;
+  openIndex: number | null;
+  setOpenIndex: (index: number | null) => void;
+}) {
+  const isOpen = openIndex === index;
+
+  return (
+    <div
+      className="
+        rounded-[18px]
+        border
+        border-border
+        bg-background
+        px-5
+        py-5
+        sm:px-6
+      "
+    >
+      <button
+        type="button"
+        onClick={() => setOpenIndex(isOpen ? null : index)}
+        className="
+          flex
+          w-full
+          items-center
+          justify-between
+          gap-5
+          text-left
+        "
+        aria-expanded={isOpen}
+      >
+        <span
+          className="
+            font-heading
+            text-lg
+            font-semibold
+            tracking-tight
+            sm:text-xl
+          "
+        >
+          {faq.question}
+        </span>
+
+        <span
+          className="
+            flex
+            h-9
+            w-9
+            shrink-0
+            items-center
+            justify-center
+            rounded-xl
+            border
+            border-border
+            bg-card
+          "
+        >
+          {isOpen ? (
+            <Minus size={16} strokeWidth={1.8} />
+          ) : (
+            <Plus size={16} strokeWidth={1.8} />
+          )}
+        </span>
+      </button>
+
+      <div
+        className={`
+          grid
+          transition-[grid-template-rows,opacity]
+          duration-300
+          ease-out
+          ${
+            isOpen
+              ? 'grid-rows-[1fr] opacity-100'
+              : 'grid-rows-[0fr] opacity-0'
+          }
+        `}
+      >
+        <div className="overflow-hidden">
+          <p
+            className="
+              max-w-xl
+              pt-5
+              pr-10
+              text-sm
+              leading-relaxed
+              text-muted-foreground
+              sm:text-base
+            "
+          >
+            {faq.answer}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}

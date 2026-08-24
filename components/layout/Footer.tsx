@@ -73,6 +73,7 @@ const legalLinkKeys = [
 const pagesWithoutTagline = [
   '/',
   '/demos',
+  '/about',
 ];
 
 export function Footer() {
