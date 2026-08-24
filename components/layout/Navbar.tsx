@@ -181,7 +181,7 @@ export function Navbar() {
   useEffect(() => {
     const onScroll = () => {
       setScrolled(
-        window.scrollY > 24
+        window.scrollY > 300
       );
     };
 

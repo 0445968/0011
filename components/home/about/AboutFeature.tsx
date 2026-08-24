@@ -169,7 +169,7 @@ export function AboutFeature() {
                 items-center
                 gap-2
                 rounded-[14px]
-                bg-primary
+                bg-black
                 px-7
                 text-[16px]
                 font-bold

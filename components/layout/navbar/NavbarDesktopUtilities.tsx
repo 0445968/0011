@@ -119,22 +119,34 @@ export function NavbarDesktopUtilities({
 
         {/* Start a Project */}
         <a
-          href="/contact"
-          className="
-            inline-flex
-            h-10
-            items-center
-            justify-center
-            rounded-[14px]
-            bg-primary
-            px-4
-            text-[14px]
-            font-bold
-            text-primary-foreground
-          "
-        >
-          {t('nav.startProject')}
-        </a>
+  href="/contact"
+  className={cn(
+    `
+      inline-flex
+      h-10
+      items-center
+      justify-center
+      rounded-[14px]
+      px-4
+      text-[14px]
+      font-bold
+      transition-none
+    `,
+    surfaceActive
+      ? `
+          bg-black
+          text-white
+          dark:bg-white
+          dark:text-black
+        `
+      : `
+          bg-primary
+          text-primary-foreground
+        `
+  )}
+>
+  {t('nav.startProject')}
+</a>
       </div>
     </div>
   );

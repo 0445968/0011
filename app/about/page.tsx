@@ -1,22 +1,23 @@
 import type { Metadata } from 'next';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { About } from '@/components/portfolio/About';
+
+import { AboutMission } from '@/components/about/AboutMission';
+import { AboutWhyUs } from '@/components/about/AboutWhyUs';
+import { AboutFaq } from '@/components/about/AboutFaq';
+import { AboutGetStarted } from '@/components/about/AboutGetStarted';
 
 export const metadata: Metadata = {
   title: 'About',
   description:
-    'Bivi is an independent creative studio for teams who care about the details others overlook — design philosophy, development approach, and expertise.',
+    'Bivi is a graphic design and brand strategy studio based in Houston, Texas, creating distinctive identities, visual systems, and brand experiences.',
 };
 
 export default function AboutPage() {
   return (
-    <>
-      <PageHeader
-        eyebrow="About"
-        title="An independent studio for teams who care about the details."
-        description="Bivi works at the intersection of editorial design and modern web technology — turning ambitious ideas into shipped, polished products."
-      />
-      <About />
-    </>
+    <main>
+      <AboutMission />
+      <AboutWhyUs />
+      <AboutFaq />
+      <AboutGetStarted />
+    </main>
   );
 }

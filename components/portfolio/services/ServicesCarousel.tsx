@@ -167,7 +167,7 @@ export function ServicesCarousel() {
             justify-center
             gap-2
             rounded-[14px]
-            bg-[#0B65F3]
+            bg-black
             px-7
             text-[16px]
             font-bold
