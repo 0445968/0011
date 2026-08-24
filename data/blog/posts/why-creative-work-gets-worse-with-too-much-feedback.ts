@@ -12,7 +12,7 @@ export const whyCreativeWorkGetsWorseWithTooMuchFeedback: BlogPost = {
 
   category: 'Creative Work',
 
-  author: 'Design Blade',
+  author: 'Bivi',
 
   date: '2026-05-06',
 

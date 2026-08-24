@@ -5,7 +5,7 @@ import { Projects } from '@/components/portfolio/Projects';
 export const metadata: Metadata = {
   title: 'Work',
   description:
-    'Selected projects from Design Blade — SaaS platforms, ecommerce, fintech, branding, and editorial websites designed and built end-to-end.',
+    'Selected projects from Bivi — SaaS platforms, ecommerce, fintech, branding, and editorial websites designed and built end-to-end.',
 };
 
 export default function WorkPage() {

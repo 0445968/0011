@@ -56,14 +56,14 @@ export const metadata: Metadata = {
 
   title: {
     default:
-      'Design Blade — Creative Studio & Resource Library',
+      'Bivi — Creative Studio & Resource Library',
 
     template:
-      '%s — Design Blade',
+      '%s — Bivi',
   },
 
   description:
-    'Design Blade is an independent creative studio crafting premium websites, brand systems, and a free resource library of guides, tools, and curated links for designers and founders.',
+    'Bivi is an independent creative studio crafting premium websites, brand systems, and a free resource library of guides, tools, and curated links for designers and founders.',
 
   keywords: [
     'design studio',
@@ -79,7 +79,7 @@ export const metadata: Metadata = {
   authors: [
     {
       name:
-        'Design Blade',
+        'Bivi',
     },
   ],
 
@@ -88,13 +88,13 @@ export const metadata: Metadata = {
       'website',
 
     title:
-      'Design Blade — Creative Studio & Resource Library',
+      'Bivi — Creative Studio & Resource Library',
 
     description:
       'An independent creative studio crafting premium websites, brand systems, and a free resource library of guides, tools, and curated links.',
 
     siteName:
-      'Design Blade',
+      'Bivi',
 
     images: [
       {
@@ -108,7 +108,7 @@ export const metadata: Metadata = {
           630,
 
         alt:
-          'Design Blade — Creative Studio & Resource Library',
+          'Bivi — Creative Studio & Resource Library',
       },
     ],
   },
@@ -118,7 +118,7 @@ export const metadata: Metadata = {
       'summary_large_image',
 
     title:
-      'Design Blade — Creative Studio & Resource Library',
+      'Bivi — Creative Studio & Resource Library',
 
     description:
       'An independent creative studio crafting premium websites, brand systems, and a free resource library.',

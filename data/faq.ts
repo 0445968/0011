@@ -15,7 +15,7 @@ export const faqCategories: FAQCategory[] = [
     label: 'Services & Scope',
     items: [
       {
-        question: 'What services does Design Blade offer?',
+        question: 'What services does Bivi offer?',
         answer:
           'We offer end-to-end web design and development — including UI/UX design, frontend development with Next.js and TypeScript, branding systems, SaaS application design, and creative direction. Each engagement is scoped to your specific needs, whether that\'s a single landing page or a full platform.',
       },
@@ -27,7 +27,7 @@ export const faqCategories: FAQCategory[] = [
       {
         question: 'Can you handle both design and development?',
         answer:
-          'Yes. Design Blade is a full-stack creative studio — we design in Figma and build in code. This means zero handoff friction and pixel-perfect implementation. If you have an existing design team, we can also work development-only.',
+          'Yes. Bivi is a full-stack creative studio — we design in Figma and build in code. This means zero handoff friction and pixel-perfect implementation. If you have an existing design team, we can also work development-only.',
       },
       {
         question: 'Do you offer ongoing maintenance after launch?',

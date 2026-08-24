@@ -7,7 +7,7 @@ import { resources } from '@/data/resources';
 export const metadata: Metadata = {
   title: 'Guides & PDFs',
   description:
-    'Downloadable handbooks on brand identity, color systems, typography, and SaaS launches — free resources from Design Blade.',
+    'Downloadable handbooks on brand identity, color systems, typography, and SaaS launches — free resources from Bivi.',
 };
 
 const guides = resources.filter((r) => r.type === 'guide');

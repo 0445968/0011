@@ -943,7 +943,7 @@ export default function BrandStrategyHelpPage() {
                 >
                   If the challenge goes
                   beyond a quick answer,
-                  tell Design Blade what
+                  tell Bivi what
                   you are trying to solve
                   and where your brand
                   feels unclear.
@@ -971,7 +971,7 @@ export default function BrandStrategyHelpPage() {
                   md:self-auto
                 "
               >
-                Talk with Design Blade
+                Talk with Bivi
 
                 <ArrowRight
                   size={16}

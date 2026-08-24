@@ -517,7 +517,7 @@ export default function HelpSearchPage() {
               Search FAQs, guides,
               articles, free tools,
               and assessments from
-              across the Design Blade
+              across the Bivi
               Help Center.
             </p>
           </div>

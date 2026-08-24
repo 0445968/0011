@@ -223,7 +223,7 @@ export function RelatedArticlesCarousel({
           "
         >
           More stories from across
-          the Design Blade Journal.
+          the Bivi Journal.
         </p>
 
         <p

@@ -111,7 +111,7 @@ export function RecommendedTools() {
                 sm:leading-7
               "
             >
-              Use free Design Blade
+              Use free Bivi
               tools and assessments to
               explore your brand,
               clarify decisions, and
@@ -409,7 +409,7 @@ export function RecommendedTools() {
         >
           <p>
             No account or sign-in is
-            required to use Design Blade
+            required to use Bivi
             free tools.
           </p>
 

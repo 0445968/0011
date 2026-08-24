@@ -20,7 +20,7 @@ interface SocialPost {
 }
 
 const defaultPost: SocialPost = {
-  displayName: 'Design Blade Studio',
+  displayName: 'Bivi Studio',
   username: 'designblade',
   text: 'We just launched a new Studio Lab with interactive tools for designers and agencies. Check it out — invoice generators, color palettes, brand assessments, and more.',
   imageUrl: null,

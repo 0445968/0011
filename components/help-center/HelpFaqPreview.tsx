@@ -131,7 +131,7 @@ export function HelpFaqPreview() {
               timelines, pricing,
               deliverables, ownership,
               revisions, and working
-              with Design Blade.
+              with Bivi.
             </p>
 
             <Link

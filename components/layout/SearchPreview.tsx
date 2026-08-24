@@ -22,7 +22,7 @@ export function SearchPreview({
           text-muted-foreground
         "
       >
-        Search Design Blade
+        Search Bivi
       </div>
     );
   }

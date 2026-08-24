@@ -18,7 +18,7 @@ export async function generateMetadata({
     title: `${template.name} — Template`,
     description: template.description,
     openGraph: {
-      title: `${template.name} — Design Blade Template`,
+      title: `${template.name} — Bivi Template`,
       description: template.description,
       images: [{ url: template.preview, alt: template.name }],
     },

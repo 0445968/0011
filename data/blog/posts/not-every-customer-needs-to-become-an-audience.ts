@@ -12,7 +12,7 @@ export const notEveryCustomerNeedsToBecomeAnAudience: BlogPost = {
 
   category: 'Marketing',
 
-  author: 'Design Blade',
+  author: 'Bivi',
 
   date: '2026-05-10',
 

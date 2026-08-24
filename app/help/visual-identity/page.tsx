@@ -1042,7 +1042,7 @@ export default function VisualIdentityHelpPage() {
                     text-white/75
                   "
                 >
-                  Tell Design Blade what
+                  Tell Bivi what
                   is changing, what is
                   missing, and where your
                   current visual identity
@@ -1072,7 +1072,7 @@ export default function VisualIdentityHelpPage() {
                   md:self-auto
                 "
               >
-                Talk with Design Blade
+                Talk with Bivi
 
                 <ArrowRight
                   size={16}

@@ -562,7 +562,7 @@ export default function HelpArticlesPage() {
               >
                 Browse FAQs and guides,
                 explore free tools, or
-                contact Design Blade if
+                contact Bivi if
                 you need more specific
                 help.
               </p>

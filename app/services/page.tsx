@@ -5,7 +5,7 @@ import { Services } from '@/components/portfolio/Services';
 export const metadata: Metadata = {
   title: 'Services',
   description:
-    'Website design, frontend development, UI/UX, branding systems, SaaS applications, and creative direction — a full-stack creative practice from Design Blade.',
+    'Website design, frontend development, UI/UX, branding systems, SaaS applications, and creative direction — a full-stack creative practice from Bivi.',
 };
 
 export default function ServicesPage() {

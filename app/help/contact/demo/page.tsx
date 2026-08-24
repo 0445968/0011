@@ -10,7 +10,7 @@ import {
     return (
       <ContactFormShell
         eyebrow="Request a demo"
-        title="See how Design Blade can help."
+        title="See how Bivi can help."
         description="
           Tell us what you are exploring and what you
           would like to see. We can tailor the
@@ -25,7 +25,7 @@ import {
         "
         tips={[
           'Share the type of project or challenge you are exploring.',
-          'Tell us which Design Blade capabilities interest you most.',
+          'Tell us which Bivi capabilities interest you most.',
           'Include your expected timeline if you already have one.',
           'Let us know what you specifically want to see demonstrated.',
         ]}

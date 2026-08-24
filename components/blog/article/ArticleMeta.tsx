@@ -48,7 +48,7 @@ export function ArticleMeta({
         "
       >
         Thoughts, observations and practical ideas
-        from Design Blade.
+        from Bivi.
       </p>
 
       <div

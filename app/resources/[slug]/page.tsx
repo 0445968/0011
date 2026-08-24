@@ -20,7 +20,7 @@ export async function generateMetadata({
     title: resource.title,
     description: resource.description,
     openGraph: {
-      title: `${resource.title} — Design Blade`,
+      title: `${resource.title} — Bivi`,
       description: resource.description,
     },
   };

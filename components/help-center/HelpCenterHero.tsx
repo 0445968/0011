@@ -394,7 +394,7 @@ export function HelpCenterHero() {
               sm:text-[11px]
             "
           >
-            Design Blade Help Center
+            Bivi Help Center
           </p>
 
           {/* Heading */}
@@ -432,7 +432,7 @@ export function HelpCenterHero() {
             Find answers, explore brand
             and design guides, use free
             tools, or get in touch with
-            Design Blade.
+            Bivi.
           </p>
 
           {/* ------------------------------------------------------------ */}
@@ -492,7 +492,7 @@ export function HelpCenterHero() {
       }}
       type="search"
       placeholder="Search articles, guides, FAQs and tools..."
-      aria-label="Search the Design Blade Help Center"
+      aria-label="Search the Bivi Help Center"
       className="
         !m-0
         !h-[56px]
@@ -703,7 +703,7 @@ export function HelpCenterHero() {
             "
           >
             Try another search or
-            contact Design Blade
+            contact Bivi
             directly.
           </p>
 
@@ -719,7 +719,7 @@ export function HelpCenterHero() {
               text-primary
             "
           >
-            Contact Design Blade
+            Contact Bivi
 
             <ArrowRight
               size={14}

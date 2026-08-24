@@ -163,7 +163,7 @@ export function GoogleFollowButton({
               text-muted-foreground
             "
           >
-            Keep Design Blade in your feed
+            Keep Bivi in your feed
           </span>
         </span>
       </span>

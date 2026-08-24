@@ -18,7 +18,7 @@ const features = [
     description:
       'We uncover what makes your business matter, then shape it into a focused foundation that guides your messaging, identity, and growth.',
     video: '/images/about/design-philosophy-2.webm',
-    videoAlt: 'Design Blade brand strategy work',
+    videoAlt: 'Bivi brand strategy work',
   },
   {
     eyebrow: 'Visual identity',
@@ -26,7 +26,7 @@ const features = [
     description:
       'From visual systems to flexible brand guidelines, we create distinctive identities that stay consistent while leaving room for your business to evolve.',
     video: '/images/about/development-approach-2.webm',
-    videoAlt: 'Design Blade visual identity work',
+    videoAlt: 'Bivi visual identity work',
   },
   {
     eyebrow: 'Digital experiences',
@@ -34,7 +34,7 @@ const features = [
     description:
       'We design and build polished digital experiences that make your offer easier to understand, navigate, and choose.',
     video: '/images/about/digital-experiences.webm',
-    videoAlt: 'Design Blade website and digital experience work',
+    videoAlt: 'Bivi website and digital experience work',
   },
 ];
 
@@ -77,7 +77,7 @@ export function AboutFeature() {
 
   return (
     <section
-      aria-label="Design Blade capabilities"
+      aria-label="Bivi capabilities"
       className="
         border-t
         border-border
@@ -303,7 +303,7 @@ export function AboutFeature() {
 
         <div
           role="tablist"
-          aria-label="Choose a Design Blade capability"
+          aria-label="Choose a Bivi capability"
           className="
             flex
             items-center

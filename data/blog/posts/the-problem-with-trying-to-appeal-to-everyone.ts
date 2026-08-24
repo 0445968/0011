@@ -12,7 +12,7 @@ export const theProblemWithTryingToAppealToEveryone: BlogPost = {
 
   category: 'Brand Strategy',
 
-  author: 'Design Blade',
+  author: 'Bivi',
 
   date: '2026-06-27',
 

@@ -13,7 +13,7 @@ import {
         title="Let’s talk about what you’re building."
         description="
           Share a little about your project, goals,
-          timing, and availability so Design Blade
+          timing, and availability so Bivi
           can prepare for a useful conversation from
           the start.
         "

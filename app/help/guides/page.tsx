@@ -462,7 +462,7 @@ export default function HelpGuidesPage() {
                   text-muted-foreground
                 "
               >
-                New Design Blade guides
+                New Bivi guides
                 will appear here as they
                 are added to the resource
                 library.

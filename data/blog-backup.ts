@@ -27,7 +27,7 @@ export const blogPosts: BlogPost[] = [
     excerpt:
       'How restraint, hierarchy, and a single organising idea separate work that endures from work that simply decorates.',
     category: 'Design',
-    author: 'Design Blade Studio',
+    author: 'Bivi Studio',
     date: '2025-07-15',
     readingTime: '6 min read',
     cover: '/images/blog/inevitable-design.svg',
@@ -99,7 +99,7 @@ export const blogPosts: BlogPost[] = [
     excerpt:
       'The architecture behind a portfolio platform that can host dozens of independent website demos without collapsing into spaghetti.',
     category: 'Engineering',
-    author: 'Design Blade Studio',
+    author: 'Bivi Studio',
     date: '2025-07-08',
     readingTime: '8 min read',
     cover: '/images/blog/template-library.svg',
@@ -159,7 +159,7 @@ export const blogPosts: BlogPost[] = [
     excerpt:
       'Manipulative UX tactics boost short-term metrics and quietly destroy the trust that compounds over a product’s lifetime.',
     category: 'UX',
-    author: 'Design Blade Studio',
+    author: 'Bivi Studio',
     date: '2025-06-29',
     readingTime: '5 min read',
     cover: '/images/blog/dark-patterns.svg',
@@ -203,7 +203,7 @@ export const blogPosts: BlogPost[] = [
     excerpt:
       'On most websites, type carries over 90% of the information. Why so many teams treat it as a finishing touch rather than the foundation.',
     category: 'Design',
-    author: 'Design Blade Studio',
+    author: 'Bivi Studio',
     date: '2025-06-18',
     readingTime: '7 min read',
     cover: '/images/blog/typography.svg',

@@ -5,7 +5,7 @@ import { CaseStudy } from '@/components/portfolio/CaseStudy';
 export const metadata: Metadata = {
   title: 'Process',
   description:
-    'How Design Blade builds projects — from discovery and design systems to prototyping and incremental delivery, with measurable results.',
+    'How Bivi builds projects — from discovery and design systems to prototyping and incremental delivery, with measurable results.',
 };
 
 export default function ProcessPage() {

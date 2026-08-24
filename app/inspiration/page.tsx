@@ -6,7 +6,7 @@ import { ArrowUpRight, Eye, Sparkles } from 'lucide-react';
 export const metadata: Metadata = {
   title: 'Inspiration',
   description:
-    'A curated collection of design references — sites, type, color, and interaction patterns that inspire the work at Design Blade.',
+    'A curated collection of design references — sites, type, color, and interaction patterns that inspire the work at Bivi.',
 };
 
 interface InspirationItem {

@@ -6,7 +6,7 @@ import { ArrowUpRight, Mail, Sparkles, Heart, Zap, Users } from 'lucide-react';
 export const metadata: Metadata = {
   title: 'Careers',
   description:
-    'Join Design Blade — a remote-first creative studio looking for designers and engineers who sweat the details.',
+    'Join Bivi — a remote-first creative studio looking for designers and engineers who sweat the details.',
 };
 
 const openRoles = [
@@ -66,7 +66,7 @@ export default function CareersPage() {
       <PageHeader
         eyebrow="Careers"
         title="Build things you're proud of."
-        description="Design Blade is a remote-first creative studio looking for designers and engineers who sweat the details. We keep the team small, the work ambitious, and the process transparent."
+        description="Bivi is a remote-first creative studio looking for designers and engineers who sweat the details. We keep the team small, the work ambitious, and the process transparent."
       />
 
       {/* Values */}

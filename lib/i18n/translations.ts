@@ -70,7 +70,7 @@ const en: Dict = {
 
   'faq.title': 'Frequently Asked Questions',
   'faq.eyebrow': 'FAQ',
-  'faq.description': "Everything you need to know about working with Design Blade. Can't find what you're looking for? Reach out directly.",
+  'faq.description': "Everything you need to know about working with Bivi. Can't find what you're looking for? Reach out directly.",
   'faq.backHome': 'Back home',
   'faq.ctaTitle': 'Still have questions?',
   'faq.ctaDescription': "We're happy to help. Send us a message and we'll get back to you within 24 hours.",
@@ -129,7 +129,7 @@ const es: Dict = {
 
   'faq.title': 'Preguntas Frecuentes',
   'faq.eyebrow': 'FAQ',
-  'faq.description': 'Todo lo que necesitas saber sobre trabajar con Design Blade. ¿No encuentras lo que buscas? Contáctanos directamente.',
+  'faq.description': 'Todo lo que necesitas saber sobre trabajar con Bivi. ¿No encuentras lo que buscas? Contáctanos directamente.',
   'faq.backHome': 'Volver al inicio',
   'faq.ctaTitle': '¿Aún tienes preguntas?',
   'faq.ctaDescription': 'Estamos encantados de ayudarte. Envíanos un mensaje y te responderemos en menos de 24 horas.',
@@ -188,7 +188,7 @@ const fr: Dict = {
 
   'faq.title': 'Questions Fréquentes',
   'faq.eyebrow': 'FAQ',
-  'faq.description': 'Tout ce que vous devez savoir pour travailler avec Design Blade. Vous ne trouvez pas ce que vous cherchez ? Contactez-nous directement.',
+  'faq.description': 'Tout ce que vous devez savoir pour travailler avec Bivi. Vous ne trouvez pas ce que vous cherchez ? Contactez-nous directement.',
   'faq.backHome': "Retour à l'accueil",
   'faq.ctaTitle': 'Vous avez encore des questions ?',
   'faq.ctaDescription': 'Nous sommes ravis de vous aider. Envoyez-nous un message et nous vous répondrons sous 24 heures.',
@@ -247,7 +247,7 @@ const pt: Dict = {
 
   'faq.title': 'Perguntas Frequentes',
   'faq.eyebrow': 'FAQ',
-  'faq.description': 'Tudo o que você precisa saber sobre trabalhar com a Design Blade. Não encontrou o que procurava? Entre em contato diretamente.',
+  'faq.description': 'Tudo o que você precisa saber sobre trabalhar com a Bivi. Não encontrou o que procurava? Entre em contato diretamente.',
   'faq.backHome': 'Voltar ao início',
   'faq.ctaTitle': 'Ainda tem perguntas?',
   'faq.ctaDescription': 'Estamos felizes em ajudar. Envie-nos uma mensagem e responderemos em até 24 horas.',

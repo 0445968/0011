@@ -20,7 +20,6 @@ export default function Home() {
       <Differences />
       <FeaturedCaseStudies />
       <ResourceLibraryPreview />
-      <ExploreHub />
     </>
   );
 }

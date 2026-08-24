@@ -4,7 +4,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 export const metadata: Metadata = {
   title: 'Accessibility',
   description:
-    'Design Blade\'s commitment to making the web accessible to everyone, including our conformance goals and how to report issues.',
+    'Bivi\'s commitment to making the web accessible to everyone, including our conformance goals and how to report issues.',
 };
 
 export default function AccessibilityPage() {
@@ -23,7 +23,7 @@ export default function AccessibilityPage() {
                 Our commitment
               </h2>
               <p className="mt-3 text-muted-foreground leading-relaxed">
-                Design Blade is committed to making its website accessible to
+                Bivi is committed to making its website accessible to
                 all visitors, regardless of ability. We aim to conform to the
                 Web Content Accessibility Guidelines (WCAG) 2.1 Level AA
                 wherever possible.

@@ -12,7 +12,7 @@ export const whySomeWebsitesFeelBetterBeforeYouKnowWhy: BlogPost = {
 
   category: 'Design',
 
-  author: 'Design Blade',
+  author: 'Bivi',
 
   date: '2026-06-11',
 

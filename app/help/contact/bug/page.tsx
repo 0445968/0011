@@ -15,7 +15,7 @@ import {
           Share what happened, where the issue occurred,
           and what you expected to happen instead.
           The more context you provide, the easier it is
-          for Design Blade to investigate.
+          for Bivi to investigate.
         "
         sidebarTitle="Help us reproduce the issue"
         sidebarDescription="

@@ -24,7 +24,7 @@ const resourceSections = [
   {
     title: 'Articles',
     description:
-      'Ideas, perspectives, and useful thinking from the Design Blade Journal.',
+      'Ideas, perspectives, and useful thinking from the Bivi Journal.',
     href: '/help/articles',
     icon: FileText,
   },
@@ -140,7 +140,7 @@ export default function HelpResourcesPage() {
                 sm:leading-8
               "
             >
-              Browse Design Blade guides,
+              Browse Bivi guides,
               articles, tools, and
               practical resources from
               one place.

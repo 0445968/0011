@@ -301,10 +301,10 @@ export function Footer() {
           <div>
             <a
               href="/"
-              aria-label="Design Blade home"
+              aria-label="Bivi home"
             >
               <img
-                src="/images/logo.png"
+                src="/images/logo.svg"
                 alt={siteConfig.name}
                 className="
                   h-10

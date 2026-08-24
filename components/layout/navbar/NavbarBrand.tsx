@@ -36,7 +36,7 @@ export function NavbarBrand({
       "
     >
       {/* ------------------------------------------------------------ */}
-      {/* Design Blade logo                                            */}
+      {/* Bivi logo                                            */}
       {/* ------------------------------------------------------------ */}
 
       <Link
@@ -52,13 +52,13 @@ export function NavbarBrand({
         "
         aria-label={
           isHelpCenter
-            ? 'Design Blade Help Center'
-            : 'Design Blade home'
+            ? 'Bivi Help Center'
+            : 'Bivi home'
         }
       >
         <Image
-          src="/images/logo.png"
-          alt="Design Blade"
+          src="/images/logo.svg"
+          alt="Bivi"
           width={180}
           height={60}
           priority

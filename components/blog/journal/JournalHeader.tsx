@@ -70,7 +70,7 @@ export function JournalHeader() {
               text-accent
             "
           >
-            Design Blade Journal
+            Bivi Journal
           </p>
 
           <h1

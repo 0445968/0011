@@ -4,11 +4,11 @@ import { BlogList } from '@/components/blog/BlogList';
 export const metadata: Metadata = {
   title: 'Journal',
   description:
-    'Notes on design, engineering, and craft from the Design Blade studio — essays on typography, process, UX, and building for the long game.',
+    'Notes on design, engineering, and craft from the Bivi studio — essays on typography, process, UX, and building for the long game.',
   openGraph: {
-    title: 'Journal — Design Blade',
+    title: 'Journal — Bivi',
     description:
-      'Notes on design, engineering, and craft from the Design Blade studio.',
+      'Notes on design, engineering, and craft from the Bivi studio.',
   },
 };
 

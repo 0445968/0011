@@ -138,7 +138,7 @@ export default function HelpFaqPage() {
                 "
               >
                 Learn more about
-                Design Blade projects,
+                Bivi projects,
                 strategy, design,
                 pricing, timelines,
                 deliverables, and
@@ -379,7 +379,7 @@ export default function HelpFaqPage() {
                 >
                   Search the full Help
                   Center or contact
-                  Design Blade directly.
+                  Bivi directly.
                 </p>
 
                 <Link
@@ -635,7 +635,7 @@ export default function HelpFaqPage() {
                   sm:text-3xl
                 "
               >
-                Ask Design Blade directly.
+                Ask Bivi directly.
               </h2>
 
               <p

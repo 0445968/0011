@@ -4,7 +4,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 export const metadata: Metadata = {
   title: 'Terms of Service',
   description:
-    'The terms and conditions for using the Design Blade website and services.',
+    'The terms and conditions for using the Bivi website and services.',
 };
 
 export default function TermsPage() {
@@ -13,7 +13,7 @@ export default function TermsPage() {
       <PageHeader
         eyebrow="Legal"
         title="Terms of Service"
-        description="The terms and conditions governing your use of this website and any services provided by Design Blade."
+        description="The terms and conditions governing your use of this website and any services provided by Bivi."
       />
       <section className="section-spacing">
         <div className="container-page max-w-3xl">
@@ -46,7 +46,7 @@ export default function TermsPage() {
               </h2>
               <p className="mt-3 text-muted-foreground leading-relaxed">
                 All content on this website — including text, graphics, logos,
-                design templates, and code — is the property of Design Blade
+                design templates, and code — is the property of Bivi
                 unless otherwise stated. You may not reproduce or distribute
                 content without written permission.
               </p>
@@ -68,7 +68,7 @@ export default function TermsPage() {
                 5. Service engagements
               </h2>
               <p className="mt-3 text-muted-foreground leading-relaxed">
-                Any professional services provided by Design Blade are governed
+                Any professional services provided by Bivi are governed
                 by a separate written agreement. These terms do not override
                 any signed contract or statement of work.
               </p>
@@ -79,7 +79,7 @@ export default function TermsPage() {
                 6. Limitation of liability
               </h2>
               <p className="mt-3 text-muted-foreground leading-relaxed">
-                Design Blade is not liable for any indirect, incidental, or
+                Bivi is not liable for any indirect, incidental, or
                 consequential damages arising from your use of the website or
                 free resources.
               </p>

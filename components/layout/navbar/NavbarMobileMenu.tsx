@@ -203,7 +203,7 @@ function HelpCenterMobileMenu({
         >
           Browse resources, guides,
           FAQs, tools, or contact
-          Design Blade directly.
+          Bivi directly.
         </p>
       </div>
 
@@ -387,7 +387,7 @@ function HelpCenterMobileMenu({
                 font-semibold
               "
             >
-              Contact Design Blade
+              Contact Bivi
             </p>
 
             <p

@@ -12,7 +12,7 @@ export const smallBusinessesDontNeedToLookSmall: BlogPost = {
 
   category: 'Business',
 
-  author: 'Design Blade',
+  author: 'Bivi',
 
   date: '2026-07-21',
 

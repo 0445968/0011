@@ -79,7 +79,7 @@ export function HelpCategoryGrid() {
             brand strategy resources,
             visual identity help, and
             everything you need to know
-            about working with Design Blade.
+            about working with Bivi.
           </p>
         </div>
 

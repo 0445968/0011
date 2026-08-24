@@ -333,7 +333,7 @@ export function BugReportForm() {
               </option>
 
               <option value="website">
-                Design Blade website
+                Bivi website
               </option>
 
               <option value="studio-lab">

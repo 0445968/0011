@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 
 export const siteConfig = {
-  name: 'Design Blade',
+  name: 'Bivi',
   domain: 'designblade.pro',
   url: 'https://designblade.pro',
   tagline: 'Creative Studio & Resource Library',

@@ -41,7 +41,7 @@ const exploreItems = [
 export function ExploreHub() {
   return (
     <section
-      aria-label="Explore Design Blade"
+      aria-label="Explore Bivi"
       className="
         relative
         pt-12
@@ -180,7 +180,7 @@ export function ExploreHub() {
                     text-[#0B65F3]
                   "
                 >
-                  Explore Design Blade
+                  Explore Bivi
                 </p>
 
                 <h2

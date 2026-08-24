@@ -39,12 +39,12 @@ export async function generateMetadata({
   }
 
   return {
-    title: `${post.title} — Design Blade Journal`,
+    title: `${post.title} — Bivi Journal`,
     description: post.excerpt,
 
     openGraph: {
       type: 'article',
-      title: `${post.title} — Design Blade Journal`,
+      title: `${post.title} — Bivi Journal`,
       description: post.excerpt,
       publishedTime: post.date,
       authors: [post.author],

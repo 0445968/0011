@@ -109,7 +109,7 @@ export function PopularHelp() {
             Find quick answers, practical
             guides, and useful resources
             before reaching out to the
-            Design Blade team.
+            Bivi team.
           </p>
         </div>
 

@@ -17,7 +17,7 @@ const gettingStartedTopics = [
   {
     title: 'Understand the process',
     description:
-      'Learn how a Design Blade project typically moves from discovery and strategy through design, delivery, and launch.',
+      'Learn how a Bivi project typically moves from discovery and strategy through design, delivery, and launch.',
     href: '/help/working-together',
     icon: Rocket,
   },
@@ -676,7 +676,7 @@ export default function GettingStartedPage() {
                   md:self-auto
                 "
               >
-                Contact Design Blade
+                Contact Bivi
 
                 <ArrowRight
                   size={16}

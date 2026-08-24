@@ -1,4 +1,4 @@
-# Design Blade — Creative Studio & Resource Library
+# Bivi — Creative Studio & Resource Library
 
 A premium, production-quality portfolio platform for an independent creative studio, with a built-in journal (blog), a HubSpot-style resource library (guides, tools, curated links), an integrations showcase, and dedicated section pages behind a megamenu navigation. Built with Next.js (App Router), TypeScript, Tailwind CSS, and Framer Motion.
 

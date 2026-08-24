@@ -154,7 +154,7 @@ export function AppointmentRequestForm() {
           the front-end flow. Once the
           scheduling or submission
           endpoint is connected,
-          Design Blade can receive it
+          Bivi can receive it
           automatically.
         </p>
 
@@ -945,7 +945,7 @@ export function AppointmentRequestForm() {
         >
           This requests a conversation;
           it does not confirm a meeting
-          time until Design Blade follows
+          time until Bivi follows
           up or a scheduling integration
           is connected.
         </p>

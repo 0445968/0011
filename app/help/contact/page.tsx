@@ -16,7 +16,7 @@ const contactOptions = [
     id: 'bug',
     title: 'Report a bug',
     description:
-      'Something on the Design Blade website, one of our tools, or a resource is not working as expected.',
+      'Something on the Bivi website, one of our tools, or a resource is not working as expected.',
     href: '/help/contact/bug',
     icon: Bug,
     detail:
@@ -36,7 +36,7 @@ const contactOptions = [
     id: 'demo',
     title: 'Request a demo',
     description:
-      'See relevant capabilities, work examples, services, or how Design Blade could approach your needs.',
+      'See relevant capabilities, work examples, services, or how Bivi could approach your needs.',
     href: '/help/contact/demo',
     icon: Search,
     detail:
@@ -46,7 +46,7 @@ const contactOptions = [
     id: 'appointment',
     title: 'Request an appointment',
     description:
-      'Talk with Design Blade about a new project, consultation, or an existing engagement.',
+      'Talk with Bivi about a new project, consultation, or an existing engagement.',
     href: '/help/contact/appointment',
     icon: CalendarDays,
     detail:
@@ -123,7 +123,7 @@ export default function HelpContactPage() {
                 sm:text-xs
               "
             >
-              Contact Design Blade
+              Contact Bivi
             </p>
 
             <h1
@@ -402,7 +402,7 @@ export default function HelpContactPage() {
                 You do not need to sign
                 in or create an account
                 before contacting
-                Design Blade.
+                Bivi.
               </p>
             </div>
 

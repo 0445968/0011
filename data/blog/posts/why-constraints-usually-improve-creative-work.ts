@@ -12,7 +12,7 @@ export const whyConstraintsUsuallyImproveCreativeWork: BlogPost = {
 
   category: 'Creative Work',
 
-  author: 'Design Blade',
+  author: 'Bivi',
 
   date: '2026-04-20',
 

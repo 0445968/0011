@@ -70,7 +70,7 @@ import {
       id: 'getting-started',
       title: 'Getting Started',
       description:
-        'Learn how Design Blade projects work, what to prepare, what to expect, and how to start an engagement.',
+        'Learn how Bivi projects work, what to prepare, what to expect, and how to start an engagement.',
       href: '/help/getting-started',
       icon: Sparkles,
       topics: [
@@ -161,7 +161,7 @@ import {
       id: 'tools',
       title: 'Free Tools',
       description:
-        'Use Design Blade tools, calculators, generators, and brand assessments at no cost.',
+        'Use Bivi tools, calculators, generators, and brand assessments at no cost.',
       href: '/help/tools',
       icon: Wrench,
     },
@@ -248,7 +248,7 @@ import {
         },
         {
           label:
-            'What should I prepare before contacting Design Blade?',
+            'What should I prepare before contacting Bivi?',
           href: '/help/getting-started',
         },
         {
@@ -409,7 +409,7 @@ import {
       id: 'bug',
       title: 'Report a bug',
       description:
-        'Tell us about something that is not working correctly on the Design Blade website, a resource, or one of our tools.',
+        'Tell us about something that is not working correctly on the Bivi website, a resource, or one of our tools.',
       href: '/help/contact/bug',
       icon: Bug,
     },
@@ -425,7 +425,7 @@ import {
       id: 'demo',
       title: 'Request a demo',
       description:
-        'See relevant capabilities, project examples, or how Design Blade could approach your specific needs.',
+        'See relevant capabilities, project examples, or how Bivi could approach your specific needs.',
       href: '/help/contact/demo',
       icon: Search,
     },
@@ -433,7 +433,7 @@ import {
       id: 'appointment',
       title: 'Request an appointment',
       description:
-        'Talk with Design Blade about a potential project, consultation, or an existing engagement.',
+        'Talk with Bivi about a potential project, consultation, or an existing engagement.',
       href: '/help/contact/appointment',
       icon: CalendarDays,
     },

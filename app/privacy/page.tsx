@@ -4,7 +4,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 export const metadata: Metadata = {
   title: 'Privacy Policy',
   description:
-    'How Design Blade collects, uses, and protects your information.',
+    'How Bivi collects, uses, and protects your information.',
 };
 
 export default function PrivacyPage() {

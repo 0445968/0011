@@ -113,7 +113,7 @@ export function HelpContactCTA() {
                   sm:text-xs
                 "
               >
-                Contact Design Blade
+                Contact Bivi
               </p>
 
               <h2
@@ -200,7 +200,7 @@ export function HelpContactCTA() {
             >
               You don&apos;t need an
               account or sign-in to
-              contact Design Blade.
+              contact Bivi.
               Choose the option that
               best matches what you
               need and we&apos;ll only

@@ -12,7 +12,7 @@ export const whyMoreContentIsntAlwaysBetterMarketing: BlogPost = {
 
   category: 'Marketing',
 
-  author: 'Design Blade',
+  author: 'Bivi',
 
   date: '2026-05-26',
 

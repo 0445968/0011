@@ -139,7 +139,7 @@ export function FeatureRequestForm() {
           the front-end flow. Once the
           submission endpoint is
           connected, it can be delivered
-          to Design Blade automatically.
+          to Bivi automatically.
         </p>
 
         <button
@@ -273,7 +273,7 @@ export function FeatureRequestForm() {
             text-muted-foreground
           "
         >
-          Choose the part of Design Blade
+          Choose the part of Bivi
           that your idea relates to.
         </p>
 
@@ -300,7 +300,7 @@ export function FeatureRequestForm() {
               </option>
 
               <option value="website">
-                Design Blade website
+                Bivi website
               </option>
 
               <option value="help-center">

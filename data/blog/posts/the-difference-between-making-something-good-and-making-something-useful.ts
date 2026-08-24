@@ -12,7 +12,7 @@ export const theDifferenceBetweenMakingSomethingGoodAndMakingSomethingUseful: Bl
 
   category: 'Creative Work',
 
-  author: 'Design Blade',
+  author: 'Bivi',
 
   date: '2026-04-16',
 

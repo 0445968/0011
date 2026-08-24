@@ -177,7 +177,7 @@ export function DemoRequestForm() {
           front-end flow. Once
           the submission
           endpoint is connected,
-          Design Blade can
+          Bivi can
           receive it
           automatically.
         </p>

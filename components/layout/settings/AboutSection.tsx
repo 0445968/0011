@@ -42,7 +42,7 @@ export function AboutSection() {
             font-medium
           "
         >
-          Design Blade
+          Bivi
         </p>
 
         <p

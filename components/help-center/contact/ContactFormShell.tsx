@@ -35,7 +35,7 @@ export function ContactFormShell({
 
   sidebarTitle = 'Before you submit',
   sidebarDescription =
-    'The more context you provide, the easier it is for Design Blade to understand your request and respond appropriately.',
+    'The more context you provide, the easier it is for Bivi to understand your request and respond appropriately.',
 
   tips = [],
 
@@ -216,7 +216,7 @@ export function ContactFormShell({
                 By submitting this form,
                 you&apos;re providing the
                 information needed for
-                Design Blade to review
+                Bivi to review
                 and respond to your
                 request. No account or
                 sign-in is required.

@@ -12,7 +12,7 @@ export const whatClientsAreActuallyPayingYouFor: BlogPost = {
 
   category: 'Business',
 
-  author: 'Design Blade',
+  author: 'Bivi',
 
   date: '2026-08-02',
 
