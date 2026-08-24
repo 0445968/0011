@@ -33,7 +33,7 @@ interface InvoiceData {
 const defaultData: InvoiceData = {
   sender: {
     name: 'Bivi Studio',
-    email: 'hello@designblade.studio',
+    email: 'hello@bivi.studio',
     phone: '+1 (555) 123-4567',
     address: '123 Creative Ave, Suite 200, Portland, OR 97201',
   },

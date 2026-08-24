@@ -162,7 +162,7 @@ export default function CareersPage() {
                 </p>
               </div>
               <a
-                href="mailto:hello@designblade.pro"
+                href="mailto:hello@bivi.pro"
                 className="inline-flex items-center gap-2 rounded-full bg-secondary px-6 py-3 text-sm font-medium text-primary transition-transform hover:scale-[1.03]"
               >
                 <Mail size={16} />

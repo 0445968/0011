@@ -1,23 +1,29 @@
-import type { Metadata } from 'next';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { DemoLibrary } from '@/components/demos/shared/DemoLibrary';
-import { featuredDemos } from '@/data/demos/registry';
+import type {
+  Metadata,
+} from 'next';
+
+import {
+  DemoHero,
+} from '@/components/demos/shared/DemoHero';
+
+import {
+  DemoRequestCTA,
+} from '@/components/demos/shared/DemoRequestCTA';
 
 export const metadata: Metadata = {
-  title: 'Demos',
+  title:
+    'Interactive Demos',
+
   description:
-    'Interactive product demos — small apps, games, utilities, dashboards, and creative experiments you can launch directly from the browser.',
+    'Explore interactive product demos, dashboards, applications, games, and digital experiences created by Design Blade.',
 };
 
 export default function DemosPage() {
   return (
     <>
-      <PageHeader
-        eyebrow="Interactive Demos"
-        title="Launch and explore real, working products."
-        description="A growing collection of interactive demos — apps, dashboards, games, utilities, and creative experiments. Filter by category, search by tag, and launch any demo right in your browser."
-      />
-      <DemoLibrary />
+      <DemoHero />
+
+      <DemoRequestCTA />
     </>
   );
 }

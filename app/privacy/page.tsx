@@ -73,7 +73,7 @@ export default function PrivacyPage() {
               <p className="mt-3 text-muted-foreground leading-relaxed">
                 You may request access to, correction of, or deletion of your
                 personal information at any time by contacting us at
-                hello@designblade.pro.
+                hello@bivi.pro.
               </p>
             </section>
 
@@ -83,7 +83,7 @@ export default function PrivacyPage() {
               </h2>
               <p className="mt-3 text-muted-foreground leading-relaxed">
                 Questions about this policy can be sent to
-                hello@designblade.pro. We will respond within a reasonable
+                hello@bivi.pro. We will respond within a reasonable
                 timeframe.
               </p>
             </section>

@@ -21,10 +21,10 @@ interface SocialPost {
 
 const defaultPost: SocialPost = {
   displayName: 'Bivi Studio',
-  username: 'designblade',
+  username: 'bivi',
   text: 'We just launched a new Studio Lab with interactive tools for designers and agencies. Check it out — invoice generators, color palettes, brand assessments, and more.',
   imageUrl: null,
-  linkUrl: 'designblade.studio/studio-lab',
+  linkUrl: 'bivi.studio/studio-lab',
   linkTitle: 'Studio Lab — Interactive Tools for Designers',
   linkDescription: 'Free tools and brand assessments you can use right in your browser.',
 };

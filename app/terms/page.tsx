@@ -102,7 +102,7 @@ export default function TermsPage() {
               </h2>
               <p className="mt-3 text-muted-foreground leading-relaxed">
                 Questions about these terms can be sent to
-                hello@designblade.pro.
+                hello@bivi.pro.
               </p>
             </section>
 

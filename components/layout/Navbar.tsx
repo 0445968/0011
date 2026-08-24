@@ -133,7 +133,8 @@ export function Navbar() {
    */
   const allowTransparentNavbar =
     pathname === '/' ||
-    pathname === '/help';
+    pathname === '/help' ||
+    pathname === '/demos';
 
   /* ---------------------------------------------------------------------- */
   /* Overlay / utility state                                                */

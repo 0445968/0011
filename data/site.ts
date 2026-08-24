@@ -9,8 +9,8 @@ import {
 
 export const siteConfig = {
   name: 'Bivi',
-  domain: 'designblade.pro',
-  url: 'https://designblade.pro',
+  domain: 'bivi.pro',
+  url: 'https://bivi.pro',
   tagline: 'Creative Studio & Resource Library',
 };
 
@@ -22,7 +22,7 @@ export interface SocialLink {
 }
 
 export const socialLinks: SocialLink[] = [
-  { id: 'email', label: 'Email', href: 'mailto:hello@designblade.pro', icon: Mail },
+  { id: 'email', label: 'Email', href: 'mailto:hello@bivi.pro', icon: Mail },
   { id: 'twitter', label: 'Twitter', href: 'https://twitter.com', icon: Twitter },
   { id: 'linkedin', label: 'LinkedIn', href: 'https://linkedin.com', icon: Linkedin },
   { id: 'dribbble', label: 'Dribbble', href: 'https://dribbble.com', icon: Dribbble },
@@ -30,7 +30,7 @@ export const socialLinks: SocialLink[] = [
 ];
 
 export const contactInfo = {
-  email: 'hello@designblade.pro',
+  email: 'hello@bivi.pro',
   location: 'Remote · Worldwide',
   availability: 'Available for new projects',
   responseTime: 'Replies within 24 hours',

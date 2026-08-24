@@ -80,7 +80,7 @@ export default function AccessibilityPage() {
               </h2>
               <p className="mt-3 text-muted-foreground leading-relaxed">
                 If you encounter an accessibility barrier on this site, please
-                let us know. Email hello@designblade.pro with a description of
+                let us know. Email hello@bivi.pro with a description of
                 the issue and the page where it occurred. We take all reports
                 seriously and will work to resolve them promptly.
               </p>
