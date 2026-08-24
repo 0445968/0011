@@ -7,6 +7,7 @@ import {
   ArrowRight,
   Bug,
   CalendarDays,
+  CircleHelp,
   Lightbulb,
   Search,
 } from 'lucide-react';
@@ -19,8 +20,6 @@ const contactOptions = [
       'Something on the Bivi website, one of our tools, or a resource is not working as expected.',
     href: '/help/contact/bug',
     icon: Bug,
-    detail:
-      'Share what happened, where you found it, and what you expected to happen instead.',
   },
   {
     id: 'feature',
@@ -29,8 +28,6 @@ const contactOptions = [
       'Suggest a new feature, tool, assessment, resource, or improvement you would like to see.',
     href: '/help/contact/feature',
     icon: Lightbulb,
-    detail:
-      'Tell us what you would like to add and what problem it would help solve.',
   },
   {
     id: 'demo',
@@ -39,8 +36,6 @@ const contactOptions = [
       'See relevant capabilities, work examples, services, or how Bivi could approach your needs.',
     href: '/help/contact/demo',
     icon: Search,
-    detail:
-      'Best for exploring capabilities before deciding whether to start a project.',
   },
   {
     id: 'appointment',
@@ -49,10 +44,17 @@ const contactOptions = [
       'Talk with Bivi about a new project, consultation, or an existing engagement.',
     href: '/help/contact/appointment',
     icon: CalendarDays,
-    detail:
-      'Share a little about what you need so we can make the conversation useful from the start.',
   },
 ];
+
+const otherOption = {
+  id: 'other',
+  title: 'Something else',
+  description:
+    'Have a question or request that does not fit any of the options? Tell us what you need and we’ll point you in the right direction.',
+  href: '/help/contact/other',
+  icon: CircleHelp,
+};
 
 export default function HelpContactPage() {
   return (
@@ -71,64 +73,26 @@ export default function HelpContactPage() {
           border-b
           border-border
           bg-secondary/20
-          pb-14
-          pt-28
-          sm:pb-16
-          sm:pt-32
-          lg:pb-20
-          lg:pt-36
+          pb-10
+          pt-24
+          sm:pb-12
+          sm:pt-28
+          lg:pb-14
+          lg:pt-32
         "
       >
         <div className="container-page">
-          <Link
-            href="/help"
-            className="
-              group
-              inline-flex
-              items-center
-              gap-2
-              text-sm
-              font-semibold
-              text-muted-foreground
-              transition-colors
-              hover:text-primary
-            "
-          >
-            <ArrowLeft
-              size={15}
-              strokeWidth={2}
-              className="
-                transition-transform
-                duration-200
-                group-hover:-translate-x-1
-              "
-            />
-
-            Help Center
-          </Link>
 
           <div
             className="
-              mt-8
+              mt-6
               max-w-3xl
             "
           >
-            <p
-              className="
-                text-[11px]
-                font-semibold
-                uppercase
-                tracking-[0.2em]
-                text-primary
-                sm:text-xs
-              "
-            >
-              Contact Bivi
-            </p>
 
             <h1
               className="
-                mt-4
+                mt-3
                 text-balance
                 font-serif
                 text-4xl
@@ -139,12 +103,12 @@ export default function HelpContactPage() {
                 md:text-6xl
               "
             >
-              What can we help you with?
+              We're here for you.
             </h1>
 
             <p
               className="
-                mt-6
+                mt-5
                 max-w-2xl
                 text-base
                 leading-7
@@ -154,10 +118,9 @@ export default function HelpContactPage() {
               "
             >
               Choose the option that best
-              matches your request. We&apos;ll
-              take you to a focused form and
+              matches your request. We 
               only ask for information that
-              is relevant to what you need.
+              is relevant to your needs.
             </p>
           </div>
         </div>
@@ -169,19 +132,25 @@ export default function HelpContactPage() {
 
       <section
         className="
-          py-16
-          sm:py-20
-          lg:py-24
+          py-10
+          sm:py-12
+          lg:py-14
         "
       >
         <div className="container-page">
           <div
             className="
               grid
-              gap-5
+              gap-4
               md:grid-cols-2
+              xl:grid-cols-3
+              xl:grid-rows-2
             "
           >
+            {/* ------------------------------------------------------ */}
+            {/* Regular cards                                          */}
+            {/* ------------------------------------------------------ */}
+
             {contactOptions.map(
               (option) => {
                 const Icon =
@@ -195,20 +164,20 @@ export default function HelpContactPage() {
                       group
                       relative
                       flex
-                      min-h-[320px]
+                      min-h-[200px]
                       flex-col
                       overflow-hidden
-                      rounded-3xl
+                      rounded-2xl
                       border
                       border-border
                       bg-card
-                      p-7
+                      p-5
                       transition-all
                       duration-300
                       hover:-translate-y-1
                       hover:border-primary/40
-                      hover:shadow-[0_18px_60px_rgba(0,0,0,0.08)]
-                      sm:p-8
+                      hover:shadow-[0_14px_40px_rgba(0,0,0,0.07)]
+                      sm:p-6
                     "
                   >
                     {/* Decorative accent */}
@@ -218,10 +187,10 @@ export default function HelpContactPage() {
                       className="
                         pointer-events-none
                         absolute
-                        -right-16
-                        -top-16
-                        h-40
-                        w-40
+                        -right-14
+                        -top-14
+                        h-32
+                        w-32
                         rounded-full
                         bg-primary/5
                         blur-3xl
@@ -240,23 +209,23 @@ export default function HelpContactPage() {
                         flex
                         items-start
                         justify-between
-                        gap-5
+                        gap-4
                       "
                     >
                       <div
                         className="
                           flex
-                          h-12
-                          w-12
+                          h-10
+                          w-10
                           items-center
                           justify-center
-                          rounded-2xl
+                          rounded-xl
                           bg-primary
                           text-white
                         "
                       >
                         <Icon
-                          size={21}
+                          size={18}
                           strokeWidth={2}
                         />
                       </div>
@@ -264,8 +233,8 @@ export default function HelpContactPage() {
                       <div
                         className="
                           flex
-                          h-10
-                          w-10
+                          h-9
+                          w-9
                           shrink-0
                           items-center
                           justify-center
@@ -281,7 +250,7 @@ export default function HelpContactPage() {
                         "
                       >
                         <ArrowRight
-                          size={16}
+                          size={15}
                           strokeWidth={2}
                           className="
                             transition-transform
@@ -298,13 +267,14 @@ export default function HelpContactPage() {
                       className="
                         relative
                         z-10
-                        mt-9
+                        mt-auto
+                        pt-6
                       "
                     >
                       <h2
                         className="
                           font-heading
-                          text-2xl
+                          text-xl
                           font-semibold
                           tracking-[-0.025em]
                           text-foreground
@@ -315,51 +285,32 @@ export default function HelpContactPage() {
 
                       <p
                         className="
-                          mt-3
+                          mt-2
                           max-w-xl
                           text-sm
                           leading-6
                           text-muted-foreground
-                          sm:text-[15px]
-                          sm:leading-7
                         "
                       >
                         {option.description}
-                      </p>
-                    </div>
-
-                    {/* Footer */}
-
-                    <div
-                      className="
-                        relative
-                        z-10
-                        mt-auto
-                        border-t
-                        border-border
-                        pt-6
-                      "
-                    >
-                      <p
-                        className="
-                          text-xs
-                          leading-5
-                          text-muted-foreground
-                        "
-                      >
-                        {option.detail}
                       </p>
                     </div>
                   </Link>
                 );
               }
             )}
+
+            {/* ------------------------------------------------------ */}
+            {/* Something else                                         */}
+            {/* ------------------------------------------------------ */}
+
+            <SomethingElseCard />
           </div>
         </div>
       </section>
 
       {/* ------------------------------------------------------------ */}
-      {/* Supporting information                                       */}
+      {/* Supporting information                                      */}
       {/* ------------------------------------------------------------ */}
 
       <section
@@ -367,15 +318,15 @@ export default function HelpContactPage() {
           border-t
           border-border
           bg-secondary/20
-          py-14
-          sm:py-16
+          py-10
+          sm:py-12
         "
       >
         <div className="container-page">
           <div
             className="
               grid
-              gap-8
+              gap-7
               md:grid-cols-3
               md:gap-10
             "
@@ -401,8 +352,7 @@ export default function HelpContactPage() {
               >
                 You do not need to sign
                 in or create an account
-                before contacting
-                Bivi.
+                before contacting Bivi.
               </p>
             </div>
 
@@ -487,5 +437,170 @@ export default function HelpContactPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Something else                                                             */
+/* -------------------------------------------------------------------------- */
+
+function SomethingElseCard() {
+  const Icon =
+    otherOption.icon;
+
+  return (
+    <Link
+      href={otherOption.href}
+      className="
+        group
+        relative
+        flex
+        min-h-[200px]
+        flex-col
+        overflow-hidden
+        rounded-2xl
+        bg-[#0B65F3]
+        p-5
+        text-white
+        transition-all
+        duration-300
+        hover:-translate-y-1
+        hover:shadow-[0_18px_55px_rgba(11,101,243,0.22)]
+        sm:p-6
+        md:col-span-2
+        xl:col-span-1
+        xl:col-start-3
+        xl:row-span-2
+        xl:row-start-1
+      "
+    >
+      {/* Glow */}
+
+      <div
+        aria-hidden="true"
+        className="
+          pointer-events-none
+          absolute
+          -right-20
+          -top-20
+          h-56
+          w-56
+          rounded-full
+          bg-white/15
+          blur-3xl
+          transition-transform
+          duration-500
+          group-hover:scale-125
+        "
+      />
+
+      {/* Top */}
+
+      <div
+        className="
+          relative
+          z-10
+          flex
+          items-start
+          justify-between
+          gap-4
+        "
+      >
+        <div
+          className="
+            flex
+            h-10
+            w-10
+            items-center
+            justify-center
+            rounded-xl
+            bg-white/15
+            text-white
+            backdrop-blur-sm
+          "
+        >
+          <Icon
+            size={18}
+            strokeWidth={2}
+          />
+        </div>
+
+        <div
+          className="
+            flex
+            h-9
+            w-9
+            shrink-0
+            items-center
+            justify-center
+            rounded-full
+            bg-white
+            text-black
+            transition-all
+            duration-300
+            group-hover:bg-[#BBFF1B]
+          "
+        >
+          <ArrowRight
+            size={15}
+            strokeWidth={2}
+            className="
+              transition-transform
+              duration-300
+              group-hover:translate-x-1
+            "
+          />
+        </div>
+      </div>
+
+      {/* Content */}
+
+      <div
+        className="
+          relative
+          z-10
+          mt-auto
+          max-w-sm
+          pt-10
+        "
+      >
+        <p
+          className="
+            text-[10px]
+            font-semibold
+            uppercase
+            tracking-[0.18em]
+            text-white/65
+          "
+        >
+          General inquiry
+        </p>
+
+        <h2
+          className="
+            mt-2
+            font-heading
+            text-2xl
+            font-semibold
+            tracking-[-0.03em]
+            text-white
+            sm:text-3xl
+          "
+        >
+          {otherOption.title}
+        </h2>
+
+        <p
+          className="
+            mt-3
+            text-sm
+            leading-6
+            text-white/75
+          "
+        >
+          {otherOption.description}
+        </p>
+      </div>
+    </Link>
   );
 }

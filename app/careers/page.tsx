@@ -1,37 +1,28 @@
 import type { Metadata } from 'next';
-import { PageHeader } from '@/components/layout/PageHeader';
+
+import {
+  FileUp,
+  Heart,
+  Sparkles,
+  Upload,
+  Users,
+  Zap,
+} from 'lucide-react';
+
 import { Reveal } from '@/components/portfolio/Reveal';
-import { ArrowUpRight, Mail, Sparkles, Heart, Zap, Users } from 'lucide-react';
+
+import { Caveat } from 'next/font/google';
+
+const caveat = Caveat({
+  subsets: ['latin'],
+  weight: ['500', '600', '700'],
+});
 
 export const metadata: Metadata = {
   title: 'Careers',
   description:
-    'Join Bivi — a remote-first creative studio looking for designers and engineers who sweat the details.',
+    'Explore careers at Bivi. There are no open positions right now, but you can send us your résumé for future opportunities.',
 };
-
-const openRoles = [
-  {
-    title: 'Senior Product Designer',
-    type: 'Full-time · Remote',
-    description:
-      'Lead end-to-end design for client projects — from research and wireframes to high-fidelity interfaces and design systems.',
-    tags: ['Figma', 'Design Systems', 'Prototyping'],
-  },
-  {
-    title: 'Frontend Engineer',
-    type: 'Full-time · Remote',
-    description:
-      'Build polished, performant interfaces with Next.js, TypeScript, and Tailwind. Work closely with design to ship pixel-perfect products.',
-    tags: ['React', 'Next.js', 'TypeScript', 'Tailwind'],
-  },
-  {
-    title: 'Creative Director',
-    type: 'Contract · Remote',
-    description:
-      'Provide strategic creative leadership across multiple engagements — shaping visual direction, brand systems, and campaign concepts.',
-    tags: ['Art Direction', 'Branding', 'Strategy'],
-  },
-];
 
 const values = [
   {
@@ -39,135 +30,605 @@ const values = [
     title: 'Craft over output',
     description:
       'We believe the details others overlook are the details that matter most.',
+    accent: 'bg-[#B7A7FF]',
   },
   {
     icon: Heart,
     title: 'Respect by default',
     description:
       'Great work happens in environments where people feel valued and trusted.',
+    accent: 'bg-[#FF7A4A]',
   },
   {
     icon: Zap,
     title: 'Bias toward shipping',
     description:
       'We favor working software over endless deliberation. Ship, learn, refine.',
+    accent: 'bg-[#BDF4B7]',
   },
   {
     icon: Users,
     title: 'Collaborative by nature',
     description:
       'Design and engineering are not separate disciplines here. Everyone participates in both.',
+    accent: 'bg-black dark:bg-white',
+    iconClass: 'text-white dark:text-black',
   },
 ];
 
 export default function CareersPage() {
   return (
     <>
-      <PageHeader
-        eyebrow="Careers"
-        title="Build things you're proud of."
-        description="Bivi is a remote-first creative studio looking for designers and engineers who sweat the details. We keep the team small, the work ambitious, and the process transparent."
-      />
+      {/* ------------------------------------------------------------ */}
+      {/* Hero                                                         */}
+      {/* ------------------------------------------------------------ */}
 
-      {/* Values */}
-      <section className="section-spacing">
-        <div className="container-page">
+      <section
+        className="
+          relative
+          flex
+          min-h-[620px]
+          items-center
+          justify-center
+          overflow-hidden
+          bg-black
+          px-6
+          pb-20
+          pt-32
+          sm:min-h-[680px]
+          sm:px-8
+          sm:pt-36
+          lg:min-h-[720px]
+          lg:pt-40
+        "
+      >
+        {/* Background image */}
+
+        <div
+          aria-hidden="true"
+          className="
+            absolute
+            inset-0
+            bg-[url('/images/careers/careers-hero.jpg')]
+            bg-cover
+            bg-center
+          "
+        />
+
+        {/* Dark overlay */}
+
+        <div
+          aria-hidden="true"
+          className="
+            absolute
+            inset-0
+            bg-black/50
+          "
+        />
+
+        {/* Subtle gradient */}
+
+        <div
+          aria-hidden="true"
+          className="
+            absolute
+            inset-0
+            bg-gradient-to-b
+            from-black/15
+            via-transparent
+            to-black/45
+          "
+        />
+
+        {/* Content */}
+
+        <div
+          className="
+            container-page
+            relative
+            z-10
+          "
+        >
           <Reveal>
-            <h2 className="font-heading text-3xl font-semibold tracking-tight">
-              What we value
-            </h2>
+            <div
+              className="
+                mx-auto
+                flex
+                max-w-4xl
+                flex-col
+                items-center
+                text-center
+              "
+            >
+
+              {/* Title */}
+
+              <h1
+                className="
+                  mt-7
+                  max-w-4xl
+                  text-balance
+                  font-heading
+                  text-3xl
+                  font-medium
+                  leading-[0.94]
+                  tracking-[-0.05em]
+                  text-white
+                  sm:text-4xl
+                  md:text-5xl
+                  lg:text-[64px]
+                "
+              >
+                Build things you&apos;re
+                proud of.
+              </h1>
+
+              {/* Description */}
+
+              <p
+                className="
+                  mt-7
+                  max-w-2xl
+                  text-balance
+                  text-base
+                  leading-7
+                  text-white/75
+                  sm:text-lg
+                  sm:leading-8
+                "
+              >
+                Bivi is a remote-first
+                creative studio built
+                around thoughtful
+                collaboration, ambitious
+                work, and attention to
+                the details that make
+                good ideas feel
+                exceptional.
+              </p>
+            </div>
           </Reveal>
-          <div className="mt-10 grid gap-6 sm:grid-cols-2">
-            {values.map((value, i) => (
-              <Reveal key={value.title} delay={i * 0.06}>
-                <div className="rounded-2xl border border-border bg-card p-6">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-                    <value.icon size={24} className="text-primary" />
-                  </div>
-                  <h3 className="mt-5 font-heading text-lg font-semibold">
-                    {value.title}
-                  </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                    {value.description}
-                  </p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
         </div>
       </section>
 
-      {/* Open roles */}
-      <section className="section-spacing border-t border-border pt-20">
+      {/* ------------------------------------------------------------ */}
+      {/* What we value                                                */}
+      {/* ------------------------------------------------------------ */}
+
+      <section
+        className="
+          relative
+          py-12
+          sm:py-16
+          lg:py-20
+        "
+      >
         <div className="container-page">
           <Reveal>
-            <h2 className="font-heading text-3xl font-semibold tracking-tight">
-              Open roles
-            </h2>
-            <p className="mt-3 max-w-xl text-muted-foreground">
-              Don't see a perfect fit? Send a note anyway — we're always
-              interested in meeting talented people.
-            </p>
-          </Reveal>
+            <div
+              className="
+                rounded-[28px]
+                border
+                border-border
+                bg-card
+                p-6
+                sm:p-8
+                lg:p-10
+              "
+            >
+              {/* Main layout */}
 
-          <div className="mt-10 space-y-4">
-            {openRoles.map((role, i) => (
-              <Reveal key={role.title} delay={i * 0.06}>
-                <div className="group flex flex-col gap-4 rounded-2xl border border-border bg-card p-6 transition-all duration-300 hover:border-foreground/20 hover:shadow-md sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex-1">
-                    <h3 className="font-heading text-lg font-semibold">
-                      {role.title}
-                    </h3>
-                    <span className="mt-1 block text-sm text-muted-foreground">
-                      {role.type}
-                    </span>
-                    <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-                      {role.description}
-                    </p>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {role.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="rounded-full border border-border bg-secondary/40 px-2.5 py-0.5 text-xs font-medium text-muted-foreground"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <a
-                    href="/contact"
-                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border px-5 py-2.5 text-sm font-medium transition-colors group-hover:border-foreground/20 group-hover:bg-muted"
-                  >
-                    Apply
-                    <ArrowUpRight
-                      size={14}
-                      className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                    />
-                  </a>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-
-          {/* General application CTA */}
-          <Reveal delay={0.15}>
-            <div className="mt-12 flex flex-col items-center justify-between gap-4 rounded-2xl bg-primary px-8 py-10 text-primary-foreground sm:flex-row">
-              <div>
-                <h3 className="font-heading text-xl font-semibold">
-                  Don't see your role?
-                </h3>
-                <p className="mt-1 text-sm text-primary-foreground/80">
-                  Tell us what you'd build. We'll find a way to work together.
-                </p>
-              </div>
-              <a
-                href="mailto:hello@bivi.pro"
-                className="inline-flex items-center gap-2 rounded-full bg-secondary px-6 py-3 text-sm font-medium text-primary transition-transform hover:scale-[1.03]"
+              <div
+                className="
+                  grid
+                  gap-12
+                  lg:grid-cols-[0.9fr_1.1fr]
+                  lg:gap-14
+                "
               >
-                <Mail size={16} />
-                Get in touch
-              </a>
+                {/* Left */}
+
+                <div>
+                  <div
+                    className="
+                      inline-flex
+                      items-center
+                      gap-2
+                      rounded-lg
+                      border
+                      border-border
+                      bg-background
+                      px-3
+                      py-1.5
+                      text-xs
+                      font-semibold
+                      text-foreground
+                    "
+                  >
+                    What we value
+
+                    <span
+                      className="
+                        flex
+                        h-5
+                        w-5
+                        items-center
+                        justify-center
+                        rounded-md
+                        bg-[#B7A7FF]
+                        text-[11px]
+                        font-bold
+                        text-black
+                      "
+                    >
+                      ✦
+                    </span>
+                  </div>
+
+                  <h2
+                    className="
+                      mt-6
+                      max-w-xl
+                      text-balance
+                      font-heading
+                      text-4xl
+                      font-semibold
+                      leading-[1.02]
+                      tracking-[-0.04em]
+                      sm:text-5xl
+                      lg:text-6xl
+                    "
+                  >
+                    The principles behind
+                    how we work.
+                  </h2>
+
+                  <p
+                    className="
+                      mt-6
+                      max-w-lg
+                      text-base
+                      leading-relaxed
+                      text-muted-foreground
+                      sm:text-lg
+                    "
+                  >
+                    We care about
+                    thoughtful craft,
+                    mutual respect,
+                    momentum, and working
+                    closely across
+                    disciplines to make
+                    better things
+                    together.
+                  </p>
+                </div>
+
+                {/* Value cards */}
+
+                <div
+                  className="
+                    grid
+                    gap-4
+                    sm:grid-cols-2
+                  "
+                >
+                  {values.map(
+                    (value, index) => {
+                      const Icon =
+                        value.icon;
+
+                      return (
+                        <Reveal
+                          key={value.title}
+                          delay={
+                            0.05 +
+                            index * 0.06
+                          }
+                        >
+                          <article
+                            className="
+                              flex
+                              h-full
+                              min-h-[200px]
+                              flex-col
+                              justify-between
+                              rounded-[20px]
+                              border
+                              border-border
+                              bg-background
+                              p-5
+                              sm:p-6
+                            "
+                          >
+                            <div
+                              className={`
+                                flex
+                                h-11
+                                w-11
+                                items-center
+                                justify-center
+                                rounded-xl
+                                ${value.accent}
+                              `}
+                            >
+                              <Icon
+                                size={19}
+                                strokeWidth={1.8}
+                                className={
+                                  value.iconClass ??
+                                  'text-black'
+                                }
+                              />
+                            </div>
+
+                            <div className="mt-12">
+                              <h3
+                                className="
+                                  font-heading
+                                  text-lg
+                                  font-semibold
+                                  tracking-tight
+                                "
+                              >
+                                {value.title}
+                              </h3>
+
+                              <p
+                                className="
+                                  mt-3
+                                  text-sm
+                                  leading-relaxed
+                                  text-muted-foreground
+                                "
+                              >
+                                {
+                                  value.description
+                                }
+                              </p>
+                            </div>
+                          </article>
+                        </Reveal>
+                      );
+                    }
+                  )}
+                </div>
+              </div>
+
+              {/* Bottom statement */}
+
+              <Reveal delay={0.18}>
+  <p
+    className={`
+      ${caveat.className}
+      mx-auto
+      mt-14
+      max-w-4xl
+      text-center
+      text-3xl
+      font-semibold
+      leading-snug
+      text-muted-foreground
+      sm:text-4xl
+    `}
+  >
+    Good work starts with
+    good people.
+  </p>
+</Reveal>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ------------------------------------------------------------ */}
+      {/* Careers status                                               */}
+      {/* ------------------------------------------------------------ */}
+
+      <section
+        className="
+          pb-20
+          pt-8
+          sm:pb-24
+          sm:pt-10
+          lg:pb-28
+          lg:pt-12
+        "
+      >
+        <div className="container-page">
+          <Reveal>
+            <div
+              className="
+                relative
+                overflow-hidden
+                rounded-3xl
+                bg-primary
+                px-6
+                py-12
+                text-primary-foreground
+                sm:px-10
+                sm:py-14
+                lg:px-14
+                lg:py-16
+              "
+            >
+              {/* Decorative background */}
+
+              <div
+                aria-hidden="true"
+                className="
+                  pointer-events-none
+                  absolute
+                  -right-28
+                  -top-28
+                  h-72
+                  w-72
+                  rounded-full
+                  bg-white/10
+                  blur-3xl
+                "
+              />
+
+              <div
+                aria-hidden="true"
+                className="
+                  pointer-events-none
+                  absolute
+                  -bottom-32
+                  left-1/3
+                  h-72
+                  w-72
+                  rounded-full
+                  bg-[#BBFF1B]/10
+                  blur-3xl
+                "
+              />
+
+              <div
+                className="
+                  relative
+                  z-10
+                  grid
+                  gap-10
+                  lg:grid-cols-[1fr_auto]
+                  lg:items-end
+                "
+              >
+                {/* Left */}
+
+                <div className="max-w-2xl">
+                  <div
+                    className="
+                      flex
+                      h-12
+                      w-12
+                      items-center
+                      justify-center
+                      rounded-2xl
+                      bg-white/15
+                      text-white
+                    "
+                  >
+                    <FileUp
+                      size={21}
+                      strokeWidth={2}
+                    />
+                  </div>
+
+                  <p
+                    className="
+                      mt-8
+                      text-[10px]
+                      font-semibold
+                      uppercase
+                      tracking-[0.2em]
+                      text-white/65
+                      sm:text-xs
+                    "
+                  >
+                    Current openings
+                  </p>
+
+                  <h2
+                    className="
+                      mt-3
+                      max-w-xl
+                      font-heading
+                      text-3xl
+                      font-semibold
+                      tracking-[-0.035em]
+                      text-white
+                      sm:text-4xl
+                      lg:text-5xl
+                    "
+                  >
+                    No open positions
+                    right now.
+                  </h2>
+
+                  <p
+                    className="
+                      mt-5
+                      max-w-xl
+                      text-sm
+                      leading-7
+                      text-white/75
+                      sm:text-base
+                    "
+                  >
+                    We&apos;re not
+                    actively hiring at
+                    the moment, but
+                    we&apos;re always
+                    interested in
+                    meeting thoughtful,
+                    talented people.
+                    Send us your résumé
+                    and a little about
+                    yourself, and
+                    we&apos;ll keep you
+                    in mind when the
+                    right opportunity
+                    comes up.
+                  </p>
+                </div>
+
+                {/* CTA */}
+
+                <div
+                  className="
+                    flex
+                    flex-col
+                    items-start
+                    gap-3
+                    lg:items-end
+                  "
+                >
+                  <a
+                    href="/careers/resume"
+                    className="
+                      group
+                      inline-flex
+                      items-center
+                      justify-center
+                      gap-2
+                      rounded-full
+                      bg-[#BBFF1B]
+                      px-6
+                      py-3
+                      text-sm
+                      font-semibold
+                      text-black
+                      transition-transform
+                      duration-200
+                      hover:scale-[1.02]
+                    "
+                  >
+                    <Upload
+                      size={16}
+                      strokeWidth={2}
+                    />
+
+                    Send us your résumé
+                  </a>
+
+                  <p
+                    className="
+                      max-w-[240px]
+                      text-left
+                      text-xs
+                      leading-5
+                      text-white/55
+                      lg:text-right
+                    "
+                  >
+                    We&apos;ll keep it on
+                    file and reach out if
+                    a relevant
+                    opportunity opens.
+                  </p>
+                </div>
+              </div>
             </div>
           </Reveal>
         </div>

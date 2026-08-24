@@ -74,6 +74,7 @@ const pagesWithoutTagline = [
   '/',
   '/demos',
   '/about',
+  '/careers',
 ];
 
 export function Footer() {
@@ -122,7 +123,7 @@ export function Footer() {
               className="
                 font-serif
                 text-5xl
-                font-semibold
+                font-medium
                 leading-[0.9]
                 tracking-tight
                 text-white

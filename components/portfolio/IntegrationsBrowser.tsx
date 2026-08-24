@@ -51,10 +51,6 @@ export function IntegrationsBrowser() {
       <div className="container-page">
 
         {/* Header */}
-        <Reveal className="flex items-center gap-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-          <span className="h-px w-8 bg-primary" />
-          Integrations
-        </Reveal>
 
 
         <Reveal delay={0.1}>

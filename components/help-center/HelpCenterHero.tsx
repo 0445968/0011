@@ -405,7 +405,7 @@ export function HelpCenterHero() {
               text-balance
               font-serif
               text-4xl
-              font-semibold
+              font-medium
               leading-[0.98]
               tracking-[-0.045em]
               sm:text-5xl
