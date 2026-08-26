@@ -6,6 +6,7 @@ import {
   motion,
 } from 'framer-motion';
 import {
+  ArrowUpRight,
   ChevronLeft,
   ChevronRight,
   Pause,
@@ -90,122 +91,175 @@ export function FeaturedCaseStudies() {
     >
       <div className="container-page">
         {/* Header */}
-<div
-  className="
-    mb-10
-    text-center
-    md:mb-12
-  "
->
-  <Reveal>
-    <p
-      className="
-        text-xs
-        font-semibold
-        uppercase
-        tracking-[0.2em]
-        text-primary
-      "
-    >
-      Featured Case Studies
-    </p>
-  </Reveal>
 
-  <Reveal delay={0.1}>
-    <h2
-      className="
-        mx-auto
-        mt-4
-        max-w-none
-        whitespace-nowrap
-        font-heading
-        text-3xl
-        font-semibold
-        leading-[1]
-        tracking-tight
-        sm:text-4xl
-        md:text-5xl
-      "
-    >
-      See the work as it comes together
-    </h2>
-  </Reveal>
-</div>
+        <div
+          className="
+            mb-10
+            text-center
+            md:mb-12
+          "
+        >
+          <Reveal delay={0.1}>
+            <h2
+              className="
+                mx-auto
+                mt-4
+                max-w-none
+                whitespace-nowrap
+                font-heading
+                text-3xl
+                font-semibold
+                leading-[1]
+                tracking-tight
+                sm:text-4xl
+                md:text-5xl
+              "
+            >
+              See the work as it comes together
+            </h2>
+          </Reveal>
 
-{/* Navigation */}
-<div
-  className="
-    mb-8
-    flex
-    items-center
-    justify-center
-    gap-2
-  "
->
-  <button
-    type="button"
-    onClick={previous}
-    aria-label="Previous case study"
-    className="
-      rounded-full
-      border
-      border-border
-      p-3
-      transition
-      hover:bg-secondary
-    "
-  >
-    <ChevronLeft size={18} />
-  </button>
+          {/* Actions */}
 
-  <button
-    type="button"
-    onClick={() =>
-      setPaused((value) => !value)
-    }
-    aria-label={
-      paused
-        ? 'Resume case study autoplay'
-        : 'Pause case study autoplay'
-    }
-    className="
-      rounded-full
-      border
-      border-border
-      p-3
-      transition
-      hover:bg-secondary
-    "
-  >
-    {paused ? (
-      <Play size={18} />
-    ) : (
-      <Pause size={18} />
-    )}
-  </button>
+          <Reveal delay={0.16}>
+            <div
+              className="
+                mt-7
+                flex
+                flex-col
+                items-center
+                justify-center
+                gap-3
+                sm:flex-row
+              "
+            >
+              <a
+                href="/case-studies"
+                className="
+                  inline-flex
+                  h-[52px]
+                  items-center
+                  justify-center
+                  gap-2
+                  rounded-[14px]
+                  bg-black
+                  px-7
+                  text-[16px]
+                  font-bold
+                  leading-none
+                  text-white
+                  transition-colors
+                  hover:bg-[#333333]
+                "
+              >
+                View all case studies
 
-  <button
-    type="button"
-    onClick={next}
-    aria-label="Next case study"
-    className="
-      rounded-full
-      border
-      border-border
-      p-3
-      transition
-      hover:bg-secondary
-    "
-  >
-    <ChevronRight size={18} />
-  </button>
-</div>
+                <ArrowUpRight
+                  size={17}
+                  className="shrink-0"
+                />
+              </a>
 
-{/* Progress */}
-<ProgressBar
-  progress={progress}
-  duration={AUTO_PLAY_DELAY}
-/>
+              <a
+                href="/help/contact"
+                className="
+                  inline-flex
+                  h-[52px]
+                  items-center
+                  justify-center
+                  rounded-[14px]
+                  bg-[#EAEAEA]
+                  px-7
+                  text-[16px]
+                  font-bold
+                  leading-none
+                  text-foreground
+                  transition-colors
+                  hover:bg-muted/70
+                "
+              >
+                Get in touch
+              </a>
+            </div>
+          </Reveal>
+        </div>
+
+        {/* Navigation */}
+
+        <div
+          className="
+            mb-8
+            flex
+            items-center
+            justify-center
+            gap-2
+          "
+        >
+          <button
+            type="button"
+            onClick={previous}
+            aria-label="Previous case study"
+            className="
+              rounded-full
+              border
+              border-border
+              p-3
+              transition
+              hover:bg-secondary
+            "
+          >
+            <ChevronLeft size={18} />
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              setPaused((value) => !value)
+            }
+            aria-label={
+              paused
+                ? 'Resume case study autoplay'
+                : 'Pause case study autoplay'
+            }
+            className="
+              rounded-full
+              border
+              border-border
+              p-3
+              transition
+              hover:bg-secondary
+            "
+          >
+            {paused ? (
+              <Play size={18} />
+            ) : (
+              <Pause size={18} />
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={next}
+            aria-label="Next case study"
+            className="
+              rounded-full
+              border
+              border-border
+              p-3
+              transition
+              hover:bg-secondary
+            "
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
+
+        {/* Progress */}
+
+        <ProgressBar
+          progress={progress}
+          duration={AUTO_PLAY_DELAY}
+        />
 
         {/* Main Content */}
 

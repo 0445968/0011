@@ -66,7 +66,7 @@ export function ResourceLibraryPreview() {
                 md:text-5xl
               "
             >
-              Build a better brand with Bivi
+              Upgrade your brand 
             </h2>
           </Reveal>
 
@@ -83,10 +83,9 @@ export function ResourceLibraryPreview() {
                 sm:leading-[29px]
               "
             >
-              Explore a growing collection of thoughtful articles,
-              downloadable guides, interactive tools, and curated
-              resources designed to help founders, designers,
-              and creative teams do their best work.
+              Explore a growing collection of  
+              resources designed for founders, designers,
+              and creative teams doing the best work.
             </p>
           </Reveal>
         </div>

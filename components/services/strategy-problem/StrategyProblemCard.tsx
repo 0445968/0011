@@ -39,10 +39,16 @@ export function StrategyProblemCard({
       className={`
         relative
         py-8
+
+        md:self-start
         md:px-8
-        md:py-10
-        lg:px-10
-        lg:py-12
+        md:pt-10
+        md:pb-0
+
+        lg:px-8
+        lg:pt-6
+        lg:pb-0
+
         ${
           index !== 0
             ? 'border-t border-border md:border-l md:border-t-0'
@@ -50,34 +56,21 @@ export function StrategyProblemCard({
         }
       `}
     >
-      <span
-        className="
-          block
-          font-mono
-          text-[11px]
-          font-semibold
-          uppercase
-          tracking-[0.18em]
-          text-primary
-        "
-      >
-        {problem.number}
-      </span>
 
       <h3
-        className="
-          mt-5
-          max-w-sm
-          font-heading
-          text-2xl
-          font-semibold
-          leading-[1.05]
-          tracking-tight
-          sm:text-3xl
-        "
-      >
-        {problem.title}
-      </h3>
+  className="
+    mt-1
+    max-w-sm
+    font-heading
+    text-lg
+    font-semibold
+    leading-[1.05]
+    tracking-tight
+    sm:text-xl
+  "
+>
+  {problem.title}
+</h3>
 
       <p
         className="
@@ -87,7 +80,7 @@ export function StrategyProblemCard({
           leading-6
           text-muted-foreground
           sm:text-base
-          sm:leading-7
+          sm:leading-5
         "
       >
         {problem.description}

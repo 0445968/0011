@@ -8,21 +8,21 @@ import { StrategyProblemCard } from './StrategyProblemCard';
 const problems = [
   {
     number: '01',
-    title: 'Hard to understand.',
+    title: 'Confusing',
     description:
-      'If your difference is not clear, customers default to comparing features, price, or familiarity.',
+      'Unclear messaging turns potential customers into cold leads',
   },
   {
     number: '02',
-    title: 'Hard to remember.',
+    title: 'Forgettable',
     description:
-      'When every channel tells the story differently, recognition and trust become harder to build.',
+      'Inconsistent storytelling leads to low recognition and trust',
   },
   {
     number: '03',
-    title: 'Hard to recognize.',
+    title: 'Inconsistent',
     description:
-      'Without a strategic foundation, visual decisions become isolated choices instead of part of a system.',
+      'Visual decisions become disorganized choices instead of part of a system',
   },
 ];
 
@@ -37,13 +37,17 @@ export function BrandStrategyProblem() {
         border-t
         border-border
         bg-background
-        py-24
-        sm:py-28
-        lg:py-32
+        pt-20
+        pb-14
+        sm:pt-24
+        sm:pb-16
+        lg:pt-28
+        lg:pb-20
       "
     >
       <div className="container-page">
         {/* Header */}
+
         <div
           className="
             mx-auto
@@ -51,34 +55,6 @@ export function BrandStrategyProblem() {
             text-center
           "
         >
-          <motion.p
-            initial={{
-              opacity: 0,
-              y: 14,
-            }}
-            whileInView={{
-              opacity: 1,
-              y: 0,
-            }}
-            viewport={{
-              once: true,
-              amount: 0.6,
-            }}
-            transition={{
-              duration: 0.55,
-              ease: transitionEase,
-            }}
-            className="
-              text-xs
-              font-semibold
-              uppercase
-              tracking-[0.2em]
-              text-primary
-            "
-          >
-            Why strategy matters
-          </motion.p>
-
           <motion.h2
             initial={{
               opacity: 0,
@@ -97,21 +73,24 @@ export function BrandStrategyProblem() {
               delay: 0.08,
               ease: transitionEase,
             }}
+            style={{
+              lineHeight: '1.15',
+            }}
             className="
               mx-auto
               mt-4
-              max-w-4xl
-              text-balance
+              max-w-5xl
               font-heading
               text-3xl
               font-semibold
-              leading-[1]
               tracking-tight
               sm:text-4xl
               md:text-5xl
             "
           >
-            Clarity is what turns design into a brand.
+            94% of brands fail to make
+            <br />
+            their value unmistakable
           </motion.h2>
 
           <motion.p
@@ -143,57 +122,61 @@ export function BrandStrategyProblem() {
               sm:leading-8
             "
           >
-            Without it, positioning drifts, messaging
-            loses focus, and design becomes a collection
-            of disconnected decisions.
+            A weak identity makes it difficult for people to connect.
           </motion.p>
         </div>
 
-        {/* Diagram */}
-        <motion.div
-          initial={{
-            opacity: 0,
-            y: 24,
-          }}
-          whileInView={{
-            opacity: 1,
-            y: 0,
-          }}
-          viewport={{
-            once: true,
-            amount: 0.25,
-          }}
-          transition={{
-            duration: 0.8,
-            delay: 0.2,
-            ease: transitionEase,
-          }}
-          className="
-            mt-16
-            sm:mt-20
-            lg:mt-24
-          "
-        >
-          <StrategyDiagram />
-        </motion.div>
+        {/* Diagram + Problems */}
 
-        {/* Problems */}
-        <div
-          className="
-            mt-10
-            grid
-            border-t
-            border-border
-            md:grid-cols-3
-          "
-        >
-          {problems.map((problem, index) => (
-            <StrategyProblemCard
-              key={problem.number}
-              problem={problem}
-              index={index}
-            />
-          ))}
+        <div className="mx-auto max-w-6xl">
+          {/* Diagram */}
+
+          <motion.div
+            initial={{
+              opacity: 0,
+              y: 24,
+            }}
+            whileInView={{
+              opacity: 1,
+              y: 0,
+            }}
+            viewport={{
+              once: true,
+              amount: 0.25,
+            }}
+            transition={{
+              duration: 0.8,
+              delay: 0.2,
+              ease: transitionEase,
+            }}
+            className="
+              mt-16
+              sm:mt-20
+              lg:mt-24
+            "
+          >
+            <StrategyDiagram />
+          </motion.div>
+
+          {/* Problems */}
+
+          <div
+            className="
+              mt-10
+              grid
+              border-t
+              border-border
+              md:grid-cols-3
+            "
+          >
+            {problems.map((problem, index) => (
+              <StrategyProblemCard
+                key={problem.number}
+                problem={problem}
+                index={index}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </section>

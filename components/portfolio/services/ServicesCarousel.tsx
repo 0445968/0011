@@ -61,57 +61,127 @@ export function ServicesCarousel() {
 
   return (
     <section
-      className="
-        overflow-hidden
-        pt-10
-        pb-24
-        sm:pt-12
-        sm:pb-28
-        lg:pt-32
-        lg:pb-32
-      "
-    >
-      {/* Header */}
-      <div
-        className="
-          container-page
-          mb-12
-          text-center
-          md:mb-14
-        "
-      >
-        <p
-          className="
-            text-xs
-            font-semibold
-            uppercase
-            tracking-[0.2em]
-            text-primary
-          "
-        >
-          Services
-        </p>
-
-        <h2
   className="
-    mx-auto
-    mt-4
-    max-w-none
-    whitespace-nowrap
-    font-heading
-    text-3xl
-    font-semibold
-    leading-[1]
-    tracking-tight
-    sm:text-4xl
-    md:text-5xl
+    overflow-hidden
+    pt-12
+    pb-20
+    sm:pt-14
+    sm:pb-24
+    lg:pt-16
+    lg:pb-24
   "
 >
-  Build a better brand with Bivi
-</h2>
-      </div>
+      {/* Header */}
+
+<div
+  className="
+    container-page
+    mb-10
+    text-center
+    md:mb-12
+  "
+>
+  <h2
+    className="
+      mx-auto
+      mt-4
+      max-w-none
+      whitespace-nowrap
+      font-heading
+      text-3xl
+      font-semibold
+      leading-[1]
+      tracking-tight
+      sm:text-4xl
+      md:text-5xl
+    "
+  >
+    Build a better brand with Bivi
+  </h2>
+
+  <p
+    className="
+      mx-auto
+      mt-5
+      max-w-2xl
+      text-base
+      leading-7
+      text-muted-foreground
+      sm:text-lg
+      sm:leading-8
+    "
+  >
+    Make your brand
+    stand out and grow with confidence.
+  </p>
+</div>
+
+{/* Actions */}
+
+<div
+  className="
+    container-page
+    mb-12
+    flex
+    flex-col
+    items-center
+    justify-center
+    gap-3
+    sm:flex-row
+    md:mb-14
+  "
+>
+  <a
+    href="/services"
+    className="
+      inline-flex
+      h-[52px]
+      items-center
+      justify-center
+      gap-2
+      rounded-[14px]
+      bg-black
+      px-7
+      text-[16px]
+      font-bold
+      leading-none
+      text-white
+      transition-colors
+      hover:bg-[#333333]
+    "
+  >
+    Browse all services
+
+    <ArrowUpRight
+      size={17}
+      className="shrink-0"
+    />
+  </a>
+
+  <a
+    href="/about"
+    className="
+      inline-flex
+      h-[52px]
+      items-center
+      justify-center
+      rounded-[14px]
+      bg-[#eaeaea]
+      px-7
+      text-[16px]
+      font-bold
+      leading-none
+      text-foreground
+      transition-colors
+      hover:bg-muted/70
+    "
+  >
+    Learn more
+  </a>
+</div>
 
       {/* Carousel */}
+
       <div
         className="
           relative
@@ -147,43 +217,6 @@ export function ServicesCarousel() {
             ))}
           </div>
         </div>
-      </div>
-
-      {/* Browse All Services */}
-      <div
-        className="
-          container-page
-          mt-12
-          flex
-          justify-center
-          md:mt-14
-        "
-      >
-        <a
-          href="/services"
-          className="
-            inline-flex
-            h-[52px]
-            items-center
-            justify-center
-            gap-2
-            rounded-[14px]
-            bg-black
-            px-7
-            text-[16px]
-            font-bold
-            leading-none
-            text-white
-            hover:bg-[#333333]
-          "
-        >
-          Browse all services
-
-          <ArrowUpRight
-            size={17}
-            className="shrink-0"
-          />
-        </a>
       </div>
     </section>
   );

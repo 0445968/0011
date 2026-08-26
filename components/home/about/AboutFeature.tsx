@@ -6,31 +6,48 @@ import {
   motion,
 } from 'framer-motion';
 import {
-  ArrowUpRight,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
 
 const features = [
   {
-    eyebrow: 'Brand strategy',
-    title: 'Clarity in every move',
+    id: 'clarity',
+    title: (
+      <>
+        Bivi brings clarity 
+        <br />
+        to every move
+      </>
+    ),
     description:
-      'We uncover what makes your business matter, then shape it into a focused foundation that guides your messaging, identity, and growth.',
+      'We turn what sets you apart into a foundation that lasts.',
     video: '/images/about/design-philosophy-2.webm',
     videoAlt: 'Bivi brand strategy work',
   },
   {
-    eyebrow: 'Visual identity',
-    title: 'Build a brand that lasts',
+    id: 'identity',
+    title: (
+      <>
+        Build a brand that
+        <br />
+        will outlast you
+      </>
+    ),
     description:
       'From visual systems to flexible brand guidelines, we create distinctive identities that stay consistent while leaving room for your business to evolve.',
     video: '/images/about/development-approach-2.webm',
     videoAlt: 'Bivi visual identity work',
   },
   {
-    eyebrow: 'Digital experiences',
-    title: 'Strong ideas built to perform',
+    id: 'messaging',
+    title: (
+      <>
+        Turn your ideas into
+        <br />
+        strong messaging
+      </>
+    ),
     description:
       'We design and build polished digital experiences that make your offer easier to understand, navigate, and choose.',
     video: '/images/about/digital-experiences.webm',
@@ -79,131 +96,160 @@ export function AboutFeature() {
     <section
       aria-label="Bivi capabilities"
       className="
-        border-t
-        border-border
-        pt-16
-        sm:pt-20
-        lg:pt-24
+        relative
+        overflow-hidden
+        bg-background
+        py-20
+        sm:py-24
+        lg:py-28
       "
     >
-      <div
-        className="
-          grid
-          items-center
-          gap-12
-          lg:grid-cols-[0.8fr_1.2fr]
-          lg:gap-20
-        "
-      >
-        {/* Copy */}
+      <div className="container-page">
+        {/* Centered copy */}
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeFeature.eyebrow}
-            initial={{
-              opacity: 0,
-              x: direction * -20,
-            }}
-            animate={{
-              opacity: 1,
-              x: 0,
-            }}
-            exit={{
-              opacity: 0,
-              x: direction * 20,
-            }}
-            transition={{
-              duration: 0.42,
-              ease: transitionEase,
-            }}
-            className="max-w-xl"
+        <div
+          className="
+            mx-auto
+            max-w-3xl
+            text-center
+          "
+        >
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeFeature.id}
+              initial={{
+                opacity: 0,
+                y: 18,
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+              }}
+              exit={{
+                opacity: 0,
+                y: -18,
+              }}
+              transition={{
+                duration: 0.42,
+                ease: transitionEase,
+              }}
+            >
+              <h2
+                style={{
+                  lineHeight: '1.15',
+                }}
+                className="
+                  mx-auto
+                  mt-4
+                  max-w-none
+                  font-heading
+                  text-3xl
+                  font-semibold
+                  tracking-tight
+                  sm:text-4xl
+                  md:text-5xl
+                "
+              >
+                {activeFeature.title}
+              </h2>
+
+              <p
+                className="
+                  mx-auto
+                  mt-6
+                  max-w-2xl
+                  text-base
+                  leading-7
+                  text-muted-foreground
+                  sm:text-lg
+                  sm:leading-8
+                "
+              >
+                {activeFeature.description}
+              </p>
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Navigation arrows */}
+
+          <div
+            className="
+              mt-7
+              flex
+              items-center
+              justify-center
+              gap-3
+            "
           >
-            <p
+            <button
+              type="button"
+              onClick={goToPrevious}
+              aria-label="Show previous capability"
               className="
-                text-xs
-                font-semibold
-                uppercase
-                tracking-[0.2em]
-                text-primary
-              "
-            >
-              {activeFeature.eyebrow}
-            </p>
-
-            <h3
-              className="
-                mt-4
-                font-heading
-                text-3xl
-                font-semibold
-                leading-[1]
-                tracking-tight
-                sm:text-4xl
-                md:text-5xl
-              "
-            >
-              {activeFeature.title}
-            </h3>
-
-            <p
-              className="
-                mt-7
-                max-w-md
-                text-base
-                leading-7
-                text-muted-foreground
-                sm:text-lg
-                sm:leading-8
-              "
-            >
-              {activeFeature.description}
-            </p>
-
-            <a
-              href="/process"
-              className="
-                mt-9
                 inline-flex
-                h-[52px]
+                h-11
+                w-11
                 items-center
                 justify-center
-                gap-2
-                rounded-[14px]
-                bg-black
-                px-7
-                text-[16px]
-                font-bold
-                leading-none
-                text-white
-                hover:bg-[#333333]
+                rounded-full
+                border
+                border-border
+                text-foreground
+                transition-colors
+                duration-300
+                hover:bg-muted
+                active:scale-95
               "
             >
-              Explore our Process
+              <ChevronLeft size={19} />
+            </button>
 
-              <ArrowUpRight
-                size={17}
-                className="shrink-0"
-              />
-            </a>
-          </motion.div>
-        </AnimatePresence>
+            <button
+              type="button"
+              onClick={goToNext}
+              aria-label="Show next capability"
+              className="
+                inline-flex
+                h-11
+                w-11
+                items-center
+                justify-center
+                rounded-full
+                border
+                border-border
+                text-foreground
+                transition-colors
+                duration-300
+                hover:bg-muted
+                active:scale-95
+              "
+            >
+              <ChevronRight size={19} />
+            </button>
+          </div>
+        </div>
 
         {/* Video */}
 
         <div
           className="
+            mx-auto
+            mt-12
+            max-w-6xl
             rounded-[10px]
             bg-muted
             p-3
+            sm:mt-14
             sm:p-4
+            lg:mt-16
           "
         >
           <div
             className="
               relative
-              aspect-[16/10]
+              aspect-[16/7]
               overflow-hidden
-              rounded-[14px]
+              rounded-[8px]
             "
           >
             <AnimatePresence
@@ -217,7 +263,7 @@ export function AboutFeature() {
                 initial={{
                   opacity: 0,
                   x: direction * 40,
-                  scale: 1.03,
+                  scale: 1.02,
                 }}
                 animate={{
                   opacity: 1,
@@ -237,7 +283,7 @@ export function AboutFeature() {
                   absolute
                   inset-0
                   overflow-hidden
-                  rounded-[3px]
+                  rounded-[8px]
                 "
               >
                 <video
@@ -252,7 +298,6 @@ export function AboutFeature() {
                     block
                     h-full
                     w-full
-                    rounded-[3px]
                     object-cover
                   "
                 >
@@ -265,48 +310,14 @@ export function AboutFeature() {
             </AnimatePresence>
           </div>
         </div>
-      </div>
 
-      {/* Gallery controls */}
-
-      <div
-        className="
-          mt-10
-          flex
-          items-center
-          justify-between
-          gap-5
-          sm:mt-12
-        "
-      >
-        <button
-          type="button"
-          onClick={goToPrevious}
-          aria-label="Show previous capability"
-          className="
-            inline-flex
-            h-11
-            w-11
-            shrink-0
-            items-center
-            justify-center
-            rounded-full
-            border
-            border-border
-            text-foreground
-            transition-colors
-            duration-300
-            hover:bg-muted
-            active:scale-95
-          "
-        >
-          <ChevronLeft size={19} />
-        </button>
+        {/* Dot navigation */}
 
         <div
           role="tablist"
           aria-label="Choose a Bivi capability"
           className="
+            mt-6
             flex
             items-center
             justify-center
@@ -319,10 +330,10 @@ export function AboutFeature() {
 
             return (
               <button
-                key={feature.eyebrow}
+                key={feature.id}
                 type="button"
                 role="tab"
-                aria-label={`Show ${feature.eyebrow}`}
+                aria-label={`Show ${feature.id}`}
                 aria-selected={isActive}
                 onClick={() => {
                   goToSlide(index);
@@ -359,30 +370,6 @@ export function AboutFeature() {
             );
           })}
         </div>
-
-        <button
-          type="button"
-          onClick={goToNext}
-          aria-label="Show next capability"
-          className="
-            inline-flex
-            h-11
-            w-11
-            shrink-0
-            items-center
-            justify-center
-            rounded-full
-            border
-            border-border
-            text-foreground
-            transition-colors
-            duration-300
-            hover:bg-muted
-            active:scale-95
-          "
-        >
-          <ChevronRight size={19} />
-        </button>
       </div>
     </section>
   );
