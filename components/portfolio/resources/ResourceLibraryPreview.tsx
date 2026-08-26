@@ -55,18 +55,18 @@ export function ResourceLibraryPreview() {
           <Reveal delay={0.1}>
             <h2
               className="
-                mt-5
+                mt-4
                 text-balance
                 font-heading
-                text-4xl
+                text-3xl
                 font-semibold
                 leading-[1]
                 tracking-tight
-                sm:text-5xl
-                md:text-6xl
+                sm:text-4xl
+                md:text-5xl
               "
             >
-              Everything you need to build a better brand.
+              Build a better brand with Bivi
             </h2>
           </Reveal>
 

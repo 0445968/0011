@@ -33,20 +33,12 @@ export function CarouselArrows({
         disabled={!canScrollPrevious}
         aria-label="Previous resources"
         className="
-          flex
-          h-11
-          w-11
-          items-center
-          justify-center
           rounded-full
           border
-          border-[#0B65F3]
-          bg-[#0B65F3]
-          text-white
-          transition-all
-          duration-300
-          hover:scale-[1.04]
-          hover:bg-[#095BE0]
+          border-border
+          p-3
+          transition
+          hover:bg-secondary
           disabled:pointer-events-none
           disabled:opacity-30
         "
@@ -63,20 +55,12 @@ export function CarouselArrows({
         disabled={!canScrollNext}
         aria-label="Next resources"
         className="
-          flex
-          h-11
-          w-11
-          items-center
-          justify-center
           rounded-full
           border
-          border-[#0B65F3]
-          bg-[#0B65F3]
-          text-white
-          transition-all
-          duration-300
-          hover:scale-[1.04]
-          hover:bg-[#095BE0]
+          border-border
+          p-3
+          transition
+          hover:bg-secondary
           disabled:pointer-events-none
           disabled:opacity-30
         "

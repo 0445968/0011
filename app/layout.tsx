@@ -51,12 +51,12 @@ const sora = Sora({
 export const metadata: Metadata = {
   metadataBase:
     new URL(
-      'https://designblade.pro'
+      'https://bivi.pro'
     ),
 
   title: {
     default:
-      'Bivi — Creative Studio & Resource Library',
+      'Bivi | Creative Studio & Resource Library',
 
     template:
       '%s — Bivi',
@@ -88,7 +88,7 @@ export const metadata: Metadata = {
       'website',
 
     title:
-      'Bivi — Creative Studio & Resource Library',
+      'Bivi | Creative Studio & Resource Library',
 
     description:
       'An independent creative studio crafting premium websites, brand systems, and a free resource library of guides, tools, and curated links.',
@@ -108,7 +108,7 @@ export const metadata: Metadata = {
           630,
 
         alt:
-          'Bivi — Creative Studio & Resource Library',
+          'Bivi | Creative Studio & Resource Library',
       },
     ],
   },

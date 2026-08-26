@@ -52,7 +52,7 @@ export function CarouselViewport({
 
               sm:w-[48%]
 
-              lg:w-[calc((100%_-_4.5rem)/4)]
+              lg:w-[calc((100%_-_3rem)/3)]
             "
           >
             <ResourceCard

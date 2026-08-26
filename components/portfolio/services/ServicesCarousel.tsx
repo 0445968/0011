@@ -93,21 +93,22 @@ export function ServicesCarousel() {
         </p>
 
         <h2
-          className="
-            mx-auto
-            mt-4
-            max-w-3xl
-            text-balance
-            font-heading
-            text-5xl
-            font-semibold
-            leading-[1]
-            tracking-tight
-            md:text-6xl
-          "
-        >
-          Creative solutions built for ambitious brands.
-        </h2>
+  className="
+    mx-auto
+    mt-4
+    max-w-none
+    whitespace-nowrap
+    font-heading
+    text-3xl
+    font-semibold
+    leading-[1]
+    tracking-tight
+    sm:text-4xl
+    md:text-5xl
+  "
+>
+  Build a better brand with Bivi
+</h2>
       </div>
 
       {/* Carousel */}
@@ -173,7 +174,7 @@ export function ServicesCarousel() {
             font-bold
             leading-none
             text-white
-            hover:bg-[#1600A2]
+            hover:bg-[#333333]
           "
         >
           Browse all services

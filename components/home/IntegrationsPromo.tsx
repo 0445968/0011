@@ -155,17 +155,16 @@ export function IntegrationsPromo() {
                   className="
                     text-balance
                     font-heading
-                    text-3xl
+                    text-2xl
                     font-semibold
-                    leading-[1.02]
+                    leading-[2.8]
                     tracking-tight
                     text-white
-                    sm:text-4xl
-                    lg:text-[2.65rem]
+                    sm:text-3xl
+                    lg:text-[2rem]
                   "
                 >
-                  We work with the tools
-                  you already use.
+                  Keep your workflow connected with Bivi
                 </h2>
 
                 <Link

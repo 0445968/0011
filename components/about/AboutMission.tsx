@@ -25,22 +25,38 @@ export function AboutMission() {
         {/* -------------------------------------------------------------- */}
 
         <div className="mx-auto mt-10 max-w-5xl text-center">
-          <Reveal delay={0.06}>
-          <h1
-  className="
-    text-balance
-    font-heading
-    text-4xl
-    font-semibold
-    leading-tight
-    tracking-tight
-    sm:text-5xl
-    md:text-6xl
-  "
->
-A trusted creative team, whenever you need us.
-            </h1>
-          </Reveal>
+        <Reveal delay={0.06}>
+  <h1
+    className="
+      text-balance
+      font-heading
+      text-4xl
+      font-semibold
+      leading-tight
+      tracking-tight
+      sm:text-5xl
+      md:text-6xl
+    "
+  >
+    A trusted creative team,{' '}
+    <span className="relative inline-block">
+      whenever
+      <span
+        aria-hidden="true"
+        className="
+          absolute
+          -bottom-1
+          left-0
+          h-[5px]
+          w-full
+          rounded-full
+          bg-[#BBFF1B]
+        "
+      />
+    </span>{' '}
+    you need us.
+  </h1>
+</Reveal>
 
           <Reveal delay={0.12}>
             <div

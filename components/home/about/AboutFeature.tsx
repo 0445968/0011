@@ -14,7 +14,7 @@ import {
 const features = [
   {
     eyebrow: 'Brand strategy',
-    title: 'Clarity in every move.',
+    title: 'Clarity in every move',
     description:
       'We uncover what makes your business matter, then shape it into a focused foundation that guides your messaging, identity, and growth.',
     video: '/images/about/design-philosophy-2.webm',
@@ -22,7 +22,7 @@ const features = [
   },
   {
     eyebrow: 'Visual identity',
-    title: 'Build a brand that lasts.',
+    title: 'Build a brand that lasts',
     description:
       'From visual systems to flexible brand guidelines, we create distinctive identities that stay consistent while leaving room for your business to evolve.',
     video: '/images/about/development-approach-2.webm',
@@ -30,7 +30,7 @@ const features = [
   },
   {
     eyebrow: 'Digital experiences',
-    title: 'Strong ideas built to perform.',
+    title: 'Strong ideas built to perform',
     description:
       'We design and build polished digital experiences that make your offer easier to understand, navigate, and choose.',
     video: '/images/about/digital-experiences.webm',
@@ -132,14 +132,14 @@ export function AboutFeature() {
 
             <h3
               className="
-                mt-5
-                text-balance
+                mt-4
                 font-heading
-                text-5xl
+                text-3xl
                 font-semibold
                 leading-[1]
                 tracking-tight
-                md:text-6xl
+                sm:text-4xl
+                md:text-5xl
               "
             >
               {activeFeature.title}
@@ -162,34 +162,27 @@ export function AboutFeature() {
             <a
               href="/process"
               className="
-                group
                 mt-9
                 inline-flex
                 h-[52px]
                 items-center
+                justify-center
                 gap-2
                 rounded-[14px]
                 bg-black
                 px-7
                 text-[16px]
                 font-bold
-                text-primary-foreground
-                transition-transform
-                duration-300
-                hover:scale-[1.03]
-                active:scale-[0.98]
+                leading-none
+                text-white
+                hover:bg-[#333333]
               "
             >
               Explore our Process
 
               <ArrowUpRight
                 size={17}
-                className="
-                  transition-transform
-                  duration-300
-                  group-hover:translate-x-0.5
-                  group-hover:-translate-y-0.5
-                "
+                className="shrink-0"
               />
             </a>
           </motion.div>
@@ -197,73 +190,82 @@ export function AboutFeature() {
 
         {/* Video */}
 
-<div
-  className="
-    relative
-    aspect-[16/10]
-    overflow-hidden
-    rounded-[3px]
-  "
->
-  <AnimatePresence
-    initial={false}
-    custom={direction}
-    mode="popLayout"
-  >
-    <motion.div
-      key={activeFeature.video}
-      custom={direction}
-      initial={{
-        opacity: 0,
-        x: direction * 40,
-        scale: 1.03,
-      }}
-      animate={{
-        opacity: 1,
-        x: 0,
-        scale: 1,
-      }}
-      exit={{
-        opacity: 0,
-        x: direction * -40,
-        scale: 1.02,
-      }}
-      transition={{
-        duration: 0.58,
-        ease: transitionEase,
-      }}
-      className="
-        absolute
-        inset-0
-        overflow-hidden
-        rounded-[3px]
-      "
-    >
-      <video
-        key={activeFeature.video}
-        autoPlay
-        loop
-        muted
-        playsInline
-        preload="auto"
-        aria-label={activeFeature.videoAlt}
-        className="
-          block
-          h-full
-          w-full
-          rounded-[3px]
-          object-cover
-        "
-      >
-        <source
-          src={activeFeature.video}
-          type="video/webm"
-        />
-      </video>
-    </motion.div>
-  </AnimatePresence>
-</div>
-</div>
+        <div
+          className="
+            rounded-[10px]
+            bg-muted
+            p-3
+            sm:p-4
+          "
+        >
+          <div
+            className="
+              relative
+              aspect-[16/10]
+              overflow-hidden
+              rounded-[14px]
+            "
+          >
+            <AnimatePresence
+              initial={false}
+              custom={direction}
+              mode="popLayout"
+            >
+              <motion.div
+                key={activeFeature.video}
+                custom={direction}
+                initial={{
+                  opacity: 0,
+                  x: direction * 40,
+                  scale: 1.03,
+                }}
+                animate={{
+                  opacity: 1,
+                  x: 0,
+                  scale: 1,
+                }}
+                exit={{
+                  opacity: 0,
+                  x: direction * -40,
+                  scale: 1.02,
+                }}
+                transition={{
+                  duration: 0.58,
+                  ease: transitionEase,
+                }}
+                className="
+                  absolute
+                  inset-0
+                  overflow-hidden
+                  rounded-[3px]
+                "
+              >
+                <video
+                  key={activeFeature.video}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  preload="auto"
+                  aria-label={activeFeature.videoAlt}
+                  className="
+                    block
+                    h-full
+                    w-full
+                    rounded-[3px]
+                    object-cover
+                  "
+                >
+                  <source
+                    src={activeFeature.video}
+                    type="video/webm"
+                  />
+                </video>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </div>
+      </div>
 
       {/* Gallery controls */}
 
@@ -312,7 +314,8 @@ export function AboutFeature() {
           "
         >
           {features.map((feature, index) => {
-            const isActive = index === activeIndex;
+            const isActive =
+              index === activeIndex;
 
             return (
               <button
@@ -334,16 +337,23 @@ export function AboutFeature() {
               >
                 <motion.span
                   animate={{
-                    width: isActive ? 32 : 8,
-                    backgroundColor: isActive
-                      ? 'hsl(var(--foreground))'
-                      : 'hsl(var(--muted-foreground) / 0.35)',
+                    width: isActive
+                      ? 32
+                      : 8,
+                    backgroundColor:
+                      isActive
+                        ? 'hsl(var(--foreground))'
+                        : 'hsl(var(--muted-foreground) / 0.35)',
                   }}
                   transition={{
                     duration: 0.35,
                     ease: transitionEase,
                   }}
-                  className="block h-2 rounded-full"
+                  className="
+                    block
+                    h-2
+                    rounded-full
+                  "
                 />
               </button>
             );

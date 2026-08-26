@@ -3,44 +3,11 @@
 import Image from 'next/image';
 import Link from 'next/link';
 
-import {
-  ArrowUpRight,
-  BookOpen,
-  ExternalLink,
-  FileText,
-  Wrench,
-} from 'lucide-react';
-
 import type { Resource } from '@/data/resources';
 
 interface ResourceCardProps {
   resource: Resource;
 }
-
-const typeConfig: Record<
-  Resource['type'],
-  {
-    label: string;
-    icon: typeof FileText;
-  }
-> = {
-  article: {
-    label: 'Article',
-    icon: BookOpen,
-  },
-  guide: {
-    label: 'Guide',
-    icon: FileText,
-  },
-  tool: {
-    label: 'Tool',
-    icon: Wrench,
-  },
-  link: {
-    label: 'Link',
-    icon: ExternalLink,
-  },
-};
 
 export function ResourceCard({
   resource,
@@ -50,41 +17,35 @@ export function ResourceCard({
     resource.previewHorizontal ??
     resource.preview;
 
-  const type = typeConfig[resource.type];
-  const TypeIcon = type.icon;
-
   return (
     <article
       className="
         group
-        relative
-        aspect-[4/5]
-        overflow-hidden
-        rounded-3xl
-        border
-        border-border
-        bg-card
-        transition-all
-        duration-500
-        hover:-translate-y-1
-        hover:border-primary/30
+        h-full
+        rounded-[16px]
+        bg-[#f5f5f5]
+        p-3
+        dark:bg-white/[0.06]
       "
     >
       <Link
         href={resource.href}
         className="
-          relative
-          block
+          flex
           h-full
-          w-full
+          flex-col
         "
       >
         {/* Image */}
         <div
           className="
-            absolute
-            inset-0
+            relative
+            aspect-[1.6/1]
+            w-full
             overflow-hidden
+            rounded-[16px]
+            bg-neutral-200
+            dark:bg-white/10
           "
         >
           {preview ? (
@@ -93,16 +54,17 @@ export function ResourceCard({
               alt={resource.title}
               fill
               sizes="
-                (max-width: 640px) 82vw,
-                (max-width: 768px) 58vw,
-                (max-width: 1024px) 42vw,
-                300px
+                (max-width: 640px) 90vw,
+                (max-width: 768px) 50vw,
+                (max-width: 1024px) 33vw,
+                320px
               "
               className="
                 object-cover
                 transition-transform
-                duration-700
-                group-hover:scale-105
+                duration-500
+                ease-out
+                group-hover:scale-[1.02]
               "
             />
           ) : (
@@ -112,9 +74,9 @@ export function ResourceCard({
                 h-full
                 items-center
                 justify-center
-                bg-muted
                 text-sm
-                text-muted-foreground
+                text-neutral-500
+                dark:text-white/50
               "
             >
               Resource Preview
@@ -122,169 +84,63 @@ export function ResourceCard({
           )}
         </div>
 
-        {/* Bottom image gradient */}
+        {/* Content */}
         <div
           className="
-            pointer-events-none
-            absolute
-            inset-x-0
-            bottom-0
-            h-1/2
-            bg-gradient-to-t
-            from-black/60
-            via-black/20
-            to-transparent
-          "
-        />
-
-        {/* Content Panel */}
-        <div
-          className="
-            absolute
-            inset-x-0
-            bottom-0
-
-            h-[118px]
-            overflow-hidden
-
-            rounded-t-3xl
-
-            bg-gradient-to-b
-            from-black
-            via-[#071c49]
-            to-[#0B65F3]
-
-            px-5
-            py-4
-            text-white
-
-            transition-[height]
-            duration-500
-            ease-[cubic-bezier(0.16,1,0.3,1)]
-
-            group-hover:h-[218px]
+            flex
+            flex-1
+            flex-col
+            px-0.5
+            pb-0.5
+            pt-4
           "
         >
-          {/* Resource Type */}
-          <span
-            className="
-              mb-2.5
-              inline-flex
-              items-center
-              gap-1.5
-              rounded-full
-              border
-              border-[#BBFF1B]
-              bg-transparent
-              px-2.5
-              py-1
-              text-[9px]
-              font-bold
-              uppercase
-              tracking-[0.13em]
-              text-[#BBFF1B]
-            "
-          >
-            <TypeIcon
-              size={11}
-              strokeWidth={2}
-            />
-
-            {type.label}
-          </span>
-
           {/* Title */}
           <h3
             className="
-              overflow-hidden
-              text-ellipsis
-              whitespace-nowrap
-
               font-heading
-              text-lg
+              text-[16px]
               font-semibold
               leading-[1.15]
-              tracking-tight
-              text-white
-
-              group-hover:overflow-visible
-              group-hover:whitespace-normal
+              tracking-[-0.025em]
+              text-[#090d1d]
+              sm:text-[18px]
+              dark:text-white
             "
           >
             {resource.title}
           </h3>
 
-          {/* Hover Content */}
-          <div
-            className="
-              max-h-0
-              overflow-hidden
-              opacity-0
-
-              transition-all
-              duration-300
-              ease-out
-
-              group-hover:max-h-[130px]
-              group-hover:opacity-100
-            "
-          >
-            {/* Description */}
-            <p
+          {/* Button */}
+          <div className="mt-auto pt-5">
+            <span
               className="
-                mt-3
-                line-clamp-3
-                text-sm
-                leading-6
-                text-white/70
-              "
-            >
-              {resource.description}
-            </p>
-
-            {/* Footer */}
-            <div
-              className="
-                mt-3
                 flex
+                h-[44px]
+                w-full
                 items-center
-                justify-between
+                justify-center
+                rounded-[10px]
+                bg-[#1f1f1f]
+                px-4
+                text-center
+                font-heading
+                text-[15px]
+                font-semibold
+                text-white
+
+                transition-colors
+                duration-200
+
+                group-hover:bg-[#333333]
+
+                dark:bg-white
+                dark:text-black
+                dark:group-hover:bg-[#BBFF1B]
               "
             >
-              <span
-                className="
-                  text-xs
-                  font-medium
-                  text-white/70
-                "
-              >
-                View resource
-              </span>
-
-              <span
-                className="
-                  flex
-                  h-8
-                  w-8
-                  shrink-0
-                  items-center
-                  justify-center
-                  rounded-full
-                  bg-[#BBFF1B]
-                  leading-none
-                  text-black
-                "
-              >
-                <ArrowUpRight
-                  size={14}
-                  strokeWidth={2}
-                  className="
-                    block
-                    shrink-0
-                  "
-                />
-              </span>
-            </div>
+              Read more
+            </span>
           </div>
         </div>
       </Link>

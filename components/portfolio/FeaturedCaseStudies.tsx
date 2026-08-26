@@ -90,119 +90,122 @@ export function FeaturedCaseStudies() {
     >
       <div className="container-page">
         {/* Header */}
+<div
+  className="
+    mb-10
+    text-center
+    md:mb-12
+  "
+>
+  <Reveal>
+    <p
+      className="
+        text-xs
+        font-semibold
+        uppercase
+        tracking-[0.2em]
+        text-primary
+      "
+    >
+      Featured Case Studies
+    </p>
+  </Reveal>
 
-        <div
-          className="
-            flex
-            flex-col
-            justify-between
-            gap-8
-            md:flex-row
-            md:items-end
-          "
-        >
-          <div>
-            <Reveal
-              className="
-                flex
-                items-center
-                gap-3
-                text-xs
-                font-semibold
-                uppercase
-                tracking-widest
-                text-muted-foreground
-              "
-            >
-              <span className="h-px w-8 bg-secondary" />
-              Featured Case Studies
-            </Reveal>
+  <Reveal delay={0.1}>
+    <h2
+      className="
+        mx-auto
+        mt-4
+        max-w-none
+        whitespace-nowrap
+        font-heading
+        text-3xl
+        font-semibold
+        leading-[1]
+        tracking-tight
+        sm:text-4xl
+        md:text-5xl
+      "
+    >
+      See the work as it comes together
+    </h2>
+  </Reveal>
+</div>
 
-            <Reveal delay={0.1}>
-              <h2
-                className="
-                  mt-8
-                  max-w-3xl
-                  font-serif
-                  text-5xl
-                  font-semibold
-                  leading-[1.05]
-                  tracking-tight
-                  md:text-6xl
-                "
-              >
-                Real results.
-              </h2>
-            </Reveal>
-          </div>
+{/* Navigation */}
+<div
+  className="
+    mb-8
+    flex
+    items-center
+    justify-center
+    gap-2
+  "
+>
+  <button
+    type="button"
+    onClick={previous}
+    aria-label="Previous case study"
+    className="
+      rounded-full
+      border
+      border-border
+      p-3
+      transition
+      hover:bg-secondary
+    "
+  >
+    <ChevronLeft size={18} />
+  </button>
 
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={previous}
-              aria-label="Previous case study"
-              className="
-                rounded-full
-                border
-                border-border
-                p-3
-                transition
-                hover:bg-secondary
-              "
-            >
-              <ChevronLeft size={18} />
-            </button>
+  <button
+    type="button"
+    onClick={() =>
+      setPaused((value) => !value)
+    }
+    aria-label={
+      paused
+        ? 'Resume case study autoplay'
+        : 'Pause case study autoplay'
+    }
+    className="
+      rounded-full
+      border
+      border-border
+      p-3
+      transition
+      hover:bg-secondary
+    "
+  >
+    {paused ? (
+      <Play size={18} />
+    ) : (
+      <Pause size={18} />
+    )}
+  </button>
 
-            <button
-              type="button"
-              onClick={() =>
-                setPaused((value) => !value)
-              }
-              aria-label={
-                paused
-                  ? 'Resume case study autoplay'
-                  : 'Pause case study autoplay'
-              }
-              className="
-                rounded-full
-                border
-                border-border
-                p-3
-                transition
-                hover:bg-secondary
-              "
-            >
-              {paused ? (
-                <Play size={18} />
-              ) : (
-                <Pause size={18} />
-              )}
-            </button>
+  <button
+    type="button"
+    onClick={next}
+    aria-label="Next case study"
+    className="
+      rounded-full
+      border
+      border-border
+      p-3
+      transition
+      hover:bg-secondary
+    "
+  >
+    <ChevronRight size={18} />
+  </button>
+</div>
 
-            <button
-              type="button"
-              onClick={next}
-              aria-label="Next case study"
-              className="
-                rounded-full
-                border
-                border-border
-                p-3
-                transition
-                hover:bg-secondary
-              "
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
-        </div>
-
-        {/* Progress */}
-
-        <ProgressBar
-          progress={progress}
-          duration={AUTO_PLAY_DELAY}
-        />
+{/* Progress */}
+<ProgressBar
+  progress={progress}
+  duration={AUTO_PLAY_DELAY}
+/>
 
         {/* Main Content */}
 

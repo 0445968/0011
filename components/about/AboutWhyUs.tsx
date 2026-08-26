@@ -16,29 +16,32 @@ const reasons = [
     title: 'Strategy with direction',
     description:
       'We define what your brand needs to communicate before shaping how it looks.',
-    accent: 'bg-[#B7A7FF]',
+    accent: 'bg-[#08004C]',
+    iconClass: 'text-white',
   },
   {
     icon: Sparkles,
     title: 'Ideas with character',
     description:
       'We build visual concepts with enough personality to feel distinct and memorable.',
-    accent: 'bg-[#FF7A4A]',
+    accent: 'bg-[#1600A2]',
+    iconClass: 'text-white',
   },
   {
     icon: Palette,
     title: 'Design that feels cohesive',
     description:
       'From identity to campaigns, every touchpoint is designed to feel connected.',
-    accent: 'bg-[#BDF4B7]',
+    accent: 'bg-[#0B65F3]',
+    iconClass: 'text-white',
   },
   {
     icon: Layers3,
     title: 'Systems built to grow',
     description:
-      'We create flexible brand systems that can evolve as your business does.',
-    accent: 'bg-black dark:bg-white',
-    iconClass: 'text-white dark:text-black',
+      'We create flexible brand systems that can evolve with you as your business does.',
+    accent: 'bg-[#C7DCFF] dark:bg-white',
+    iconClass: 'text-black',
   },
 ];
 
@@ -95,10 +98,10 @@ export function AboutWhyUs() {
                       items-center
                       justify-center
                       rounded-md
-                      bg-[#B7A7FF]
+                      bg-[#0B65F3]
                       text-[11px]
                       font-bold
-                      text-black
+                      text-white
                     "
                   >
                     ✦
@@ -106,21 +109,37 @@ export function AboutWhyUs() {
                 </div>
 
                 <h2
-                  className="
-                    mt-6
-                    max-w-xl
-                    text-balance
-                    font-heading
-                    text-4xl
-                    font-semibold
-                    leading-[1.02]
-                    tracking-[-0.04em]
-                    sm:text-5xl
-                    lg:text-6xl
-                  "
-                >
-                  Thoughtful design for brands that want to move forward.
-                </h2>
+  className="
+    mt-6
+    max-w-xl
+    text-balance
+    font-heading
+    text-4xl
+    font-semibold
+    leading-[1.02]
+    tracking-[-0.04em]
+    sm:text-5xl
+    lg:text-6xl
+  "
+>
+  Thoughtful design for brands that want to move{' '}
+  <span className="relative inline-block">
+    forward
+    <span
+      aria-hidden="true"
+      className="
+        absolute
+        -bottom-1
+        left-0
+        h-[5px]
+        w-full
+        rounded-full
+        bg-[#BBFF1B]
+      "
+    />
+  </span>
+  .
+</h2>
 
                 <p
                   className="
@@ -243,27 +262,6 @@ export function AboutWhyUs() {
                 })}
               </div>
             </div>
-
-            {/* Bottom statement */}
-            <Reveal delay={0.18}>
-              <p
-                className="
-                  mx-auto
-                  mt-14
-                  max-w-4xl
-                  text-center
-                  font-heading
-                  text-2xl
-                  font-semibold
-                  leading-snug
-                  tracking-[-0.03em]
-                  sm:text-3xl
-                "
-              >
-                We build Bivi around clarity, collaboration, and work that
-                actually helps brands move forward.
-              </p>
-            </Reveal>
           </div>
         </Reveal>
       </div>

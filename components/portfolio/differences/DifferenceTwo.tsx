@@ -78,22 +78,25 @@ export function DifferenceTwo() {
             One connected process
           </p>
 
+
+          
+
           <h3
-            className="
-              mt-4
-              font-heading
-              text-[clamp(2.25rem,4vw,4rem)]
-              font-medium
-              leading-[0.94]
-              tracking-[-0.05em]
-              text-[#f8f7f2]
-            "
-          >
-            Every brand decision{' '}
-            <span className="text-[#bbff1b]">
-              stays connected.
-            </span>
-          </h3>
+  className="
+    mt-4
+    font-heading
+    text-[clamp(1.75rem,3vw,3rem)]
+    font-medium
+    leading-[0.98]
+    tracking-[-0.04em]
+    text-[#f8f7f2]
+  "
+>
+  Every brand decision{' '}
+  <span className="text-[#FFFFFF]">
+    stays connected.
+  </span>
+</h3>
 
           <p
             className="
@@ -108,6 +111,31 @@ export function DifferenceTwo() {
             One cohesive brand system designed around the people who
             ultimately experience it.
           </p>
+
+          <a
+            href="/services"
+            className="
+              mt-7
+              inline-flex
+              h-[40px]
+              items-center
+              justify-center
+              rounded-[14px]
+              bg-[#1600A2]
+              px-4
+              text-[14px]
+              font-bold
+              leading-none
+              text-white
+              transition-colors
+              duration-200
+              hover:bg-[#aeea19]
+              hover:text-black
+            "
+          >
+            Get started
+          </a>
+
         </div>
       </Reveal>
     </section>

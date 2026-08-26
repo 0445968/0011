@@ -91,7 +91,7 @@ export function AboutFaq() {
                     items-center
                     justify-center
                     rounded-md
-                    bg-[#FF7A4A]
+                    bg-[#0B65F3]
                     text-[11px]
                     font-bold
                     text-white
