@@ -587,6 +587,98 @@ export const demos: Demo[] = [
         'border-[#6d28d9]/15 text-[#5b21b6] hover:bg-[#6d28d9]/5 dark:border-white/10 dark:text-white dark:hover:bg-white/5',
     },
   },
+
+    /* ---------------------------------------------------------------- */
+  /* Slotly                                                           */
+  /* ---------------------------------------------------------------- */
+
+  {
+    id: '6',
+  
+    slug:
+      'appointment-booking',
+  
+    title:
+      'Spa Appointment Booking',
+  
+    productName:
+      'Sage & Stone Spa',
+  
+    shortDescription:
+      'A luxury spa booking experience with location selection, treatments, professionals, referrals, and payment.',
+  
+    longDescription:
+      'An interactive spa scheduling experience where guests choose a location, select a treatment, pick a date and time, request a preferred spa professional, add referral details, and complete a simulated card or gift-card payment.',
+  
+    category:
+      'SaaS',
+  
+    tags: [
+      'Booking',
+      'Spa',
+      'Calendar',
+      'Checkout',
+    ],
+  
+    technologies: [
+      'React',
+      'TypeScript',
+      'Tailwind',
+    ],
+  
+    difficulty:
+      'Standard',
+  
+    featured:
+      true,
+  
+    thumbnail:
+      '/images/demos/appointment-booking-2.png',
+  
+    href:
+      '/demos/appointment-booking',
+  
+    status:
+      'active',
+  
+    presentation: {
+      eyebrow:
+        'Spa booking experience',
+  
+      headline:
+        'Book a moment made for you.',
+  
+      description:
+        'Choose a spa, treatment, time, professional, and payment method through a calm, considered wellness booking flow.',
+  
+      background:
+        'bg-[#cfe0d2]',
+  
+      foreground:
+        'text-[#173d2f]',
+  
+      muted:
+        'text-[#698174]',
+  
+      stage:
+        'bg-[#cfe0d2]',
+  
+      surface:
+        'bg-[#eef4ef]',
+  
+      accent:
+        'bg-[#173f30]',
+  
+      accentHover:
+        'hover:bg-[#21533f]',
+  
+      accentText:
+        'text-white',
+  
+      secondaryButton:
+        'border-[#9db7a7] text-[#173d2f] hover:bg-[#dce9df]',
+    },
+  },
 ];
 
 /* ================================================================== */
