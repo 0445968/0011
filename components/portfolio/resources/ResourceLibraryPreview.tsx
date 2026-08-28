@@ -36,21 +36,6 @@ export function ResourceLibraryPreview() {
             text-center
           "
         >
-          <Reveal
-            className="
-              flex
-              items-center
-              justify-center
-              gap-3
-              text-xs
-              font-semibold
-              uppercase
-              tracking-[0.24em]
-              text-primary
-            "
-          >
-            Resource Library
-          </Reveal>
 
           <Reveal delay={0.1}>
             <h2
@@ -66,7 +51,7 @@ export function ResourceLibraryPreview() {
                 md:text-5xl
               "
             >
-              Upgrade your brand 
+              Resources for your next move
             </h2>
           </Reveal>
 

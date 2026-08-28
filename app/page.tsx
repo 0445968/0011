@@ -11,6 +11,8 @@ import { FeaturedCaseStudies } from '@/components/portfolio/FeaturedCaseStudies'
 import { ServicesCarousel } from '@/components/portfolio/services/ServicesCarousel';
 import { BrandStrategyProblem } from '@/components/services/strategy-problem/BrandStrategyProblem';
 import { BrandNextSection } from '@/components/home/BrandNextSection';
+import { BrandComparison } from '@/components/home/BrandComparison';
+import { IntegrationsGrid } from '@/components/home/IntegrationsGrid';
 
 
 export default function Home() {
@@ -21,10 +23,10 @@ export default function Home() {
       <BrandStrategyProblem />
       <BrandNextSection />
       <ServicesCarousel />
-      <Differences />
+      <BrandComparison />
+      <IntegrationsGrid />
       <FeaturedCaseStudies />
       <ResourceLibraryPreview />
-      <IntegrationsPromo />
     </>
   );
 }

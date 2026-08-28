@@ -70,7 +70,7 @@ export const resources: Resource[] = [
     href: '/resources/color-systems-handbook',
     badge: 'PDF · 18 pages',
     date: '2025-06-22',
-    preview: '/images/resources/guide-color.png',
+    preview: '/images/resources/guide-color.webp',
     body:
       'Color is the most leveraged decision in a design system. This guide covers HSL/LCH fundamentals, building ramps, ensuring WCAG contrast across states, and structuring tokens so dark mode is a variable, not a rewrite.',
   },
@@ -86,7 +86,7 @@ export const resources: Resource[] = [
     href: '/resources/saas-launch-checklist',
     badge: 'PDF · 12 pages',
     date: '2025-05-30',
-    preview: '/images/resources/guide-saas.png',
+    preview: '/images/resources/guide-saas.webp',
     body:
       'A pre-launch checklist organized by discipline: design polish, performance budgets, error states, analytics instrumentation, privacy policy, billing edge cases, and a go/no-go marketing review.',
   },

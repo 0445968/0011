@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { ArrowUpRight, Mail } from 'lucide-react';
+import {
+  ArrowUpRight,
+  Mail,
+  ShieldCheck,
+} from 'lucide-react';
 
 import {
   socialLinks,
@@ -13,61 +17,153 @@ import {
 import { useI18n } from '@/lib/i18n/context';
 import { LanguageSwitcher } from './LanguageSwitcher';
 
+interface FooterLink {
+  labelKey: string;
+  href: string;
+  icon?: string;
+}
+
 interface FooterGroup {
   titleKey: string;
-  links: { labelKey: string; href: string }[];
+  links: FooterLink[];
 }
 
 const footerGroups: FooterGroup[] = [
   {
     titleKey: 'footer.company',
     links: [
-      { labelKey: 'footer.home', href: '/' },
-      { labelKey: 'nav.about', href: '/about' },
-      { labelKey: 'nav.integrations', href: '/integrations' },
-      { labelKey: 'nav.process', href: '/process' },
-      { labelKey: 'nav.careers', href: '/careers' },
-      { labelKey: 'footer.contact', href: '/contact' },
-      { labelKey: 'footer.faq', href: '/faq' },
+      {
+        labelKey: 'footer.home',
+        href: '/',
+      },
+      {
+        labelKey: 'nav.about',
+        href: '/about',
+      },
+      {
+        labelKey: 'nav.integrations',
+        href: '/integrations',
+      },
+      {
+        labelKey: 'nav.process',
+        href: '/process',
+      },
+      {
+        labelKey: 'nav.careers',
+        href: '/careers',
+      },
+      {
+        labelKey: 'footer.contact',
+        href: '/contact',
+      },
+      {
+        labelKey: 'footer.faq',
+        href: '/faq',
+      },
     ],
   },
+
   {
     titleKey: 'footer.resources',
     links: [
-      { labelKey: 'footer.portfolio', href: '/portfolio' },
-      { labelKey: 'nav.journal', href: '/blog' },
-      { labelKey: 'nav.guides', href: '/guides' },
-      { labelKey: 'nav.inspiration', href: '/inspiration' },
-      { labelKey: 'footer.freeResources', href: '/resources' },
+      {
+        labelKey: 'footer.portfolio',
+        href: '/portfolio',
+      },
+      {
+        labelKey: 'nav.journal',
+        href: '/blog',
+      },
+      {
+        labelKey: 'nav.guides',
+        href: '/guides',
+      },
+      {
+        labelKey: 'nav.inspiration',
+        href: '/inspiration',
+      },
+      {
+        labelKey: 'footer.freeResources',
+        href: '/resources',
+      },
     ],
   },
+
   {
     titleKey: 'footer.solutions',
     links: [
-      { labelKey: 'nav.services', href: '/services' },
-      { labelKey: 'footer.webDesign', href: '/services' },
-      { labelKey: 'footer.brandSystems', href: '/services' },
-      { labelKey: 'footer.development', href: '/services' },
-      { labelKey: 'footer.creativeStrategy', href: '/services' },
+      {
+        labelKey: 'nav.services',
+        href: '/services',
+        icon: '/images/footer/solutions/services.png',
+      },
+      {
+        labelKey: 'footer.webDesign',
+        href: '/services',
+        icon: '/images/footer/solutions/web-design.png',
+      },
+      {
+        labelKey: 'footer.brandSystems',
+        href: '/services',
+        icon: '/images/footer/solutions/brand-systems.png',
+      },
+      {
+        labelKey: 'footer.development',
+        href: '/services',
+        icon: '/images/footer/solutions/development.png',
+      },
+      {
+        labelKey: 'footer.creativeStrategy',
+        href: '/services',
+        icon: '/images/footer/solutions/strategy.png',
+      },
     ],
   },
+
   {
     titleKey: 'footer.tools',
     links: [
-      { labelKey: 'footer.templates', href: '/work' },
-      { labelKey: 'nav.demos', href: '/demos' },
-      { labelKey: 'footer.guides', href: '/guides' },
-      { labelKey: 'footer.inspiration', href: '/inspiration' },
-      { labelKey: 'footer.resourcesLibrary', href: '/resources' },
+      {
+        labelKey: 'nav.demos',
+        href: '/demos',
+        icon: '/images/footer/tools/demos.png',
+      },
+      {
+        labelKey: 'footer.guides',
+        href: '/guides',
+        icon: '/images/footer/tools/guides.png',
+      },
+      {
+        labelKey: 'footer.inspiration',
+        href: '/inspiration',
+        icon: '/images/footer/tools/inspiration.png',
+      },
+      {
+        labelKey: 'footer.resourcesLibrary',
+        href: '/resources',
+        icon: '/images/footer/tools/resources.png',
+      },
     ],
   },
 ];
 
 const legalLinkKeys = [
-  { labelKey: 'footer.privacy', href: '/privacy' },
-  { labelKey: 'footer.terms', href: '/terms' },
-  { labelKey: 'footer.cookiePrefs', href: '#' },
-  { labelKey: 'footer.accessibility', href: '/accessibility' },
+  {
+    labelKey: 'footer.privacy',
+    href: '/privacy',
+  },
+  {
+    labelKey: 'footer.terms',
+    href: '/terms',
+  },
+  {
+    labelKey: 'footer.cookiePrefs',
+    href: '#',
+  },
+  {
+    labelKey: 'footer.accessibility',
+    href: '/accessibility',
+  },
 ];
 
 const pagesWithoutTagline = [
@@ -80,43 +176,64 @@ const pagesWithoutTagline = [
 export function Footer() {
   const { t } = useI18n();
   const pathname = usePathname();
+
   const [time, setTime] = useState('');
 
-  const hideTagline = pagesWithoutTagline.includes(pathname);
+  const hideTagline =
+    pagesWithoutTagline.includes(pathname);
 
   useEffect(() => {
     const updateTime = () => {
-      const houstonTime = new Intl.DateTimeFormat('en-US', {
-        timeZone: 'America/Chicago',
-        hour: 'numeric',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: true,
-      }).format(new Date());
+      const houstonTime =
+        new Intl.DateTimeFormat('en-US', {
+          timeZone: 'America/Chicago',
+          hour: 'numeric',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true,
+        }).format(new Date());
 
       setTime(houstonTime);
     };
 
     updateTime();
 
-    const interval = setInterval(updateTime, 1000);
+    const interval = setInterval(
+      updateTime,
+      1000
+    );
 
     return () => clearInterval(interval);
   }, []);
 
   return (
-         <footer className="relative bg-[#1600A2] text-white">
-  <div
-    className={`
-      container-page
-      ${
-        hideTagline
-          ? 'pt-12 pb-8 md:pt-16 md:pb-8'
-          : 'pt-20 pb-8 md:pt-28 md:pb-8'
-      }
-    `}
-  >
-        {/* Footer Hero */}
+    <footer
+      className="
+        relative
+        bg-muted/70
+        text-foreground
+      "
+    >
+      <div
+        className={`
+          container-page
+          ${
+            hideTagline
+              ? `
+                pt-24
+                pb-8
+                md:pt-32
+                lg:pt-36
+              `
+              : `
+                pt-20
+                pb-8
+                md:pt-28
+              `
+          }
+        `}
+      >
+        {/* Tagline */}
         {!hideTagline && (
           <div className="max-w-5xl">
             <h2
@@ -124,37 +241,60 @@ export function Footer() {
                 font-serif
                 text-5xl
                 font-medium
-                leading-[0.9]
+                leading-[0.92]
                 tracking-tight
-                text-white
+                text-foreground
                 md:text-6xl
               "
             >
               {t('footer.tagline')}
 
-              <span className="block text-[#BBFF1B]">
+              <span
+                className="
+                  block
+                  text-[#0B65F3]
+                "
+              >
                 {t('footer.taglineAccent')}
               </span>
             </h2>
           </div>
         )}
 
-        {/* Footer Content */}
+        {/* Main content */}
         <div
           className={`
             grid
-            gap-12
+            gap-14
             lg:grid-cols-12
             ${
               hideTagline
                 ? 'mt-0'
-                : 'mt-16'
+                : 'mt-20'
             }
           `}
         >
-          {/* Contact */}
+          {/* Contact / brand */}
           <div className="lg:col-span-4">
-            <div className="mt-2 space-y-5">
+            <a
+              href="/"
+              aria-label="Bivi home"
+              className="
+                inline-flex
+                items-center
+              "
+            >
+              <img
+                src="/images/logo.svg"
+                alt={siteConfig.name}
+                className="
+                  h-10
+                  w-auto
+                "
+              />
+            </a>
+
+            <div className="mt-8 space-y-5">
               <a
                 href={`mailto:${contactInfo.email}`}
                 className="
@@ -162,52 +302,65 @@ export function Footer() {
                   inline-flex
                   items-center
                   gap-2
-                  text-lg
+                  text-base
                   font-medium
-                  text-white
+                  text-foreground
                   transition-colors
                   duration-150
-                  hover:text-[#BBFF1B]
+                  hover:text-[#0B65F3]
                 "
               >
                 <Mail
-                  size={18}
+                  size={17}
                   className="
-                    text-secondary
+                    text-muted-foreground
                     transition-colors
                     duration-150
-                    group-hover:text-[#BBFF1B]
+                    group-hover:text-[#0B65F3]
                   "
                 />
 
                 {contactInfo.email}
 
                 <ArrowUpRight
-                  size={16}
+                  size={15}
                   className="
                     opacity-0
-                    transition-all
-                    duration-300
-                    group-hover:translate-x-0.5
-                    group-hover:-translate-y-0.5
+                    transition-opacity
+                    duration-150
                     group-hover:opacity-100
                   "
                 />
               </a>
 
-              <div className="space-y-2 text-sm text-white/60">
+              <div
+                className="
+                  space-y-2
+                  text-sm
+                  leading-6
+                  text-muted-foreground
+                "
+              >
                 <p>
                   {contactInfo.location}
                 </p>
 
                 <p>
-                  {t('footer.localTime')} — {time}
+                  {t('footer.localTime')} —{' '}
+                  {time}
                 </p>
               </div>
             </div>
 
-            {/* Social Icons */}
-            <ul className="mt-8 flex gap-3">
+            {/* Socials */}
+            <ul
+              className="
+                mt-8
+                flex
+                flex-wrap
+                gap-2
+              "
+            >
               {socialLinks.map((link) => (
                 <li key={link.id}>
                   <a
@@ -217,21 +370,22 @@ export function Footer() {
                     aria-label={link.label}
                     className="
                       flex
-                      h-11
-                      w-11
+                      h-10
+                      w-10
                       items-center
                       justify-center
                       rounded-full
                       border
-                      border-white/20
-                      text-white/80
-                      transition-all
+                      border-border
+                      bg-background/50
+                      text-muted-foreground
+                      transition-colors
                       duration-150
-                      hover:border-[#BBFF1B]
-                      hover:text-[#BBFF1B]
+                      hover:border-[#0B65F3]
+                      hover:text-[#0B65F3]
                     "
                   >
-                    <link.icon size={18} />
+                    <link.icon size={17} />
                   </a>
                 </li>
               ))}
@@ -242,7 +396,8 @@ export function Footer() {
           <div
             className="
               grid
-              gap-10
+              gap-x-8
+              gap-y-12
               sm:grid-cols-2
               lg:col-span-8
               lg:grid-cols-4
@@ -252,30 +407,65 @@ export function Footer() {
               <div key={group.titleKey}>
                 <h3
                   className="
-                    text-base
+                    font-heading
+                    text-[15px]
                     font-semibold
-                    uppercase
-                    tracking-[0.15em]
-                    text-white
+                    tracking-[-0.01em]
+                    text-foreground
                   "
                 >
                   {t(group.titleKey)}
                 </h3>
 
-                <ul className="mt-6 space-y-3">
+                <ul
+                  className="
+                    mt-6
+                    space-y-4
+                  "
+                >
                   {group.links.map((link) => (
                     <li key={link.labelKey}>
                       <a
                         href={link.href}
                         className="
+                          group
+                          flex
+                          items-center
+                          gap-2.5
                           text-sm
-                          text-white/70
+                          text-muted-foreground
                           transition-colors
-                          duration-100
-                          hover:text-[#BBFF1B]
+                          duration-150
+                          hover:text-foreground
                         "
                       >
-                        {t(link.labelKey)}
+                        {link.icon && (
+                          <span
+                            className="
+                              flex
+                              h-6
+                              w-6
+                              shrink-0
+                              items-center
+                              justify-center
+                            "
+                          >
+                            <img
+                              src={link.icon}
+                              alt=""
+                              aria-hidden="true"
+                              className="
+                                h-5
+                                w-5
+                                object-contain
+                              "
+                            />
+                          </span>
+                        )}
+
+                        <span>
+                          {t(link.labelKey)}
+                        </span>
                       </a>
                     </li>
                   ))}
@@ -285,48 +475,92 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Bottom Bar */}
+        {/* Compliance */}
+<div
+  className="
+    mt-20
+    flex
+    flex-wrap
+    items-center
+    gap-4
+  "
+>
+  <a
+    href="#"
+    aria-label="HIPAA compliance"
+    className="
+      inline-flex
+      items-center
+      transition-opacity
+      duration-150
+      hover:opacity-70
+    "
+  >
+    <img
+      src="/images/footer/hipaa.svg"
+      alt="HIPAA compliant"
+      className="
+        h-8
+        w-auto
+        object-contain
+      "
+    />
+  </a>
+
+  <a
+    href="#"
+    aria-label="GDPR compliance"
+    className="
+      inline-flex
+      items-center
+      transition-opacity
+      duration-150
+      hover:opacity-70
+    "
+  >
+    <img
+      src="/images/footer/gdpr.webp"
+      alt="GDPR compliant"
+      className="
+        h-8
+        w-auto
+        object-contain
+      "
+    />
+  </a>
+</div>
+
+        {/* Bottom bar */}
         <div
           className="
-            mt-20
+            mt-10
             grid
             gap-6
             border-t
-            border-white/20
-            pt-8
+            border-border
+            pt-7
             text-xs
-            text-white/50
-            md:grid-cols-3
+            text-muted-foreground
+            md:grid-cols-[auto_1fr_auto]
             md:items-center
           "
         >
-          {/* Logo */}
-          <div>
-            <a
-              href="/"
-              aria-label="Bivi home"
-            >
-              <img
-                src="/images/logo.svg"
-                alt={siteConfig.name}
-                className="
-                  h-10
-                  w-auto
-                  brightness-0
-                  invert
-                "
-              />
-            </a>
-          </div>
+          {/* Copyright */}
+          <p>
+            © {new Date().getFullYear()}{' '}
+            {siteConfig.name}.{' '}
+            {t('footer.rights')}
+          </p>
 
-          {/* Legal + Language */}
+          {/* Legal */}
           <div
             className="
               flex
+              flex-wrap
               items-center
-              justify-center
               gap-x-5
-              whitespace-nowrap
+              gap-y-2
+              md:justify-center
             "
           >
             {legalLinkKeys.map((link) => (
@@ -334,23 +568,22 @@ export function Footer() {
                 key={link.labelKey}
                 href={link.href}
                 className="
+                  underline-offset-4
                   transition-colors
                   duration-150
-                  hover:text-[#BBFF1B]
+                  hover:text-foreground
+                  hover:underline
                 "
               >
                 {t(link.labelKey)}
               </a>
             ))}
-
-            <LanguageSwitcher compact />
           </div>
 
-          {/* Copyright */}
-          <p className="md:text-right">
-            © {new Date().getFullYear()} {siteConfig.name}.{' '}
-            {t('footer.rights')}
-          </p>
+          {/* Language */}
+          <div className="md:justify-self-end">
+            <LanguageSwitcher compact />
+          </div>
         </div>
       </div>
     </footer>
