@@ -679,6 +679,37 @@ export const demos: Demo[] = [
         'border-[#9db7a7] text-[#173d2f] hover:bg-[#dce9df]',
     },
   },
+
+  {
+    id: '7',
+    slug: 'business-finance',
+    title: 'Business Finance & HR',
+    productName: 'Northstar Admin',
+    shortDescription: 'A business operations dashboard for payroll, HR, time, tax, documents, and reporting.',
+    longDescription: 'A fictional business administration platform that brings payroll, employee records, scheduling, timecards, time-off approvals, tax compliance, document management, and workforce reporting into one interface.',
+    category: 'SaaS',
+    tags: ['Payroll', 'HR', 'Scheduling', 'Tax'],
+    technologies: ['React', 'TypeScript', 'Tailwind'],
+    difficulty: 'Advanced',
+    featured: true,
+    thumbnail: '/images/demos/business-finance.png',
+    href: '/demos/business-finance',
+    status: 'active',
+    presentation: {
+      eyebrow: 'Business operations platform',
+      headline: 'Run payroll, people, and operations from one place.',
+      description: 'Review payroll, manage employees, approve time off, monitor timecards, stay ahead of tax deadlines, organize documents, and understand labor costs through one connected business workspace.',
+      background: 'bg-[#08172a]',
+      foreground: 'text-white',
+      muted: 'text-white/55',
+      stage: 'bg-[#061321]',
+      surface: 'bg-[#08172a]',
+      accent: 'bg-[#a9f04d]',
+      accentHover: 'hover:bg-[#b8f66d]',
+      accentText: 'text-[#071426]',
+      secondaryButton: 'border-white/15 text-white hover:bg-white/[0.06]',
+    },
+  },
 ];
 
 /* ================================================================== */

@@ -5,6 +5,7 @@ import { EchoApp } from './music-player/EchoApp';
 import { FlowApp } from './kanban/FlowApp';
 import { QuizzedApp } from './trivia/QuizzedApp';
 import { SlotlyApp } from './appointment-booking/SlotlyApp';
+import { BusinessFinanceApp } from './business-finance/BusinessFinanceApp';
 
 export interface DemoComponentProps {
   slug: string;
@@ -20,6 +21,7 @@ const demoComponents: Record<
   ComponentType<DemoComponentProps>
 > = {
   'appointment-booking': SlotlyApp,
+  'business-finance': BusinessFinanceApp,
   'travel-planner': RoamlyApp,
   'finance-dashboard': LedgerApp,
   'music-player': EchoApp,
