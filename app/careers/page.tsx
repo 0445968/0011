@@ -1,17 +1,13 @@
 import type { Metadata } from 'next';
-
+import Image from 'next/image';
 import {
   FileUp,
-  Heart,
-  Sparkles,
   Upload,
-  Users,
-  Zap,
 } from 'lucide-react';
 
-import { Reveal } from '@/components/portfolio/Reveal';
-
 import { Caveat } from 'next/font/google';
+
+import { Reveal } from '@/components/portfolio/Reveal';
 
 const caveat = Caveat({
   subsets: ['latin'],
@@ -26,33 +22,28 @@ export const metadata: Metadata = {
 
 const values = [
   {
-    icon: Sparkles,
+    icon: '/images/icons/craft.png',
     title: 'Craft over output',
     description:
       'We believe the details others overlook are the details that matter most.',
-    accent: 'bg-[#B7A7FF]',
   },
   {
-    icon: Heart,
+    icon: '/images/icons/respect.png',
     title: 'Respect by default',
     description:
       'Great work happens in environments where people feel valued and trusted.',
-    accent: 'bg-[#FF7A4A]',
   },
   {
-    icon: Zap,
+    icon: '/images/icons/shipping.png',
     title: 'Bias toward shipping',
     description:
       'We favor working software over endless deliberation. Ship, learn, refine.',
-    accent: 'bg-[#BDF4B7]',
   },
   {
-    icon: Users,
+    icon: '/images/icons/collaboration.png',
     title: 'Collaborative by nature',
     description:
       'Design and engineering are not separate disciplines here. Everyone participates in both.',
-    accent: 'bg-black dark:bg-white',
-    iconClass: 'text-white dark:text-black',
   },
 ];
 
@@ -140,7 +131,6 @@ export default function CareersPage() {
                 text-center
               "
             >
-
               {/* Title */}
 
               <h1
@@ -159,8 +149,7 @@ export default function CareersPage() {
                   lg:text-[64px]
                 "
               >
-                Build things you&apos;re
-                proud of.
+                Build things you&apos;re proud of.
               </h1>
 
               {/* Description */}
@@ -177,14 +166,10 @@ export default function CareersPage() {
                   sm:leading-8
                 "
               >
-                Bivi is a remote-first
-                creative studio built
-                around thoughtful
-                collaboration, ambitious
-                work, and attention to
-                the details that make
-                good ideas feel
-                exceptional.
+                Bivi is a remote-first creative studio built
+                around thoughtful collaboration, ambitious
+                work, and attention to the details that make
+                good ideas feel exceptional.
               </p>
             </div>
           </Reveal>
@@ -208,9 +193,7 @@ export default function CareersPage() {
             <div
               className="
                 rounded-[28px]
-                border
-                border-border
-                bg-card
+                bg-muted
                 p-6
                 sm:p-8
                 lg:p-10
@@ -229,42 +212,6 @@ export default function CareersPage() {
                 {/* Left */}
 
                 <div>
-                  <div
-                    className="
-                      inline-flex
-                      items-center
-                      gap-2
-                      rounded-lg
-                      border
-                      border-border
-                      bg-background
-                      px-3
-                      py-1.5
-                      text-xs
-                      font-semibold
-                      text-foreground
-                    "
-                  >
-                    What we value
-
-                    <span
-                      className="
-                        flex
-                        h-5
-                        w-5
-                        items-center
-                        justify-center
-                        rounded-md
-                        bg-[#B7A7FF]
-                        text-[11px]
-                        font-bold
-                        text-black
-                      "
-                    >
-                      ✦
-                    </span>
-                  </div>
-
                   <h2
                     className="
                       mt-6
@@ -279,8 +226,7 @@ export default function CareersPage() {
                       lg:text-6xl
                     "
                   >
-                    The principles behind
-                    how we work.
+                    The principles behind how we work
                   </h2>
 
                   <p
@@ -293,14 +239,10 @@ export default function CareersPage() {
                       sm:text-lg
                     "
                   >
-                    We care about
-                    thoughtful craft,
-                    mutual respect,
-                    momentum, and working
-                    closely across
-                    disciplines to make
-                    better things
-                    together.
+                    We care about thoughtful craft,
+                    mutual respect, momentum, and working
+                    closely across disciplines to make
+                    better things together.
                   </p>
                 </div>
 
@@ -313,109 +255,98 @@ export default function CareersPage() {
                     sm:grid-cols-2
                   "
                 >
-                  {values.map(
-                    (value, index) => {
-                      const Icon =
-                        value.icon;
+                  {values.map((value, index) => (
+                    <Reveal
+                      key={value.title}
+                      delay={0.05 + index * 0.06}
+                    >
+                      <article
+                        className="
+                          flex
+                          h-full
+                          min-h-[200px]
+                          flex-col
+                          justify-between
+                          rounded-[18px]
+                          border
+                          border-border/60
+                          bg-background
+                          p-5
+                          shadow-sm
+                          sm:p-6
+                        "
+                      >
+                        {/* Custom icon */}
 
-                      return (
-                        <Reveal
-                          key={value.title}
-                          delay={
-                            0.05 +
-                            index * 0.06
-                          }
+                        <div
+                          className="
+                            relative
+                            h-12
+                            w-12
+                            shrink-0
+                          "
                         >
-                          <article
+                          <Image
+                            src={value.icon}
+                            alt=""
+                            fill
+                            sizes="48px"
                             className="
-                              flex
-                              h-full
-                              min-h-[200px]
-                              flex-col
-                              justify-between
-                              rounded-[20px]
-                              border
-                              border-border
-                              bg-background
-                              p-5
-                              sm:p-6
+                              object-contain
+                              object-left
+                            "
+                          />
+                        </div>
+
+                        <div className="mt-12">
+                          <h3
+                            className="
+                              font-heading
+                              text-lg
+                              font-semibold
+                              tracking-tight
                             "
                           >
-                            <div
-                              className={`
-                                flex
-                                h-11
-                                w-11
-                                items-center
-                                justify-center
-                                rounded-xl
-                                ${value.accent}
-                              `}
-                            >
-                              <Icon
-                                size={19}
-                                strokeWidth={1.8}
-                                className={
-                                  value.iconClass ??
-                                  'text-black'
-                                }
-                              />
-                            </div>
+                            {value.title}
+                          </h3>
 
-                            <div className="mt-12">
-                              <h3
-                                className="
-                                  font-heading
-                                  text-lg
-                                  font-semibold
-                                  tracking-tight
-                                "
-                              >
-                                {value.title}
-                              </h3>
-
-                              <p
-                                className="
-                                  mt-3
-                                  text-sm
-                                  leading-relaxed
-                                  text-muted-foreground
-                                "
-                              >
-                                {
-                                  value.description
-                                }
-                              </p>
-                            </div>
-                          </article>
-                        </Reveal>
-                      );
-                    }
-                  )}
+                          <p
+                            className="
+                              mt-3
+                              text-sm
+                              leading-relaxed
+                              text-muted-foreground
+                            "
+                          >
+                            {value.description}
+                          </p>
+                        </div>
+                      </article>
+                    </Reveal>
+                  ))}
                 </div>
               </div>
 
               {/* Bottom statement */}
 
               <Reveal delay={0.18}>
-  <p
-    className={`
-      ${caveat.className}
-      mx-auto
-      mt-14
-      max-w-4xl
-      text-center
-      text-3xl
-      font-semibold
-      leading-snug
-      text-muted-foreground
-      sm:text-4xl
-    `}
-  >
-    Good work starts with
-    good people.
-  </p>
-</Reveal>
+                <p
+                  className={`
+                    ${caveat.className}
+                    mx-auto
+                    mt-14
+                    max-w-4xl
+                    text-center
+                    text-3xl
+                    font-semibold
+                    leading-snug
+                    text-muted-foreground
+                    sm:text-4xl
+                  `}
+                >
+                  Good work starts with good people.
+                </p>
+              </Reveal>
             </div>
           </Reveal>
         </div>
@@ -542,8 +473,7 @@ export default function CareersPage() {
                       lg:text-5xl
                     "
                   >
-                    No open positions
-                    right now.
+                    No open positions right now.
                   </h2>
 
                   <p
@@ -556,20 +486,13 @@ export default function CareersPage() {
                       sm:text-base
                     "
                   >
-                    We&apos;re not
-                    actively hiring at
-                    the moment, but
-                    we&apos;re always
-                    interested in
-                    meeting thoughtful,
-                    talented people.
-                    Send us your résumé
-                    and a little about
-                    yourself, and
-                    we&apos;ll keep you
-                    in mind when the
-                    right opportunity
-                    comes up.
+                    We&apos;re not actively hiring at
+                    the moment, but we&apos;re always
+                    interested in meeting thoughtful,
+                    talented people. Send us your résumé
+                    and a little about yourself, and
+                    we&apos;ll keep you in mind when the
+                    right opportunity comes up.
                   </p>
                 </div>
 
@@ -622,10 +545,8 @@ export default function CareersPage() {
                       lg:text-right
                     "
                   >
-                    We&apos;ll keep it on
-                    file and reach out if
-                    a relevant
-                    opportunity opens.
+                    We&apos;ll keep it on file and reach out if
+                    a relevant opportunity opens.
                   </p>
                 </div>
               </div>
