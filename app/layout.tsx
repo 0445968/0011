@@ -7,6 +7,7 @@ import type {
 import {
   Inter,
   Sora,
+  IBM_Plex_Mono,
 } from 'next/font/google';
 
 import {
@@ -46,6 +47,13 @@ const sora = Sora({
     '700',
     '800',
   ],
+});
+
+const mono = IBM_Plex_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  variable: '--font-mono',
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
@@ -141,7 +149,7 @@ export default function RootLayout({
   children,
 }: {
   children:
-    React.ReactNode;
+  React.ReactNode;
 }) {
   return (
     <html
@@ -149,6 +157,7 @@ export default function RootLayout({
       className={`
         ${inter.variable}
         ${sora.variable}
+        ${mono.variable}
       `}
       suppressHydrationWarning
     >

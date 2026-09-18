@@ -50,98 +50,99 @@ export function AboutFaq() {
   const rightColumn = faqs.filter((_, index) => index % 2 !== 0);
 
   return (
-    <section className="relative py-12 sm:py-16 lg:py-20">
+    <section
+      className="
+        relative
+        overflow-hidden
+        bg-background
+        pt-12
+        pb-14
+        sm:pt-14
+        sm:pb-16
+        lg:pt-16
+        lg:pb-20
+      "
+    >
       <div className="container-page">
+        {/* Header */}
         <Reveal>
           <div
             className="
-              rounded-[28px]
-              border
-              border-border
-              bg-card
-              p-6
-              sm:p-8
-              lg:p-10
+              mx-auto
+              max-w-4xl
+              text-center
             "
           >
-            {/* Header */}
-            <div className="max-w-3xl">
-              <div
-                className="
-                  inline-flex
-                  items-center
-                  gap-2
-                  rounded-lg
-                  border
-                  border-border
-                  bg-background
-                  px-3
-                  py-1.5
-                  text-xs
-                  font-semibold
-                "
-              >
-                FAQ
-
-                <span
-                  className="
-                    flex
-                    h-5
-                    w-5
-                    items-center
-                    justify-center
-                    rounded-md
-                    bg-[#0B65F3]
-                    text-[11px]
-                    font-bold
-                    text-white
-                  "
-                >
-                  ?
-                </span>
-              </div>
-
-              <h2
-                className="
-                  mt-6
-                  text-balance
-                  font-heading
-                  text-4xl
-                  font-semibold
-                  leading-tight
-                  tracking-[-0.04em]
-                  sm:text-5xl
-                "
-              >
-                Common questions about working with Bivi.
-              </h2>
-
-              <p
-                className="
-                  mt-4
-                  max-w-2xl
-                  text-base
-                  leading-relaxed
-                  text-muted-foreground
-                  sm:text-lg
-                "
-              >
-                A few useful answers about our services, process, and how we
-                work with teams near and far.
-              </p>
-            </div>
-
-            {/* Accordion grid */}
-            <div
+            <p
               className="
-                mt-12
-                grid
-                gap-4
-                lg:grid-cols-2
-                lg:gap-5
+                text-xs
+                font-semibold
+                uppercase
+                tracking-[0.2em]
+                text-primary
               "
             >
-              <div className="space-y-4">
+              FAQ
+            </p>
+
+            <h2
+              style={{
+                lineHeight: '1.15',
+              }}
+              className="
+                mt-4
+                font-heading
+                text-3xl
+                font-semibold
+                tracking-tight
+                sm:text-4xl
+                md:text-5xl
+              "
+            >
+              Common questions about working with Bivi
+            </h2>
+
+            <p
+              className="
+                mx-auto
+                mt-5
+                max-w-2xl
+                text-base
+                leading-7
+                text-muted-foreground
+                sm:text-lg
+                sm:leading-8
+              "
+            >
+              A few useful answers about our services, process, and how we
+              work with teams near and far.
+            </p>
+          </div>
+        </Reveal>
+
+        {/* Main panel */}
+        <Reveal delay={0.05}>
+          <div
+            className="
+              mt-10
+              rounded-[28px]
+              bg-muted
+              p-6
+              sm:mt-12
+              sm:p-8
+              lg:p-12
+            "
+          >
+            <div
+              className="
+                grid
+                gap-3
+                lg:grid-cols-2
+                lg:gap-4
+              "
+            >
+              {/* Left column */}
+              <div className="space-y-3">
                 {leftColumn.map((faq) => {
                   const index = faqs.indexOf(faq);
 
@@ -157,7 +158,8 @@ export function AboutFaq() {
                 })}
               </div>
 
-              <div className="space-y-4">
+              {/* Right column */}
+              <div className="space-y-3">
                 {rightColumn.map((faq) => {
                   const index = faqs.indexOf(faq);
 
@@ -199,12 +201,13 @@ function FaqItem({
   return (
     <div
       className="
-        rounded-[18px]
+        rounded-[16px]
         border
-        border-border
+        border-border/60
         bg-background
         px-5
         py-5
+        shadow-sm
         sm:px-6
       "
     >
@@ -224,10 +227,10 @@ function FaqItem({
         <span
           className="
             font-heading
-            text-lg
+            text-base
             font-semibold
             tracking-tight
-            sm:text-xl
+            sm:text-lg
           "
         >
           {faq.question}
@@ -236,21 +239,21 @@ function FaqItem({
         <span
           className="
             flex
-            h-9
-            w-9
+            h-8
+            w-8
             shrink-0
             items-center
             justify-center
-            rounded-xl
-            border
-            border-border
-            bg-card
+            rounded-full
+            bg-muted
+            transition-colors
+            duration-200
           "
         >
           {isOpen ? (
-            <Minus size={16} strokeWidth={1.8} />
+            <Minus size={15} strokeWidth={1.8} />
           ) : (
-            <Plus size={16} strokeWidth={1.8} />
+            <Plus size={15} strokeWidth={1.8} />
           )}
         </span>
       </button>
@@ -272,12 +275,13 @@ function FaqItem({
           <p
             className="
               max-w-xl
-              pt-5
+              pt-4
               pr-10
               text-sm
-              leading-relaxed
+              leading-6
               text-muted-foreground
               sm:text-base
+              sm:leading-7
             "
           >
             {faq.answer}

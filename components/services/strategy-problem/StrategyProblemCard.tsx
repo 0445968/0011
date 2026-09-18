@@ -1,15 +1,19 @@
 'use client';
 
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 
-interface StrategyProblemCardProps {
-  problem: {
-    number: string;
-    title: string;
-    description: string;
-  };
+type Problem = {
+  number: string;
+  icon: string;
+  title: string;
+  description: string;
+};
+
+type StrategyProblemCardProps = {
+  problem: Problem;
   index: number;
-}
+};
 
 const transitionEase = [0.16, 1, 0.3, 1] as const;
 
@@ -21,7 +25,7 @@ export function StrategyProblemCard({
     <motion.article
       initial={{
         opacity: 0,
-        y: 20,
+        y: 18,
       }}
       whileInView={{
         opacity: 1,
@@ -29,48 +33,76 @@ export function StrategyProblemCard({
       }}
       viewport={{
         once: true,
-        amount: 0.45,
+        amount: 0.35,
       }}
       transition={{
         duration: 0.6,
-        delay: 0.08 * index,
+        delay: 0.08 + index * 0.08,
         ease: transitionEase,
       }}
       className={`
         relative
-        py-8
-
-        md:self-start
-        md:px-8
-        md:pt-10
-        md:pb-0
-
+        py-7
+        md:px-7
+        md:py-8
         lg:px-8
-        lg:pt-6
-        lg:pb-0
-
-        ${
-          index !== 0
-            ? 'border-t border-border md:border-l md:border-t-0'
-            : ''
+        ${index > 0
+          ? `
+                border-t
+                border-border
+                md:border-t-0
+                md:border-l
+              `
+          : ''
         }
       `}
     >
+      {/* Icon + Title */}
 
-      <h3
-  className="
-    mt-1
-    max-w-sm
-    font-heading
-    text-lg
-    font-semibold
-    leading-[1.05]
-    tracking-tight
-    sm:text-xl
-  "
->
-  {problem.title}
-</h3>
+      <div
+        className="
+          flex
+          items-center
+          gap-3
+        "
+      >
+        <div
+          className="
+            flex
+            h-10
+            w-10
+            shrink-0
+            items-center
+            justify-center
+            overflow-hidden
+          "
+        >
+          <Image
+            src={problem.icon}
+            alt=""
+            width={40}
+            height={40}
+            className="
+              h-9
+              w-9
+              object-contain
+            "
+          />
+        </div>
+
+        <h3
+          className="
+            font-heading
+            text-xl
+            font-semibold
+            leading-[1.05]
+            tracking-tight
+            sm:text-2xl
+          "
+        >
+          {problem.title}
+        </h3>
+      </div>
 
       <p
         className="
@@ -80,7 +112,7 @@ export function StrategyProblemCard({
           leading-6
           text-muted-foreground
           sm:text-base
-          sm:leading-5
+          sm:leading-7
         "
       >
         {problem.description}

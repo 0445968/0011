@@ -1,265 +1,286 @@
 'use client';
 
-import {
-  ArrowUpRight,
-  Layers3,
-  Palette,
-  Sparkles,
-  Target,
-} from 'lucide-react';
+import Image from 'next/image';
+import { ArrowUpRight } from 'lucide-react';
 
 import { Reveal } from '@/components/portfolio/Reveal';
 
 const reasons = [
   {
-    icon: Target,
+    icon: '/images/about/strategy.png',
     title: 'Strategy with direction',
     description:
       'We define what your brand needs to communicate before shaping how it looks.',
-    accent: 'bg-[#08004C]',
-    iconClass: 'text-white',
   },
   {
-    icon: Sparkles,
+    icon: '/images/about/ideas.png',
     title: 'Ideas with character',
     description:
       'We build visual concepts with enough personality to feel distinct and memorable.',
-    accent: 'bg-[#1600A2]',
-    iconClass: 'text-white',
   },
   {
-    icon: Palette,
+    icon: '/images/about/cohesive.png',
     title: 'Design that feels cohesive',
     description:
       'From identity to campaigns, every touchpoint is designed to feel connected.',
-    accent: 'bg-[#0B65F3]',
-    iconClass: 'text-white',
   },
   {
-    icon: Layers3,
+    icon: '/images/about/growth.png',
     title: 'Systems built to grow',
     description:
       'We create flexible brand systems that can evolve with you as your business does.',
-    accent: 'bg-[#C7DCFF] dark:bg-white',
-    iconClass: 'text-black',
   },
 ];
 
 export function AboutWhyUs() {
   return (
-    <section className="relative py-12 sm:py-16 lg:py-20">
+    <section
+      className="
+        relative
+        overflow-hidden
+        bg-background
+        pt-12
+        pb-14
+        sm:pt-14
+        sm:pb-16
+        lg:pt-16
+        lg:pb-20
+      "
+    >
       <div className="container-page">
+        {/* Header */}
         <Reveal>
           <div
             className="
-              rounded-[28px]
-              border
-              border-border
-              bg-card
-              p-6
-              sm:p-8
-              lg:p-10
+              mx-auto
+              max-w-4xl
+              text-center
             "
           >
-            {/* Main layout */}
+            <h2
+              style={{
+                lineHeight: '1.15',
+              }}
+              className="
+                font-heading
+                text-3xl
+                font-semibold
+                tracking-tight
+                sm:text-4xl
+                md:text-5xl
+              "
+            >
+              Thoughtful design for brands that want to move forward
+            </h2>
+
+            <p
+              className="
+                mx-auto
+                mt-5
+                max-w-2xl
+                text-base
+                leading-7
+                text-muted-foreground
+                sm:text-lg
+                sm:leading-8
+              "
+            >
+              We combine strategy, creative direction, and graphic design
+              to help brands communicate more clearly and show up with
+              confidence.
+            </p>
+          </div>
+        </Reveal>
+
+        {/* Main panel */}
+        <Reveal delay={0.05}>
+          <div
+            className="
+              mt-10
+              rounded-[28px]
+              bg-muted
+              p-6
+              sm:mt-12
+              sm:p-8
+              lg:p-12
+            "
+          >
             <div
               className="
                 grid
-                gap-12
-                lg:grid-cols-[0.9fr_1.1fr]
-                lg:gap-14
+                gap-10
+                lg:grid-cols-[0.8fr_1.2fr]
+                lg:items-start
+                lg:gap-16
               "
             >
-              {/* Left */}
+              {/* Left content */}
               <div>
-                <div
+                <p
                   className="
-                    inline-flex
-                    items-center
-                    gap-2
-                    rounded-lg
-                    border
-                    border-border
-                    bg-background
-                    px-3
-                    py-1.5
                     text-xs
                     font-semibold
-                    text-foreground
+                    uppercase
+                    tracking-[0.2em]
+                    text-primary
                   "
                 >
-                  Why choose us
+                  Why Bivi
+                </p>
 
-                  <span
-                    className="
-                      flex
-                      h-5
-                      w-5
-                      items-center
-                      justify-center
-                      rounded-md
-                      bg-[#0B65F3]
-                      text-[11px]
-                      font-bold
-                      text-white
-                    "
-                  >
-                    ✦
-                  </span>
-                </div>
-
-                <h2
-  className="
-    mt-6
-    max-w-xl
-    text-balance
-    font-heading
-    text-4xl
-    font-semibold
-    leading-[1.02]
-    tracking-[-0.04em]
-    sm:text-5xl
-    lg:text-6xl
-  "
->
-  Thoughtful design for brands that want to move{' '}
-  <span className="relative inline-block">
-    forward
-    <span
-      aria-hidden="true"
-      className="
-        absolute
-        -bottom-1
-        left-0
-        h-[5px]
-        w-full
-        rounded-full
-        bg-[#BBFF1B]
-      "
-    />
-  </span>
-  .
-</h2>
+                <h3
+                  style={{
+                    lineHeight: '1.1',
+                  }}
+                  className="
+                    mt-4
+                    max-w-xl
+                    font-heading
+                    text-2xl
+                    font-semibold
+                    tracking-tight
+                    sm:text-3xl
+                    lg:text-4xl
+                  "
+                >
+                  Clear thinking.
+                  <br />
+                  Strong ideas.
+                  <br />
+                  Better design.
+                </h3>
 
                 <p
                   className="
-                    mt-6
+                    mt-5
                     max-w-lg
                     text-base
-                    leading-relaxed
+                    leading-7
                     text-muted-foreground
                     sm:text-lg
+                    sm:leading-8
                   "
                 >
-                  We combine strategy, creative direction, and graphic design
-                  to help brands communicate more clearly and show up with
-                  confidence.
+                  We bring strategy and design together so every decision
+                  has a reason behind it and every part of your brand works
+                  toward the same goal.
                 </p>
 
-                <div
+                <a
+                  href="/contact"
                   className="
                     mt-8
-                    flex
-                    flex-wrap
+                    inline-flex
+                    w-fit
                     items-center
-                    gap-4
+                    justify-center
+                    gap-2
+                    rounded-[12px]
+                    bg-black
+                    px-5
+                    py-3
+                    text-sm
+                    font-bold
+                    text-white
+                    transition-colors
+                    hover:bg-[#333333]
+                    dark:bg-white
+                    dark:text-black
+                    dark:hover:bg-white/85
                   "
                 >
-                  <a
-                    href="/contact"
-                    className="
-                      inline-flex
-                      h-11
-                      items-center
-                      gap-2
-                      rounded-[14px]
-                      bg-black
-                      px-5
-                      text-[16px]
-                      font-bold
-                      text-white
-                      transition-opacity
-                      hover:opacity-85
-                      dark:bg-white
-                      dark:text-black
-                    "
-                  >
-                    Start a Project
-                    <ArrowUpRight size={16} />
-                  </a>
-                </div>
+                  Start a project
+
+                  <ArrowUpRight
+                    size={16}
+                    className="shrink-0"
+                  />
+                </a>
               </div>
 
-              {/* Cards */}
-              <div className="grid gap-4 sm:grid-cols-2">
-                {reasons.map((item, index) => {
-                  const Icon = item.icon;
-
-                  return (
-                    <Reveal
-                      key={item.title}
-                      delay={0.05 + index * 0.06}
+              {/* Reasons */}
+              <div
+                className="
+                  flex
+                  flex-col
+                  gap-3
+                "
+              >
+                {reasons.map((item, index) => (
+                  <Reveal
+                    key={item.title}
+                    delay={0.08 + index * 0.05}
+                  >
+                    <article
+                      className="
+                        flex
+                        min-h-[104px]
+                        items-center
+                        gap-5
+                        rounded-[16px]
+                        border
+                        border-border/60
+                        bg-background
+                        px-5
+                        py-5
+                        shadow-sm
+                        sm:px-6
+                      "
                     >
-                      <article
+                      {/* Custom uploaded icon */}
+                      <div
                         className="
                           flex
-                          min-h-[200px]
-                          h-full
-                          flex-col
-                          justify-between
-                          rounded-[20px]
-                          border
-                          border-border
-                          bg-background
-                          p-5
-                          sm:p-6
+                          h-12
+                          w-12
+                          shrink-0
+                          items-center
+                          justify-center
+                          overflow-hidden
+                          rounded-[12px]
                         "
                       >
-                        <div
-                          className={`
-                            flex
+                        <Image
+                          src={item.icon}
+                          alt=""
+                          width={48}
+                          height={48}
+                          className="
                             h-11
                             w-11
-                            items-center
-                            justify-center
-                            rounded-xl
-                            ${item.accent}
-                          `}
+                            object-contain
+                          "
+                        />
+                      </div>
+
+                      <div className="min-w-0">
+                        <h4
+                          className="
+                            font-heading
+                            text-base
+                            font-semibold
+                            tracking-tight
+                            sm:text-lg
+                          "
                         >
-                          <Icon
-                            size={19}
-                            strokeWidth={1.8}
-                            className={item.iconClass ?? 'text-black'}
-                          />
-                        </div>
+                          {item.title}
+                        </h4>
 
-                        <div className="mt-12">
-                          <h3
-                            className="
-                              font-heading
-                              text-lg
-                              font-semibold
-                              tracking-tight
-                            "
-                          >
-                            {item.title}
-                          </h3>
-
-                          <p
-                            className="
-                              mt-3
-                              text-sm
-                              leading-relaxed
-                              text-muted-foreground
-                            "
-                          >
-                            {item.description}
-                          </p>
-                        </div>
-                      </article>
-                    </Reveal>
-                  );
-                })}
+                        <p
+                          className="
+                            mt-1.5
+                            max-w-xl
+                            text-sm
+                            leading-6
+                            text-muted-foreground
+                          "
+                        >
+                          {item.description}
+                        </p>
+                      </div>
+                    </article>
+                  </Reveal>
+                ))}
               </div>
             </div>
           </div>

@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
 
@@ -5,15 +6,36 @@ import { stacks } from '@/data/stacks';
 
 function BrandIcon({
   path,
+  logo,
   hex,
   name,
   monogram,
 }: {
   path?: string;
+  logo?: string;
   hex: string;
   name: string;
   monogram?: string;
 }) {
+  if (logo) {
+    return (
+      <div className="relative h-6 w-6">
+        <Image
+          src={logo}
+          alt={`${name} logo`}
+          fill
+          sizes="24px"
+          className="
+            object-contain
+            transition-transform
+            duration-300
+            group-hover:scale-110
+          "
+        />
+      </div>
+    );
+  }
+
   if (path) {
     return (
       <svg
@@ -65,19 +87,19 @@ export function IntegrationsGrid() {
 
   return (
     <section
-  className="
-    bg-background
-    px-5
-    pt-8
-sm:pt-10
-lg:pt-12
-    pb-20
-    sm:px-6
-    sm:pb-24
-    lg:px-8
-    lg:pb-28
-  "
->
+      className="
+        bg-background
+        px-5
+        pb-20
+        pt-8
+        sm:px-6
+        sm:pb-24
+        sm:pt-10
+        lg:px-8
+        lg:pb-28
+        lg:pt-12
+      "
+    >
       <div className="mx-auto max-w-7xl">
         {/* Header */}
         <div className="mx-auto max-w-4xl text-center">
@@ -118,247 +140,233 @@ lg:pt-12
           </p>
         </div>
 
-        {/* Integrations grid */}
+        {/* Integrations area */}
         <div
           className="
-            relative
             mx-auto
             mt-14
             max-w-6xl
             sm:mt-16
           "
         >
-          {/* Horizontal fading separators */}
-          <div
-            aria-hidden="true"
-            className="
-              pointer-events-none
-              absolute
-              left-0
-              right-0
-              top-1/3
-              z-10
-              h-px
-              bg-gradient-to-r
-              from-transparent
-              via-border
-              to-transparent
-            "
-          />
+          {/* Grid-only relative wrapper */}
+          <div className="relative">
+            {/* Horizontal separator 1 */}
+            <div
+              aria-hidden="true"
+              className="
+                pointer-events-none
+                absolute
+                left-0
+                right-0
+                top-1/3
+                z-10
+                h-px
+                bg-gradient-to-r
+                from-transparent
+                via-border
+                to-transparent
+              "
+            />
 
-          <div
-            aria-hidden="true"
-            className="
-              pointer-events-none
-              absolute
-              left-0
-              right-0
-              top-2/3
-              z-10
-              h-px
-              bg-gradient-to-r
-              from-transparent
-              via-border
-              to-transparent
-            "
-          />
+            {/* Horizontal separator 2 */}
+            <div
+              aria-hidden="true"
+              className="
+                pointer-events-none
+                absolute
+                left-0
+                right-0
+                top-2/3
+                z-10
+                h-px
+                bg-gradient-to-r
+                from-transparent
+                via-border
+                to-transparent
+              "
+            />
 
-          <div
-            className="
-              grid
-              grid-cols-2
-              sm:grid-cols-3
-              md:grid-cols-4
-              lg:grid-cols-5
-            "
-          >
-            {featuredIntegrations.map((tool, index) => (
-              <div
-                key={tool.slug}
-                className={`
+            <div
+              className="
+                grid
+                grid-cols-2
+                sm:grid-cols-3
+                md:grid-cols-4
+                lg:grid-cols-5
+              "
+            >
+              {featuredIntegrations.map((tool, index) => {
+                const hasRightDivider =
+                  index % 5 !== 4;
+
+                return (
+                  <div
+                    key={tool.slug}
+                    className={`
+                      group
+                      relative
+                      flex
+                      min-h-[112px]
+                      items-center
+                      gap-3
+                      px-5
+                      py-5
+                      transition-colors
+                      duration-200
+                      hover:bg-muted/40
+                      sm:min-h-[124px]
+                      sm:px-6
+
+                      ${hasRightDivider
+                        ? `
+                            lg:after:pointer-events-none
+                            lg:after:absolute
+                            lg:after:right-0
+                            lg:after:top-0
+                            lg:after:h-full
+                            lg:after:w-px
+                            lg:after:bg-gradient-to-b
+                            lg:after:from-transparent
+                            lg:after:via-border
+                            lg:after:to-transparent
+                            lg:after:content-['']
+                          `
+                        : ''
+                      }
+                    `}
+                  >
+                    <span
+                      className="
+                        flex
+                        h-10
+                        w-10
+                        shrink-0
+                        items-center
+                        justify-center
+                        rounded-full
+                        bg-muted
+                      "
+                    >
+                      <BrandIcon
+                        path={tool.path}
+                        logo={tool.logo}
+                        hex={tool.hex}
+                        name={tool.name}
+                        monogram={tool.monogram}
+                      />
+                    </span>
+
+                    <div className="min-w-0">
+                      <p
+                        className="
+                          truncate
+                          text-sm
+                          font-medium
+                          text-foreground
+                          sm:text-[15px]
+                        "
+                      >
+                        {tool.name}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Final CTA tile */}
+              <Link
+                href="/integrations"
+                className="
                   group
+                  relative
+                  col-span-2
                   flex
                   min-h-[112px]
                   items-center
-                  gap-3
-                  px-5
+                  justify-between
+                  gap-5
+                  px-6
                   py-5
                   transition-colors
                   duration-200
                   hover:bg-muted/40
                   sm:min-h-[124px]
-                  sm:px-6
-
-                  lg:border-r
-                  lg:border-border
-
-                  ${
-                    index % 5 === 4
-                      ? 'lg:border-r-0'
-                      : ''
-                  }
-                `}
+                  sm:px-8
+                "
               >
-                <span
-                  className="
-                    flex
-                    h-10
-                    w-10
-                    shrink-0
-                    items-center
-                    justify-center
-                    rounded-full
-                    bg-muted
-                  "
-                >
-                  <BrandIcon
-                    path={tool.path}
-                    hex={tool.hex}
-                    name={tool.name}
-                    monogram={tool.monogram}
-                  />
-                </span>
-
-                <div className="min-w-0">
-                  <p
+                <div className="flex items-center gap-4">
+                  <span
                     className="
-                      truncate
-                      text-sm
-                      font-medium
+                      shrink-0
+                      font-heading
+                      text-3xl
+                      font-semibold
+                      tracking-[-0.04em]
                       text-foreground
-                      sm:text-[15px]
+                      sm:text-4xl
                     "
                   >
-                    {tool.name}
-                  </p>
-                </div>
-              </div>
-            ))}
+                    {remainingCount}+
+                  </span>
 
-            {/* Final stat / CTA tile */}
+                  <span
+                    className="
+                      max-w-[190px]
+                      text-xs
+                      leading-5
+                      text-muted-foreground
+                      sm:text-sm
+                    "
+                  >
+                    more tools across the Bivi ecosystem
+                  </span>
+                </div>
+
+                <ArrowUpRight
+                  className="
+                    h-5
+                    w-5
+                    shrink-0
+                    text-muted-foreground
+                    transition-colors
+                    duration-200
+                    group-hover:text-foreground
+                  "
+                />
+              </Link>
+            </div>
+          </div>
+
+          {/* Bottom link — outside grid positioning */}
+          <div className="mt-9 flex justify-center">
             <Link
               href="/integrations"
               className="
                 group
-                col-span-2
-                flex
-                min-h-[112px]
+                inline-flex
                 items-center
-                justify-between
-                gap-5
-                px-5
-                py-5
+                gap-2
+                border-b
+                border-foreground
+                pb-1
+                text-sm
+                font-semibold
+                text-foreground
                 transition-colors
                 duration-200
-                hover:bg-muted/40
-                sm:min-h-[124px]
-                sm:px-7
-                md:col-span-2
+                hover:border-[#0B65F3]
+                hover:text-[#0B65F3]
               "
             >
-              <div className="flex items-baseline gap-3">
-                <span
-                  className="
-                    font-heading
-                    text-3xl
-                    font-semibold
-                    tracking-[-0.04em]
-                    text-foreground
-                    sm:text-4xl
-                  "
-                >
-                  {remainingCount}+
-                </span>
-
-                <span
-                  className="
-                    max-w-[180px]
-                    text-xs
-                    leading-5
-                    text-muted-foreground
-                    sm:text-sm
-                  "
-                >
-                  more tools across the Bivi ecosystem
-                </span>
-              </div>
+              Explore all integrations
 
               <ArrowUpRight
-                className="
-                  h-5
-                  w-5
-                  shrink-0
-                  text-muted-foreground
-                  transition-colors
-                  duration-200
-                  group-hover:text-foreground
-                "
+                className="h-4 w-4"
+                strokeWidth={2}
               />
             </Link>
           </div>
-
-          {/* Edge fades */}
-          <div
-            aria-hidden="true"
-            className="
-              pointer-events-none
-              absolute
-              inset-y-0
-              left-0
-              z-20
-              w-16
-              bg-gradient-to-r
-              from-background
-              to-transparent
-              sm:w-24
-            "
-          />
-
-          <div
-            aria-hidden="true"
-            className="
-              pointer-events-none
-              absolute
-              inset-y-0
-              right-0
-              z-20
-              w-16
-              bg-gradient-to-l
-              from-background
-              to-transparent
-              sm:w-24
-            "
-          />
-        </div>
-
-        {/* Bottom link */}
-        <div className="mt-7 flex justify-center">
-          <Link
-            href="/integrations"
-            className="
-              group
-              inline-flex
-              items-center
-              gap-2
-              border-b
-              border-foreground
-              pb-1
-              text-sm
-              font-semibold
-              text-foreground
-              transition-colors
-              duration-200
-              hover:border-[#0B65F3]
-              hover:text-[#0B65F3]
-            "
-          >
-            Explore all integrations
-
-            <ArrowUpRight
-              className="h-4 w-4"
-              strokeWidth={2}
-            />
-          </Link>
         </div>
       </div>
     </section>

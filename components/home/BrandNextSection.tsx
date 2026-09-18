@@ -275,23 +275,25 @@ lg:pb-20
                 type="button"
                 onClick={() => setActiveId(tab.id)}
                 className={`
-                  rounded-full
-                  border
-                  border-dashed
-                  px-4
-                  py-2
-                  text-sm
-                  font-semibold
+  rounded-full
+  border
+  border-dashed
+  px-4
+  py-2
+  font-mono
+  text-xs
+  font-medium
+  uppercase
+  tracking-[0.08em]
                   transition-colors
                   duration-200
-                  ${
-                    isActive
-                      ? `
+                  ${isActive
+                    ? `
                         border-primary
                         bg-primary/5
                         text-primary
                       `
-                      : `
+                    : `
                         border-border
                         bg-background
                         text-muted-foreground
@@ -334,12 +336,13 @@ lg:pb-20
             <div>
               <p
                 className="
-                  text-xs
-                  font-semibold
-                  uppercase
-                  tracking-[0.2em]
-                  text-primary
-                "
+    font-mono
+    text-[12px]
+    font-medium
+    uppercase
+    tracking-[0.16em]
+    text-primary
+  "
               >
                 {activeTab.label}
               </p>

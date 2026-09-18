@@ -1,31 +1,66 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Search } from 'lucide-react';
+
 import { stacks } from '@/data/stacks';
 import { Reveal } from '@/components/portfolio/Reveal';
 
-function BrandIcon({ path, hex }: { path: string; hex: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      className="h-9 w-9 transition-transform duration-300"
-      fill={`#${hex}`}
-    >
-      <path d={path} />
-    </svg>
-  );
+function BrandIcon({
+  name,
+  path,
+  logo,
+  hex,
+}: {
+  name: string;
+  path?: string;
+  logo?: string;
+  hex: string;
+}) {
+  if (logo) {
+    return (
+      <div className="relative h-9 w-9">
+        <Image
+          src={logo}
+          alt={`${name} logo`}
+          fill
+          sizes="36px"
+          className="object-contain"
+        />
+      </div>
+    );
+  }
+
+  if (path) {
+    return (
+      <svg
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+        className="h-9 w-9 transition-transform duration-300"
+        fill={`#${hex}`}
+      >
+        <path d={path} />
+      </svg>
+    );
+  }
+
+  return null;
 }
 
 export function IntegrationsBrowser() {
   const [query, setQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState('All');
+  const [activeCategory, setActiveCategory] =
+    useState('All');
 
   const categories = [
     'All',
-    ...Array.from(new Set(stacks.map((item) => item.category))),
+    ...Array.from(
+      new Set(
+        stacks.map((item) => item.category)
+      )
+    ),
   ];
 
   const filteredStacks = useMemo(() => {
@@ -34,13 +69,16 @@ export function IntegrationsBrowser() {
         activeCategory === 'All' ||
         tool.category === activeCategory;
 
+      const normalizedQuery =
+        query.toLowerCase().trim();
+
       const matchesSearch =
         tool.name
           .toLowerCase()
-          .includes(query.toLowerCase()) ||
+          .includes(normalizedQuery) ||
         tool.category
           .toLowerCase()
-          .includes(query.toLowerCase());
+          .includes(normalizedQuery);
 
       return matchesCategory && matchesSearch;
     });
@@ -49,30 +87,26 @@ export function IntegrationsBrowser() {
   return (
     <section className="py-28 md:py-32">
       <div className="container-page">
-
         {/* Header */}
-
-
         <Reveal delay={0.1}>
           <h1 className="mt-8 max-w-4xl text-balance font-heading text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl md:text-6xl">
             Every tool we build with.
           </h1>
         </Reveal>
 
-
         <Reveal delay={0.15}>
           <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-            Explore the creative, development, marketing, and
-            project management tools that power our workflow.
-            Browse {stacks.length} integrations across our ecosystem.
+            Explore the creative, development,
+            marketing, and project management tools
+            that power our workflow. Browse{' '}
+            {stacks.length} integrations across our
+            ecosystem.
           </p>
         </Reveal>
-
 
         {/* Search */}
         <Reveal delay={0.2}>
           <div className="mt-12 flex flex-col gap-6">
-
             <div className="relative max-w-xl">
               <Search
                 size={18}
@@ -81,13 +115,19 @@ export function IntegrationsBrowser() {
 
               <input
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(event) =>
+                  setQuery(event.target.value)
+                }
                 placeholder="Search integrations..."
                 className="
-                  h-12 w-full rounded-xl
-                  border border-border
+                  h-12
+                  w-full
+                  rounded-xl
+                  border
+                  border-border
                   bg-card
-                  pl-11 pr-4
+                  pl-11
+                  pr-4
                   text-sm
                   outline-none
                   transition
@@ -97,13 +137,12 @@ export function IntegrationsBrowser() {
               />
             </div>
 
-
             {/* Filters */}
             <div className="flex flex-wrap gap-2">
-
               {categories.map((category) => (
                 <button
                   key={category}
+                  type="button"
                   onClick={() =>
                     setActiveCategory(category)
                   }
@@ -125,26 +164,20 @@ export function IntegrationsBrowser() {
                   {category}
                 </button>
               ))}
-
             </div>
-
           </div>
         </Reveal>
-
-
 
         {/* Results count */}
         <Reveal delay={0.25}>
           <p className="mt-10 text-sm text-muted-foreground">
-            Showing {filteredStacks.length} integrations
+            Showing {filteredStacks.length}{' '}
+            integrations
           </p>
         </Reveal>
 
-
-
         {/* Grid */}
         <Reveal delay={0.3}>
-
           <motion.div
             layout
             className="
@@ -156,127 +189,130 @@ export function IntegrationsBrowser() {
               xl:grid-cols-4
             "
           >
-
             <AnimatePresence mode="popLayout">
-
-              {filteredStacks.map((tool, index) => (
-
-                <motion.div
-                  key={tool.slug}
-                  layout
-                  initial={{
-                    opacity: 0,
-                    scale: 0.92,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    scale: 1,
-                  }}
-                  exit={{
-                    opacity: 0,
-                    scale: 0.92,
-                  }}
-                  transition={{
-                    duration: 0.25,
-                    delay: Math.min(index * 0.02, 0.2),
-                  }}
-                  whileHover={{
-                    y: -6,
-                  }}
-                  className="
-                    group
-                    flex
-                    flex-col
-                    items-center
-                    justify-center
-                    rounded-2xl
-                    border
-                    border-border
-                    bg-card
-                    p-7
-                    text-center
-                    transition-shadow
-                    hover:shadow-lg
-                  "
-                >
-
-                  <span
+              {filteredStacks.map(
+                (tool, index) => (
+                  <motion.div
+                    key={tool.slug}
+                    layout
+                    initial={{
+                      opacity: 0,
+                      scale: 0.92,
+                    }}
+                    animate={{
+                      opacity: 1,
+                      scale: 1,
+                    }}
+                    exit={{
+                      opacity: 0,
+                      scale: 0.92,
+                    }}
+                    transition={{
+                      duration: 0.25,
+                      delay: Math.min(
+                        index * 0.02,
+                        0.2
+                      ),
+                    }}
+                    whileHover={{
+                      y: -6,
+                    }}
                     className="
+                      group
                       flex
-                      h-16
-                      w-16
+                      flex-col
                       items-center
                       justify-center
-                      rounded-xl
+                      rounded-2xl
                       border
                       border-border
-                      bg-muted
-                      transition-transform
-                      duration-300
-                      group-hover:scale-110
+                      bg-card
+                      p-7
+                      text-center
+                      transition-shadow
+                      hover:shadow-lg
                     "
                   >
-                    {tool.path ? (
-                      <BrandIcon
-                        path={tool.path}
-                        hex={tool.hex}
-                      />
-                    ) : (
-                      <span
-                        className="flex h-9 w-9 items-center justify-center rounded-lg text-xs font-bold"
-                        style={{ backgroundColor: `#${tool.hex}22`, color: `#${tool.hex}` }}
+                    <span
+                      className="
+                        flex
+                        h-16
+                        w-16
+                        items-center
+                        justify-center
+                        rounded-xl
+                        border
+                        border-border
+                        bg-muted
+                        transition-transform
+                        duration-300
+                        group-hover:scale-110
+                      "
+                    >
+                      {tool.path ||
+                      tool.logo ? (
+                        <BrandIcon
+                          name={tool.name}
+                          path={tool.path}
+                          logo={tool.logo}
+                          hex={tool.hex}
+                        />
+                      ) : (
+                        <span
+                          className="
+                            flex
+                            h-9
+                            w-9
+                            items-center
+                            justify-center
+                            rounded-lg
+                            text-xs
+                            font-bold
+                          "
+                          style={{
+                            backgroundColor: `#${tool.hex}22`,
+                            color: `#${tool.hex}`,
+                          }}
+                        >
+                          {tool.monogram ??
+                            tool.name
+                              .slice(0, 2)
+                              .toUpperCase()}
+                        </span>
+                      )}
+                    </span>
+
+                    <div className="mt-5">
+                      <h3 className="text-sm font-semibold text-foreground">
+                        {tool.name}
+                      </h3>
+
+                      <p
+                        className="
+                          mt-1
+                          text-[10px]
+                          font-medium
+                          uppercase
+                          tracking-wider
+                          text-muted-foreground
+                        "
                       >
-                        {tool.monogram ?? tool.name.slice(0, 2).toUpperCase()}
-                      </span>
-                    )}
-                  </span>
-
-
-                  <div className="mt-5">
-
-                    <h3
-                      className="
-                        text-sm
-                        font-semibold
-                        text-foreground
-                      "
-                    >
-                      {tool.name}
-                    </h3>
-
-
-                    <p
-                      className="
-                        mt-1
-                        text-[10px]
-                        font-medium
-                        uppercase
-                        tracking-wider
-                        text-muted-foreground
-                      "
-                    >
-                      {tool.category}
-                    </p>
-
-                  </div>
-
-                </motion.div>
-
-              ))}
-
+                        {tool.category}
+                      </p>
+                    </div>
+                  </motion.div>
+                )
+              )}
             </AnimatePresence>
-
           </motion.div>
 
-
-          {filteredStacks.length === 0 && (
+          {filteredStacks.length ===
+            0 && (
             <div className="mt-16 text-center text-muted-foreground">
               No integrations found.
             </div>
           )}
-
         </Reveal>
-
       </div>
     </section>
   );

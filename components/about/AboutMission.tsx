@@ -18,16 +18,16 @@ export function AboutMission() {
       "
     >
       <div className="container-page">
-       
+
 
         {/* -------------------------------------------------------------- */}
         {/* Main content                                                   */}
         {/* -------------------------------------------------------------- */}
 
         <div className="mx-auto mt-10 max-w-5xl text-center">
-        <Reveal delay={0.06}>
-  <h1
-    className="
+          <Reveal delay={0.06}>
+            <h1
+              className="
       text-balance
       font-heading
       text-4xl
@@ -37,26 +37,11 @@ export function AboutMission() {
       sm:text-5xl
       md:text-6xl
     "
-  >
-    A trusted creative team,{' '}
-    <span className="relative inline-block">
-      whenever
-      <span
-        aria-hidden="true"
-        className="
-          absolute
-          -bottom-1
-          left-0
-          h-[5px]
-          w-full
-          rounded-full
-          bg-[#BBFF1B]
-        "
-      />
-    </span>{' '}
-    you need us.
-  </h1>
-</Reveal>
+            >
+              A trusted creative team, whenever
+              you need us.
+            </h1>
+          </Reveal>
 
           <Reveal delay={0.12}>
             <div
@@ -103,9 +88,9 @@ export function AboutMission() {
 
           <Reveal delay={0.16}>
             <div className="mt-8 flex justify-center">
-            <Link
-  href="/contact"
-  className="
+              <Link
+                href="/contact"
+                className="
     group
     inline-flex
     items-center
@@ -124,14 +109,14 @@ export function AboutMission() {
     dark:text-black
     sm:text-base
   "
->
-  Book a Call
+              >
+                Book a Call
 
-  <Phone
-    size={17}
-    strokeWidth={2}
-  />
-</Link>
+                <Phone
+                  size={17}
+                  strokeWidth={2}
+                />
+              </Link>
             </div>
           </Reveal>
         </div>

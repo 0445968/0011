@@ -6,7 +6,6 @@ import {
   type MouseEvent,
 } from 'react';
 import Link from 'next/link';
-import { ArrowUpRight } from 'lucide-react';
 
 import { Reveal } from '@/components/portfolio/Reveal';
 
@@ -20,39 +19,19 @@ export function AboutGetStarted() {
 
   const [isHovering, setIsHovering] = useState(false);
 
-  const handleMouseMove = (
-    event: MouseEvent<HTMLDivElement>
-  ) => {
+  const handleMouseMove = (event: MouseEvent<HTMLDivElement>) => {
     const element = ctaRef.current;
-
     if (!element) return;
 
     const rect = element.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width) * 100;
+    const y = ((event.clientY - rect.top) / rect.height) * 100;
 
-    const x =
-      ((event.clientX - rect.left) / rect.width) * 100;
-
-    const y =
-      ((event.clientY - rect.top) / rect.height) * 100;
-
-    setGlowPosition({
-      x,
-      y,
-    });
+    setGlowPosition({ x, y });
   };
 
   return (
-    <section
-      className="
-        relative
-        pt-4
-        pb-10
-        sm:pt-6
-        sm:pb-12
-        lg:pt-8
-        lg:pb-16
-      "
-    >
+    <section className="relative pt-4 pb-10 sm:pt-6 sm:pb-12 lg:pt-8 lg:pb-16">
       <div className="container-page">
         <Reveal>
           <div
@@ -60,28 +39,28 @@ export function AboutGetStarted() {
             onMouseMove={handleMouseMove}
             onMouseEnter={() => setIsHovering(true)}
             onMouseLeave={() => setIsHovering(false)}
+            /* Replicates reference cutouts: top-right notch & bottom-left diagonal cut */
+            style={{
+              clipPath:
+                'polygon(0% 0%, calc(100% - 48px) 0%, 100% 48px, 100% 100%, 72px 100%, 0% calc(100% - 72px))',
+            }}
             className="
               relative
               overflow-hidden
               rounded-[28px]
-              bg-[#BBFF1B]
+              bg-[#1D45FF]
               px-6
               py-16
-              text-black
-              sm:px-10
+              text-center
+              text-white
+              shadow-2xl
+              sm:px-12
               sm:py-20
-              lg:px-16
+              lg:px-20
               lg:py-24
             "
           >
-
-
-
-            
-            {/* ---------------------------------------------------------- */}
-            {/* Mouse-following glow                                       */}
-            {/* ---------------------------------------------------------- */}
-
+            {/* Ambient Mouse Glow */}
             <div
               aria-hidden="true"
               className="
@@ -93,128 +72,83 @@ export function AboutGetStarted() {
                 ease-out
               "
               style={{
-                opacity: isHovering ? 1 : 0.45,
+                opacity: isHovering ? 1 : 0.35,
                 background: `
                   radial-gradient(
-                    circle 280px at ${glowPosition.x}% ${glowPosition.y}%,
-                    rgba(255,255,255,0.38) 0%,
-                    rgba(255,255,255,0.20) 28%,
-                    rgba(255,255,255,0.08) 48%,
-                    transparent 72%
+                    600px circle at ${glowPosition.x}% ${glowPosition.y}%,
+                    rgba(255, 255, 255, 0.15),
+                    transparent 60%
                   )
                 `,
               }}
             />
 
-            {/* ---------------------------------------------------------- */}
-            {/* Permanent subtle glow                                      */}
-            {/* ---------------------------------------------------------- */}
-
-            <div
-              aria-hidden="true"
-              className="
-                pointer-events-none
-                absolute
-                inset-0
-                bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.14),transparent_42%)]
-              "
-            />
-
-            {/* ---------------------------------------------------------- */}
-            {/* Content                                                     */}
-            {/* ---------------------------------------------------------- */}
-
-            <div
-              className="
-                relative
-                z-10
-                mx-auto
-                flex
-                max-w-4xl
-                flex-col
-                items-center
-                text-center
-              "
-            >
-              {/* Eyebrow */}
-
-              <div
-                className="
-                  text-xs
-                  font-semibold
-                  uppercase
-                  tracking-[0.18em]
-                  text-black/60
-                "
-              >
+            {/* Content Container */}
+            <div className="relative z-10 mx-auto flex max-w-4xl flex-col items-center justify-center">
+              <div className="text-xs font-semibold uppercase tracking-[0.22em] text-[#72FF52]">
                 Start something
               </div>
 
-              {/* Heading */}
-
-              <h2
-                className="
-                  mt-5
-                  text-balance
-                  font-heading
-                  text-4xl
-                  font-semibold
-                  leading-tight
-                  tracking-tight
-                  text-black
-                  sm:text-5xl
-                  md:text-6xl
-                "
-              >
+              <h2 className="mt-5 max-w-3xl text-balance font-heading text-4xl font-semibold leading-[1.02] tracking-[-0.04em] text-white sm:text-5xl md:text-6xl lg:text-[4rem]">
                 Have something worth building?
               </h2>
 
-              {/* Description */}
-
-              <p
-                className="
-                  mt-6
-                  max-w-2xl
-                  text-base
-                  leading-relaxed
-                  text-black
-                  sm:text-lg
-                "
-              >
-                Tell us what you&apos;re working on. We&apos;ll help
-                turn the idea into a clear, distinctive brand built
-                to move with your business.
+              <p className="mt-6 max-w-2xl font-body text-base leading-relaxed text-white/78 sm:text-lg">
+                Tell us what you&apos;re working on. We&apos;ll help turn the idea into a clear, distinctive brand built to move with your business.
               </p>
 
-              {/* CTA */}
+              {/* Action Buttons */}
+              <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
+                <Link
+                  href="/contact"
+                  className="
+                    inline-flex
+                    h-12
+                    min-w-[160px]
+                    items-center
+                    justify-center
+                    rounded-lg
+                    bg-[#72FF52]
+                    px-6
+                    text-base
+                    font-bold
+                    text-black
+                    shadow-sm
+                    transition-all
+                    duration-200
+                    hover:bg-[#60f040]
+                    hover:shadow-md
+                    active:scale-95
+                  "
+                >
+                  Start a Project
+                </Link>
 
-              <Link
-                href="/contact"
-                className="
-                  group
-                  mt-8
-                  inline-flex
-                  h-11
-                  items-center
-                  gap-2.5
-                  rounded-[14px]
-                  bg-black
-                  px-5
-                  text-sm
-                  font-bold
-                  text-white
-                  transition-opacity
-                  duration-200
-                  hover:opacity-85
-                "
-              >
-                Start a Project
-
-                <ArrowUpRight
-                  size={17}
-                  strokeWidth={2}
-                />
-              </Link>
+                <Link
+                  href="/work"
+                  className="
+                    inline-flex
+                    h-12
+                    min-w-[160px]
+                    items-center
+                    justify-center
+                    rounded-lg
+                    border
+                    border-white/80
+                    bg-transparent
+                    px-6
+                    text-base
+                    font-semibold
+                    text-white
+                    transition-all
+                    duration-200
+                    hover:bg-white/10
+                    active:scale-95
+                  "
+                >
+                  See our work
+                </Link>
+              </div>
             </div>
           </div>
         </Reveal>

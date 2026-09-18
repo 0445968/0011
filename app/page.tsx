@@ -1,7 +1,7 @@
 import { Hero } from '@/components/portfolio/Hero';
 import { AboutCustomers } from '@/components/home/about/AboutCustomers';
 import { AboutFeature } from '@/components/home/about/AboutFeature';
-import { IntegrationsPromo} from '@/components/home/IntegrationsPromo';
+import { IntegrationsPromo } from '@/components/home/IntegrationsPromo';
 import { Projects } from '@/components/portfolio/Projects';
 import { Differences } from '@/components/portfolio/differences/Differences';
 import { ResourceLibraryPreview } from '@/components/portfolio/resources/ResourceLibraryPreview';
@@ -25,7 +25,6 @@ export default function Home() {
       <ServicesCarousel />
       <BrandComparison />
       <IntegrationsGrid />
-      <FeaturedCaseStudies />
       <ResourceLibraryPreview />
     </>
   );
