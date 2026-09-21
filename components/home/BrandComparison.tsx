@@ -280,7 +280,7 @@ export function BrandComparison() {
             </div>
 
             <Link
-              href="/services/brand-strategy"
+              href="/demos"
               className="
                 mt-7
                 inline-flex
@@ -302,7 +302,7 @@ export function BrandComparison() {
                 dark:hover:bg-[#BBFF1B]
               "
             >
-              Build your brand
+              Try one of our demos
 
               <ArrowRight
                 className="h-4 w-4"

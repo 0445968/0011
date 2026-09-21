@@ -14,7 +14,7 @@ const faqs = [
   {
     question: 'Do you only work with businesses in Houston?',
     answer:
-      'No. Bivi is based in Houston, Texas, but we work with teams and businesses remotely as well.',
+      'No. Bivi is based in Houston, Texas, but we work with clients remotely as well.',
   },
   {
     question: 'Can Bivi work with an existing brand?',
@@ -73,17 +73,6 @@ export function AboutFaq() {
               text-center
             "
           >
-            <p
-              className="
-                text-xs
-                font-semibold
-                uppercase
-                tracking-[0.2em]
-                text-primary
-              "
-            >
-              FAQ
-            </p>
 
             <h2
               style={{
@@ -264,10 +253,9 @@ function FaqItem({
           transition-[grid-template-rows,opacity]
           duration-300
           ease-out
-          ${
-            isOpen
-              ? 'grid-rows-[1fr] opacity-100'
-              : 'grid-rows-[0fr] opacity-0'
+          ${isOpen
+            ? 'grid-rows-[1fr] opacity-100'
+            : 'grid-rows-[0fr] opacity-0'
           }
         `}
       >

@@ -1,22 +1,58 @@
 import type { Metadata } from 'next';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { CaseStudy } from '@/components/portfolio/CaseStudy';
+
+import { Collaboration } from '@/components/process/Collaboration';
+import { Deliverables } from '@/components/process/Deliverables';
+import { FeedbackSection } from '@/components/process/FeedbackSection';
+import { ProcessCTA } from '@/components/process/ProcessCTA';
+import { ProcessJourney } from '@/components/process/ProcessJourney';
+import { ProcessTimelines } from '@/components/process/ProcessTimelines';
+import { ProjectRoadmap } from '@/components/process/ProjectRoadmap';
+import { TimelineFactors } from '@/components/process/TimelineFactors';
 
 export const metadata: Metadata = {
-  title: 'Process',
+  title: 'Our Process',
   description:
-    'How Bivi builds projects — from discovery and design systems to prototyping and incremental delivery, with measurable results.',
+    'See how Bivi approaches brand strategy, identity, and launch projects for small businesses and growing teams.',
 };
 
 export default function ProcessPage() {
   return (
     <>
-      <PageHeader
-        eyebrow="Process · Case Study"
-        title="How projects are built."
-        description="Discovery, design systems, prototyping, and incremental delivery — measured at every step."
-      />
-      <CaseStudy />
+      {/* ------------------------------------------------------------ */}
+      {/* Process hero                                                 */}
+      {/* ------------------------------------------------------------ */}
+
+      <ProcessJourney />
+
+      {/* ------------------------------------------------------------ */}
+      {/* Project timelines                                            */}
+      {/* ------------------------------------------------------------ */}
+
+      <ProcessTimelines />
+
+      {/* ------------------------------------------------------------ */}
+      {/* Timeline factors                                             */}
+      {/* ------------------------------------------------------------ */}
+
+      <TimelineFactors />
+
+      {/* ------------------------------------------------------------ */}
+      {/* Example roadmap                                              */}
+      {/* ------------------------------------------------------------ */}
+
+      <ProjectRoadmap />
+
+      {/* ------------------------------------------------------------ */}
+      {/* Collaboration                                                */}
+      {/* ------------------------------------------------------------ */}
+
+      <Collaboration />
+
+      {/* ------------------------------------------------------------ */}
+      {/* Feedback                                                     */}
+      {/* ------------------------------------------------------------ */}
+
+      <ProcessCTA />
     </>
   );
 }

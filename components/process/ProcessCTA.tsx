@@ -1,20 +1,18 @@
-'use client';
-
 import Link from 'next/link';
 
 import { Reveal } from '@/components/portfolio/Reveal';
 
-export function AboutGetStarted() {
+export function ProcessCTA() {
   return (
     <section
       className="
         relative
-        pb-10
-        pt-6
-        sm:pb-12
-        sm:pt-8
-        lg:pb-14
-        lg:pt-10
+        pb-14
+        pt-10
+        sm:pb-16
+        sm:pt-12
+        lg:pb-20
+        lg:pt-14
       "
     >
       <div className="container-page">
@@ -34,7 +32,7 @@ export function AboutGetStarted() {
               lg:py-16
             "
           >
-            {/* Decorative background glow */}
+            {/* Decorative glow */}
 
             <div
               aria-hidden="true"
@@ -80,8 +78,6 @@ export function AboutGetStarted() {
                 text-center
               "
             >
-              {/* Eyebrow */}
-
               <p
                 className="
                   font-mono
@@ -95,8 +91,6 @@ export function AboutGetStarted() {
               >
                 Start something
               </p>
-
-              {/* Heading */}
 
               <h2
                 className="
@@ -114,29 +108,24 @@ export function AboutGetStarted() {
                   lg:text-[3.25rem]
                 "
               >
-                Have something worth building?
+                Ready to give your brand some direction?
               </h2>
-
-              {/* Description */}
 
               <p
                 className="
                   mt-5
                   max-w-2xl
-                  font-body
                   text-sm
                   leading-7
                   text-white/75
                   sm:text-base
                 "
               >
-                Tell us what you&apos;re working on.
-                We&apos;ll help turn the idea into a clear,
-                distinctive brand built to move with your
-                business.
+                Tell us where your business is today and where
+                you want to take it. We&apos;ll help figure out
+                what kind of process makes sense for what you
+                actually need.
               </p>
-
-              {/* Buttons */}
 
               <div
                 className="

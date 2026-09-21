@@ -149,7 +149,7 @@ export default function CareersPage() {
                   lg:text-[64px]
                 "
               >
-                Build things you&apos;re proud of.
+                Build things you&apos;re proud of
               </h1>
 
               {/* Description */}
@@ -213,18 +213,20 @@ export default function CareersPage() {
 
                 <div>
                   <h2
-                    className="
-                      mt-6
-                      max-w-xl
-                      text-balance
-                      font-heading
-                      text-4xl
-                      font-semibold
-                      leading-[1.02]
-                      tracking-[-0.04em]
-                      sm:text-5xl
-                      lg:text-6xl
-                    "
+                    style={{
+                lineHeight: '1.15',
+              }}
+              className="
+                mx-auto
+                mt-4
+                max-w-5xl
+                font-heading
+                text-3xl
+                font-semibold
+                tracking-tight
+                sm:text-4xl
+                md:text-5xl
+              "
                   >
                     The principles behind how we work
                   </h2>

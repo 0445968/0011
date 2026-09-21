@@ -134,6 +134,7 @@ export function Navbar() {
   const allowTransparentNavbar =
     pathname === '/' ||
     pathname === '/help' ||
+    pathname === '/process' ||
     pathname === '/demos';
 
   /* ---------------------------------------------------------------------- */
@@ -586,7 +587,7 @@ function HelpCenterNavigation({
         (item) => {
           const active =
             pathname ===
-              item.href ||
+            item.href ||
             pathname.startsWith(
               `${item.href}/`
             );
