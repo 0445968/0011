@@ -22,12 +22,14 @@ import {
 interface NavbarMenuProps {
   activeMega: string | null;
   onHover: (id: string) => void;
+  onStandaloneHover: () => void;
   lightAtTop?: boolean;
 }
 
 export function NavbarMenu({
   activeMega,
   onHover,
+  onStandaloneHover,
   lightAtTop = false,
 }: NavbarMenuProps) {
   const {
@@ -56,14 +58,6 @@ export function NavbarMenu({
             activeMega ===
             link.id;
 
-          /*
-           * Help Center is currently
-           * intentionally not part of
-           * the translation dictionary.
-           *
-           * All existing site navigation
-           * continues using i18n.
-           */
           const label =
             link.id ===
             'helpCenter'
@@ -74,7 +68,9 @@ export function NavbarMenu({
 
           return (
             <li
-              key={link.id}
+              key={
+                link.id
+              }
               onMouseEnter={() => {
                 if (
                   hasMegaMenu
@@ -82,11 +78,22 @@ export function NavbarMenu({
                   onHover(
                     link.id
                   );
+
+                  return;
                 }
+
+                /*
+                 * Plain navbar links
+                 * immediately close any
+                 * previously open mega menu.
+                 */
+                onStandaloneHover();
               }}
             >
               <Link
-                href={link.href}
+                href={
+                  link.href
+                }
                 className="
                   group
                   relative
@@ -100,38 +107,69 @@ export function NavbarMenu({
                   font-medium
                 "
               >
-                {/* Menu title */}
+                {/* -------------------------------------------------- */}
+                {/* Menu title                                         */}
+                {/* -------------------------------------------------- */}
 
                 <span
                   className={cn(
+                    `
+                      transition-colors
+                      duration-200
+                    `,
                     lightAtTop
-                      ? '!text-white/70'
-                      : '!text-foreground'
+                      ? `
+                          !text-white/75
+                          group-hover:!text-white
+                        `
+                      : `
+                          !text-foreground
+                          group-hover:!text-primary
+                        `
                   )}
                 >
-                  {label}
+                  {
+                    label
+                  }
                 </span>
 
-                {/* Down arrow only for mega menus */}
+                {/* -------------------------------------------------- */}
+                {/* Dropdown arrow                                     */}
+                {/* -------------------------------------------------- */}
 
                 {hasMegaMenu && (
                   <ChevronDown
-                    size={15}
+                    size={
+                      14
+                    }
                     strokeWidth={
-                      2.5
+                      2.25
                     }
                     className={cn(
                       `
                         shrink-0
+                        transition-all
+                        duration-200
                       `,
+                      isActive
+                        ? 'rotate-180'
+                        : 'rotate-0',
                       lightAtTop
-                        ? '!text-white/70'
-                        : '!text-foreground'
+                        ? `
+                            !text-white/60
+                            group-hover:!text-white
+                          `
+                        : `
+                            !text-muted-foreground
+                            group-hover:!text-primary
+                          `
                     )}
                   />
                 )}
 
-                {/* Underline */}
+                {/* -------------------------------------------------- */}
+                {/* Active / hover underline                           */}
+                {/* -------------------------------------------------- */}
 
                 <span
                   className={cn(
@@ -142,6 +180,8 @@ export function NavbarMenu({
                       h-px
                       origin-left
                       bg-primary
+                      transition-transform
+                      duration-200
                     `,
                     isActive
                       ? 'scale-x-100'

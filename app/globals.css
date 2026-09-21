@@ -101,6 +101,10 @@
     font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
   }
 
+  .font-bivi-mono {
+    font-family: var(--font-mono), 'IBM Plex Mono', ui-monospace, monospace !important;
+  }
+
   .text-balance {
     text-wrap: balance;
   }

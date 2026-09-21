@@ -1,5 +1,9 @@
 'use client';
 
+import {
+  useState,
+} from 'react';
+
 import Link from 'next/link';
 
 import {
@@ -13,58 +17,18 @@ import {
 
 import {
   ArrowRight,
-  BookOpen,
-  FileText,
-  HelpCircle,
-  Home,
-  MessageSquareText,
-  Wrench,
+  ArrowUpRight,
+  ChevronDown,
 } from 'lucide-react';
 
 import {
+  megaPanels,
   navSections,
 } from '@/data/site';
 
 import {
-  useI18n,
-} from '@/lib/i18n/context';
-
-/* -------------------------------------------------------------------------- */
-/* Help Center navigation                                                     */
-/* -------------------------------------------------------------------------- */
-
-const helpNavigation = [
-  {
-    label: 'Help Home',
-    href: '/help',
-    icon: Home,
-  },
-  {
-    label: 'Resources',
-    href: '/help/resources',
-    icon: FileText,
-  },
-  {
-    label: 'Guides',
-    href: '/help/guides',
-    icon: BookOpen,
-  },
-  {
-    label: 'FAQ',
-    href: '/help/faq',
-    icon: HelpCircle,
-  },
-  {
-    label: 'Free Tools',
-    href: '/help/tools',
-    icon: Wrench,
-  },
-  {
-    label: 'Contact Us',
-    href: '/help/contact',
-    icon: MessageSquareText,
-  },
-];
+  cn,
+} from '@/lib/utils';
 
 interface NavbarMobileMenuProps {
   open: boolean;
@@ -75,18 +39,12 @@ export function NavbarMobileMenu({
   open,
   onNavigate,
 }: NavbarMobileMenuProps) {
-  const {
-    t,
-  } = useI18n();
-
   const pathname =
     usePathname();
 
   const isHelpCenter =
     pathname === '/help' ||
-    pathname.startsWith(
-      '/help/'
-    );
+    pathname.startsWith('/help/');
 
   return (
     <AnimatePresence>
@@ -94,60 +52,48 @@ export function NavbarMobileMenu({
         <motion.div
           initial={{
             opacity: 0,
-            height: 0,
+            y: -8,
           }}
           animate={{
             opacity: 1,
-            height: 'auto',
+            y: 0,
           }}
           exit={{
             opacity: 0,
-            height: 0,
+            y: -8,
           }}
           transition={{
-            duration: 0.3,
-            ease: [
-              0.16,
-              1,
-              0.3,
-              1,
-            ],
+            duration: 0.2,
+            ease: 'easeOut',
           }}
           className="
-            relative
-            z-40
+            fixed
+            inset-x-0
+            top-16
+            z-[60]
+            h-[calc(100dvh-4rem)]
+            overflow-y-auto
             border-t
             border-border
             bg-background
+            md:top-20
+            md:h-[calc(100dvh-5rem)]
             lg:hidden
           "
         >
-          <div
-            className="
-              container-page
-              max-h-[80vh]
-              overflow-y-auto
-              py-4
-            "
-          >
-            {isHelpCenter ? (
-              <HelpCenterMobileMenu
-                pathname={
-                  pathname
-                }
-                onNavigate={
-                  onNavigate
-                }
-              />
-            ) : (
-              <DefaultMobileMenu
-                onNavigate={
-                  onNavigate
-                }
-                t={t}
-              />
-            )}
-          </div>
+          {isHelpCenter ? (
+            <HelpCenterMobileMenu
+              onNavigate={
+                onNavigate
+              }
+            />
+          ) : (
+            <DefaultMobileMenu
+              onNavigate={
+                onNavigate
+              }
+            />
+          )}
         </motion.div>
       )}
     </AnimatePresence>
@@ -155,386 +101,1163 @@ export function NavbarMobileMenu({
 }
 
 /* -------------------------------------------------------------------------- */
-/* Help Center mobile menu                                                    */
+/* Default mobile menu                                                        */
 /* -------------------------------------------------------------------------- */
 
-interface HelpCenterMobileMenuProps {
-  pathname: string;
-  onNavigate: () => void;
-}
-
-function HelpCenterMobileMenu({
-  pathname,
+function DefaultMobileMenu({
   onNavigate,
-}: HelpCenterMobileMenuProps) {
+}: {
+  onNavigate: () => void;
+}) {
+  const [
+    openSection,
+    setOpenSection,
+  ] = useState<string | null>(
+    null
+  );
+
   return (
-    <>
-      {/* ------------------------------------------------------------ */}
-      {/* Header                                                       */}
-      {/* ------------------------------------------------------------ */}
-
-      <div
-        className="
-          px-4
-          pb-4
-          pt-1
-        "
-      >
-        <p
+    <div
+      className="
+        container-page
+        py-6
+      "
+    >
+      <nav>
+        <ul
           className="
-            text-[10px]
-            font-semibold
-            uppercase
-            tracking-[0.18em]
-            text-primary
+            divide-y
+            divide-border
           "
         >
-          Help Center
-        </p>
+          {navSections.map(
+            (item) => {
+              const panel =
+                megaPanels[
+                item.id
+                ];
 
-        <p
-          className="
-            mt-2
-            max-w-sm
-            text-sm
-            leading-6
-            text-muted-foreground
-          "
-        >
-          Browse resources, guides,
-          FAQs, tools, or contact
-          Bivi directly.
-        </p>
-      </div>
+              const hasMegaMenu =
+                Boolean(panel);
 
-      {/* ------------------------------------------------------------ */}
-      {/* Navigation                                                   */}
-      {/* ------------------------------------------------------------ */}
+              const expanded =
+                openSection ===
+                item.id;
 
-      <div
-        className="
-          mt-1
-          flex
-          flex-col
-          gap-1
-        "
-      >
-        {helpNavigation.map(
-          (item) => {
-            const Icon =
-              item.icon;
-
-            const active =
-              pathname ===
-                item.href ||
-              (
-                item.href !==
-                  '/help' &&
-                pathname.startsWith(
-                  `${item.href}/`
-                )
-              );
-
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={
-                  onNavigate
-                }
-                className={`
-                  group
-                  flex
-                  items-center
-                  justify-between
-                  gap-4
-                  rounded-xl
-                  px-4
-                  py-3.5
-                  transition-colors
-                  duration-150
-                  ${
-                    active
-                      ? `
-                          bg-primary/10
-                          text-foreground
-                        `
-                      : `
-                          text-foreground
-                          hover:bg-muted
-                        `
-                  }
-                `}
-              >
-                <div
-                  className="
-                    flex
-                    min-w-0
-                    items-center
-                    gap-3
-                  "
-                >
-                  <div
-                    className={`
-                      flex
-                      h-9
-                      w-9
-                      shrink-0
-                      items-center
-                      justify-center
-                      rounded-xl
-                      transition-colors
-                      duration-150
-                      ${
-                        active
-                          ? `
-                              bg-primary
-                              text-white
-                            `
-                          : `
-                              bg-secondary
-                              text-muted-foreground
-                              group-hover:text-primary
-                            `
-                      }
-                    `}
-                  >
-                    <Icon
-                      size={16}
-                      strokeWidth={2}
-                    />
-                  </div>
-
-                  <span
-                    className="
-                      truncate
-                      text-base
-                      font-semibold
-                    "
-                  >
-                    {item.label}
-                  </span>
-                </div>
-
-                <ArrowRight
-                  size={15}
-                  strokeWidth={2}
-                  className={`
-                    shrink-0
-                    transition-transform
-                    duration-200
-                    group-hover:translate-x-1
-                    ${
-                      active
-                        ? `
-                            text-primary
-                          `
-                        : `
-                            text-muted-foreground
-                          `
+              if (
+                !hasMegaMenu
+              ) {
+                return (
+                  <li
+                    key={
+                      item.id
                     }
-                  `}
-                />
-              </Link>
-            );
-          }
-        )}
-      </div>
+                  >
+                    <Link
+                      href={
+                        item.href
+                      }
+                      onClick={
+                        onNavigate
+                      }
+                      className="
+                        flex
+                        items-center
+                        justify-between
+                        py-5
+                        text-[17px]
+                        font-semibold
+                        text-foreground
+                      "
+                    >
+                      <span>
+                        {
+                          item.label
+                        }
+                      </span>
 
-      {/* ------------------------------------------------------------ */}
-      {/* Divider                                                      */}
-      {/* ------------------------------------------------------------ */}
+                      <ArrowRight
+                        size={18}
+                        strokeWidth={
+                          1.8
+                        }
+                        className="
+                          text-muted-foreground
+                        "
+                      />
+                    </Link>
+                  </li>
+                );
+              }
+
+              return (
+                <li
+                  key={
+                    item.id
+                  }
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpenSection(
+                        expanded
+                          ? null
+                          : item.id
+                      );
+                    }}
+                    className="
+                      flex
+                      w-full
+                      items-center
+                      justify-between
+                      py-5
+                      text-left
+                    "
+                    aria-expanded={
+                      expanded
+                    }
+                  >
+                    <span
+                      className="
+                        text-[17px]
+                        font-semibold
+                        text-foreground
+                      "
+                    >
+                      {
+                        item.label
+                      }
+                    </span>
+
+                    <ChevronDown
+                      size={18}
+                      strokeWidth={
+                        1.8
+                      }
+                      className={cn(
+                        `
+                          text-muted-foreground
+                          transition-transform
+                          duration-200
+                        `,
+                        expanded
+                          ? 'rotate-180'
+                          : 'rotate-0'
+                      )}
+                    />
+                  </button>
+
+                  <AnimatePresence
+                    initial={
+                      false
+                    }
+                  >
+                    {expanded && (
+                      <motion.div
+                        initial={{
+                          height: 0,
+                          opacity: 0,
+                        }}
+                        animate={{
+                          height:
+                            'auto',
+                          opacity: 1,
+                        }}
+                        exit={{
+                          height: 0,
+                          opacity: 0,
+                        }}
+                        transition={{
+                          duration: 0.22,
+                          ease: 'easeOut',
+                        }}
+                        className="
+                          overflow-hidden
+                        "
+                      >
+                        {item.id ===
+                          'resources' ? (
+                          <ResourcesMobilePanel
+                            onNavigate={
+                              onNavigate
+                            }
+                          />
+                        ) : (
+                          <StandardMobilePanel
+                            itemId={
+                              item.id
+                            }
+                            itemHref={
+                              item.href
+                            }
+                            onNavigate={
+                              onNavigate
+                            }
+                          />
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </li>
+              );
+            }
+          )}
+        </ul>
+      </nav>
 
       <div
         className="
-          my-5
-          h-px
-          bg-border
-        "
-      />
-
-      {/* ------------------------------------------------------------ */}
-      {/* Contact CTA                                                  */}
-      {/* ------------------------------------------------------------ */}
-
-      <div
-        className="
-          px-1
+          mt-8
+          border-t
+          border-border
+          pt-6
         "
       >
         <Link
-          href="/help/contact"
+          href="/contact"
           onClick={
             onNavigate
           }
           className="
-            group
             flex
+            w-full
             items-center
-            justify-between
-            gap-4
-            rounded-[14px]
-            bg-primary
+            justify-center
+            gap-2
+            rounded-full
+            bg-foreground
             px-5
-            py-4
-            text-white
+            py-3.5
+            text-sm
+            font-semibold
+            text-background
           "
         >
-          <div>
-            <p
-              className="
-                text-sm
-                font-semibold
-              "
-            >
-              Contact Bivi
-            </p>
+          Start a project
 
-            <p
-              className="
-                mt-1
-                text-xs
-                leading-5
-                text-white/70
-              "
-            >
-              Bug, feature, demo,
-              or appointment request
-            </p>
-          </div>
-
-          <div
-            className="
-              flex
-              h-9
-              w-9
-              shrink-0
-              items-center
-              justify-center
-              rounded-full
-              bg-[#BBFF1B]
-              text-black
-            "
-          >
-            <ArrowRight
-              size={15}
-              strokeWidth={2}
-              className="
-                transition-transform
-                duration-200
-                group-hover:translate-x-1
-              "
-            />
-          </div>
+          <ArrowRight
+            size={16}
+          />
         </Link>
-
-        <p
-          className="
-            px-3
-            pb-1
-            pt-4
-            text-center
-            text-[11px]
-            leading-5
-            text-muted-foreground
-          "
-        >
-          No account or sign-in
-          required.
-        </p>
       </div>
-    </>
+    </div>
   );
 }
 
 /* -------------------------------------------------------------------------- */
-/* Standard website mobile menu                                               */
+/* Standard panel                                                             */
 /* -------------------------------------------------------------------------- */
 
-interface DefaultMobileMenuProps {
-  onNavigate: () => void;
-  t: (key: string) => string;
-}
-
-function DefaultMobileMenu({
+function StandardMobilePanel({
+  itemId,
+  itemHref,
   onNavigate,
-  t,
-}: DefaultMobileMenuProps) {
+}: {
+  itemId: string;
+  itemHref: string;
+  onNavigate: () => void;
+}) {
+  const panel =
+    megaPanels[itemId];
+
+  if (!panel) {
+    return null;
+  }
+
   return (
-    <>
-      {navSections.map(
-        (link) => (
-          <a
-            key={link.id}
-            href={link.href}
-            onClick={
-              onNavigate
+    <div
+      className="
+        pb-6
+      "
+    >
+      {panel.groups.map(
+        (group) => (
+          <div
+            key={
+              group.id
             }
             className="
-              block
-              rounded-lg
-              px-4
-              py-3
-              text-base
-              font-semibold
-              text-foreground
-              hover:bg-muted
+              mb-5
+              last:mb-0
             "
           >
-            {link.id === 'helpCenter'
-  ? link.label
-  : t(
-      `nav.${link.id}`
-    )}
-          </a>
+            <p
+              className="
+                mb-2
+                text-[11px]
+                font-semibold
+                uppercase
+                tracking-[0.12em]
+                text-muted-foreground
+              "
+            >
+              {
+                group.title
+              }
+            </p>
+
+            <ul
+              className="
+                space-y-0.5
+              "
+            >
+              {group.links.map(
+                (link) => (
+                  <li
+                    key={
+                      link.label
+                    }
+                  >
+                    <Link
+                      href={
+                        link.href
+                      }
+                      onClick={
+                        onNavigate
+                      }
+                      className="
+                        flex
+                        items-start
+                        gap-3
+                        rounded-2xl
+                        border
+                        border-dashed
+                        border-transparent
+                        px-2.5
+                        py-2.5
+                        transition-all
+                        hover:border-primary
+                        hover:bg-primary/[0.03]
+                      "
+                    >
+                      {link.icon && (
+                        <div
+                          className="
+                            mt-0.5
+                            flex
+                            h-9
+                            w-9
+                            shrink-0
+                            items-center
+                            justify-center
+                            rounded-xl
+                            bg-secondary
+                          "
+                        >
+                          <img
+                            src={
+                              link.icon
+                            }
+                            alt=""
+                            aria-hidden="true"
+                            className="
+                              h-[18px]
+                              w-[18px]
+                              object-contain
+                            "
+                          />
+                        </div>
+                      )}
+
+                      <div
+                        className="
+                          min-w-0
+                        "
+                      >
+                        <span
+                          className="
+                            block
+                            text-sm
+                            font-semibold
+                            leading-snug
+                            text-foreground
+                          "
+                        >
+                          {
+                            link.label
+                          }
+                        </span>
+
+                        {link.description && (
+                          <span
+                            className="
+                              mt-1
+                              block
+                              text-xs
+                              leading-relaxed
+                              text-muted-foreground
+                            "
+                          >
+                            {
+                              link.description
+                            }
+                          </span>
+                        )}
+                      </div>
+                    </Link>
+                  </li>
+                )
+              )}
+            </ul>
+          </div>
         )
       )}
 
-      {/* Get a Demo */}
-
-      <a
-        href="/demos"
-        onClick={
-          onNavigate
-        }
+      <div
         className="
-          mt-3
-          block
-          px-4
-          py-3
-          text-center
-          text-base
-          font-semibold
-          text-foreground
+          mt-5
+          border-t
+          border-border
+          pt-4
         "
       >
-        Get a Demo
-      </a>
+        <Link
+          href={
+            itemHref
+          }
+          onClick={
+            onNavigate
+          }
+          className="
+            inline-flex
+            items-center
+            gap-2
+            text-sm
+            font-semibold
+            text-foreground
+          "
+        >
+          View all
 
-      {/* Start a Project */}
+          <ArrowUpRight
+            size={14}
+          />
+        </Link>
+      </div>
+    </div>
+  );
+}
 
-      <a
-        href="/contact"
-        onClick={
-          onNavigate
-        }
-        className="
-          mt-2
-          block
-          rounded-[14px]
-          bg-primary
-          px-4
-          py-3
-          text-center
-          text-base
-          font-bold
-          text-primary-foreground
-        "
-      >
-        {t(
-          'nav.startProject'
+/* -------------------------------------------------------------------------- */
+/* Resources panel                                                            */
+/* -------------------------------------------------------------------------- */
+
+function ResourcesMobilePanel({
+  onNavigate,
+}: {
+  onNavigate: () => void;
+}) {
+  const panel =
+    megaPanels.resources;
+
+  const resourceLibrary =
+    panel.groups.find(
+      (group) =>
+        group.id ===
+        'resource-library'
+    );
+
+  const journal =
+    panel.groups.find(
+      (group) =>
+        group.id ===
+        'journal'
+    );
+
+  const tools =
+    panel.tools ?? [];
+
+  const previews =
+    panel.previews ?? [];
+
+  const journalPreview =
+    previews[0];
+
+  const pdfPreviews =
+    previews.slice(1);
+
+  return (
+    <div
+      className="
+        pb-6
+      "
+    >
+      {/* ------------------------------------------------------------------ */}
+      {/* Resource Library                                                    */}
+      {/* ------------------------------------------------------------------ */}
+
+      {resourceLibrary && (
+        <div>
+          <MobileSectionHeading
+            title={
+              resourceLibrary.title
+            }
+            href={
+              resourceLibrary.href ??
+              '/resources'
+            }
+            onNavigate={
+              onNavigate
+            }
+          />
+
+          <ul
+            className="
+              mt-2
+              space-y-0.5
+            "
+          >
+            {resourceLibrary.links.map(
+              (link) => (
+                <li
+                  key={
+                    link.label
+                  }
+                >
+                  <MobileDirectoryLink
+                    label={
+                      link.label
+                    }
+                    href={
+                      link.href
+                    }
+                    onNavigate={
+                      onNavigate
+                    }
+                  />
+                </li>
+              )
+            )}
+          </ul>
+        </div>
+      )}
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Journal                                                             */}
+      {/* ------------------------------------------------------------------ */}
+
+      {journal && (
+        <div
+          className="
+            mt-5
+          "
+        >
+          <MobileSectionHeading
+            title={
+              journal.title
+            }
+            href={
+              journal.href ??
+              '/blog'
+            }
+            onNavigate={
+              onNavigate
+            }
+          />
+
+          {journalPreview && (
+            <Link
+              href={
+                journalPreview.href
+              }
+              onClick={
+                onNavigate
+              }
+              className="
+                mt-2.5
+                grid
+                grid-cols-[82px_minmax(0,1fr)]
+                overflow-hidden
+                rounded-2xl
+                border
+                border-dashed
+                border-transparent
+                transition-all
+                hover:border-primary
+                hover:bg-primary/[0.03]
+              "
+            >
+              {journalPreview.image && (
+                <div
+                  className="
+                    relative
+                    min-h-[88px]
+                    overflow-hidden
+                    bg-secondary
+                  "
+                >
+                  <img
+                    src={
+                      journalPreview.image
+                    }
+                    alt={
+                      journalPreview.title
+                    }
+                    className="
+                      absolute
+                      inset-0
+                      h-full
+                      w-full
+                      object-cover
+                    "
+                  />
+                </div>
+              )}
+
+              <div
+                className="
+                  flex
+                  min-w-0
+                  flex-col
+                  justify-center
+                  p-3
+                "
+              >
+                <div
+                  className="
+                    flex
+                    items-start
+                    justify-between
+                    gap-2
+                  "
+                >
+                  <p
+                    className="
+                      line-clamp-2
+                      text-[13px]
+                      font-semibold
+                      leading-snug
+                    "
+                  >
+                    {
+                      journalPreview.title
+                    }
+                  </p>
+
+                  <ArrowUpRight
+                    size={12}
+                    className="
+                      shrink-0
+                      text-muted-foreground
+                    "
+                  />
+                </div>
+
+                {journalPreview.meta && (
+                  <span
+                    className="
+                      mt-1.5
+                      text-[10px]
+                      text-muted-foreground
+                    "
+                  >
+                    {
+                      journalPreview.meta
+                    }
+                  </span>
+                )}
+              </div>
+            </Link>
+          )}
+        </div>
+      )}
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Tools                                                               */}
+      {/* ------------------------------------------------------------------ */}
+
+      {tools.length > 0 && (
+        <div
+          className="
+            mt-4
+            border-t
+            border-border
+            pt-3
+          "
+        >
+          <div
+            className="
+              mb-1.5
+              flex
+              items-center
+              justify-between
+            "
+          >
+            <p
+              className="
+                text-[11px]
+                font-semibold
+                uppercase
+                tracking-[0.12em]
+                text-muted-foreground
+              "
+            >
+              Tools &
+              Calculators
+            </p>
+
+            <Link
+              href="/resources?type=tool"
+              onClick={
+                onNavigate
+              }
+              className="
+                inline-flex
+                items-center
+                gap-1
+                text-[11px]
+                text-muted-foreground
+              "
+            >
+              View all
+
+              <ArrowUpRight
+                size={11}
+              />
+            </Link>
+          </div>
+
+          <div
+            className="
+              grid
+              grid-cols-2
+              gap-1
+            "
+          >
+            {tools.map(
+              (tool) => (
+                <Link
+                  key={
+                    tool.label
+                  }
+                  href={
+                    tool.href
+                  }
+                  onClick={
+                    onNavigate
+                  }
+                  className="
+                    flex
+                    min-h-[38px]
+                    items-center
+                    rounded-xl
+                    border
+                    border-dashed
+                    border-transparent
+                    px-2.5
+                    py-1.5
+                    text-[12px]
+                    font-medium
+                    leading-tight
+                    text-foreground
+                    transition-all
+                    hover:border-primary
+                    hover:bg-primary/[0.03]
+                  "
+                >
+                  {
+                    tool.label
+                  }
+                </Link>
+              )
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ------------------------------------------------------------------ */}
+      {/* PDF previews                                                        */}
+      {/* ------------------------------------------------------------------ */}
+
+      {pdfPreviews.length >
+        0 && (
+          <div
+            className="
+            mt-5
+            border-t
+            border-border
+            pt-3
+          "
+          >
+            <div
+              className="
+              mb-2
+              flex
+              items-center
+              justify-between
+            "
+            >
+              <p
+                className="
+                text-[11px]
+                font-semibold
+                uppercase
+                tracking-[0.12em]
+                text-muted-foreground
+              "
+              >
+                Guides & PDFs
+              </p>
+
+              <Link
+                href="/guides"
+                onClick={
+                  onNavigate
+                }
+                className="
+                inline-flex
+                items-center
+                gap-1
+                text-[11px]
+                text-muted-foreground
+              "
+              >
+                View all
+
+                <ArrowUpRight
+                  size={11}
+                />
+              </Link>
+            </div>
+
+            <div
+              className="
+              space-y-1
+            "
+            >
+              {pdfPreviews.map(
+                (preview) => (
+                  <Link
+                    key={
+                      preview.title
+                    }
+                    href={
+                      preview.href
+                    }
+                    onClick={
+                      onNavigate
+                    }
+                    className="
+                    flex
+                    items-center
+                    justify-between
+                    gap-3
+                    rounded-xl
+                    border
+                    border-dashed
+                    border-transparent
+                    px-3
+                    py-2.5
+                    transition-all
+                    hover:border-primary
+                    hover:bg-primary/[0.03]
+                  "
+                  >
+                    <div
+                      className="
+                      min-w-0
+                    "
+                    >
+                      <p
+                        className="
+                        truncate
+                        text-[12px]
+                        font-semibold
+                        text-foreground
+                      "
+                      >
+                        {
+                          preview.title
+                        }
+                      </p>
+
+                      {preview.meta && (
+                        <p
+                          className="
+                          mt-0.5
+                          text-[10px]
+                          text-muted-foreground
+                        "
+                        >
+                          {
+                            preview.meta
+                          }
+                        </p>
+                      )}
+                    </div>
+
+                    <ArrowUpRight
+                      size={12}
+                      className="
+                      shrink-0
+                      text-muted-foreground
+                    "
+                    />
+                  </Link>
+                )
+              )}
+            </div>
+          </div>
         )}
-      </a>
-    </>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Mobile heading                                                             */
+/* -------------------------------------------------------------------------- */
+
+function MobileSectionHeading({
+  title,
+  href,
+  onNavigate,
+}: {
+  title: string;
+  href: string;
+  onNavigate: () => void;
+}) {
+  return (
+    <Link
+      href={
+        href
+      }
+      onClick={
+        onNavigate
+      }
+      className="
+        flex
+        items-center
+        justify-between
+        border-b
+        border-border
+        pb-2.5
+        text-sm
+        font-semibold
+        text-foreground
+      "
+    >
+      {
+        title
+      }
+
+      <ArrowUpRight
+        size={14}
+        className="
+          text-muted-foreground
+        "
+      />
+    </Link>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Mobile directory link                                                      */
+/* -------------------------------------------------------------------------- */
+
+function MobileDirectoryLink({
+  label,
+  href,
+  onNavigate,
+}: {
+  label: string;
+  href: string;
+  onNavigate: () => void;
+}) {
+  return (
+    <Link
+      href={
+        href
+      }
+      onClick={
+        onNavigate
+      }
+      className="
+        flex
+        min-h-[36px]
+        items-center
+        justify-between
+        rounded-xl
+        border
+        border-dashed
+        border-transparent
+        px-3
+        py-1.5
+        text-[13px]
+        font-medium
+        transition-all
+        hover:border-primary
+        hover:bg-primary/[0.03]
+      "
+    >
+      {
+        label
+      }
+
+      <ArrowUpRight
+        size={11}
+        className="
+          text-muted-foreground
+        "
+      />
+    </Link>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Help Center mobile menu                                                    */
+/* -------------------------------------------------------------------------- */
+
+const helpLinks = [
+  {
+    label: 'Help Home',
+    href: '/help',
+  },
+  {
+    label: 'Resources',
+    href: '/help/resources',
+  },
+  {
+    label: 'Guides',
+    href: '/help/guides',
+  },
+  {
+    label: 'FAQ',
+    href: '/help/faq',
+  },
+  {
+    label: 'Free Tools',
+    href: '/help/tools',
+  },
+  {
+    label: 'Contact Us',
+    href: '/help/contact',
+  },
+];
+
+function HelpCenterMobileMenu({
+  onNavigate,
+}: {
+  onNavigate: () => void;
+}) {
+  const pathname =
+    usePathname();
+
+  return (
+    <div
+      className="
+        container-page
+        py-6
+      "
+    >
+      <p
+        className="
+          mb-5
+          text-[11px]
+          font-semibold
+          uppercase
+          tracking-[0.12em]
+          text-muted-foreground
+        "
+      >
+        Help Center
+      </p>
+
+      <nav>
+        <ul
+          className="
+            divide-y
+            divide-border
+          "
+        >
+          {helpLinks.map(
+            (item) => {
+              const active =
+                pathname ===
+                item.href ||
+                pathname.startsWith(
+                  `${item.href}/`
+                );
+
+              return (
+                <li
+                  key={
+                    item.href
+                  }
+                >
+                  <Link
+                    href={
+                      item.href
+                    }
+                    onClick={
+                      onNavigate
+                    }
+                    className={cn(
+                      `
+                        flex
+                        items-center
+                        justify-between
+                        py-4
+                        text-[16px]
+                        font-medium
+                      `,
+                      active
+                        ? 'text-primary'
+                        : 'text-foreground'
+                    )}
+                  >
+                    {
+                      item.label
+                    }
+
+                    <ArrowRight
+                      size={17}
+                      className="
+                        text-muted-foreground
+                      "
+                    />
+                  </Link>
+                </li>
+              );
+            }
+          )}
+        </ul>
+      </nav>
+
+      <div
+        className="
+          mt-8
+          border-t
+          border-border
+          pt-6
+        "
+      >
+        <Link
+          href="/contact"
+          onClick={
+            onNavigate
+          }
+          className="
+            flex
+            w-full
+            items-center
+            justify-center
+            gap-2
+            rounded-full
+            bg-foreground
+            px-5
+            py-3.5
+            text-sm
+            font-semibold
+            text-background
+          "
+        >
+          Contact Bivi
+
+          <ArrowRight
+            size={16}
+          />
+        </Link>
+      </div>
+    </div>
   );
 }

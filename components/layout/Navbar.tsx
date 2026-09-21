@@ -123,18 +123,9 @@ export function Navbar() {
       '/help/'
     );
 
-  /*
-   * Homepage and the main Help Center
-   * landing page can use the transparent
-   * navbar over their hero images.
-   *
-   * Inner Help Center pages use the
-   * normal theme navbar immediately.
-   */
   const allowTransparentNavbar =
     pathname === '/' ||
     pathname === '/help' ||
-    pathname === '/process' ||
     pathname === '/demos';
 
   /* ---------------------------------------------------------------------- */
@@ -163,17 +154,6 @@ export function Navbar() {
     searchOpen ||
     settingsOpen ||
     open;
-
-  /*
-   * Normal theme navbar appears when:
-   *
-   * - the page does not support a transparent navbar
-   * - the page has been scrolled
-   * - a main site menu is hovered
-   * - Search is open
-   * - Settings is open
-   * - mobile navigation is open
-   */
 
   /* ---------------------------------------------------------------------- */
   /* Scroll state                                                           */
@@ -205,7 +185,7 @@ export function Navbar() {
   }, []);
 
   /* ---------------------------------------------------------------------- */
-  /* Close route-specific navigation when pathname changes                  */
+  /* Reset navigation on route change                                       */
   /* ---------------------------------------------------------------------- */
 
   useEffect(() => {
@@ -253,11 +233,6 @@ export function Navbar() {
         closeTimer.current
       );
     }
-
-    /*
-     * Opening a main mega menu closes
-     * Search and Settings.
-     */
 
     setSearchOpen(false);
     setSettingsOpen(false);
@@ -336,14 +311,9 @@ export function Navbar() {
             backdrop-blur-sm
           "
           onMouseEnter={() => {
-            /*
-             * Only close when a regular
-             * site mega menu is active.
-             *
-             * Search and Settings use
-             * the shared utility panel.
-             */
-            if (activeMega) {
+            if (
+              activeMega
+            ) {
               closeMega();
             }
           }}
@@ -442,6 +412,9 @@ export function Navbar() {
               onHover={
                 openMega
               }
+              onStandaloneHover={
+                closeMega
+              }
               lightAtTop={
                 !navbarSurfaceActive
               }
@@ -510,7 +483,7 @@ export function Navbar() {
         </nav>
 
         {/* ------------------------------------------------------------- */}
-        {/* Shared Search / Settings panel                               */}
+        {/* Search / Settings                                             */}
         {/* ------------------------------------------------------------- */}
 
         <NavbarUtilityPanel
@@ -523,7 +496,7 @@ export function Navbar() {
         />
 
         {/* ------------------------------------------------------------- */}
-        {/* Desktop mega menu                                            */}
+        {/* Mega menu                                                     */}
         {/* ------------------------------------------------------------- */}
 
         {!isHelpCenter && (
@@ -548,7 +521,9 @@ export function Navbar() {
         {/* ------------------------------------------------------------- */}
 
         <NavbarMobileMenu
-          open={open}
+          open={
+            open
+          }
           onNavigate={
             handleNav
           }
@@ -594,8 +569,12 @@ function HelpCenterNavigation({
 
           return (
             <Link
-              key={item.href}
-              href={item.href}
+              key={
+                item.href
+              }
+              href={
+                item.href
+              }
               className={cn(
                 `
                   relative
@@ -626,9 +605,9 @@ function HelpCenterNavigation({
                       `
               )}
             >
-              {item.label}
-
-              {/* Active indicator */}
+              {
+                item.label
+              }
 
               <span
                 className={cn(

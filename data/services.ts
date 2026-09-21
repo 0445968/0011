@@ -14,7 +14,6 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
-
 export interface Service {
   id: string;
   title: string;
@@ -27,9 +26,7 @@ export interface Service {
   href: string;
 }
 
-
 export const services: Service[] = [
-
   {
     id: 'brand-identity',
     title: 'Brand Identity',
@@ -48,9 +45,8 @@ export const services: Service[] = [
       '/images/services/brand-identity.jpg',
 
     href:
-      '/services/brand-identity',
+      '/services#brand-identity',
   },
-
 
   {
     id: 'creative-direction',
@@ -70,9 +66,8 @@ export const services: Service[] = [
       '/images/services/creative-direction.jpg',
 
     href:
-      '/services/creative-direction',
+      '/services#creative-direction',
   },
-
 
   {
     id: 'website-design',
@@ -92,9 +87,8 @@ export const services: Service[] = [
       '/images/services/website-design.jpg',
 
     href:
-      '/services/website-design',
+      '/services#website-design',
   },
-
 
   {
     id: 'web-development',
@@ -114,9 +108,8 @@ export const services: Service[] = [
       '/images/services/web-development.jpg',
 
     href:
-      '/services/web-development',
+      '/services#web-development',
   },
-
 
   {
     id: 'ui-ux-design',
@@ -136,9 +129,8 @@ export const services: Service[] = [
       '/images/services/ui-ux-design.jpg',
 
     href:
-      '/services/ui-ux-design',
+      '/services#ui-ux-design',
   },
-
 
   {
     id: 'saas-product-design',
@@ -158,9 +150,8 @@ export const services: Service[] = [
       '/images/services/saas-product-design.webp',
 
     href:
-      '/services/saas-product-design',
+      '/services#saas-product-design',
   },
-
 
   {
     id: 'mobile-app-design',
@@ -180,9 +171,8 @@ export const services: Service[] = [
       '/images/services/mobile-app-design.jpg',
 
     href:
-      '/services/mobile-app-design',
+      '/services#mobile-app-design',
   },
-
 
   {
     id: 'campaign-creative',
@@ -202,9 +192,8 @@ export const services: Service[] = [
       '/images/services/campaign-creative.jpg',
 
     href:
-      '/services/campaign-creative',
+      '/services#campaign-creative',
   },
-
 
   {
     id: 'social-content-design',
@@ -224,9 +213,8 @@ export const services: Service[] = [
       '/images/services/social-content-design.jpg',
 
     href:
-      '/services/social-content-design',
+      '/services#social-content-design',
   },
-
 
   {
     id: 'presentation-design',
@@ -246,9 +234,8 @@ export const services: Service[] = [
       '/images/services/presentation-design.png',
 
     href:
-      '/services/presentation-design',
+      '/services#presentation-design',
   },
-
 
   {
     id: 'packaging-design',
@@ -268,9 +255,8 @@ export const services: Service[] = [
       '/images/services/packaging-design.jpg',
 
     href:
-      '/services/packaging-design',
+      '/services#packaging-design',
   },
-
 
   {
     id: 'email-design',
@@ -290,7 +276,6 @@ export const services: Service[] = [
       '/images/services/email-design.webp',
 
     href:
-      '/services/email-design',
+      '/services#email-design',
   },
-
 ];
