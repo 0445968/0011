@@ -86,12 +86,12 @@ const helpNavigation = [
  * Once this point is reached, the navbar becomes fixed but remains hidden
  * above the viewport.
  */
-const STICKY_START = 300;
+const STICKY_START = 0;
 
 /*
  * Once the user reaches this point, the fixed navbar slides back into view.
  */
-const STICKY_SHOW = 380;
+const STICKY_SHOW = 0;
 
 export function Navbar() {
   const pathname =
@@ -149,6 +149,8 @@ export function Navbar() {
   const allowTransparentNavbar =
     pathname === '/' ||
     pathname === '/help' ||
+    pathname === '/process' ||
+    pathname === '/services/[slug]' ||
     pathname === '/demos';
 
   /* ---------------------------------------------------------------------- */
@@ -426,7 +428,7 @@ export function Navbar() {
             top-0
             z-50
             transition-[background-color,border-color,box-shadow]
-            duration-300
+            duration-50
           `,
 
           navbarIsFixed

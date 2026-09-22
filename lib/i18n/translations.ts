@@ -54,7 +54,7 @@ const en: Dict = {
   'footer.guides': 'Guides',
   'footer.inspiration': 'Inspiration',
   'footer.freeResources': 'Free Resources',
-  'footer.webDesign': 'Web Design',
+  'footer.webDesign': 'Web & Digital',
   'footer.brandSystems': 'Brand Systems',
   'footer.development': 'Development',
   'footer.creativeStrategy': 'Creative Strategy',
