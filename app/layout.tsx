@@ -2,14 +2,20 @@ import './globals.css';
 
 import type {
   CSSProperties,
-  Metadata,
 } from 'react';
 
+import type {
+  Metadata,
+} from 'next';
+
 import {
-  IBM_Plex_Mono,
   Inter,
   Sora,
 } from 'next/font/google';
+
+import '@fontsource/ibm-plex-mono/400.css';
+import '@fontsource/ibm-plex-mono/500.css';
+import '@fontsource/ibm-plex-mono/600.css';
 
 import {
   ThemeProvider,
@@ -52,21 +58,6 @@ const sora = Sora({
     '700',
     '800',
   ],
-});
-
-const mono = IBM_Plex_Mono({
-  subsets: [
-    'latin',
-  ],
-  weight: [
-    '400',
-    '500',
-    '600',
-  ],
-  variable:
-    '--font-mono',
-  display:
-    'swap',
 });
 
 /* -------------------------------------------------------------------------- */
@@ -190,7 +181,7 @@ export default function RootLayout({
       sora.style.fontFamily,
 
     '--font-mono':
-      mono.style.fontFamily,
+      '"IBM Plex Mono", monospace',
   } as CSSProperties;
 
   return (
@@ -199,7 +190,6 @@ export default function RootLayout({
       className={`
         ${inter.variable}
         ${sora.variable}
-        ${mono.variable}
       `}
       style={
         fontVariables
