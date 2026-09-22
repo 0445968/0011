@@ -16,20 +16,9 @@ import type {
   LucideIcon,
 } from 'lucide-react';
 
-/* -------------------------------------------------------------------------- */
-/* Types                                                                      */
-/* -------------------------------------------------------------------------- */
-
-interface LabItem {
-  id: string;
-  title: string;
-  description: string;
-  href: string;
-  type: string;
-  status: string;
-  featured?: boolean;
-  estimatedTime?: string;
-}
+import type {
+  LabItem,
+} from './types';
 
 /* -------------------------------------------------------------------------- */
 /* Icon configuration                                                         */
