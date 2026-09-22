@@ -75,6 +75,24 @@ const helpNavigation = [
   },
 ];
 
+/* -------------------------------------------------------------------------- */
+/* Scroll thresholds                                                          */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * The original transparent navbar remains attached to the page and scrolls
+ * away naturally.
+ *
+ * Once this point is reached, the navbar becomes fixed but remains hidden
+ * above the viewport.
+ */
+const STICKY_START = 300;
+
+/*
+ * Once the user reaches this point, the fixed navbar slides back into view.
+ */
+const STICKY_SHOW = 380;
+
 export function Navbar() {
   const pathname =
     usePathname();
@@ -82,6 +100,11 @@ export function Navbar() {
   const [
     scrolled,
     setScrolled,
+  ] = useState(false);
+
+  const [
+    stickyVisible,
+    setStickyVisible,
   ] = useState(false);
 
   const [
@@ -147,6 +170,13 @@ export function Navbar() {
         ? 'settings'
         : null;
 
+  /*
+   * On pages with transparent headers:
+   * - transparent at the top
+   * - solid after entering sticky mode
+   *
+   * Opening a menu/search/settings also activates the solid surface.
+   */
   const navbarSurfaceActive =
     !allowTransparentNavbar ||
     scrolled ||
@@ -155,14 +185,51 @@ export function Navbar() {
     settingsOpen ||
     open;
 
+  /*
+   * Normal pages retain their fixed navbar.
+   *
+   * Transparent pages begin as an absolute navbar so they can naturally
+   * scroll away with the hero.
+   */
+  const navbarIsFixed =
+    !allowTransparentNavbar ||
+    scrolled;
+
+  /*
+   * Normal pages are always visible.
+   *
+   * Transparent pages become visible again only after passing the second
+   * scroll threshold.
+   */
+  const navbarShouldShow =
+    !allowTransparentNavbar ||
+    !scrolled ||
+    stickyVisible;
+
   /* ---------------------------------------------------------------------- */
   /* Scroll state                                                           */
   /* ---------------------------------------------------------------------- */
 
   useEffect(() => {
     const onScroll = () => {
+      const scrollY =
+        window.scrollY;
+
+      /*
+       * Start sticky mode after the original navbar has already naturally
+       * scrolled beyond the viewport.
+       */
       setScrolled(
-        window.scrollY > 300
+        scrollY > STICKY_START
+      );
+
+      /*
+       * Add a small dead zone before revealing the sticky navbar. This
+       * prevents the navbar from appearing immediately after switching from
+       * absolute to fixed.
+       */
+      setStickyVisible(
+        scrollY > STICKY_SHOW
       );
     };
 
@@ -330,26 +397,46 @@ export function Navbar() {
           opacity: 0,
         }}
         animate={{
-          y: 0,
-          opacity: 1,
+          y:
+            navbarShouldShow
+              ? 0
+              : -96,
+          opacity:
+            navbarShouldShow
+              ? 1
+              : 0,
         }}
         transition={{
-          duration: 0.7,
-          ease: [
-            0.16,
-            1,
-            0.3,
-            1,
-          ],
-          delay: 0.1,
+          y: {
+            duration: 0.45,
+            ease: [
+              0.16,
+              1,
+              0.3,
+              1,
+            ],
+          },
+          opacity: {
+            duration: 0.25,
+          },
         }}
         className={cn(
           `
-            fixed
             inset-x-0
             top-0
             z-50
+            transition-[background-color,border-color,box-shadow]
+            duration-300
           `,
+
+          navbarIsFixed
+            ? `
+                fixed
+              `
+            : `
+                absolute
+              `,
+
           navbarSurfaceActive
             ? `
                 border-b
@@ -362,7 +449,13 @@ export function Navbar() {
                 border-transparent
                 bg-transparent
                 text-white
-              `
+              `,
+
+          navbarIsFixed &&
+          navbarSurfaceActive &&
+          `
+              shadow-sm
+            `
         )}
       >
         {/* ------------------------------------------------------------- */}
@@ -457,7 +550,9 @@ export function Navbar() {
             surfaceActive={
               navbarSurfaceActive
             }
-            open={open}
+            open={
+              open
+            }
             setOpen={
               setOpen
             }

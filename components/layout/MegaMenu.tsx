@@ -159,25 +159,26 @@ function ServicesMegaMenu({
                 min-w-0
               "
             >
-              {/* ------------------------------------------------------ */}
-              {/* Column heading                                        */}
-              {/* ------------------------------------------------------ */}
+              {/* ---------------------------------------------------------- */}
+              {/* Category heading                                           */}
+              {/* ---------------------------------------------------------- */}
 
               <div
                 className="
-                  mb-2.5
+                  mb-3
                   border-b
                   border-border/70
-                  pb-2.5
+                  pb-3
                 "
               >
                 <h3
                   className="
+                    font-mono
                     text-[11px]
-                    font-semibold
+                    font-medium
                     uppercase
-                    tracking-[0.14em]
-                    text-muted-foreground
+                    tracking-[0.16em]
+                    text-primary
                   "
                 >
                   {
@@ -186,9 +187,9 @@ function ServicesMegaMenu({
                 </h3>
               </div>
 
-              {/* ------------------------------------------------------ */}
-              {/* Services                                              */}
-              {/* ------------------------------------------------------ */}
+              {/* ---------------------------------------------------------- */}
+              {/* Service links                                              */}
+              {/* ---------------------------------------------------------- */}
 
               <ul
                 className="
@@ -226,9 +227,9 @@ function ServicesMegaMenu({
                           hover:bg-primary/[0.03]
                         "
                       >
-                        {/* ------------------------------------------ */}
-                        {/* Service icon                               */}
-                        {/* ------------------------------------------ */}
+                        {/* ------------------------------------------------ */}
+                        {/* PNG icon                                         */}
+                        {/* ------------------------------------------------ */}
 
                         {link.icon && (
                           <div
@@ -240,8 +241,10 @@ function ServicesMegaMenu({
                               shrink-0
                               items-center
                               justify-center
+                              overflow-hidden
                               rounded-xl
-                              bg-secondary
+                              bg-muted
+                              p-2
                             "
                           >
                             <img
@@ -257,17 +260,17 @@ function ServicesMegaMenu({
                                   'none';
                               }}
                               className="
-                                h-5
-                                w-5
+                                h-full
+                                w-full
                                 object-contain
                               "
                             />
                           </div>
                         )}
 
-                        {/* ------------------------------------------ */}
-                        {/* Service text                               */}
-                        {/* ------------------------------------------ */}
+                        {/* ------------------------------------------------ */}
+                        {/* Service text                                     */}
+                        {/* ------------------------------------------------ */}
 
                         <div
                           className="
@@ -279,7 +282,6 @@ function ServicesMegaMenu({
                             className="
                               flex
                               items-center
-                              gap-1.5
                             "
                           >
                             <span
@@ -297,23 +299,6 @@ function ServicesMegaMenu({
                                 link.label
                               }
                             </span>
-
-                            <ArrowUpRight
-                              size={13}
-                              strokeWidth={
-                                1.8
-                              }
-                              className="
-                                text-muted-foreground
-                                opacity-0
-                                transition-all
-                                duration-200
-                                group-hover/service:-translate-y-0.5
-                                group-hover/service:translate-x-0.5
-                                group-hover/service:text-primary
-                                group-hover/service:opacity-100
-                              "
-                            />
                           </div>
 
                           {link.description && (
@@ -418,8 +403,7 @@ function ResourcesMegaMenu({
   const journal =
     panel.groups.find(
       (group) =>
-        group.id ===
-        'journal'
+        group.id === 'journal'
     );
 
   const previews =
@@ -439,7 +423,7 @@ function ResourcesMegaMenu({
    * Preview order:
    *
    * 0 = Journal
-   * 1+ = PDFs
+   * 1–3 = PDF guides
    */
   const journalPreview =
     previews[0];
@@ -631,6 +615,7 @@ function ResourcesMegaMenu({
                     <p
                       className="
                         mb-1
+                        font-mono
                         text-[9px]
                         font-medium
                         uppercase
@@ -644,14 +629,7 @@ function ResourcesMegaMenu({
                     </p>
                   )}
 
-                  <div
-                    className="
-                      flex
-                      items-start
-                      justify-between
-                      gap-2
-                    "
-                  >
+                  <div>
                     <h3
                       className="
                         line-clamp-2
@@ -668,23 +646,6 @@ function ResourcesMegaMenu({
                         journalPreview.title
                       }
                     </h3>
-
-                    <ArrowUpRight
-                      size={13}
-                      strokeWidth={
-                        1.8
-                      }
-                      className="
-                        mt-0.5
-                        shrink-0
-                        text-muted-foreground
-                        transition-all
-                        duration-200
-                        group-hover/journal:-translate-y-0.5
-                        group-hover/journal:translate-x-0.5
-                        group-hover/journal:text-primary
-                      "
-                    />
                   </div>
 
                   {journalPreview.meta && (
@@ -707,7 +668,7 @@ function ResourcesMegaMenu({
         </div>
 
         {/* ---------------------------------------------------------------- */}
-        {/* Tools & Calculators                                              */}
+        {/* Popular Tools                                                    */}
         {/* ---------------------------------------------------------------- */}
 
         {tools.length > 0 && (
@@ -721,7 +682,7 @@ function ResourcesMegaMenu({
           >
             <div
               className="
-                mb-4
+                mb-5
                 flex
                 items-center
                 justify-between
@@ -729,15 +690,15 @@ function ResourcesMegaMenu({
             >
               <p
                 className="
-    font-bivi-mono
-    text-[11px]
-    font-medium
-    uppercase
-    tracking-[0.12em]
-    text-primary
-  "
+                  font-mono
+                  text-[12px]
+                  font-medium
+                  uppercase
+                  tracking-[0.16em]
+                  text-primary
+                "
               >
-                Tools & Calculators
+                Popular Tools
               </p>
 
               <Link
@@ -776,14 +737,14 @@ function ResourcesMegaMenu({
             </div>
 
             {/* ------------------------------------------------------------ */}
-            {/* Six featured calculators                                    */}
+            {/* Six featured tools                                          */}
             {/* ------------------------------------------------------------ */}
 
             <div
               className="
                 grid
                 grid-cols-2
-                gap-x-6
+                gap-x-8
                 gap-y-1
               "
             >
@@ -803,7 +764,7 @@ function ResourcesMegaMenu({
                       py-0.5
                       text-[12px]
                       font-medium
-                      leading-[1.15]
+                      leading-[1.1]
                       text-foreground
                       transition-colors
                       duration-200
@@ -822,7 +783,7 @@ function ResourcesMegaMenu({
       </div>
 
       {/* ================================================================== */}
-      {/* Guides & PDFs                                                      */}
+      {/* Guides                                                             */}
       {/* ================================================================== */}
 
       <div
@@ -834,12 +795,12 @@ function ResourcesMegaMenu({
         "
       >
         {/* ---------------------------------------------------------------- */}
-        {/* PDF heading                                                      */}
+        {/* Guides heading                                                   */}
         {/* ---------------------------------------------------------------- */}
 
         <div
           className="
-            mb-4
+            mb-5
             flex
             items-center
             justify-between
@@ -847,15 +808,15 @@ function ResourcesMegaMenu({
         >
           <p
             className="
-    font-bivi-mono
-    text-[11px]
-    font-medium
-    uppercase
-    tracking-[0.12em]
-    text-primary
-  "
+              font-mono
+              text-[12px]
+              font-medium
+              uppercase
+              tracking-[0.16em]
+              text-primary
+            "
           >
-            Guides & PDFs
+            Guides
           </p>
 
           <Link
@@ -919,7 +880,7 @@ function ResourcesMegaMenu({
           )}
         </div>
       </div>
-    </div >
+    </div>
   );
 }
 
@@ -968,7 +929,7 @@ function PdfPreviewCard({
       "
     >
       {/* ------------------------------------------------------------------ */}
-      {/* Image                                                               */}
+      {/* Preview image                                                       */}
       {/* ------------------------------------------------------------------ */}
 
       {preview.image && (
@@ -1001,7 +962,7 @@ function PdfPreviewCard({
       )}
 
       {/* ------------------------------------------------------------------ */}
-      {/* Content                                                             */}
+      {/* Preview content                                                     */}
       {/* ------------------------------------------------------------------ */}
 
       <div
@@ -1017,7 +978,6 @@ function PdfPreviewCard({
           className="
             flex
             items-start
-            justify-between
             gap-3
           "
         >
@@ -1030,6 +990,7 @@ function PdfPreviewCard({
               <p
                 className="
                   mb-1
+                  font-mono
                   text-[9px]
                   font-medium
                   uppercase
@@ -1060,23 +1021,6 @@ function PdfPreviewCard({
               }
             </h3>
           </div>
-
-          <ArrowUpRight
-            size={13}
-            strokeWidth={
-              1.8
-            }
-            className="
-              mt-0.5
-              shrink-0
-              text-muted-foreground
-              transition-all
-              duration-200
-              group-hover/pdf:-translate-y-0.5
-              group-hover/pdf:translate-x-0.5
-              group-hover/pdf:text-primary
-            "
-          />
         </div>
 
         {preview.meta && (
@@ -1098,7 +1042,7 @@ function PdfPreviewCard({
 }
 
 /* -------------------------------------------------------------------------- */
-/* Clickable Resource Library / Journal heading                               */
+/* Resource Library / Journal heading                                         */
 /* -------------------------------------------------------------------------- */
 
 function SectionHeadingLink({
@@ -1163,7 +1107,7 @@ function SectionHeadingLink({
 }
 
 /* -------------------------------------------------------------------------- */
-/* Resource Library directory item                                            */
+/* Resource Library link                                                      */
 /* -------------------------------------------------------------------------- */
 
 function DirectoryLink({
@@ -1186,10 +1130,10 @@ function DirectoryLink({
       }
       className="
         group
-        flex
+        inline-flex
         min-h-[32px]
         items-center
-        justify-between
+        gap-1.5
         py-1
         text-[13px]
         font-medium

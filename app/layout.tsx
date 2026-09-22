@@ -1,13 +1,14 @@
 import './globals.css';
 
 import type {
+  CSSProperties,
   Metadata,
-} from 'next';
+} from 'react';
 
 import {
+  IBM_Plex_Mono,
   Inter,
   Sora,
-  IBM_Plex_Mono,
 } from 'next/font/google';
 
 import {
@@ -21,6 +22,10 @@ import {
 import {
   I18nProvider,
 } from '@/lib/i18n/context';
+
+/* -------------------------------------------------------------------------- */
+/* Fonts                                                                      */
+/* -------------------------------------------------------------------------- */
 
 const inter = Inter({
   subsets: [
@@ -50,11 +55,23 @@ const sora = Sora({
 });
 
 const mono = IBM_Plex_Mono({
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
-  variable: '--font-mono',
-  display: 'swap',
+  subsets: [
+    'latin',
+  ],
+  weight: [
+    '400',
+    '500',
+    '600',
+  ],
+  variable:
+    '--font-mono',
+  display:
+    'swap',
 });
+
+/* -------------------------------------------------------------------------- */
+/* Metadata                                                                   */
+/* -------------------------------------------------------------------------- */
 
 export const metadata: Metadata = {
   metadataBase:
@@ -145,12 +162,37 @@ export const metadata: Metadata = {
   },
 };
 
+/* -------------------------------------------------------------------------- */
+/* Root layout                                                                */
+/* -------------------------------------------------------------------------- */
+
 export default function RootLayout({
   children,
 }: {
   children:
   React.ReactNode;
 }) {
+  /*
+   * Keep the normal next/font variable classes,
+   * but also expose the actual resolved font
+   * families directly as CSS variables.
+   *
+   * This makes Tailwind's font-mono,
+   * font-sans and font-heading utilities
+   * reliable throughout the entire app.
+   */
+
+  const fontVariables = {
+    '--font-sans':
+      inter.style.fontFamily,
+
+    '--font-heading':
+      sora.style.fontFamily,
+
+    '--font-mono':
+      mono.style.fontFamily,
+  } as CSSProperties;
+
   return (
     <html
       lang="en"
@@ -159,6 +201,9 @@ export default function RootLayout({
         ${sora.variable}
         ${mono.variable}
       `}
+      style={
+        fontVariables
+      }
       suppressHydrationWarning
     >
       <body

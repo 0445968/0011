@@ -175,24 +175,32 @@ export const megaPanels: Record<string, MegaPanel> = {
             href: '/services#brand-identity',
             description:
               'Identity systems built for recognition and consistency.',
+            icon:
+              '/images/services/icons/brand-identity.png',
           },
           {
             label: 'Creative Direction',
             href: '/services#creative-direction',
             description:
               'Visual direction for brands, launches, and campaigns.',
+            icon:
+              '/images/services/icons/creative-direction.png',
           },
           {
             label: 'Packaging Design',
             href: '/services#packaging-design',
             description:
               'Packaging designed to feel distinctive and cohesive.',
+            icon:
+              '/images/services/icons/packaging-design.png',
           },
           {
             label: 'Presentation & Pitch Design',
             href: '/services#presentation-design',
             description:
               'Clear and persuasive decks for ideas, pitches, and sales.',
+            icon:
+              '/images/services/icons/presentation-design.png',
           },
         ],
       },
@@ -206,30 +214,40 @@ export const megaPanels: Record<string, MegaPanel> = {
             href: '/services#website-design',
             description:
               'High-impact websites built around clarity and conversion.',
+            icon:
+              '/images/services/icons/website-design.png',
           },
           {
             label: 'Web Development',
             href: '/services#web-development',
             description:
               'Fast, scalable interfaces built with modern technology.',
+            icon:
+              '/images/services/icons/web-development.png',
           },
           {
             label: 'UI/UX Design',
             href: '/services#ui-ux-design',
             description:
               'User-focused interfaces designed for clarity and usability.',
+            icon:
+              '/images/services/icons/ui-ux-design.png',
           },
           {
             label: 'SaaS Product Design',
             href: '/services#saas-product-design',
             description:
               'Product systems for dashboards, workflows, and platforms.',
+            icon:
+              '/images/services/icons/saas-product-design.png',
           },
           {
             label: 'Mobile App Design',
             href: '/services#mobile-app-design',
             description:
               'Polished mobile experiences designed around everyday use.',
+            icon:
+              '/images/services/icons/mobile-app-design.png',
           },
         ],
       },
@@ -243,18 +261,24 @@ export const megaPanels: Record<string, MegaPanel> = {
             href: '/services#campaign-creative',
             description:
               'Creative systems for launches, promotions, and campaigns.',
+            icon:
+              '/images/services/icons/campaign-creative.png',
           },
           {
             label: 'Social Content Design',
             href: '/services#social-content-design',
             description:
               'Flexible visual systems for modern social channels.',
+            icon:
+              '/images/services/icons/social-content-design.png',
           },
           {
             label: 'Email Design',
             href: '/services#email-design',
             description:
               'Branded email experiences designed for engagement.',
+            icon:
+              '/images/services/icons/email-design.png',
           },
         ],
       },
