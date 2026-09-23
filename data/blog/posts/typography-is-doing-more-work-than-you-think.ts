@@ -25,7 +25,7 @@ export const typographyIsDoingMoreWorkThanYouThink: BlogPost = {
     'Design',
     'Typography',
     'Visual Hierarchy',
-    'Web Design',
+    'Web & Digital',
   ],
 
   content: [

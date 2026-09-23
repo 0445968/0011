@@ -82,7 +82,7 @@ export function HeroHeading() {
             inline
             font-normal
             italic
-            text-[#BBFF1B]
+            text-muted/80
           "
         >
           forward.
@@ -113,7 +113,7 @@ export function HeroHeading() {
           sm:text-[17px]
           sm:leading-8
         "
-        >
+      >
         From strategic brand systems to thoughtful digital tools,
         <br className="hidden sm:block" />
         we build the pieces that help your brand{' '}

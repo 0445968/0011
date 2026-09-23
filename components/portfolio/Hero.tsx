@@ -23,7 +23,7 @@ const projectOptions = [
   },
   {
     id: 'web-design',
-    label: 'Web Design',
+    label: 'Web & Digital',
   },
   {
     id: 'development',
@@ -67,8 +67,8 @@ export function Hero() {
     setSelectedOptions((current) =>
       current.includes(id)
         ? current.filter(
-            (option) => option !== id
-          )
+          (option) => option !== id
+        )
         : [...current, id]
     );
   };

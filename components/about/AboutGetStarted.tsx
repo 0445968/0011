@@ -1,128 +1,72 @@
 'use client';
 
-import {
-  useRef,
-  useState,
-  type MouseEvent,
-} from 'react';
 import Link from 'next/link';
-import { ArrowUpRight } from 'lucide-react';
 
 import { Reveal } from '@/components/portfolio/Reveal';
 
 export function AboutGetStarted() {
-  const ctaRef = useRef<HTMLDivElement>(null);
-
-  const [glowPosition, setGlowPosition] = useState({
-    x: 50,
-    y: 50,
-  });
-
-  const [isHovering, setIsHovering] = useState(false);
-
-  const handleMouseMove = (
-    event: MouseEvent<HTMLDivElement>
-  ) => {
-    const element = ctaRef.current;
-
-    if (!element) return;
-
-    const rect = element.getBoundingClientRect();
-
-    const x =
-      ((event.clientX - rect.left) / rect.width) * 100;
-
-    const y =
-      ((event.clientY - rect.top) / rect.height) * 100;
-
-    setGlowPosition({
-      x,
-      y,
-    });
-  };
-
   return (
     <section
       className="
         relative
-        pt-4
         pb-10
-        sm:pt-6
+        pt-6
         sm:pb-12
-        lg:pt-8
-        lg:pb-16
+        sm:pt-8
+        lg:pb-14
+        lg:pt-10
       "
     >
       <div className="container-page">
         <Reveal>
           <div
-            ref={ctaRef}
-            onMouseMove={handleMouseMove}
-            onMouseEnter={() => setIsHovering(true)}
-            onMouseLeave={() => setIsHovering(false)}
             className="
               relative
               overflow-hidden
-              rounded-[28px]
-              bg-[#BBFF1B]
+              rounded-3xl
+              bg-primary
               px-6
-              py-16
-              text-black
+              py-12
+              text-primary-foreground
               sm:px-10
-              sm:py-20
-              lg:px-16
-              lg:py-24
+              sm:py-14
+              lg:px-14
+              lg:py-16
             "
           >
-
-
-
-            
-            {/* ---------------------------------------------------------- */}
-            {/* Mouse-following glow                                       */}
-            {/* ---------------------------------------------------------- */}
+            {/* Decorative background glow */}
 
             <div
               aria-hidden="true"
               className="
                 pointer-events-none
                 absolute
-                inset-0
-                transition-opacity
-                duration-500
-                ease-out
+                -right-28
+                -top-28
+                h-72
+                w-72
+                rounded-full
+                bg-white/10
+                blur-3xl
               "
-              style={{
-                opacity: isHovering ? 1 : 0.45,
-                background: `
-                  radial-gradient(
-                    circle 280px at ${glowPosition.x}% ${glowPosition.y}%,
-                    rgba(255,255,255,0.38) 0%,
-                    rgba(255,255,255,0.20) 28%,
-                    rgba(255,255,255,0.08) 48%,
-                    transparent 72%
-                  )
-                `,
-              }}
             />
-
-            {/* ---------------------------------------------------------- */}
-            {/* Permanent subtle glow                                      */}
-            {/* ---------------------------------------------------------- */}
 
             <div
               aria-hidden="true"
               className="
                 pointer-events-none
                 absolute
-                inset-0
-                bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.14),transparent_42%)]
+                -bottom-32
+                left-1/3
+                h-72
+                w-72
+                rounded-full
+                bg-[#BBFF1B]/10
+                blur-3xl
               "
             />
 
-            {/* ---------------------------------------------------------- */}
-            {/* Content                                                     */}
-            {/* ---------------------------------------------------------- */}
+            {/* Content */}
 
             <div
               className="
@@ -138,32 +82,36 @@ export function AboutGetStarted() {
             >
               {/* Eyebrow */}
 
-              <div
+              <p
                 className="
-                  text-xs
+                  font-mono
+                  text-[10px]
                   font-semibold
                   uppercase
-                  tracking-[0.18em]
-                  text-black/60
+                  tracking-[0.2em]
+                  text-white/65
+                  sm:text-xs
                 "
               >
                 Start something
-              </div>
+              </p>
 
               {/* Heading */}
 
               <h2
                 className="
-                  mt-5
+                  mt-3
+                  max-w-3xl
                   text-balance
                   font-heading
-                  text-4xl
+                  text-3xl
                   font-semibold
-                  leading-tight
-                  tracking-tight
-                  text-black
-                  sm:text-5xl
-                  md:text-6xl
+                  leading-[1.08]
+                  tracking-[-0.035em]
+                  text-white
+                  sm:text-4xl
+                  md:text-5xl
+                  lg:text-[3.25rem]
                 "
               >
                 Have something worth building?
@@ -173,48 +121,84 @@ export function AboutGetStarted() {
 
               <p
                 className="
-                  mt-6
+                  mt-5
                   max-w-2xl
-                  text-base
-                  leading-relaxed
-                  text-black
-                  sm:text-lg
+                  font-body
+                  text-sm
+                  leading-7
+                  text-white/75
+                  sm:text-base
                 "
               >
-                Tell us what you&apos;re working on. We&apos;ll help
-                turn the idea into a clear, distinctive brand built
-                to move with your business.
+                Tell us what you&apos;re working on.
+                We&apos;ll help turn the idea into a clear,
+                distinctive brand built to move with your
+                business.
               </p>
 
-              {/* CTA */}
+              {/* Buttons */}
 
-              <Link
-                href="/contact"
+              <div
                 className="
-                  group
-                  mt-8
-                  inline-flex
-                  h-11
+                  mt-7
+                  flex
+                  flex-col
                   items-center
-                  gap-2.5
-                  rounded-[14px]
-                  bg-black
-                  px-5
-                  text-sm
-                  font-bold
-                  text-white
-                  transition-opacity
-                  duration-200
-                  hover:opacity-85
+                  justify-center
+                  gap-3
+                  sm:flex-row
+                  sm:gap-4
                 "
               >
-                Start a Project
+                <Link
+                  href="/contact"
+                  className="
+                    inline-flex
+                    h-11
+                    min-w-[160px]
+                    items-center
+                    justify-center
+                    rounded-[14px]
+                    bg-[#BBFF1B]
+                    px-6
+                    py-2.5
+                    text-sm
+                    font-bold
+                    text-black
+                    transition-colors
+                    duration-200
+                    hover:bg-[#c7ff3e]
+                  "
+                >
+                  Start a Project
+                </Link>
 
-                <ArrowUpRight
-                  size={17}
-                  strokeWidth={2}
-                />
-              </Link>
+                <Link
+                  href="/work"
+                  className="
+                    inline-flex
+                    h-11
+                    min-w-[160px]
+                    items-center
+                    justify-center
+                    rounded-[14px]
+                    border
+                    border-white/20
+                    bg-white/10
+                    px-6
+                    py-2.5
+                    text-sm
+                    font-bold
+                    text-white
+                    transition-colors
+                    duration-200
+                    hover:border-white/30
+                    hover:bg-white/15
+                  "
+                >
+                  See our work
+                </Link>
+              </div>
             </div>
           </div>
         </Reveal>

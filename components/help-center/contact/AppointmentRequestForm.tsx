@@ -401,7 +401,7 @@ export function AppointmentRequestForm() {
               </option>
 
               <option value="web-design">
-                Web Design
+                Web & Digital
               </option>
 
               <option value="web-development">

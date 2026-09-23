@@ -8,18 +8,21 @@ import { StrategyProblemCard } from './StrategyProblemCard';
 const problems = [
   {
     number: '01',
+    icon: '/images/brand-strategy/confusing.png',
     title: 'Confusing',
     description:
       'Unclear messaging turns potential customers into cold leads',
   },
   {
     number: '02',
+    icon: '/images/brand-strategy/forgettable.png',
     title: 'Forgettable',
     description:
       'Inconsistent storytelling leads to low recognition and trust',
   },
   {
     number: '03',
+    icon: '/images/brand-strategy/inconsistent.png',
     title: 'Inconsistent',
     description:
       'Visual decisions become disorganized choices instead of part of a system',

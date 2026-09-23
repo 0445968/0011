@@ -127,6 +127,7 @@ export function DemoHero() {
             ease,
           }}
           className="
+          font-mono
             text-[11px]
             font-semibold
             uppercase
@@ -167,7 +168,7 @@ export function DemoHero() {
   lg:text-[4.15rem]
 "
         >
-          Ideas built to be experienced.
+          Ideas built to be experienced
         </motion.h1>
 
         {/* Description */}

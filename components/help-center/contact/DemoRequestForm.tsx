@@ -61,8 +61,8 @@ export function DemoRequestForm() {
   const sourceDemo =
     sourceSlug
       ? getDemoBySlug(
-          sourceSlug
-        )
+        sourceSlug
+      )
       : undefined;
 
   const [
@@ -647,7 +647,7 @@ export function DemoRequestForm() {
               </option>
 
               <option value="web-design">
-                Web Design
+                Web & Digital
               </option>
 
               <option value="web-development">
@@ -1004,7 +1004,7 @@ interface FormFieldProps {
   hint?: string;
   required?: boolean;
   children:
-    React.ReactNode;
+  React.ReactNode;
 }
 
 function FormField({

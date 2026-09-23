@@ -171,6 +171,7 @@ const pagesWithoutTagline = [
   '/demos',
   '/about',
   '/careers',
+  '/process',
 ];
 
 export function Footer() {
@@ -217,15 +218,14 @@ export function Footer() {
       <div
         className={`
           container-page
-          ${
-            hideTagline
-              ? `
+          ${hideTagline
+            ? `
                 pt-24
                 pb-8
                 md:pt-32
                 lg:pt-36
               `
-              : `
+            : `
                 pt-20
                 pb-8
                 md:pt-28
@@ -267,10 +267,9 @@ export function Footer() {
             grid
             gap-14
             lg:grid-cols-12
-            ${
-              hideTagline
-                ? 'mt-0'
-                : 'mt-20'
+            ${hideTagline
+              ? 'mt-0'
+              : 'mt-20'
             }
           `}
         >
@@ -476,59 +475,59 @@ export function Footer() {
         </div>
 
         {/* Compliance */}
-<div
-  className="
+        <div
+          className="
     mt-20
     flex
     flex-wrap
     items-center
     gap-4
   "
->
-  <a
-    href="#"
-    aria-label="HIPAA compliance"
-    className="
+        >
+          <a
+            href="#"
+            aria-label="HIPAA compliance"
+            className="
       inline-flex
       items-center
       transition-opacity
       duration-150
       hover:opacity-70
     "
-  >
-    <img
-      src="/images/footer/hipaa.svg"
-      alt="HIPAA compliant"
-      className="
+          >
+            <img
+              src="/images/footer/hipaa.svg"
+              alt="HIPAA compliant"
+              className="
         h-8
         w-auto
         object-contain
       "
-    />
-  </a>
+            />
+          </a>
 
-  <a
-    href="#"
-    aria-label="GDPR compliance"
-    className="
+          <a
+            href="#"
+            aria-label="GDPR compliance"
+            className="
       inline-flex
       items-center
       transition-opacity
       duration-150
       hover:opacity-70
     "
-  >
-    <img
-      src="/images/footer/gdpr.webp"
-      alt="GDPR compliant"
-      className="
+          >
+            <img
+              src="/images/footer/gdpr.webp"
+              alt="GDPR compliant"
+              className="
         h-8
         w-auto
         object-contain
       "
-    />
-  </a>
-</div>
+            />
+          </a>
+        </div>
 
         {/* Bottom bar */}
         <div

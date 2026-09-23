@@ -1,13 +1,27 @@
 import './globals.css';
 
+import '@fontsource/inter/400.css';
+import '@fontsource/inter/500.css';
+import '@fontsource/inter/600.css';
+import '@fontsource/inter/700.css';
+
+import '@fontsource/sora/400.css';
+import '@fontsource/sora/500.css';
+import '@fontsource/sora/600.css';
+import '@fontsource/sora/700.css';
+import '@fontsource/sora/800.css';
+
+import '@fontsource/ibm-plex-mono/400.css';
+import '@fontsource/ibm-plex-mono/500.css';
+import '@fontsource/ibm-plex-mono/600.css';
+
+import type {
+  CSSProperties,
+} from 'react';
+
 import type {
   Metadata,
 } from 'next';
-
-import {
-  Inter,
-  Sora,
-} from 'next/font/google';
 
 import {
   ThemeProvider,
@@ -21,32 +35,9 @@ import {
   I18nProvider,
 } from '@/lib/i18n/context';
 
-const inter = Inter({
-  subsets: [
-    'latin',
-  ],
-  variable:
-    '--font-sans',
-  display:
-    'swap',
-});
-
-const sora = Sora({
-  subsets: [
-    'latin',
-  ],
-  variable:
-    '--font-heading',
-  display:
-    'swap',
-  weight: [
-    '400',
-    '500',
-    '600',
-    '700',
-    '800',
-  ],
-});
+/* -------------------------------------------------------------------------- */
+/* Metadata                                                                   */
+/* -------------------------------------------------------------------------- */
 
 export const metadata: Metadata = {
   metadataBase:
@@ -137,19 +128,33 @@ export const metadata: Metadata = {
   },
 };
 
+/* -------------------------------------------------------------------------- */
+/* Root layout                                                                */
+/* -------------------------------------------------------------------------- */
+
 export default function RootLayout({
   children,
 }: {
   children:
-    React.ReactNode;
+  React.ReactNode;
 }) {
+  const fontVariables = {
+    '--font-sans':
+      '"Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+
+    '--font-heading':
+      '"Sora", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+
+    '--font-mono':
+      '"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+  } as CSSProperties;
+
   return (
     <html
       lang="en"
-      className={`
-        ${inter.variable}
-        ${sora.variable}
-      `}
+      style={
+        fontVariables
+      }
       suppressHydrationWarning
     >
       <body

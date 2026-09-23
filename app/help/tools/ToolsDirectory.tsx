@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 import type {
   LabItem,
-} from './HelpToolsPage';
+} from './types';
 
 /* -------------------------------------------------------------------------- */
 /* Directory                                                                  */
@@ -103,13 +103,13 @@ export function ToolsDirectory({
 
           {assessments.length >
             0 && (
-            <DirectoryGroup
-              title="Assessments"
-              items={
-                assessments
-              }
-            />
-          )}
+              <DirectoryGroup
+                title="Assessments"
+                items={
+                  assessments
+                }
+              />
+            )}
         </div>
       </div>
     </section>

@@ -14,6 +14,10 @@ export const siteConfig = {
   tagline: 'Creative Studio & Resource Library',
 };
 
+/* -------------------------------------------------------------------------- */
+/* Social                                                                     */
+/* -------------------------------------------------------------------------- */
+
 export interface SocialLink {
   id: string;
   label: string;
@@ -22,12 +26,41 @@ export interface SocialLink {
 }
 
 export const socialLinks: SocialLink[] = [
-  { id: 'email', label: 'Email', href: 'mailto:hello@bivi.pro', icon: Mail },
-  { id: 'twitter', label: 'Twitter', href: 'https://twitter.com', icon: Twitter },
-  { id: 'linkedin', label: 'LinkedIn', href: 'https://linkedin.com', icon: Linkedin },
-  { id: 'dribbble', label: 'Dribbble', href: 'https://dribbble.com', icon: Dribbble },
-  { id: 'github', label: 'GitHub', href: 'https://github.com', icon: Github },
+  {
+    id: 'email',
+    label: 'Email',
+    href: 'mailto:hello@bivi.pro',
+    icon: Mail,
+  },
+  {
+    id: 'twitter',
+    label: 'Twitter',
+    href: 'https://twitter.com',
+    icon: Twitter,
+  },
+  {
+    id: 'linkedin',
+    label: 'LinkedIn',
+    href: 'https://linkedin.com',
+    icon: Linkedin,
+  },
+  {
+    id: 'dribbble',
+    label: 'Dribbble',
+    href: 'https://dribbble.com',
+    icon: Dribbble,
+  },
+  {
+    id: 'github',
+    label: 'GitHub',
+    href: 'https://github.com',
+    icon: Github,
+  },
 ];
+
+/* -------------------------------------------------------------------------- */
+/* Contact                                                                    */
+/* -------------------------------------------------------------------------- */
 
 export const contactInfo = {
   email: 'hello@bivi.pro',
@@ -36,7 +69,10 @@ export const contactInfo = {
   responseTime: 'Replies within 24 hours',
 };
 
-// Top-level nav sections — each links to its own dedicated page and has its own megamenu.
+/* -------------------------------------------------------------------------- */
+/* Main navigation                                                            */
+/* -------------------------------------------------------------------------- */
+
 export interface NavItem {
   id: string;
   label: string;
@@ -45,18 +81,49 @@ export interface NavItem {
 }
 
 export const navSections: NavItem[] = [
-  { id: 'company', label: 'Company', href: '/about' },
-  { id: 'services', label: 'Services', href: '/services' },
-  { id: 'work', label: 'Work', href: '/work' },
-  { id: 'resources', label: 'Resources', href: '/resources' },
-  { id: 'helpCenter', label: 'Help Center', href: '/help' },
+  {
+    id: 'services',
+    label: 'Services',
+    href: '/services',
+  },
+  {
+    id: 'process',
+    label: 'Our Process',
+    href: '/process',
+  },
+  {
+    id: 'resources',
+    label: 'Resources',
+    href: '/resources',
+  },
+  {
+    id: 'demos',
+    label: 'Demos',
+    href: '/demos',
+  },
+  {
+    id: 'helpCenter',
+    label: 'Help Center',
+    href: '/help',
+  },
 ];
 
-// Per-item megamenu. Each section can have links plus preview cards (image + title + href).
+/* -------------------------------------------------------------------------- */
+/* Mega menu types                                                            */
+/* -------------------------------------------------------------------------- */
+
 export interface MegaLink {
   label: string;
   href: string;
   description?: string;
+  icon?: string;
+}
+
+export interface MegaGroup {
+  id: string;
+  title: string;
+  href?: string;
+  links: MegaLink[];
 }
 
 export interface MegaPreview {
@@ -65,187 +132,338 @@ export interface MegaPreview {
   href: string;
   image?: string;
   badge?: string;
+  meta?: string;
+}
+
+export interface MegaToolLink {
+  label: string;
+  href: string;
 }
 
 export interface MegaPanel {
-  links: MegaLink[];
-  previews: MegaPreview[];
+  groups: MegaGroup[];
+  tools?: MegaToolLink[];
+
+  /*
+   * Resources preview order:
+   *
+   * 0 = Journal preview
+   * 1 = Primary PDF
+   * 2 = Secondary PDF
+   * 3 = Third PDF
+   */
+  previews?: MegaPreview[];
 }
 
+/* -------------------------------------------------------------------------- */
+/* Mega menus                                                                 */
+/* -------------------------------------------------------------------------- */
+
 export const megaPanels: Record<string, MegaPanel> = {
-  company: {
-    links: [
-      { label: 'About the Studio', href: '/about', description: 'Who we are & design philosophy' },
-      { label: 'Integrations', href: '/integrations', description: 'Tools we build with' },
-      { label: 'Process', href: '/process', description: 'How projects are built' },
-      { label: 'Careers', href: '/careers', description: 'Join the studio' },
-      { label: 'FAQ', href: '/faq', description: 'Common questions' },
-      { label: 'Contact', href: '/contact', description: 'Start a project' },
-    ],
-    previews: [
-      {
-        title: 'Design Philosophy',
-        description: 'Restraint, hierarchy, and a single organising idea.',
-        href: '/about',
-        image: '/images/projects/verdant-studio.svg',
-        badge: 'About',
-      },
-      {
-        title: 'Integrations Showcase',
-        description: '25+ tools across design, dev, PM, and branding.',
-        href: '/integrations',
-        image: '/images/projects/harbor-finance.svg',
-        badge: 'Tools',
-      },
-    ],
-  },
+  /* ======================================================================== */
+  /* Services                                                                 */
+  /* ======================================================================== */
+
   services: {
-    links: [
-      { label: 'Website Design', href: '/services', description: 'Editorial, conversion-minded sites' },
-      { label: 'Frontend Development', href: '/services', description: 'Next.js, TypeScript, Tailwind' },
-      { label: 'UI/UX Design', href: '/services', description: 'Research to high-fidelity' },
-      { label: 'Branding Systems', href: '/services', description: 'Logos, type, color, motion' },
-      { label: 'SaaS Applications', href: '/services', description: 'Dashboards & onboarding' },
-      { label: 'Creative Direction', href: '/services', description: 'End-to-end creative vision' },
-    ],
-    previews: [
+    groups: [
       {
-        title: 'Brand Identity',
-        description: 'Complete identity systems across every touchpoint.',
-        href: '/services',
-        image: '/images/services/brand-identity.jpg',
-        badge: 'Service',
+        id: 'brand-strategy',
+        title: 'Brand & Strategy',
+        links: [
+          {
+            label: 'Branding Services',
+            href: '/services/branding-services',
+            description:
+              'Distinctive brand systems built for recognition, clarity, and consistency.',
+            icon:
+              '/images/services/icons/brand-identity.png',
+          },
+          {
+            label: 'Creative Direction',
+            href: '/services/creative-direction',
+            description:
+              'Creative leadership for brands, launches, campaigns, and visual systems.',
+            icon:
+              '/images/services/icons/creative-direction.png',
+          },
+          {
+            label: 'Packaging & Merch Design',
+            href: '/services/packaging-merch-design',
+            description:
+              'Packaging and merchandise designed to extend your brand into the physical world.',
+            icon:
+              '/images/services/icons/packaging-design.png',
+          },
+          {
+            label: 'Presentation Design',
+            href: '/services/presentation-design',
+            description:
+              'Clear, polished presentations designed to make ideas easier to understand.',
+            icon:
+              '/images/services/icons/presentation-design.png',
+          },
+          {
+            label: 'Print Design',
+            href: '/services/print-design',
+            description:
+              'Thoughtful print materials that bring your visual identity into the real world.',
+            icon:
+              '/images/services/icons/print-design.png',
+          },
+        ],
       },
+
       {
-        title: 'SaaS Product Design',
-        description: 'Dashboards designed for complex workflows.',
-        href: '/services',
-        image: '/images/services/saas-product-design.webp',
-        badge: 'Service',
+        id: 'digital-experiences',
+        title: 'Digital Experiences',
+        links: [
+          {
+            label: 'Web & Digital',
+            href: '/services/web-design',
+            description:
+              'Strategy, design, and development for distinctive websites built to perform.',
+            icon:
+              '/images/services/icons/website-design.png',
+          },
+          {
+            label: 'Mobile App Design',
+            href: '/services/mobile-app-design',
+            description:
+              'Polished mobile experiences designed around clarity and everyday use.',
+            icon:
+              '/images/services/icons/mobile-app-design.png',
+          },
+        ],
+      },
+
+      {
+        id: 'marketing-content',
+        title: 'Marketing & Content',
+        links: [
+          {
+            label: 'Campaign Strategy',
+            href: '/services/campaign-strategy',
+            description:
+              'Creative strategy and systems for launches, promotions, and campaigns.',
+            icon:
+              '/images/services/icons/campaign-creative.png',
+          },
+          {
+            label: 'Social Media Creative',
+            href: '/services/social-media-creative',
+            description:
+              'Flexible, recognizable creative built for modern social channels.',
+            icon:
+              '/images/services/icons/social-content-design.png',
+          },
+          {
+            label: 'Email Design',
+            href: '/services/email-design',
+            description:
+              'Branded email experiences designed for engagement and conversion.',
+            icon:
+              '/images/services/icons/email-design.png',
+          },
+        ],
       },
     ],
+
+    previews: [],
   },
-  work: {
-    links: [
-      { label: 'All Projects', href: '/work', description: 'Selected case studies' },
-      { label: 'Interactive Demos', href: '/demos', description: 'Launch working products' },
-      { label: 'Process & Case Study', href: '/process', description: 'How projects are built' },
-      { label: 'Lumen Analytics', href: '/work', description: 'SaaS platform redesign' },
-      { label: 'Maison Fleur', href: '/work', description: 'Luxury ecommerce' },
-      { label: 'ARC Architecture', href: '/work', description: 'Studio portfolio' },
-    ],
-    previews: [
-      {
-        title: 'Interactive Demos',
-        description: 'Apps, games, dashboards — launch them right in your browser.',
-        href: '/demos',
-        image: '/images/projects/lumen-analytics.svg',
-        badge: 'Demos',
-      },
-      {
-        title: 'ARC Architecture',
-        description: 'Monolithic portfolio, cinematic transitions.',
-        href: '/work',
-        image: '/images/projects/arc-architecture.svg',
-        badge: 'Case Study',
-      },
-    ],
-  },
+
+  /* ======================================================================== */
+  /* Resources                                                                */
+  /* ======================================================================== */
+
   resources: {
-    links: [
+    groups: [
       {
-        label: 'Resource Library',
+        id: 'resource-library',
+        title: 'Resource Library',
         href: '/resources',
-        description:
-          'Every resource in one place',
+        links: [
+          {
+            label: 'Guides & PDFs',
+            href: '/guides',
+          },
+          {
+            label: 'Free Tools',
+            href: '/resources?type=tool',
+          },
+          {
+            label: 'Brand Assessments',
+            href: '/studio-lab',
+          },
+          {
+            label: 'FAQ',
+            href: '/faq',
+          },
+          {
+            label: 'Links',
+            href: '/resources?type=link',
+          },
+        ],
       },
+
       {
-        label: 'Studio Lab',
-        href: '/studio-lab',
-        description:
-          'Interactive tools, assessments & experiments',
-      },
-      {
-        label: 'Guides & PDFs',
-        href: '/guides',
-        description:
-          'Downloadable handbooks',
-      },
-      {
-        label: 'Inspiration',
-        href: '/inspiration',
-        description:
-          'Curated design references',
-      },
-      {
-        label: 'Journal',
+        id: 'journal',
+        title: 'Journal',
         href: '/blog',
-        description:
-          'Notes on craft & process',
-      },
-      {
-        label: 'Curated Links',
-        href: '/resources?type=link',
-        description:
-          'Hand-picked sites',
+        links: [],
       },
     ],
-  
-    previews: [
+
+    tools: [
       {
-        title: 'Studio Lab',
-        description:
-          'Explore interactive tools, brand assessments, and creative experiments.',
-        href: '/studio-lab',
-        badge: 'Explore',
+        label: 'Percentage Calculator',
+        href: '/resources?type=tool',
       },
       {
-        title: 'Brand Identity Guide',
+        label: 'ROI Calculator',
+        href: '/resources?type=tool',
+      },
+      {
+        label: 'Profit Calculator',
+        href: '/resources?type=tool',
+      },
+      {
+        label: 'Revenue Calculator',
+        href: '/resources?type=tool',
+      },
+      {
+        label: 'Paycheck Calculator',
+        href: '/resources?type=tool',
+      },
+      {
+        label: 'Sales Tax Calculator',
+        href: '/resources?type=tool',
+      },
+      {
+        label: 'Discount Calculator',
+        href: '/resources?type=tool',
+      },
+      {
+        label: 'Revenue Growth Calculator',
+        href: '/resources?type=tool',
+      },
+    ],
+
+    previews: [
+      /* ------------------------------------------------------------------ */
+      /* Journal preview                                                     */
+      /* ------------------------------------------------------------------ */
+
+      {
+        title: 'Why Good Businesses Become Hard to Explain',
         description:
-          '32-page handbook on building identity systems.',
+          'Why growth can make a successful business progressively harder for customers to understand.',
+        href: '/blog/why-good-businesses-become-hard-to-explain',
+        image:
+          '/images/blog/why-good-businesses-become-hard-to-explain.jpg',
+        badge: 'Journal',
+        meta: '6 min read',
+      },
+
+      /* ------------------------------------------------------------------ */
+      /* PDF previews                                                        */
+      /* ------------------------------------------------------------------ */
+
+      {
+        title: 'The Complete Brand Identity Guide',
+        description:
+          'A practical handbook for building a cohesive identity system.',
         href: '/resources/brand-identity-guide',
         image:
-          '/images/resources/guide-brand.svg',
+          '/images/resources/guide-brand.webp',
         badge: 'PDF',
+        meta: '32 pages',
       },
-    ],
-  },
-  studioLab: {
-    links: [
-      { label: 'All Lab Items', href: '/studio-lab', description: 'Browse everything in the Lab' },
-      { label: 'Tools', href: '/studio-lab', description: 'Invoice, color, timezone & more' },
-      { label: 'Brand Assessments', href: '/studio-lab', description: 'Score your brand health & clarity' },
-      { label: 'Experiments', href: '/studio-lab', description: 'Interactive playthings' },
-    ],
-    previews: [
+
       {
-        title: 'Brand Health Score',
-        description: 'Get a scored report on your brand strengths.',
-        href: '/studio-lab/assessments/brand-health',
-        badge: 'Assessment',
+        title: 'Color Systems for Designers',
+        description:
+          'Build accessible, scalable color systems for digital products.',
+        href: '/resources/color-systems-handbook',
+        image:
+          '/images/resources/guide-color.webp',
+        badge: 'PDF',
+        meta: '18 pages',
       },
+
       {
-        title: 'Invoice Generator',
-        description: 'Create clean, professional invoices in seconds.',
-        href: '/studio-lab/tools/invoice-generator',
-        badge: 'Tool',
+        title: 'SaaS Launch Checklist',
+        description:
+          'A practical checklist covering design, engineering, marketing, and launch readiness.',
+        href: '/resources/saas-launch-checklist',
+        image:
+          '/images/resources/guide-saas.webp',
+        badge: 'PDF',
+        meta: '12 pages',
       },
     ],
   },
 };
 
-// Used by the Footer's Navigate column.
+/* -------------------------------------------------------------------------- */
+/* Footer navigation                                                          */
+/* -------------------------------------------------------------------------- */
+
 export const footerLinks: NavItem[] = [
-  { id: 'about', label: 'About', href: '/about' },
-  { id: 'services', label: 'Services', href: '/services' },
-  { id: 'work', label: 'Work', href: '/work' },
-  { id: 'process', label: 'Process', href: '/process' },
-  { id: 'resources', label: 'Resources', href: '/resources' },
-  { id: 'studioLab', label: 'Studio Lab', href: '/studio-lab' },
-  { id: 'integrations', label: 'Integrations', href: '/integrations' },
-  { id: 'journal', label: 'Journal', href: '/blog' },
-  { id: 'contact', label: 'Contact', href: '/contact' },
+  {
+    id: 'about',
+    label: 'About',
+    href: '/about',
+  },
+  {
+    id: 'services',
+    label: 'Services',
+    href: '/services',
+  },
+  {
+    id: 'work',
+    label: 'Work',
+    href: '/work',
+  },
+  {
+    id: 'process',
+    label: 'Our Process',
+    href: '/process',
+  },
+  {
+    id: 'demos',
+    label: 'Demos',
+    href: '/demos',
+  },
+  {
+    id: 'resources',
+    label: 'Resources',
+    href: '/resources',
+  },
+  {
+    id: 'studioLab',
+    label: 'Studio Lab',
+    href: '/studio-lab',
+  },
+  {
+    id: 'integrations',
+    label: 'Integrations',
+    href: '/integrations',
+  },
+  {
+    id: 'journal',
+    label: 'Journal',
+    href: '/blog',
+  },
+  {
+    id: 'contact',
+    label: 'Contact',
+    href: '/contact',
+  },
 ];
 
-// Kept for backward compatibility with any existing references.
-export const navLinks = footerLinks;
+/* -------------------------------------------------------------------------- */
+/* Legacy                                                                     */
+/* -------------------------------------------------------------------------- */
+
+export const navLinks =
+  footerLinks;

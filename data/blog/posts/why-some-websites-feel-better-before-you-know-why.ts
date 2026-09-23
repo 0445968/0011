@@ -23,7 +23,7 @@ export const whySomeWebsitesFeelBetterBeforeYouKnowWhy: BlogPost = {
 
   tags: [
     'Design',
-    'Web Design',
+    'Web & Digital',
     'UX',
     'Visual Hierarchy',
   ],

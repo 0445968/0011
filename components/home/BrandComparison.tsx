@@ -1,9 +1,6 @@
+import Image from 'next/image';
 import Link from 'next/link';
-import {
-  ArrowRight,
-  Check,
-  X,
-} from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 const withoutBivi = [
   'Your brand is forgettable',
@@ -39,19 +36,19 @@ const withBivi = [
 export function BrandComparison() {
   return (
     <section
-  className="
-    bg-background
-    px-5
-    pt-8
-sm:pt-10
-lg:pt-12
-    pb-20
-    sm:px-6
-    sm:pb-24
-    lg:px-8
-    lg:pb-28
-  "
->
+      className="
+        bg-background
+        px-5
+        pt-8
+        pb-20
+        sm:px-6
+        sm:pt-10
+        sm:pb-24
+        lg:px-8
+        lg:pt-12
+        lg:pb-28
+      "
+    >
       <div className="mx-auto max-w-7xl">
         {/* Header */}
         <div className="mx-auto max-w-4xl text-center">
@@ -123,12 +120,23 @@ lg:pt-12
           >
             <h3
               className="
-                font-heading
-                text-xl
+                inline-flex
+                w-fit
+                items-center
+                rounded-full
+                border
+                border-dashed
+                border-primary
+                bg-transparent
+                px-3
+                py-1.5
+                font-mono
+                text-[11px]
                 font-semibold
-                tracking-[-0.03em]
-                text-muted-foreground
-                sm:text-2xl
+                uppercase
+                tracking-[0.12em]
+                text-primary
+                sm:text-xs
               "
             >
               Without Bivi
@@ -138,11 +146,15 @@ lg:pt-12
               {withoutBivi.map((item) => (
                 <div
                   key={item}
-                  className="flex items-start gap-3"
+                  className="
+                    flex
+                    items-start
+                    gap-3
+                  "
                 >
                   <div
                     className="
-                      mt-[2px]
+                      mt-[1px]
                       flex
                       h-5
                       w-5
@@ -151,9 +163,16 @@ lg:pt-12
                       justify-center
                     "
                   >
-                    <X
-                      className="h-4 w-4 text-red-500"
-                      strokeWidth={2}
+                    <Image
+                      src="/images/brand-comparison/x-mark.png"
+                      alt=""
+                      width={20}
+                      height={20}
+                      className="
+                        h-4
+                        w-4
+                        object-contain
+                      "
                     />
                   </div>
 
@@ -182,12 +201,23 @@ lg:pt-12
           >
             <h3
               className="
-                font-heading
-                text-xl
+                inline-flex
+                w-fit
+                items-center
+                rounded-full
+                border
+                border-dashed
+                border-primary
+                bg-transparent
+                px-3
+                py-1.5
+                font-mono
+                text-[11px]
                 font-semibold
-                tracking-[-0.03em]
-                text-foreground
-                sm:text-2xl
+                uppercase
+                tracking-[0.12em]
+                text-primary
+                sm:text-xs
               "
             >
               With Bivi
@@ -197,11 +227,15 @@ lg:pt-12
               {withBivi.map((item) => (
                 <div
                   key={item.strong}
-                  className="flex items-start gap-3"
+                  className="
+                    flex
+                    items-start
+                    gap-3
+                  "
                 >
                   <div
                     className="
-                      mt-[2px]
+                      mt-[1px]
                       flex
                       h-5
                       w-5
@@ -210,9 +244,16 @@ lg:pt-12
                       justify-center
                     "
                   >
-                    <Check
-                      className="h-4 w-4 text-[#18A34A]"
-                      strokeWidth={2.25}
+                    <Image
+                      src="/images/brand-comparison/check-mark.png"
+                      alt=""
+                      width={20}
+                      height={20}
+                      className="
+                        h-4
+                        w-4
+                        object-contain
+                      "
                     />
                   </div>
 
@@ -224,7 +265,12 @@ lg:pt-12
                       sm:text-sm
                     "
                   >
-                    <span className="font-semibold text-foreground">
+                    <span
+                      className="
+                        font-semibold
+                        text-foreground
+                      "
+                    >
                       {item.strong}
                     </span>{' '}
                     {item.rest}
@@ -234,7 +280,7 @@ lg:pt-12
             </div>
 
             <Link
-              href="/services/brand-strategy"
+              href="/demos"
               className="
                 mt-7
                 inline-flex
@@ -256,7 +302,7 @@ lg:pt-12
                 dark:hover:bg-[#BBFF1B]
               "
             >
-              Build your brand
+              Try one of our demos
 
               <ArrowRight
                 className="h-4 w-4"

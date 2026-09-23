@@ -75,6 +75,24 @@ const helpNavigation = [
   },
 ];
 
+/* -------------------------------------------------------------------------- */
+/* Scroll thresholds                                                          */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * The original transparent navbar remains attached to the page and scrolls
+ * away naturally.
+ *
+ * Once this point is reached, the navbar becomes fixed but remains hidden
+ * above the viewport.
+ */
+const STICKY_START = 0;
+
+/*
+ * Once the user reaches this point, the fixed navbar slides back into view.
+ */
+const STICKY_SHOW = 0;
+
 export function Navbar() {
   const pathname =
     usePathname();
@@ -82,6 +100,11 @@ export function Navbar() {
   const [
     scrolled,
     setScrolled,
+  ] = useState(false);
+
+  const [
+    stickyVisible,
+    setStickyVisible,
   ] = useState(false);
 
   const [
@@ -123,17 +146,11 @@ export function Navbar() {
       '/help/'
     );
 
-  /*
-   * Homepage and the main Help Center
-   * landing page can use the transparent
-   * navbar over their hero images.
-   *
-   * Inner Help Center pages use the
-   * normal theme navbar immediately.
-   */
   const allowTransparentNavbar =
     pathname === '/' ||
     pathname === '/help' ||
+    pathname === '/process' ||
+    pathname === '/services/[slug]' ||
     pathname === '/demos';
 
   /* ---------------------------------------------------------------------- */
@@ -155,6 +172,13 @@ export function Navbar() {
         ? 'settings'
         : null;
 
+  /*
+   * On pages with transparent headers:
+   * - transparent at the top
+   * - solid after entering sticky mode
+   *
+   * Opening a menu/search/settings also activates the solid surface.
+   */
   const navbarSurfaceActive =
     !allowTransparentNavbar ||
     scrolled ||
@@ -164,15 +188,25 @@ export function Navbar() {
     open;
 
   /*
-   * Normal theme navbar appears when:
+   * Normal pages retain their fixed navbar.
    *
-   * - the page does not support a transparent navbar
-   * - the page has been scrolled
-   * - a main site menu is hovered
-   * - Search is open
-   * - Settings is open
-   * - mobile navigation is open
+   * Transparent pages begin as an absolute navbar so they can naturally
+   * scroll away with the hero.
    */
+  const navbarIsFixed =
+    !allowTransparentNavbar ||
+    scrolled;
+
+  /*
+   * Normal pages are always visible.
+   *
+   * Transparent pages become visible again only after passing the second
+   * scroll threshold.
+   */
+  const navbarShouldShow =
+    !allowTransparentNavbar ||
+    !scrolled ||
+    stickyVisible;
 
   /* ---------------------------------------------------------------------- */
   /* Scroll state                                                           */
@@ -180,8 +214,24 @@ export function Navbar() {
 
   useEffect(() => {
     const onScroll = () => {
+      const scrollY =
+        window.scrollY;
+
+      /*
+       * Start sticky mode after the original navbar has already naturally
+       * scrolled beyond the viewport.
+       */
       setScrolled(
-        window.scrollY > 300
+        scrollY > STICKY_START
+      );
+
+      /*
+       * Add a small dead zone before revealing the sticky navbar. This
+       * prevents the navbar from appearing immediately after switching from
+       * absolute to fixed.
+       */
+      setStickyVisible(
+        scrollY > STICKY_SHOW
       );
     };
 
@@ -204,7 +254,7 @@ export function Navbar() {
   }, []);
 
   /* ---------------------------------------------------------------------- */
-  /* Close route-specific navigation when pathname changes                  */
+  /* Reset navigation on route change                                       */
   /* ---------------------------------------------------------------------- */
 
   useEffect(() => {
@@ -252,11 +302,6 @@ export function Navbar() {
         closeTimer.current
       );
     }
-
-    /*
-     * Opening a main mega menu closes
-     * Search and Settings.
-     */
 
     setSearchOpen(false);
     setSettingsOpen(false);
@@ -335,14 +380,9 @@ export function Navbar() {
             backdrop-blur-sm
           "
           onMouseEnter={() => {
-            /*
-             * Only close when a regular
-             * site mega menu is active.
-             *
-             * Search and Settings use
-             * the shared utility panel.
-             */
-            if (activeMega) {
+            if (
+              activeMega
+            ) {
               closeMega();
             }
           }}
@@ -359,26 +399,46 @@ export function Navbar() {
           opacity: 0,
         }}
         animate={{
-          y: 0,
-          opacity: 1,
+          y:
+            navbarShouldShow
+              ? 0
+              : -96,
+          opacity:
+            navbarShouldShow
+              ? 1
+              : 0,
         }}
         transition={{
-          duration: 0.7,
-          ease: [
-            0.16,
-            1,
-            0.3,
-            1,
-          ],
-          delay: 0.1,
+          y: {
+            duration: 0.45,
+            ease: [
+              0.16,
+              1,
+              0.3,
+              1,
+            ],
+          },
+          opacity: {
+            duration: 0.25,
+          },
         }}
         className={cn(
           `
-            fixed
             inset-x-0
             top-0
             z-50
+            transition-[background-color,border-color,box-shadow]
+            duration-50
           `,
+
+          navbarIsFixed
+            ? `
+                fixed
+              `
+            : `
+                absolute
+              `,
+
           navbarSurfaceActive
             ? `
                 border-b
@@ -391,7 +451,13 @@ export function Navbar() {
                 border-transparent
                 bg-transparent
                 text-white
-              `
+              `,
+
+          navbarIsFixed &&
+          navbarSurfaceActive &&
+          `
+              shadow-sm
+            `
         )}
       >
         {/* ------------------------------------------------------------- */}
@@ -441,6 +507,9 @@ export function Navbar() {
               onHover={
                 openMega
               }
+              onStandaloneHover={
+                closeMega
+              }
               lightAtTop={
                 !navbarSurfaceActive
               }
@@ -483,7 +552,9 @@ export function Navbar() {
             surfaceActive={
               navbarSurfaceActive
             }
-            open={open}
+            open={
+              open
+            }
             setOpen={
               setOpen
             }
@@ -509,7 +580,7 @@ export function Navbar() {
         </nav>
 
         {/* ------------------------------------------------------------- */}
-        {/* Shared Search / Settings panel                               */}
+        {/* Search / Settings                                             */}
         {/* ------------------------------------------------------------- */}
 
         <NavbarUtilityPanel
@@ -522,7 +593,7 @@ export function Navbar() {
         />
 
         {/* ------------------------------------------------------------- */}
-        {/* Desktop mega menu                                            */}
+        {/* Mega menu                                                     */}
         {/* ------------------------------------------------------------- */}
 
         {!isHelpCenter && (
@@ -547,7 +618,9 @@ export function Navbar() {
         {/* ------------------------------------------------------------- */}
 
         <NavbarMobileMenu
-          open={open}
+          open={
+            open
+          }
           onNavigate={
             handleNav
           }
@@ -586,15 +659,19 @@ function HelpCenterNavigation({
         (item) => {
           const active =
             pathname ===
-              item.href ||
+            item.href ||
             pathname.startsWith(
               `${item.href}/`
             );
 
           return (
             <Link
-              key={item.href}
-              href={item.href}
+              key={
+                item.href
+              }
+              href={
+                item.href
+              }
               className={cn(
                 `
                   relative
@@ -625,9 +702,9 @@ function HelpCenterNavigation({
                       `
               )}
             >
-              {item.label}
-
-              {/* Active indicator */}
+              {
+                item.label
+              }
 
               <span
                 className={cn(

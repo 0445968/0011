@@ -34,7 +34,7 @@ const inspirationItems: InspirationItem[] = [
     id: '2',
     title: 'Siteinspire',
     source: 'siteinspire.com',
-    category: 'Web Design',
+    category: 'Web & Digital',
     description:
       'A curated showcase of the finest web and interactive design — filtered by style, type, and subject.',
     href: 'https://www.siteinspire.com',
@@ -54,7 +54,7 @@ const inspirationItems: InspirationItem[] = [
     id: '4',
     title: 'Awwwards',
     source: 'awwwards.com',
-    category: 'Web Design',
+    category: 'Web & Digital',
     description:
       'Recognition for the best designed websites around the world — a barometer for cutting-edge web design.',
     href: 'https://www.awwwards.com',
@@ -94,7 +94,7 @@ const inspirationItems: InspirationItem[] = [
     id: '8',
     title: 'Godly',
     source: 'godly.website',
-    category: 'Web Design',
+    category: 'Web & Digital',
     description:
       'A curated gallery of aesthetically pleasing, well-crafted websites — focused on quality over quantity.',
     href: 'https://godly.website',
@@ -106,7 +106,7 @@ const categories = [
   'All',
   ...Array.from(
     new Set(inspirationItems.map((item) => item.category)
-  )).sort(),
+    )).sort(),
 ];
 
 export default function InspirationPage() {

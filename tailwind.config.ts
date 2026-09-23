@@ -13,6 +13,16 @@ const config: Config = {
         sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
         heading: ['var(--font-heading)', 'Sora', 'system-ui', 'sans-serif'],
         serif: ['var(--font-heading)', 'Sora', 'system-ui', 'sans-serif'],
+        mono: [
+          'var(--font-mono)',
+          'IBM Plex Mono',
+          'ui-monospace',
+          'SFMono-Regular',
+          'Menlo',
+          'Monaco',
+          'Consolas',
+          'monospace',
+        ],
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
