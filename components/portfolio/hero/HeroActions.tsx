@@ -59,7 +59,7 @@ export function HeroActions({
                 absolute
                 inset-0
                 rounded-[14px]
-                bg-[#0B65F3]
+                bg-[#BBFF1B]
               "
             />
           )}
@@ -76,13 +76,13 @@ export function HeroActions({
               justify-center
               gap-2
               rounded-[14px]
-              bg-[#0B65F3]
+              bg-[#BBFF1B]
               px-8
               text-[16px]
               font-bold
               leading-none
-              text-white
-              hover:bg-[#1600A2]
+              text-black
+              hover:bg-[#BBFF1B]/90
               sm:w-auto
             "
           >
@@ -99,24 +99,22 @@ export function HeroActions({
         <a
           href="/resources"
           className="
-            inline-flex
-            h-[52px]
-            w-full
-            items-center
-            justify-center
-            gap-2
-            rounded-[14px]
-            border
-            border-[#0B65F3]
-            bg-transparent
-            px-8
-            text-[16px]
-            font-bold
-            leading-none
-            text-white
-            hover:bg-[#1600A2]
-            sm:w-auto
-          "
+              group
+              inline-flex
+              h-12
+              items-center
+              justify-center
+              gap-2
+              rounded-[14px]
+              bg-white/20
+              px-6
+              text-[16px]
+              font-bold
+              text-white
+              backdrop-blur
+              transition-colors
+              hover:bg-white/30
+            "
         >
           Explore Resources
 

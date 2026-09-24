@@ -38,7 +38,7 @@ export function ProjectCustomizer({
           font-medium
           uppercase
           tracking-[0.22em]
-          text-white/55
+          text-[#BBFF1B]
           sm:text-[11px]
         "
       >
@@ -84,7 +84,7 @@ export function ProjectCustomizer({
                 ${
                   isSelected
                     ? `
-                      border-[#0B65F3]
+                      border-white
                       bg-white/20
                       text-white
                     `
@@ -115,8 +115,8 @@ export function ProjectCustomizer({
                     justify-center
                     rounded-full
                     border-2
-                    border-[#1600A2]
-                    bg-[#0B65F3]
+                    border-white
+                    bg-black
                     text-white
                   "
                 >

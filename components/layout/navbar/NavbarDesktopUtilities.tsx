@@ -140,8 +140,8 @@ export function NavbarDesktopUtilities({
           dark:text-black
         `
       : `
-          bg-primary
-          text-primary-foreground
+          bg-white
+          text-black
         `
   )}
 >

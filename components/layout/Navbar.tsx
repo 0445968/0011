@@ -151,6 +151,7 @@ export function Navbar() {
     pathname === '/help' ||
     pathname === '/process' ||
     pathname === '/services' ||
+    pathname === '/about' ||
     pathname === '/demos';
 
   /* ---------------------------------------------------------------------- */

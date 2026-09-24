@@ -6,7 +6,6 @@ import { motion } from 'framer-motion';
 import { HeroActions } from './hero/HeroActions';
 import { HeroBackground } from './hero/HeroBackground';
 import { HeroHeading } from './hero/HeroHeading';
-import { HeroShowcase } from './hero/HeroShowcase';
 import { ProjectCustomizer } from './hero/ProjectCustomizer';
 
 const transitionEase = [
@@ -67,8 +66,8 @@ export function Hero() {
     setSelectedOptions((current) =>
       current.includes(id)
         ? current.filter(
-          (option) => option !== id
-        )
+            (option) => option !== id
+          )
         : [...current, id]
     );
   };
@@ -98,7 +97,7 @@ export function Hero() {
         relative
         isolate
         overflow-hidden
-        bg-[#1600A2]
+        bg-black
         text-white
       "
     >
@@ -106,22 +105,26 @@ export function Hero() {
 
       {/* Hero content */}
       <div
-        className="
-          container-page
-          relative
-          z-20
-          flex
-          flex-col
-          items-center
-          px-5
-          pt-32
-          text-center
-          sm:px-8
-          sm:pt-36
-          md:pt-40
-          lg:pt-44
-        "
-      >
+  className="
+    container-page
+    relative
+    z-20
+    flex
+    flex-col
+    items-center
+    px-5
+    pb-64
+    pt-32
+    text-center
+    sm:px-8
+    sm:pb-72
+    sm:pt-36
+    md:pb-80
+    md:pt-40
+    lg:pb-96
+    lg:pt-44
+  "
+>
         <HeroHeading />
 
         {/* Project Customizer */}
@@ -159,8 +162,6 @@ export function Hero() {
           }
         />
       </div>
-
-      <HeroShowcase />
     </section>
   );
 }

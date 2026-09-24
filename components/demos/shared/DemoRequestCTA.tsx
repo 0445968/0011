@@ -1,8 +1,8 @@
+import Image from 'next/image';
 import Link from 'next/link';
 
 import {
   ArrowUpRight,
-  Sparkles,
 } from 'lucide-react';
 
 export function DemoRequestCTA() {
@@ -15,30 +15,28 @@ export function DemoRequestCTA() {
         lg:py-28
       "
     >
-      <div
-        className="
-          container-page
-        "
-      >
+      <div className="container-page">
         <div
           className="
             relative
             isolate
             overflow-hidden
-            rounded-[2rem]
-            bg-[#BBFF1B]
+            rounded-[32px]
+            border
+            border-border
+            bg-muted
             px-6
-            py-20
-            text-[#111111]
+            py-16
+            text-foreground
             sm:px-10
-            sm:py-24
+            sm:py-20
             md:px-16
             lg:px-20
-            lg:py-28
+            lg:py-24
           "
         >
           {/* ======================================================== */}
-          {/* Background treatment                                    */}
+          {/* Background shapes                                       */}
           {/* ======================================================== */}
 
           <div
@@ -48,117 +46,83 @@ export function DemoRequestCTA() {
               absolute
               inset-0
               -z-20
-              bg-gradient-to-br
-              from-[#BBFF1B]
-              via-[#BBFF1B]
-              to-[#A8EE00]
             "
-          />
+          >
+            {/* Top left circle */}
+            <div
+              className="
+                absolute
+                -left-24
+                -top-28
+                h-[260px]
+                w-[260px]
+                rounded-full
+                bg-foreground/[0.035]
+              "
+            />
 
-          {/* Soft center glow */}
-          <div
-            aria-hidden="true"
-            className="
-              pointer-events-none
-              absolute
-              left-1/2
-              top-1/2
-              -z-10
-              h-[520px]
-              w-[520px]
-              -translate-x-1/2
-              -translate-y-1/2
-              rounded-full
-              bg-white/20
-              blur-[120px]
-            "
-          />
+            {/* Top center block */}
+            <div
+              className="
+                absolute
+                left-[32%]
+                top-0
+                h-[32%]
+                w-[34%]
+                bg-foreground/[0.025]
+              "
+            />
 
-          {/* ======================================================== */}
-          {/* Decorative top-right rings                              */}
-          {/* ======================================================== */}
+            {/* Top right block */}
+            <div
+              className="
+                absolute
+                right-0
+                top-0
+                h-[32%]
+                w-[18%]
+                bg-foreground/[0.035]
+              "
+            />
 
-          <div
-            aria-hidden="true"
-            className="
-              pointer-events-none
-              absolute
-              -right-24
-              -top-28
-              -z-10
-              h-[330px]
-              w-[330px]
-              rounded-full
-              border-[18px]
-              border-[#0B65F3]/16
-            "
-          />
+            {/* Bottom left block */}
+            <div
+              className="
+                absolute
+                bottom-0
+                left-0
+                h-[34%]
+                w-[17%]
+                bg-foreground/[0.03]
+              "
+            />
 
-          <div
-            aria-hidden="true"
-            className="
-              pointer-events-none
-              absolute
-              -right-12
-              -top-40
-              -z-10
-              h-[370px]
-              w-[370px]
-              rounded-full
-              border-[7px]
-              border-[#0B65F3]/28
-            "
-          />
+            {/* Bottom center circle */}
+            <div
+              className="
+                absolute
+                -bottom-36
+                left-[32%]
+                h-[300px]
+                w-[300px]
+                rounded-full
+                bg-foreground/[0.025]
+              "
+            />
 
-          {/* ======================================================== */}
-          {/* Decorative bottom-left                                  */}
-          {/* ======================================================== */}
-
-          <div
-            aria-hidden="true"
-            className="
-              pointer-events-none
-              absolute
-              -bottom-28
-              -left-28
-              -z-10
-              h-[310px]
-              w-[310px]
-              rounded-full
-              border-[18px]
-              border-black/10
-            "
-          />
-
-          <div
-            aria-hidden="true"
-            className="
-              pointer-events-none
-              absolute
-              bottom-16
-              left-12
-              -z-10
-              h-3
-              w-3
-              rotate-45
-              bg-[#0B65F3]
-            "
-          />
-
-          <div
-            aria-hidden="true"
-            className="
-              pointer-events-none
-              absolute
-              right-[18%]
-              top-[22%]
-              -z-10
-              h-2.5
-              w-2.5
-              rotate-45
-              bg-[#0B65F3]
-            "
-          />
+            {/* Bottom right circle */}
+            <div
+              className="
+                absolute
+                -bottom-40
+                -right-28
+                h-[340px]
+                w-[340px]
+                rounded-full
+                bg-foreground/[0.035]
+              "
+            />
+          </div>
 
           {/* ======================================================== */}
           {/* Content                                                 */}
@@ -176,110 +140,145 @@ export function DemoRequestCTA() {
               text-center
             "
           >
-            {/* Icon */}
+            {/* Custom PNG icon */}
+
             <div
               className="
-                flex
-                h-12
-                w-12
-                items-center
-                justify-center
-                rounded-full
-                bg-[#0B65F3]
-                text-white
+                relative
+                h-14
+                w-14
+                overflow-hidden
               "
             >
-              <Sparkles
-                size={19}
+              <Image
+                src="/images/demos/cta-icon.png"
+                alt=""
+                fill
+                sizes="56px"
+                className="
+                  object-contain
+                "
               />
             </div>
 
             {/* Eyebrow */}
+
             <p
               className="
                 mt-6
-                text-[11px]
+                font-mono
+                text-[10px]
                 font-semibold
                 uppercase
-                tracking-[0.22em]
-                text-[#0B65F3]
+                tracking-[0.2em]
+                text-muted-foreground
               "
             >
               Need something different?
             </p>
 
-            {/* Heading */}
-            <h2
+            {/* ====================================================== */}
+            {/* Headline                                               */}
+            {/* ====================================================== */}
+
+            <div
               className="
                 mt-5
-                max-w-[14ch]
-                text-balance
-                font-heading
-                text-4xl
-                font-semibold
-                leading-[0.98]
-                tracking-[-0.05em]
-                sm:text-3xl
-                md:text-4xl
-                lg:text-5xl
-              "
-            >
-              Your idea could be the next demo.
-            </h2>
-
-            {/* Description */}
-            <p
-              className="
-                mt-7
-                max-w-2xl
-                text-balance
-                text-base
-                leading-7
-                text-black/65
-                sm:text-lg
-                sm:leading-8
-              "
-            >
-              Tell us what you want to explore.
-              We can help shape a demo around a
-              product idea, workflow, interface,
-              or digital experience that matters
-              to you.
-            </p>
-
-            {/* CTA */}
-            <Link
-              href="/help/contact/demo"
-              className="
-                group
-                mt-9
-                inline-flex
-                h-12
+                flex
+                flex-col
                 items-center
-                justify-center
-                gap-2
-                rounded-[14px]
-                bg-[#0B65F3]
-                px-6
-                text-[16px]
-                font-bold
-                text-white
-                transition-colors
-                hover:bg-[#1600A2]
               "
             >
-              Request a demo
+              {/* First line */}
 
-              <ArrowUpRight
-                size={15}
+              <h2
                 className="
-                  transition-transform
-                  duration-300
-                  group-hover:-translate-y-0.5
-                  group-hover:translate-x-0.5
+  whitespace-nowrap
+  font-heading
+  text-[1.85rem]
+  font-medium
+  leading-[1.2]
+  tracking-[-0.04em]
+  sm:text-[2.2rem]
+  md:text-[2.65rem]
+  lg:text-[3rem]
+"
+              >
+                Your idea could be
+              </h2>
+
+              {/* Second line + button */}
+
+              <div
+                className="
+                  mt-1
+                  flex
+                  flex-col
+                  items-center
+                  justify-center
+                  gap-4
+                  sm:flex-row
+                  sm:gap-5
                 "
-              />
-            </Link>
+              >
+                <h2
+                  className="
+  whitespace-nowrap
+  font-heading
+  text-[1.85rem]
+  font-medium
+  leading-[1.2]
+  tracking-[-0.04em]
+  sm:text-[2.2rem]
+  md:text-[2.65rem]
+  lg:text-[3rem]
+"
+                >
+                  the next demo
+                </h2>
+
+                <Link
+                  href="/help/contact/demo"
+                  className="
+                    group
+                    inline-flex
+                    h-12
+                    shrink-0
+                    items-center
+                    justify-center
+                    gap-2
+                    rounded-[14px]
+                    border
+                    border-border
+                    bg-black                  
+                    px-6
+                    text-[15px]
+                    font-semibold
+                    text-white
+                    shadow-sm
+                    transition-all
+                    duration-300
+                    hover:-translate-y-0.5
+                    hover:shadow-md
+                    dark:bg-white
+                    dark:text-black
+                    dark:hover:bg-white/90
+                  "
+                >
+                  Request a demo
+
+                  <ArrowUpRight
+                    size={16}
+                    className="
+                      transition-transform
+                      duration-300
+                      group-hover:-translate-y-0.5
+                      group-hover:translate-x-0.5
+                    "
+                  />
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </div>

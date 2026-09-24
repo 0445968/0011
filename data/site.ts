@@ -165,111 +165,111 @@ export const megaPanels: Record<string, MegaPanel> = {
   /* ======================================================================== */
 
   services: {
-    groups: [
-      {
-        id: 'brand-strategy',
-        title: 'Brand & Strategy',
-        links: [
-          {
-            label: 'Branding Services',
-            href: '/services/branding-services',
-            description:
-              'Distinctive brand systems built for recognition, clarity, and consistency.',
-            icon:
-              '/images/services/icons/brand-identity.png',
-          },
-          {
-            label: 'Creative Direction',
-            href: '/services/creative-direction',
-            description:
-              'Creative leadership for brands, launches, campaigns, and visual systems.',
-            icon:
-              '/images/services/icons/creative-direction.png',
-          },
-          {
-            label: 'Packaging & Merch Design',
-            href: '/services/packaging-merch-design',
-            description:
-              'Packaging and merchandise designed to extend your brand into the physical world.',
-            icon:
-              '/images/services/icons/packaging-design.png',
-          },
-          {
-            label: 'Presentation Design',
-            href: '/services/presentation-design',
-            description:
-              'Clear, polished presentations designed to make ideas easier to understand.',
-            icon:
-              '/images/services/icons/presentation-design.png',
-          },
-          {
-            label: 'Print Design',
-            href: '/services/print-design',
-            description:
-              'Thoughtful print materials that bring your visual identity into the real world.',
-            icon:
-              '/images/services/icons/print-design.png',
-          },
-        ],
-      },
+  groups: [
+    {
+      id: 'brand-strategy',
+      title: 'Brand & Strategy',
+      links: [
+        {
+          label: 'Branding Services',
+          href: '/services#branding-services',
+          description:
+            'Distinctive brand systems built for recognition, clarity, and consistency.',
+          icon:
+            '/images/services/icons/brand-identity.png',
+        },
+        {
+          label: 'Creative Direction',
+          href: '/services#creative-direction',
+          description:
+            'Creative leadership for brands, launches, campaigns, and visual systems.',
+          icon:
+            '/images/services/icons/creative-direction.png',
+        },
+        {
+          label: 'Packaging & Merch Design',
+          href: '/services#packaging-merch-design',
+          description:
+            'Packaging and merchandise designed to extend your brand into the physical world.',
+          icon:
+            '/images/services/icons/packaging-design.png',
+        },
+        {
+          label: 'Presentation Design',
+          href: '/services#presentation-design',
+          description:
+            'Clear, polished presentations designed to make ideas easier to understand.',
+          icon:
+            '/images/services/icons/presentation-design.png',
+        },
+        {
+          label: 'Print Design',
+          href: '/services#print-design',
+          description:
+            'Thoughtful print materials that bring your visual identity into the real world.',
+          icon:
+            '/images/services/icons/print-design.png',
+        },
+      ],
+    },
 
-      {
-        id: 'digital-experiences',
-        title: 'Digital Experiences',
-        links: [
-          {
-            label: 'Web & Digital',
-            href: '/services/web-design',
-            description:
-              'Strategy, design, and development for distinctive websites built to perform.',
-            icon:
-              '/images/services/icons/website-design.png',
-          },
-          {
-            label: 'Mobile App Design',
-            href: '/services/mobile-app-design',
-            description:
-              'Polished mobile experiences designed around clarity and everyday use.',
-            icon:
-              '/images/services/icons/mobile-app-design.png',
-          },
-        ],
-      },
+    {
+      id: 'digital-experiences',
+      title: 'Digital Experiences',
+      links: [
+        {
+          label: 'Web & Digital',
+          href: '/services#web-digital',
+          description:
+            'Strategy, design, and development for distinctive websites built to perform.',
+          icon:
+            '/images/services/icons/website-design.png',
+        },
+        {
+          label: 'Mobile App Design',
+          href: '/services#mobile-app-design',
+          description:
+            'Polished mobile experiences designed around clarity and everyday use.',
+          icon:
+            '/images/services/icons/mobile-app-design.png',
+        },
+      ],
+    },
 
-      {
-        id: 'marketing-content',
-        title: 'Marketing & Content',
-        links: [
-          {
-            label: 'Campaign Strategy',
-            href: '/services/campaign-strategy',
-            description:
-              'Creative strategy and systems for launches, promotions, and campaigns.',
-            icon:
-              '/images/services/icons/campaign-creative.png',
-          },
-          {
-            label: 'Social Media Creative',
-            href: '/services/social-media-creative',
-            description:
-              'Flexible, recognizable creative built for modern social channels.',
-            icon:
-              '/images/services/icons/social-content-design.png',
-          },
-          {
-            label: 'Email Design',
-            href: '/services/email-design',
-            description:
-              'Branded email experiences designed for engagement and conversion.',
-            icon:
-              '/images/services/icons/email-design.png',
-          },
-        ],
-      },
-    ],
+    {
+      id: 'marketing-content',
+      title: 'Marketing & Content',
+      links: [
+        {
+          label: 'Campaign Strategy',
+          href: '/services#campaign-strategy',
+          description:
+            'Creative strategy and systems for launches, promotions, and campaigns.',
+          icon:
+            '/images/services/icons/campaign-creative.png',
+        },
+        {
+          label: 'Social Media Creative',
+          href: '/services#social-media-creative',
+          description:
+            'Flexible, recognizable creative built for modern social channels.',
+          icon:
+            '/images/services/icons/social-content-design.png',
+        },
+        {
+          label: 'Email Design',
+          href: '/services#email-design',
+          description:
+            'Branded email experiences designed for engagement and conversion.',
+          icon:
+            '/images/services/icons/email-design.png',
+        },
+      ],
+    },
+  ],
 
-    previews: [],
-  },
+  previews: [],
+},
 
   /* ======================================================================== */
   /* Resources                                                                */

@@ -30,7 +30,7 @@ export function DemoHero() {
         relative
         isolate
         overflow-hidden
-        bg-[#1600A2]
+        bg-black
         text-white
       "
     >
@@ -50,7 +50,7 @@ export function DemoHero() {
           className="
             absolute
             inset-0
-            bg-[url('/images/demos/demos-hero.jpg')]
+            bg-[url('/images/demos/demos-hero-02.jpg')]
             bg-cover
             bg-center
           "
@@ -60,7 +60,7 @@ export function DemoHero() {
           className="
             absolute
             inset-0
-            bg-[#1600A2]/75
+            bg-black/40
           "
         />
 
@@ -71,7 +71,7 @@ export function DemoHero() {
             bg-gradient-to-b
             from-black/50
             via-transparent
-            to-[#08004c]
+            to-black
           "
         />
 
@@ -238,11 +238,11 @@ export function DemoHero() {
               justify-center
               gap-2
               rounded-[14px]
-              bg-[#0B65F3]
+              bg-white
               px-6
               text-[16px]
               font-bold
-              text-white
+              text-black
               transition-opacity
               hover:opacity-90
             "
@@ -269,8 +269,6 @@ export function DemoHero() {
               justify-center
               gap-2
               rounded-[14px]
-              border
-              border-white/20
               bg-white/10
               px-6
               text-[16px]

@@ -1,47 +1,41 @@
-import Image from 'next/image';
-
-const BACKGROUND_IMAGE =
-  '/images/hero/hero-background-10.jpg';
+const BACKGROUND_VIDEO =
+  '/images/hero/hero-background.mp4';
 
 export function HeroBackground() {
   return (
     <>
-      {/* Background image */}
+      {/* Background video */}
       <div className="absolute inset-0 -z-30">
-        <Image
-          src={BACKGROUND_IMAGE}
-          alt=""
-          fill
-          priority
-          sizes="100vw"
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
           className="
+            h-full
+            w-full
             object-cover
             object-center
           "
-        />
+        >
+          <source
+            src={BACKGROUND_VIDEO}
+            type="video/mp4"
+          />
+        </video>
       </div>
 
-      {/* Background color overlay */}
+      {/* Black fade */}
       <div
         className="
           absolute
           inset-0
           -z-20
-          bg-[#1600A2]/100
-          mix-blend-multiply
-        "
-      />
-
-      {/* Background gradient */}
-      <div
-        className="
-          absolute
-          inset-0
-          -z-10
           bg-gradient-to-b
-          from-[#0B65F3]/35
-          via-[#0B65F3]/50
-          to-[#0B65F3]/95
+          from-black/80
+          via-black/80
+          to-transparent
         "
       />
 

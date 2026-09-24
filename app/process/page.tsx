@@ -9,6 +9,8 @@ import { ProcessTimelines } from '@/components/process/ProcessTimelines';
 import { ProjectRoadmap } from '@/components/process/ProjectRoadmap';
 import { TimelineFactors } from '@/components/process/TimelineFactors';
 
+import { BackToTopButton } from '@/components/process/BackToTopButton';
+
 export const metadata: Metadata = {
   title: 'Our Process',
   description:
@@ -53,6 +55,9 @@ export default function ProcessPage() {
       {/* ------------------------------------------------------------ */}
 
       <ProcessCTA />
+      
+      <BackToTopButton />
+
     </>
   );
 }

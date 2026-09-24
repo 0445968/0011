@@ -3,13 +3,25 @@
 import {
   ArrowLeft,
   ArrowRight,
+  ArrowUpRight,
 } from 'lucide-react';
+
 import Image from 'next/image';
+import Link from 'next/link';
+
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 
 import {
   processStages,
 } from './processData';
+
+const ease = [
+  0.16,
+  1,
+  0.3,
+  1,
+] as const;
 
 /* -------------------------------------------------------------------------- */
 /* Stage images                                                               */
@@ -38,8 +50,8 @@ export function ProcessJourney() {
   const progress =
     processStages.length > 1
       ? (activeIndex /
-        (processStages.length - 1)) *
-      100
+          (processStages.length - 1)) *
+        100
       : 0;
 
   const image =
@@ -61,7 +73,7 @@ export function ProcessJourney() {
   const goNext = () => {
     setActiveIndex((current) =>
       current ===
-        processStages.length - 1
+      processStages.length - 1
         ? 0
         : current + 1
     );
@@ -72,7 +84,7 @@ export function ProcessJourney() {
       className="
         relative
         overflow-hidden
-        bg-[#071B34]
+        bg-black
         pb-16
         pt-32
         text-white
@@ -92,7 +104,7 @@ export function ProcessJourney() {
           pointer-events-none
           absolute
           inset-0
-          bg-[url('/images/process/process-hero.webp')]
+          bg-[url('/images/process/process-hero.jpg')]
           bg-cover
           bg-center
         "
@@ -106,7 +118,7 @@ export function ProcessJourney() {
           pointer-events-none
           absolute
           inset-0
-          bg-[#1600A2]/82
+          bg-black/20
         "
       />
 
@@ -119,9 +131,9 @@ export function ProcessJourney() {
           absolute
           inset-0
           bg-gradient-to-b
-          from-[#1600A2]/50
-          via-[#1600A2]/78
-          to-[#010008]
+          from-black/90
+          via-black/50
+          to-black
         "
       />
 
@@ -161,66 +173,166 @@ export function ProcessJourney() {
         <div
           className="
             mx-auto
-            max-w-3xl
+            max-w-4xl
             pt-8
             text-center
             sm:pt-10
             lg:pt-12
           "
         >
-          <p
+          {/* Eyebrow */}
+
+          <motion.p
+            initial={{
+              opacity: 0,
+              y: 14,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+            }}
+            transition={{
+              duration: 0.65,
+              ease,
+            }}
             className="
               font-mono
-              text-[10px]
+              text-[11px]
               font-semibold
               uppercase
-              tracking-[0.2em]
+              tracking-[0.22em]
               text-[#BBFF1B]
               sm:text-xs
             "
           >
             How we work
-          </p>
+          </motion.p>
 
-          <h1
+          {/* Heading */}
+
+          <motion.h1
+            initial={{
+              opacity: 0,
+              y: 24,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+            }}
+            transition={{
+              duration: 0.8,
+              delay: 0.08,
+              ease,
+            }}
             className="
               mx-auto
-              mt-4
-              max-w-3xl
+              mt-6
+              max-w-[14ch]
               text-balance
               font-heading
-              text-3xl
-              font-semibold
-              leading-[1.01]
-              tracking-[-0.04em]
+              text-[2.35rem]
+              font-medium
+              leading-[0.98]
+              tracking-[-0.045em]
               text-white
-              sm:text-4xl
-              lg:text-5xl
-              xl:text-[3.4rem]
+              sm:text-[3rem]
+              md:text-[3.6rem]
+              lg:text-[4.15rem]
             "
           >
-            A clear process from first
-            conversation to launch
-          </h1>
+            From idea to successful launch
+          </motion.h1>
 
-          <p
+          {/* Description */}
+
+          <motion.p
+            initial={{
+              opacity: 0,
+              y: 18,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+            }}
+            transition={{
+              duration: 0.75,
+              delay: 0.18,
+              ease,
+            }}
             className="
               mx-auto
-              mt-5
+              mt-7
               max-w-2xl
-              text-sm
-              leading-6
+              text-balance
+              text-base
+              leading-7
               text-white/70
-              sm:text-base
+              sm:text-lg
+              sm:leading-8
             "
           >
-            Every project is different, but
-            the path is usually similar. We
-            move from understanding the
-            business to defining the
-            direction, building the brand,
-            and putting it to work.
-          </p>
+            We first understand the business, 
+            then we 
+            <br />
+            build the brand
+            and put it to work.
+          </motion.p>
+
+          {/* Action */}
+
+          <motion.div
+            initial={{
+              opacity: 0,
+              y: 18,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+            }}
+            transition={{
+              duration: 0.75,
+              delay: 0.28,
+              ease,
+            }}
+            className="
+              mt-9
+              flex
+              items-center
+              justify-center
+            "
+          >
+            <Link
+              href="/get-started"
+              className="
+                group
+                inline-flex
+                h-12
+                items-center
+                justify-center
+                gap-2
+                rounded-[14px]
+                bg-white
+                px-6
+                text-[16px]
+                font-bold
+                text-black
+                transition-opacity
+                hover:opacity-90
+              "
+            >
+              Get started
+
+              <ArrowUpRight
+                size={15}
+                className="
+                  transition-transform
+                  duration-300
+                  group-hover:-translate-y-0.5
+                  group-hover:translate-x-0.5
+                "
+              />
+            </Link>
+          </motion.div>
         </div>
 
         {/* -------------------------------------------------------- */}
@@ -229,17 +341,17 @@ export function ProcessJourney() {
 
         <div
           className="
-    mt-14
-    overflow-hidden
-    rounded-[28px]
-    bg-white/10
-    p-3
-    shadow-[0_30px_80px_-35px_rgba(0,0,0,0.65)]
-    backdrop-blur-xl
-    sm:mt-16
-    sm:p-4
-    lg:mt-20
-  "
+            mt-14
+            overflow-hidden
+            rounded-[28px]
+            bg-white/10
+            p-3
+            shadow-[0_30px_80px_-35px_rgba(0,0,0,0.65)]
+            backdrop-blur-xl
+            sm:mt-16
+            sm:p-4
+            lg:mt-20
+          "
         >
           {/* Navigation */}
 
@@ -253,15 +365,15 @@ export function ProcessJourney() {
 
           <div
             className="
-    mt-3
-    grid
-    h-[520px]
-    overflow-hidden
-    rounded-[22px]
-    bg-transparent
-    text-foreground
-    lg:grid-cols-[0.92fr_1.08fr]
-  "
+              mt-3
+              grid
+              h-[520px]
+              overflow-hidden
+              rounded-[22px]
+              bg-transparent
+              text-foreground
+              lg:grid-cols-[0.92fr_1.08fr]
+            "
           >
             {/* ---------------------------------------------------- */}
             {/* Stage content                                       */}
@@ -273,34 +385,34 @@ export function ProcessJourney() {
                 min-w-0
                 flex-col
                 bg-white/100
-                backdrop-blur-sm
                 p-5
+                backdrop-blur-sm
                 sm:p-6
                 lg:p-7
               "
             >
               <div
                 className="
-    flex
-    min-h-0
-    flex-1
-    flex-col
-    justify-center
-  "
+                  flex
+                  min-h-0
+                  flex-1
+                  flex-col
+                  justify-center
+                "
               >
                 {/* Title */}
 
                 <h2
                   className="
-                      max-w-xl
-                      text-balance
-                      font-heading
-                      text-[18px]
-                      font-semibold
-                      leading-[1.15]
-                      tracking-[-0.02em]
-                      text-foreground
-                    "
+                    max-w-xl
+                    text-balance
+                    font-heading
+                    text-[18px]
+                    font-semibold
+                    leading-[1.15]
+                    tracking-[-0.02em]
+                    text-foreground
+                  "
                 >
                   {activeStage.title}
                 </h2>
@@ -309,12 +421,12 @@ export function ProcessJourney() {
 
                 <p
                   className="
-                      mt-3
-                      max-w-xl
-                      text-sm
-                      leading-[1.55]
-                      text-muted-foreground
-                    "
+                    mt-3
+                    max-w-xl
+                    text-sm
+                    leading-[1.55]
+                    text-muted-foreground
+                  "
                 >
                   {activeStage.description}
                 </p>
@@ -323,14 +435,14 @@ export function ProcessJourney() {
 
                 <div
                   className="
-                      mt-6
-                      grid
-                      gap-5
-                      border-t
-                      border-border
-                      pt-5
-                      sm:grid-cols-2
-                    "
+                    mt-6
+                    grid
+                    gap-5
+                    border-t
+                    border-border
+                    pt-5
+                    sm:grid-cols-2
+                  "
                 >
                   <StageList
                     title="What we do"
@@ -455,35 +567,37 @@ export function ProcessJourney() {
             >
               <div
                 className="
-    absolute
-    inset-0
-  "
+                  absolute
+                  inset-0
+                "
               >
                 <Image
                   src={image}
                   alt=""
                   fill
-                  priority={activeIndex === 0}
+                  priority={
+                    activeIndex === 0
+                  }
                   sizes="
-      (max-width: 1024px) 100vw,
-      55vw
-    "
+                    (max-width: 1024px) 100vw,
+                    55vw
+                  "
                   className="
-      object-cover
-    "
+                    object-cover
+                  "
                 />
 
                 <div
                   aria-hidden="true"
                   className="
-      pointer-events-none
-      absolute
-      inset-0
-      bg-gradient-to-t
-      from-black/10
-      via-transparent
-      to-transparent
-    "
+                    pointer-events-none
+                    absolute
+                    inset-0
+                    bg-gradient-to-t
+                    from-black/10
+                    via-transparent
+                    to-transparent
+                  "
                 />
               </div>
             </div>
@@ -545,7 +659,7 @@ function ProcessNavigation({
             left-[5%]
             top-[22px]
             h-px
-            bg-primary
+            bg-[#BBFF1B]
             transition-[width]
             duration-500
             ease-out
@@ -598,7 +712,7 @@ function ProcessNavigation({
                       items-center
                       justify-center
                       rounded-full
-                      bg-[#232354]
+                      bg-black
                     "
                   >
                     {/* Number */}
@@ -619,19 +733,20 @@ function ProcessNavigation({
                         transition-all
                         duration-300
 
-                        ${isActive
-                          ? `
-                              border-primary
-                              bg-primary
-                              text-white
-                            `
-                          : isComplete
+                        ${
+                          isActive
                             ? `
-                                border-white
-                                bg-white
+                              border-white/70
+                              bg-white
+                              text-black
+                            `
+                            : isComplete
+                              ? `
+                                border-white/70
+                                bg-white/70
                                 text-[#071B34]
                               `
-                            : `
+                              : `
                                 border-white/25
                                 bg-white/10
                                 text-white/70
@@ -659,11 +774,12 @@ function ProcessNavigation({
                       transition-colors
                       duration-200
 
-                      ${isActive
-                        ? 'text-white'
-                        : isComplete
-                          ? 'text-white/70'
-                          : 'text-white/40'
+                      ${
+                        isActive
+                          ? 'text-white'
+                          : isComplete
+                            ? 'text-white/70'
+                            : 'text-white/40'
                       }
                     `}
                   >

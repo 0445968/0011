@@ -2,19 +2,20 @@
 
 import Link from 'next/link';
 
+import {
+  ArrowUpRight,
+} from 'lucide-react';
+
 import { Reveal } from '@/components/portfolio/Reveal';
 
 export function AboutGetStarted() {
   return (
     <section
       className="
-        relative
-        pb-10
-        pt-6
-        sm:pb-12
-        sm:pt-8
-        lg:pb-14
-        lg:pt-10
+        bg-background
+        py-20
+        sm:py-24
+        lg:py-28
       "
     >
       <div className="container-page">
@@ -22,51 +23,114 @@ export function AboutGetStarted() {
           <div
             className="
               relative
+              isolate
               overflow-hidden
-              rounded-3xl
-              bg-primary
+              rounded-[32px]
+              border
+              border-border
+              bg-muted
               px-6
-              py-12
-              text-primary-foreground
+              py-16
+              text-foreground
               sm:px-10
-              sm:py-14
-              lg:px-14
-              lg:py-16
+              sm:py-20
+              md:px-16
+              lg:px-20
+              lg:py-24
             "
           >
-            {/* Decorative background glow */}
+            {/* ======================================================== */}
+            {/* Background shapes                                       */}
+            {/* ======================================================== */}
 
             <div
               aria-hidden="true"
               className="
                 pointer-events-none
                 absolute
-                -right-28
-                -top-28
-                h-72
-                w-72
-                rounded-full
-                bg-white/10
-                blur-3xl
+                inset-0
+                -z-20
               "
-            />
+            >
+              {/* Top left circle */}
+              <div
+                className="
+                  absolute
+                  -left-24
+                  -top-28
+                  h-[260px]
+                  w-[260px]
+                  rounded-full
+                  bg-foreground/[0.035]
+                "
+              />
 
-            <div
-              aria-hidden="true"
-              className="
-                pointer-events-none
-                absolute
-                -bottom-32
-                left-1/3
-                h-72
-                w-72
-                rounded-full
-                bg-[#BBFF1B]/10
-                blur-3xl
-              "
-            />
+              {/* Top center block */}
+              <div
+                className="
+                  absolute
+                  left-[32%]
+                  top-0
+                  h-[32%]
+                  w-[34%]
+                  bg-foreground/[0.025]
+                "
+              />
 
-            {/* Content */}
+              {/* Top right block */}
+              <div
+                className="
+                  absolute
+                  right-0
+                  top-0
+                  h-[32%]
+                  w-[18%]
+                  bg-foreground/[0.035]
+                "
+              />
+
+              {/* Bottom left block */}
+              <div
+                className="
+                  absolute
+                  bottom-0
+                  left-0
+                  h-[34%]
+                  w-[17%]
+                  bg-foreground/[0.03]
+                "
+              />
+
+              {/* Bottom center circle */}
+              <div
+                className="
+                  absolute
+                  -bottom-36
+                  left-[32%]
+                  h-[300px]
+                  w-[300px]
+                  rounded-full
+                  bg-foreground/[0.025]
+                "
+              />
+
+              {/* Bottom right circle */}
+              <div
+                className="
+                  absolute
+                  -bottom-40
+                  -right-28
+                  h-[340px]
+                  w-[340px]
+                  rounded-full
+                  bg-foreground/[0.035]
+                "
+              />
+            </div>
+
+            {/* ======================================================== */}
+            {/* Content                                                 */}
+            {/* ======================================================== */}
 
             <div
               className="
@@ -74,7 +138,7 @@ export function AboutGetStarted() {
                 z-10
                 mx-auto
                 flex
-                max-w-4xl
+                max-w-5xl
                 flex-col
                 items-center
                 text-center
@@ -89,7 +153,7 @@ export function AboutGetStarted() {
                   font-semibold
                   uppercase
                   tracking-[0.2em]
-                  text-white/65
+                  text-muted-foreground
                   sm:text-xs
                 "
               >
@@ -100,47 +164,27 @@ export function AboutGetStarted() {
 
               <h2
                 className="
-                  mt-3
-                  max-w-3xl
+                  mt-5
+                  max-w-[16ch]
                   text-balance
                   font-heading
-                  text-3xl
-                  font-semibold
-                  leading-[1.08]
-                  tracking-[-0.035em]
-                  text-white
-                  sm:text-4xl
-                  md:text-5xl
-                  lg:text-[3.25rem]
+                  text-[1.85rem]
+                  font-medium
+                  leading-[1.2]
+                  tracking-[-0.04em]
+                  sm:text-[2.2rem]
+                  md:text-[2.65rem]
+                  lg:text-[3rem]
                 "
               >
                 Have something worth building?
               </h2>
 
-              {/* Description */}
-
-              <p
-                className="
-                  mt-5
-                  max-w-2xl
-                  font-body
-                  text-sm
-                  leading-7
-                  text-white/75
-                  sm:text-base
-                "
-              >
-                Tell us what you&apos;re working on.
-                We&apos;ll help turn the idea into a clear,
-                distinctive brand built to move with your
-                business.
-              </p>
-
               {/* Buttons */}
 
               <div
                 className="
-                  mt-7
+                  mt-9
                   flex
                   flex-col
                   items-center
@@ -153,50 +197,78 @@ export function AboutGetStarted() {
                 <Link
                   href="/contact"
                   className="
+                    group
                     inline-flex
-                    h-11
+                    h-12
                     min-w-[160px]
                     items-center
                     justify-center
+                    gap-2
                     rounded-[14px]
-                    bg-[#BBFF1B]
+                    bg-black
                     px-6
-                    py-2.5
-                    text-sm
-                    font-bold
-                    text-black
-                    transition-colors
-                    duration-200
-                    hover:bg-[#c7ff3e]
+                    text-[15px]
+                    font-semibold
+                    text-white
+                    shadow-sm
+                    transition-all
+                    duration-300
+                    hover:-translate-y-0.5
+                    hover:shadow-md
+                    dark:bg-white
+                    dark:text-black
+                    dark:hover:bg-white/90
                   "
                 >
                   Start a Project
+
+                  <ArrowUpRight
+                    size={16}
+                    className="
+                      transition-transform
+                      duration-300
+                      group-hover:-translate-y-0.5
+                      group-hover:translate-x-0.5
+                    "
+                  />
                 </Link>
 
                 <Link
                   href="/work"
                   className="
+                    group
                     inline-flex
-                    h-11
+                    h-12
                     min-w-[160px]
                     items-center
                     justify-center
+                    gap-2
                     rounded-[14px]
                     border
-                    border-white/20
-                    bg-white/10
+                    border-border
+                    bg-background
                     px-6
-                    py-2.5
-                    text-sm
-                    font-bold
-                    text-white
-                    transition-colors
-                    duration-200
-                    hover:border-white/30
-                    hover:bg-white/15
+                    text-[15px]
+                    font-semibold
+                    text-foreground
+                    shadow-sm
+                    transition-all
+                    duration-300
+                    hover:-translate-y-0.5
+                    hover:shadow-md
                   "
                 >
                   See our work
+
+                  <ArrowUpRight
+                    size={16}
+                    className="
+                      transition-transform
+                      duration-300
+                      group-hover:-translate-y-0.5
+                      group-hover:translate-x-0.5
+                    "
+                  />
                 </Link>
               </div>
             </div>
