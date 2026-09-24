@@ -39,6 +39,7 @@ import {
   Target,
   Type,
   Video,
+  type LucideIcon,
 } from 'lucide-react';
 
 type ServiceProductStripProps = {
@@ -48,13 +49,9 @@ type ServiceProductStripProps = {
   };
 };
 
-type Icon = ComponentType<
-  SVGProps<SVGSVGElement>
->;
-
 type ProductItem = {
   label: string;
-  icon: Icon;
+  icon: LucideIcon;
 };
 
 const serviceProducts: Record<
@@ -487,14 +484,14 @@ export function ServiceProductStrip({
     ];
 
   return (
-    <section
+    <div
       className="
         relative
         overflow-hidden
         bg-[#010008]
-        py-10
+        pb-14
         text-white
-        sm:py-12
+        sm:pb-16
       "
     >
       {/* -------------------------------------------------------- */}
@@ -504,22 +501,9 @@ export function ServiceProductStrip({
       <div
         className="
           container-page
-          mb-6
+          mb-5
         "
       >
-        <p
-          className="
-            font-mono
-            text-[10px]
-            font-semibold
-            uppercase
-            tracking-[0.2em]
-            text-[#BBFF1B]
-            sm:text-xs
-          "
-        >
-          What we can create
-        </p>
       </div>
 
       {/* -------------------------------------------------------- */}
@@ -561,7 +545,7 @@ export function ServiceProductStrip({
       />
 
       {/* -------------------------------------------------------- */}
-      {/* Infinite strip                                            */}
+      {/* Endless strip                                            */}
       {/* -------------------------------------------------------- */}
 
       <div
@@ -621,6 +605,6 @@ export function ServiceProductStrip({
           }
         }
       `}</style>
-    </section>
+    </div>
   );
 }

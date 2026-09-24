@@ -150,7 +150,7 @@ export function Navbar() {
     pathname === '/' ||
     pathname === '/help' ||
     pathname === '/process' ||
-    pathname === '/services/[slug]' ||
+    pathname === '/services' ||
     pathname === '/demos';
 
   /* ---------------------------------------------------------------------- */

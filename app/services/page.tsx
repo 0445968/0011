@@ -4,14 +4,15 @@ import { AboutCustomers } from '@/components/home/about/AboutCustomers';
 
 import { ServicesPageHero } from '@/components/services/ServicesPageHero';
 import { ServiceTypeSection } from '@/components/services/ServiceTypeSection';
-import { ServiceCTA } from '@/components/services/service-page/ServiceCTA';
+
+import { BackToTopButton } from '@/components/services/BackToTopButton';
 
 import { services } from '@/data/services';
 
 export const metadata: Metadata = {
   title: 'Services',
   description:
-    'Branding, creative direction, web and digital, campaigns, print, packaging, social media, email, and more from Bivi.',
+    'Branding, creative direction, packaging, presentations, print, web and digital, mobile apps, campaigns, social media, and email design from Bivi.',
 };
 
 export default function ServicesPage() {
@@ -24,10 +25,11 @@ export default function ServicesPage() {
     >
       <ServicesPageHero />
 
-      {services.map((service) => (
+      {services.map((service, index) => (
         <ServiceTypeSection
           key={service.id}
           service={service}
+          index={index}
           anchorId={
             service.id === 'web-design'
               ? 'web-digital'
@@ -36,11 +38,9 @@ export default function ServicesPage() {
         />
       ))}
 
-      <ServiceCTA
-        service={{
-          title: 'Services',
-        } as any}
-      />
+      <AboutCustomers />
+
+      <BackToTopButton />
     </main>
   );
 }
