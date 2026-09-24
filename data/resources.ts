@@ -14,6 +14,8 @@ export interface Resource {
   date?: string;
   readTime?: string;
   preview?: string;
+  previewVertical?: string;
+  previewHorizontal?: string;
   body?: string;
   featured?: boolean;
 }

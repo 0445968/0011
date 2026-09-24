@@ -21,6 +21,7 @@ import type {
 
 const initialGuest: BookingGuest = {
   name: '',
+  company: '',
   email: '',
   phone: '',
   referral: '',

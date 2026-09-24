@@ -9,7 +9,7 @@ const growthItems = [
   {
     number: '03',
     title: 'Content',
-    detail: 'Easy to extend',yjyj
+    detail: 'Easy to extend',
   },
   {
     number: '04',

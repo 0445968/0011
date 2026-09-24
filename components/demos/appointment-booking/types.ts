@@ -39,6 +39,7 @@ export interface SpaProfessional {
 
 export interface BookingGuest {
   name: string;
+  company: string;
   email: string;
   phone: string;
   referral: string;
