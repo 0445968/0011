@@ -67,7 +67,37 @@ export function ProjectCustomizer({
           gap-y-3
         "
       >
-        {options.map((option) => {
+        {[
+  ...options
+    .filter((option) =>
+      MOBILE_OPTIONS.includes(
+        option.label
+          .trim()
+          .toLowerCase()
+      )
+    )
+    .sort(
+      (a, b) =>
+        MOBILE_OPTIONS.indexOf(
+          a.label
+            .trim()
+            .toLowerCase()
+        ) -
+        MOBILE_OPTIONS.indexOf(
+          b.label
+            .trim()
+            .toLowerCase()
+        )
+    ),
+  ...options.filter(
+    (option) =>
+      !MOBILE_OPTIONS.includes(
+        option.label
+          .trim()
+          .toLowerCase()
+      )
+  ),
+].map((option) => {
           const isSelected =
             selectedOptions.includes(option.id);
 

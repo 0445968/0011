@@ -113,7 +113,7 @@ export function Hero() {
     flex-col
     items-center
     px-5
-    pb-64
+    pb-20
     pt-32
     text-center
     sm:px-8

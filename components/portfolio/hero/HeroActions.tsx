@@ -78,7 +78,7 @@ export function HeroActions({
   rounded-[14px]
   bg-[#BBFF1B]
   px-5
-  text-[15px]
+  text-[16px]
   font-bold
   leading-none
   text-black

@@ -1,7 +1,7 @@
 import Image from 'next/image';
 
 const BACKGROUND_IMAGE =
-  '/images/hero/hero-background.jpg';
+  '/images/hero/hero-background05.jpg';
 
 export function HeroBackground() {
   return (
@@ -24,7 +24,7 @@ export function HeroBackground() {
             object-cover
           "
           style={{
-            objectPosition: 'center bottom',
+            objectPosition: 'center',
           }}
         />
       </div>
@@ -38,8 +38,8 @@ export function HeroBackground() {
           inset-0
           -z-20
           bg-gradient-to-b
-          from-black/80
-          via-black/80
+          from-black/90
+          via-black/60
           to-transparent
         "
       />
