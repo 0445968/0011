@@ -1,12 +1,24 @@
 'use client';
 
-import { ArrowRight } from 'lucide-react';
+import {
+  ArrowUpRight,
+} from 'lucide-react';
 
-import type { Resource } from '@/data/resources';
+import type {
+  Resource,
+} from '@/data/resources';
 
-import { CarouselArrows } from './CarouselArrows';
-import { CarouselViewport } from './CarouselViewport';
-import { useCarousel } from './useCarousel';
+import {
+  CarouselArrows,
+} from './CarouselArrows';
+
+import {
+  CarouselViewport,
+} from './CarouselViewport';
+
+import {
+  useCarousel,
+} from './useCarousel';
 
 interface ResourceCarouselProps {
   resources: Resource[];
@@ -28,8 +40,17 @@ export function ResourceCarousel({
 
   return (
     <div className="relative">
-      {/* Top Controls */}
-      <div className="container-page">
+      {/* ============================================================ */}
+      {/* Desktop controls                                             */}
+      {/* ============================================================ */}
+
+      <div
+        className="
+          container-page
+          hidden
+          sm:block
+        "
+      >
         <div
           className="
             mb-6
@@ -40,12 +61,18 @@ export function ResourceCarousel({
           "
         >
           {/* Empty left column */}
+
           <div />
 
           {/* Centered arrows */}
+
           <CarouselArrows
-            onPrevious={scrollPrevious}
-            onNext={scrollNext}
+            onPrevious={
+              scrollPrevious
+            }
+            onNext={
+              scrollNext
+            }
             canScrollPrevious={
               canScrollPrevious
             }
@@ -55,6 +82,7 @@ export function ResourceCarousel({
           />
 
           {/* Browse all */}
+
           <div
             className="
               flex
@@ -68,48 +96,50 @@ export function ResourceCarousel({
                 inline-flex
                 items-center
                 gap-2
-                rounded-full
-                border
-                border-border
-                bg-card
-                px-5
-                py-3
+                border-b
+                border-foreground
+                pb-1
                 text-sm
-                font-medium
-                transition-all
-                duration-300
-                hover:-translate-y-0.5
-                hover:border-primary/40
+                font-semibold
+                text-foreground
+                transition-colors
+                duration-200
+                hover:border-[#0B65F3]
+                hover:text-[#0B65F3]
               "
             >
-              <span className="hidden sm:inline">
-                Browse all resources
-              </span>
+              Browse all resources
 
-              <span className="sm:hidden">
-                Browse all
-              </span>
-
-              <ArrowRight
-                size={15}
+              <ArrowUpRight
                 className="
-                  transition-transform
-                  duration-300
-                  group-hover:translate-x-1
+                  h-4
+                  w-4
+                  shrink-0
                 "
+                strokeWidth={2}
               />
             </a>
           </div>
         </div>
       </div>
 
-      {/* Carousel */}
+      {/* ============================================================ */}
+      {/* Carousel                                                     */}
+      {/* ============================================================ */}
+
       <CarouselViewport
-        resources={resources}
-        containerRef={containerRef}
+        resources={
+          resources
+        }
+        containerRef={
+          containerRef
+        }
       />
 
-      {/* Pagination */}
+      {/* ============================================================ */}
+      {/* Pagination                                                   */}
+      {/* ============================================================ */}
+
       <div
         className="
           mt-7
@@ -120,50 +150,115 @@ export function ResourceCarousel({
         "
       >
         {Array.from({
-          length: pageCount,
-        }).map((_, index) => {
-          const isActive =
-            index === currentPage;
+          length:
+            pageCount,
+        }).map(
+          (
+            _,
+            index
+          ) => {
+            const isActive =
+              index ===
+              currentPage;
 
-          return (
-            <button
-              key={index}
-              type="button"
-              onClick={() =>
-                scrollToPage(index)
-              }
-              aria-label={`Go to resource page ${
-                index + 1
-              }`}
-              aria-current={
-                isActive ? 'true' : undefined
-              }
-              className="
-                flex
-                h-6
-                items-center
-                justify-center
-              "
-            >
-              <span
-                className={`
-                  block
-                  h-2
-                  rounded-full
-                  transition-all
-                  duration-500
-                  ease-[cubic-bezier(0.16,1,0.3,1)]
+            return (
+              <button
+                key={
+                  index
+                }
+                type="button"
+                onClick={() =>
+                  scrollToPage(
+                    index
+                  )
+                }
+                aria-label={`Go to resource page ${
+                  index + 1
+                }`}
+                aria-current={
+                  isActive
+                    ? 'true'
+                    : undefined
+                }
+                className="
+                  flex
+                  h-6
+                  items-center
+                  justify-center
+                "
+              >
+                <span
+                  className={`
+                    block
+                    h-2
+                    rounded-full
+                    transition-all
+                    duration-500
+                    ease-[cubic-bezier(0.16,1,0.3,1)]
 
-                  ${
-                    isActive
-                      ? 'w-12 bg-foreground'
-                      : 'w-2 bg-muted-foreground/30'
-                  }
-                `}
-              />
-            </button>
-          );
-        })}
+                    ${
+                      isActive
+                        ? `
+                          w-12
+                          bg-foreground
+                        `
+                        : `
+                          w-2
+                          bg-muted-foreground/30
+                        `
+                    }
+                  `}
+                />
+              </button>
+            );
+          }
+        )}
+      </div>
+
+      {/* ============================================================ */}
+      {/* Mobile browse all                                            */}
+      {/* ============================================================ */}
+
+      <div
+        className="
+          mt-8
+          flex
+          justify-center
+          sm:hidden
+        "
+      >
+        <a
+          href="/resources"
+          className="
+            group
+            inline-flex
+            items-center
+            gap-2
+            border-b
+            border-foreground
+            pb-1
+            text-sm
+            font-semibold
+            text-foreground
+            transition-colors
+            duration-200
+            active:border-[#0B65F3]
+            active:text-[#0B65F3]
+          "
+        >
+          Browse all resources
+
+          <ArrowUpRight
+            className="
+              h-4
+              w-4
+              shrink-0
+            "
+            strokeWidth={
+              2
+            }
+          />
+        </a>
       </div>
     </div>
   );

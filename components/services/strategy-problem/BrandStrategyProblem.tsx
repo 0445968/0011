@@ -29,7 +29,12 @@ const problems = [
   },
 ];
 
-const transitionEase = [0.16, 1, 0.3, 1] as const;
+const transitionEase = [
+  0.16,
+  1,
+  0.3,
+  1,
+] as const;
 
 export function BrandStrategyProblem() {
   return (
@@ -40,12 +45,12 @@ export function BrandStrategyProblem() {
         border-t
         border-border
         bg-background
-        pt-20
         pb-14
-        sm:pt-24
+        pt-20
         sm:pb-16
-        lg:pt-28
+        sm:pt-24
         lg:pb-20
+        lg:pt-28
       "
     >
       <div className="container-page">
@@ -128,10 +133,40 @@ export function BrandStrategyProblem() {
             A weak identity makes it difficult for people to connect.
           </motion.p>
         </div>
+      </div>
 
-        {/* Diagram + Problems */}
+      {/* ============================================================ */}
+      {/* Diagram + Problems                                           */}
+      {/* Mobile: horizontal 3-column track                            */}
+      {/* Desktop: normal full-width layout                            */}
+      {/* ============================================================ */}
 
-        <div className="mx-auto max-w-6xl">
+      <div
+        className="
+          mt-16
+          overflow-x-auto
+          overscroll-x-contain
+          scroll-smooth
+          [scrollbar-width:none]
+          [&::-webkit-scrollbar]:hidden
+          sm:mt-20
+          lg:mt-24
+          lg:overflow-visible
+        "
+      >
+        <div
+          className="
+            mx-auto
+            grid
+            w-[270vw]
+            grid-cols-3
+            px-5
+
+            sm:w-auto
+            sm:max-w-6xl
+            sm:px-0
+          "
+        >
           {/* Diagram */}
 
           <motion.div
@@ -153,9 +188,8 @@ export function BrandStrategyProblem() {
               ease: transitionEase,
             }}
             className="
-              mt-16
-              sm:mt-20
-              lg:mt-24
+              col-span-3
+              min-w-0
             "
           >
             <StrategyDiagram />
@@ -165,20 +199,33 @@ export function BrandStrategyProblem() {
 
           <div
             className="
+              col-span-3
               mt-10
               grid
+              grid-cols-3
               border-t
               border-border
-              md:grid-cols-3
             "
           >
-            {problems.map((problem, index) => (
-              <StrategyProblemCard
-                key={problem.number}
-                problem={problem}
-                index={index}
-              />
-            ))}
+            {problems.map(
+              (
+                problem,
+                index
+              ) => (
+                <div
+                  key={problem.number}
+                  className="
+                    min-w-0
+                    snap-start
+                  "
+                >
+                  <StrategyProblemCard
+                    problem={problem}
+                    index={index}
+                  />
+                </div>
+              )
+            )}
           </div>
         </div>
       </div>

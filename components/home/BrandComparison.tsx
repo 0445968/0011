@@ -292,7 +292,7 @@ export function BrandComparison() {
                 bg-muted
                 px-5
                 text-sm
-                font-semibold
+                font-bold
                 text-black
                 transition-colors
                 duration-200

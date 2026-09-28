@@ -1,11 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
+import {
+  useState,
+} from 'react';
+
+import {
+  usePathname,
+} from 'next/navigation';
+
 import {
   ArrowUpRight,
+  ChevronDown,
   Mail,
-  ShieldCheck,
 } from 'lucide-react';
 
 import {
@@ -14,8 +20,13 @@ import {
   siteConfig,
 } from '@/data/site';
 
-import { useI18n } from '@/lib/i18n/context';
-import { LanguageSwitcher } from './LanguageSwitcher';
+import {
+  useI18n,
+} from '@/lib/i18n/context';
+
+import {
+  LanguageSwitcher,
+} from './LanguageSwitcher';
 
 interface FooterLink {
   labelKey: string;
@@ -175,37 +186,37 @@ const pagesWithoutTagline = [
 ];
 
 export function Footer() {
-  const { t } = useI18n();
-  const pathname = usePathname();
+  const {
+    t,
+  } = useI18n();
 
-  const [time, setTime] = useState('');
+  const pathname =
+    usePathname();
+
+  const [
+    openGroup,
+    setOpenGroup,
+  ] = useState<string | null>(
+    null
+  );
 
   const hideTagline =
-    pagesWithoutTagline.includes(pathname);
-
-  useEffect(() => {
-    const updateTime = () => {
-      const houstonTime =
-        new Intl.DateTimeFormat('en-US', {
-          timeZone: 'America/Chicago',
-          hour: 'numeric',
-          minute: '2-digit',
-          second: '2-digit',
-          hour12: true,
-        }).format(new Date());
-
-      setTime(houstonTime);
-    };
-
-    updateTime();
-
-    const interval = setInterval(
-      updateTime,
-      1000
+    pagesWithoutTagline.includes(
+      pathname
     );
 
-    return () => clearInterval(interval);
-  }, []);
+  const toggleGroup = (
+    titleKey: string
+  ) => {
+    setOpenGroup(
+      (
+        current
+      ) =>
+        current === titleKey
+          ? null
+          : titleKey
+    );
+  };
 
   return (
     <footer
@@ -218,24 +229,31 @@ export function Footer() {
       <div
         className={`
           container-page
-          ${hideTagline
-            ? `
-                pt-24
+
+          ${
+            hideTagline
+              ? `
                 pb-8
+                pt-24
                 md:pt-32
                 lg:pt-36
               `
-            : `
-                pt-20
+              : `
                 pb-8
+                pt-20
                 md:pt-28
               `
           }
         `}
       >
         {/* Tagline */}
+
         {!hideTagline && (
-          <div className="max-w-5xl">
+          <div
+            className="
+              max-w-5xl
+            "
+          >
             <h2
               className="
                 font-serif
@@ -247,7 +265,11 @@ export function Footer() {
                 md:text-6xl
               "
             >
-              {t('footer.tagline')}
+              {
+                t(
+                  'footer.tagline'
+                )
+              }
 
               <span
                 className="
@@ -255,26 +277,38 @@ export function Footer() {
                   text-[#0B65F3]
                 "
               >
-                {t('footer.taglineAccent')}
+                {
+                  t(
+                    'footer.taglineAccent'
+                  )
+                }
               </span>
             </h2>
           </div>
         )}
 
         {/* Main content */}
+
         <div
           className={`
             grid
             gap-14
             lg:grid-cols-12
-            ${hideTagline
-              ? 'mt-0'
-              : 'mt-20'
+
+            ${
+              hideTagline
+                ? 'mt-0'
+                : 'mt-20'
             }
           `}
         >
           {/* Contact / brand */}
-          <div className="lg:col-span-4">
+
+          <div
+            className="
+              lg:col-span-4
+            "
+          >
             <a
               href="/"
               aria-label="Bivi home"
@@ -285,7 +319,9 @@ export function Footer() {
             >
               <img
                 src="/images/logo.svg"
-                alt={siteConfig.name}
+                alt={
+                  siteConfig.name
+                }
                 className="
                   h-10
                   w-auto
@@ -293,7 +329,12 @@ export function Footer() {
               />
             </a>
 
-            <div className="mt-8 space-y-5">
+            <div
+              className="
+                mt-8
+                space-y-5
+              "
+            >
               <a
                 href={`mailto:${contactInfo.email}`}
                 className="
@@ -310,7 +351,9 @@ export function Footer() {
                 "
               >
                 <Mail
-                  size={17}
+                  size={
+                    17
+                  }
                   className="
                     text-muted-foreground
                     transition-colors
@@ -319,10 +362,14 @@ export function Footer() {
                   "
                 />
 
-                {contactInfo.email}
+                {
+                  contactInfo.email
+                }
 
                 <ArrowUpRight
-                  size={15}
+                  size={
+                    15
+                  }
                   className="
                     opacity-0
                     transition-opacity
@@ -332,26 +379,11 @@ export function Footer() {
                 />
               </a>
 
-              <div
-                className="
-                  space-y-2
-                  text-sm
-                  leading-6
-                  text-muted-foreground
-                "
-              >
-                <p>
-                  {contactInfo.location}
-                </p>
-
-                <p>
-                  {t('footer.localTime')} —{' '}
-                  {time}
-                </p>
-              </div>
+              
             </div>
 
             {/* Socials */}
+
             <ul
               className="
                 mt-8
@@ -360,149 +392,451 @@ export function Footer() {
                 gap-2
               "
             >
-              {socialLinks.map((link) => (
-                <li key={link.id}>
-                  <a
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={link.label}
-                    className="
-                      flex
-                      h-10
-                      w-10
-                      items-center
-                      justify-center
-                      rounded-full
-                      border
-                      border-border
-                      bg-background/50
-                      text-muted-foreground
-                      transition-colors
-                      duration-150
-                      hover:border-[#0B65F3]
-                      hover:text-[#0B65F3]
-                    "
+              {socialLinks.map(
+                (
+                  link
+                ) => (
+                  <li
+                    key={
+                      link.id
+                    }
                   >
-                    <link.icon size={17} />
-                  </a>
-                </li>
-              ))}
+                    <a
+                      href={
+                        link.href
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={
+                        link.label
+                      }
+                      className="
+                        flex
+                        h-10
+                        w-10
+                        items-center
+                        justify-center
+                        rounded-full
+                        border
+                        border-border
+                        bg-background/50
+                        text-muted-foreground
+                        transition-colors
+                        duration-150
+                        hover:border-[#0B65F3]
+                        hover:text-[#0B65F3]
+                      "
+                    >
+                      <link.icon
+                        size={
+                          17
+                        }
+                      />
+                    </a>
+                  </li>
+                )
+              )}
             </ul>
           </div>
 
-          {/* Sitemap */}
+          {/* ============================================================ */}
+          {/* Mobile sitemap accordion                                     */}
+          {/* ============================================================ */}
+
           <div
             className="
-              grid
+              divide-y
+              divide-border
+              lg:hidden
+            "
+          >
+            {footerGroups.map(
+              (
+                group
+              ) => {
+                const isOpen =
+                  openGroup ===
+                  group.titleKey;
+
+                return (
+                  <div
+                    key={
+                      group.titleKey
+                    }
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        toggleGroup(
+                          group.titleKey
+                        )
+                      }
+                      aria-expanded={
+                        isOpen
+                      }
+                      className="
+                        flex
+                        w-full
+                        items-center
+                        justify-between
+                        py-5
+                        text-left
+                      "
+                    >
+                      <span
+                        className="
+                          font-heading
+                          text-[15px]
+                          font-semibold
+                          tracking-[-0.01em]
+                          text-foreground
+                        "
+                      >
+                        {
+                          t(
+                            group.titleKey
+                          )
+                        }
+                      </span>
+
+                      <ChevronDown
+                        size={
+                          18
+                        }
+                        className={`
+                          text-muted-foreground
+                          transition-transform
+                          duration-300
+
+                          ${
+                            isOpen
+                              ? 'rotate-180'
+                              : 'rotate-0'
+                          }
+                        `}
+                      />
+                    </button>
+
+                    <div
+                      className={`
+                        grid
+                        transition-[grid-template-rows,opacity]
+                        duration-300
+                        ease-out
+
+                        ${
+                          isOpen
+                            ? `
+                              grid-rows-[1fr]
+                              opacity-100
+                            `
+                            : `
+                              grid-rows-[0fr]
+                              opacity-0
+                            `
+                        }
+                      `}
+                    >
+                      <div
+                        className="
+                          overflow-hidden
+                        "
+                      >
+                        <ul
+                          className="
+                            space-y-4
+                            pb-6
+                          "
+                        >
+                          {group.links.map(
+                            (
+                              link
+                            ) => (
+                              <li
+                                key={
+                                  link.labelKey
+                                }
+                              >
+                                <a
+                                  href={
+                                    link.href
+                                  }
+                                  className="
+                                    group
+                                    flex
+                                    items-center
+                                    gap-2.5
+                                    text-sm
+                                    text-muted-foreground
+                                    transition-colors
+                                    duration-150
+                                    hover:text-foreground
+                                  "
+                                >
+                                  {link.icon && (
+                                    <span
+                                      className="
+                                        flex
+                                        h-6
+                                        w-6
+                                        shrink-0
+                                        items-center
+                                        justify-center
+                                      "
+                                    >
+                                      <img
+                                        src={
+                                          link.icon
+                                        }
+                                        alt=""
+                                        aria-hidden="true"
+                                        className="
+                                          h-5
+                                          w-5
+                                          object-contain
+                                        "
+                                      />
+                                    </span>
+                                  )}
+
+                                  <span>
+                                    {
+                                      t(
+                                        link.labelKey
+                                      )
+                                    }
+                                  </span>
+                                </a>
+                              </li>
+                            )
+                          )}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+            )}
+          </div>
+
+          {/* ============================================================ */}
+          {/* Desktop sitemap                                              */}
+          {/* ============================================================ */}
+
+          <div
+            className="
+              hidden
               gap-x-8
               gap-y-12
-              sm:grid-cols-2
               lg:col-span-8
+              lg:grid
               lg:grid-cols-4
             "
           >
-            {footerGroups.map((group) => (
-              <div key={group.titleKey}>
-                <h3
-                  className="
-                    font-heading
-                    text-[15px]
-                    font-semibold
-                    tracking-[-0.01em]
-                    text-foreground
-                  "
+            {footerGroups.map(
+              (
+                group
+              ) => (
+                <div
+                  key={
+                    group.titleKey
+                  }
                 >
-                  {t(group.titleKey)}
-                </h3>
+                  <h3
+                    className="
+                      font-heading
+                      text-[15px]
+                      font-semibold
+                      tracking-[-0.01em]
+                      text-foreground
+                    "
+                  >
+                    {
+                      t(
+                        group.titleKey
+                      )
+                    }
+                  </h3>
 
-                <ul
-                  className="
-                    mt-6
-                    space-y-4
-                  "
-                >
-                  {group.links.map((link) => (
-                    <li key={link.labelKey}>
-                      <a
-                        href={link.href}
-                        className="
-                          group
-                          flex
-                          items-center
-                          gap-2.5
-                          text-sm
-                          text-muted-foreground
-                          transition-colors
-                          duration-150
-                          hover:text-foreground
-                        "
-                      >
-                        {link.icon && (
-                          <span
+                  <ul
+                    className="
+                      mt-6
+                      space-y-4
+                    "
+                  >
+                    {group.links.map(
+                      (
+                        link
+                      ) => (
+                        <li
+                          key={
+                            link.labelKey
+                          }
+                        >
+                          <a
+                            href={
+                              link.href
+                            }
                             className="
+                              group
                               flex
-                              h-6
-                              w-6
-                              shrink-0
                               items-center
-                              justify-center
+                              gap-2.5
+                              text-sm
+                              text-muted-foreground
+                              transition-colors
+                              duration-150
+                              hover:text-foreground
                             "
                           >
-                            <img
-                              src={link.icon}
-                              alt=""
-                              aria-hidden="true"
-                              className="
-                                h-5
-                                w-5
-                                object-contain
-                              "
-                            />
-                          </span>
-                        )}
+                            {link.icon && (
+                              <span
+                                className="
+                                  flex
+                                  h-6
+                                  w-6
+                                  shrink-0
+                                  items-center
+                                  justify-center
+                                "
+                              >
+                                <img
+                                  src={
+                                    link.icon
+                                  }
+                                  alt=""
+                                  aria-hidden="true"
+                                  className="
+                                    h-5
+                                    w-5
+                                    object-contain
+                                  "
+                                />
+                              </span>
+                            )}
 
-                        <span>
-                          {t(link.labelKey)}
-                        </span>
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+                            <span>
+                              {
+                                t(
+                                  link.labelKey
+                                )
+                              }
+                            </span>
+                          </a>
+                        </li>
+                      )
+                    )}
+                  </ul>
+                </div>
+              )
+            )}
           </div>
         </div>
 
-        {/* Compliance */}
+        {/* ============================================================ */}
+        {/* Mobile language + compliance                                */}
+        {/* ============================================================ */}
+
         <div
           className="
-    mt-20
-    flex
-    flex-wrap
-    items-center
-    gap-4
-  "
+            mt-12
+            flex
+            items-center
+            justify-between
+            gap-4
+            md:hidden
+          "
+        >
+          <LanguageSwitcher
+            compact
+          />
+
+          <div
+            className="
+              flex
+              items-center
+              gap-3
+            "
+          >
+            <a
+              href="#"
+              aria-label="HIPAA compliance"
+              className="
+                inline-flex
+                items-center
+                transition-opacity
+                duration-150
+                hover:opacity-70
+              "
+            >
+              <img
+                src="/images/footer/hipaa.svg"
+                alt="HIPAA compliant"
+                className="
+                  h-7
+                  w-auto
+                  object-contain
+                "
+              />
+            </a>
+
+            <a
+              href="#"
+              aria-label="GDPR compliance"
+              className="
+                inline-flex
+                items-center
+                transition-opacity
+                duration-150
+                hover:opacity-70
+              "
+            >
+              <img
+                src="/images/footer/gdpr.webp"
+                alt="GDPR compliant"
+                className="
+                  h-7
+                  w-auto
+                  object-contain
+                "
+              />
+            </a>
+          </div>
+        </div>
+
+        {/* ============================================================ */}
+        {/* Desktop compliance                                           */}
+        {/* ============================================================ */}
+
+        <div
+          className="
+            mt-20
+            hidden
+            flex-wrap
+            items-center
+            gap-4
+            md:flex
+          "
         >
           <a
             href="#"
             aria-label="HIPAA compliance"
             className="
-      inline-flex
-      items-center
-      transition-opacity
-      duration-150
-      hover:opacity-70
-    "
+              inline-flex
+              items-center
+              transition-opacity
+              duration-150
+              hover:opacity-70
+            "
           >
             <img
               src="/images/footer/hipaa.svg"
               alt="HIPAA compliant"
               className="
-        h-8
-        w-auto
-        object-contain
-      "
+                h-8
+                w-auto
+                object-contain
+              "
             />
           </a>
 
@@ -510,26 +844,27 @@ export function Footer() {
             href="#"
             aria-label="GDPR compliance"
             className="
-      inline-flex
-      items-center
-      transition-opacity
-      duration-150
-      hover:opacity-70
-    "
+              inline-flex
+              items-center
+              transition-opacity
+              duration-150
+              hover:opacity-70
+            "
           >
             <img
               src="/images/footer/gdpr.webp"
               alt="GDPR compliant"
               className="
-        h-8
-        w-auto
-        object-contain
-      "
+                h-8
+                w-auto
+                object-contain
+              "
             />
           </a>
         </div>
 
         {/* Bottom bar */}
+
         <div
           className="
             mt-10
@@ -545,13 +880,25 @@ export function Footer() {
           "
         >
           {/* Copyright */}
+
           <p>
-            © {new Date().getFullYear()}{' '}
-            {siteConfig.name}.{' '}
-            {t('footer.rights')}
+            ©{' '}
+            {
+              new Date().getFullYear()
+            }{' '}
+            {
+              siteConfig.name
+            }
+            .{' '}
+            {
+              t(
+                'footer.rights'
+              )
+            }
           </p>
 
           {/* Legal */}
+
           <div
             className="
               flex
@@ -562,26 +909,47 @@ export function Footer() {
               md:justify-center
             "
           >
-            {legalLinkKeys.map((link) => (
-              <a
-                key={link.labelKey}
-                href={link.href}
-                className="
-                  underline-offset-4
-                  transition-colors
-                  duration-150
-                  hover:text-foreground
-                  hover:underline
-                "
-              >
-                {t(link.labelKey)}
-              </a>
-            ))}
+            {legalLinkKeys.map(
+              (
+                link
+              ) => (
+                <a
+                  key={
+                    link.labelKey
+                  }
+                  href={
+                    link.href
+                  }
+                  className="
+                    underline-offset-4
+                    transition-colors
+                    duration-150
+                    hover:text-foreground
+                    hover:underline
+                  "
+                >
+                  {
+                    t(
+                      link.labelKey
+                    )
+                  }
+                </a>
+              )
+            )}
           </div>
 
-          {/* Language */}
-          <div className="md:justify-self-end">
-            <LanguageSwitcher compact />
+          {/* Desktop language */}
+
+          <div
+            className="
+              hidden
+              md:block
+              md:justify-self-end
+            "
+          >
+            <LanguageSwitcher
+              compact
+            />
           </div>
         </div>
       </div>

@@ -16,20 +16,19 @@ import { ServiceCard } from './ServiceCard';
 const NORMAL_SPEED = 0.5;
 const HOVER_SPEED = 0.25;
 
-/*
- * Controls how smoothly the carousel transitions
- * between normal and hover speed.
- *
- * Smaller = softer / slower transition
- * Larger = faster transition
- */
 const SPEED_EASING = 0.06;
 
 export function ServicesCarousel() {
-  const targetSpeedRef = useRef(NORMAL_SPEED);
-  const currentSpeedRef = useRef(NORMAL_SPEED);
+  const targetSpeedRef =
+    useRef(NORMAL_SPEED);
 
-  const [emblaRef, emblaApi] = useEmblaCarousel({
+  const currentSpeedRef =
+    useRef(NORMAL_SPEED);
+
+  const [
+    emblaRef,
+    emblaApi,
+  ] = useEmblaCarousel({
     loop: true,
     align: 'start',
     dragFree: true,
@@ -37,9 +36,12 @@ export function ServicesCarousel() {
   });
 
   useEffect(() => {
-    if (!emblaApi) return;
+    if (!emblaApi) {
+      return;
+    }
 
-    const engine = emblaApi.internalEngine();
+    const engine =
+      emblaApi.internalEngine();
 
     const defaultScrollBody =
       engine.scrollBody;
@@ -54,7 +56,6 @@ export function ServicesCarousel() {
       indexPrevious,
       limit: {
         reachedMin,
-        reachedMax,
         constrain,
       },
       options: {
@@ -73,104 +74,102 @@ export function ServicesCarousel() {
 
     let hasSettled = false;
 
-    const noop = (): ScrollBodyType =>
-      scrollBody;
+    const noop =
+      (): ScrollBodyType =>
+        scrollBody;
 
-    const seek = (): ScrollBodyType => {
-      /*
-       * Smoothly move the current speed toward
-       * the requested speed.
-       *
-       * This happens inside Embla's existing
-       * animation frame, so nothing restarts.
-       */
-      currentSpeedRef.current +=
-        (
-          targetSpeedRef.current -
-          currentSpeedRef.current
-        ) * SPEED_EASING;
+    const seek =
+      (): ScrollBodyType => {
+        currentSpeedRef.current +=
+          (
+            targetSpeedRef.current -
+            currentSpeedRef.current
+          ) * SPEED_EASING;
 
-      previousLocation.set(location);
-
-      /*
-       * Negative velocity moves the carousel
-       * forward, matching Embla AutoScroll.
-       */
-      bodyVelocity =
-        -currentSpeedRef.current;
-
-      rawLocation += bodyVelocity;
-
-      location.add(bodyVelocity);
-
-      target.set(location);
-
-      const directionDiff =
-        rawLocation -
-        rawLocationPrevious;
-
-      scrollDirection =
-        Math.sign(directionDiff);
-
-      rawLocationPrevious =
-        rawLocation;
-
-      /*
-       * Keep Embla's selected slide/index state
-       * synchronized while continuously moving.
-       */
-      const currentIndex =
-        scrollTarget.byDistance(
-          0,
-          false
-        ).index;
-
-      if (
-        index.get() !== currentIndex
-      ) {
-        indexPrevious.set(
-          index.get()
+        previousLocation.set(
+          location
         );
 
-        index.set(
-          currentIndex
+        bodyVelocity =
+          -currentSpeedRef.current;
+
+        rawLocation +=
+          bodyVelocity;
+
+        location.add(
+          bodyVelocity
         );
 
-        emblaApi.emit('select');
-      }
-
-      /*
-       * Safety for non-loop mode.
-       * You're using loop:true, but keeping this
-       * makes the custom scroll body complete.
-       */
-      const reachedEnd =
-        reachedMin(
-          offsetLocation.get()
+        target.set(
+          location
         );
 
-      if (
-        !loop &&
-        reachedEnd
-      ) {
-        hasSettled = true;
+        const directionDiff =
+          rawLocation -
+          rawLocationPrevious;
 
-        const constrainedLocation =
-          constrain(
-            location.get()
+        scrollDirection =
+          Math.sign(
+            directionDiff
           );
 
-        location.set(
-          constrainedLocation
-        );
+        rawLocationPrevious =
+          rawLocation;
 
-        target.set(location);
-      }
+        const currentIndex =
+          scrollTarget.byDistance(
+            0,
+            false
+          ).index;
 
-      return scrollBody;
-    };
+        if (
+          index.get() !==
+          currentIndex
+        ) {
+          indexPrevious.set(
+            index.get()
+          );
 
-    const scrollBody: ScrollBodyType = {
+          index.set(
+            currentIndex
+          );
+
+          emblaApi.emit(
+            'select'
+          );
+        }
+
+        const reachedEnd =
+          reachedMin(
+            offsetLocation.get()
+          );
+
+        if (
+          !loop &&
+          reachedEnd
+        ) {
+          hasSettled =
+            true;
+
+          const constrainedLocation =
+            constrain(
+              location.get()
+            );
+
+          location.set(
+            constrainedLocation
+          );
+
+          target.set(
+            location
+          );
+        }
+
+        return scrollBody;
+      };
+
+    const scrollBody:
+      ScrollBodyType = {
       direction: () =>
         scrollDirection,
 
@@ -184,31 +183,25 @@ export function ServicesCarousel() {
 
       seek,
 
-      useBaseFriction: noop,
+      useBaseFriction:
+        noop,
 
-      useBaseDuration: noop,
+      useBaseDuration:
+        noop,
 
-      useFriction: noop,
+      useFriction:
+        noop,
 
-      useDuration: noop,
+      useDuration:
+        noop,
     };
 
-    /*
-     * Install our continuous scroll behavior
-     * once.
-     *
-     * It is NOT recreated on hover.
-     */
     engine.scrollBody =
       scrollBody;
 
     engine.animation.start();
 
     return () => {
-      /*
-       * Restore Embla's original scroll body
-       * when this component unmounts.
-       */
       engine.scrollBody =
         defaultScrollBody;
     };
@@ -218,12 +211,12 @@ export function ServicesCarousel() {
     <section
       className="
         overflow-hidden
-        pt-12
         pb-20
-        sm:pt-14
+        pt-12
         sm:pb-24
-        lg:pt-16
+        sm:pt-14
         lg:pb-24
+        lg:pt-16
       "
     >
       {/* Header */}
@@ -239,13 +232,15 @@ export function ServicesCarousel() {
           className="
             mx-auto
             mt-4
-            max-w-none
-            whitespace-nowrap
+            max-w-[11ch]
+            text-balance
             font-heading
-            text-3xl
+            text-[2.2rem]
             font-semibold
-            leading-[1]
-            tracking-tight
+            leading-[1.15]
+            tracking-[-0.035em]
+            sm:max-w-none
+            sm:whitespace-nowrap
             sm:text-4xl
             md:text-5xl
           "
@@ -329,7 +324,7 @@ export function ServicesCarousel() {
             hover:bg-muted/70
           "
         >
-          Learn more
+          Get to know us
         </a>
       </div>
 
@@ -357,8 +352,10 @@ export function ServicesCarousel() {
           <div
             className="
               flex
-              gap-6
-              px-6
+              gap-3
+              px-3
+              sm:gap-6
+              sm:px-6
             "
           >
             {services.map(

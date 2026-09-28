@@ -79,19 +79,15 @@ const helpNavigation = [
 /* Scroll thresholds                                                          */
 /* -------------------------------------------------------------------------- */
 
-/*
- * The original transparent navbar remains attached to the page and scrolls
- * away naturally.
- *
- * Once this point is reached, the navbar becomes fixed but remains hidden
- * above the viewport.
- */
 const STICKY_START = 0;
+const STICKY_SHOW = 0;
 
 /*
- * Once the user reaches this point, the fixed navbar slides back into view.
+ * Small movements are ignored on mobile
+ * so the navbar does not flicker while
+ * the user is resting their finger.
  */
-const STICKY_SHOW = 0;
+const MOBILE_SCROLL_THRESHOLD = 5;
 
 export function Navbar() {
   const pathname =
@@ -105,6 +101,16 @@ export function Navbar() {
   const [
     stickyVisible,
     setStickyVisible,
+  ] = useState(false);
+
+  const [
+    mobileNavbarVisible,
+    setMobileNavbarVisible,
+  ] = useState(true);
+
+  const [
+    isMobileViewport,
+    setIsMobileViewport,
   ] = useState(false);
 
   const [
@@ -135,6 +141,9 @@ export function Navbar() {
         typeof setTimeout
       > | null
     >(null);
+
+  const lastScrollY =
+    useRef(0);
 
   /* ---------------------------------------------------------------------- */
   /* Route state                                                            */
@@ -191,49 +200,152 @@ export function Navbar() {
   /*
    * Normal pages retain their fixed navbar.
    *
-   * Transparent pages begin as an absolute navbar so they can naturally
-   * scroll away with the hero.
+   * Transparent pages begin as an absolute navbar
+   * and become fixed after scrolling.
    */
   const navbarIsFixed =
     !allowTransparentNavbar ||
     scrolled;
 
   /*
-   * Normal pages are always visible.
-   *
-   * Transparent pages become visible again only after passing the second
-   * scroll threshold.
+   * Existing desktop behavior.
    */
-  const navbarShouldShow =
+  const desktopNavbarShouldShow =
     !allowTransparentNavbar ||
     !scrolled ||
     stickyVisible;
+
+  /*
+   * Mobile behavior:
+   *
+   * - visible at the top
+   * - hidden while scrolling down
+   * - visible while scrolling up
+   * - forced visible whenever a mobile overlay is open
+   *
+   * Desktop continues using the original behavior.
+   */
+  const navbarShouldShow =
+    isMobileViewport
+      ? (
+          mobileNavbarVisible ||
+          open ||
+          searchOpen ||
+          settingsOpen
+        )
+      : desktopNavbarShouldShow;
+
+  /* ---------------------------------------------------------------------- */
+  /* Mobile viewport                                                        */
+  /* ---------------------------------------------------------------------- */
+
+  useEffect(() => {
+    const mediaQuery =
+      window.matchMedia(
+        '(max-width: 767px)'
+      );
+
+    const updateViewport = () => {
+      const mobile =
+        mediaQuery.matches;
+
+      setIsMobileViewport(
+        mobile
+      );
+
+      /*
+       * When moving from mobile back
+       * to desktop, make sure mobile
+       * visibility state cannot leave
+       * the navbar hidden.
+       */
+      if (!mobile) {
+        setMobileNavbarVisible(
+          true
+        );
+      }
+    };
+
+    updateViewport();
+
+    mediaQuery.addEventListener(
+      'change',
+      updateViewport
+    );
+
+    return () => {
+      mediaQuery.removeEventListener(
+        'change',
+        updateViewport
+      );
+    };
+  }, []);
 
   /* ---------------------------------------------------------------------- */
   /* Scroll state                                                           */
   /* ---------------------------------------------------------------------- */
 
   useEffect(() => {
+    lastScrollY.current =
+      window.scrollY;
+
     const onScroll = () => {
       const scrollY =
         window.scrollY;
 
+      const previousScrollY =
+        lastScrollY.current;
+
+      const scrollDifference =
+        scrollY -
+        previousScrollY;
+
       /*
-       * Start sticky mode after the original navbar has already naturally
-       * scrolled beyond the viewport.
+       * Keep the existing desktop
+       * sticky behavior unchanged.
        */
       setScrolled(
         scrollY > STICKY_START
       );
 
-      /*
-       * Add a small dead zone before revealing the sticky navbar. This
-       * prevents the navbar from appearing immediately after switching from
-       * absolute to fixed.
-       */
       setStickyVisible(
         scrollY > STICKY_SHOW
       );
+
+      /*
+       * Mobile:
+       *
+       * Scroll down  -> hide
+       * Scroll up    -> show
+       * Near top     -> always show
+       */
+      if (
+        window.innerWidth <
+        768
+      ) {
+        if (scrollY <= 8) {
+          setMobileNavbarVisible(
+            true
+          );
+        } else if (
+          scrollDifference >
+          MOBILE_SCROLL_THRESHOLD
+        ) {
+          setMobileNavbarVisible(
+            false
+          );
+        } else if (
+          scrollDifference <
+          -MOBILE_SCROLL_THRESHOLD
+        ) {
+          setMobileNavbarVisible(
+            true
+          );
+        }
+      }
+
+      lastScrollY.current =
+        scrollY;
     };
 
     onScroll();
@@ -263,6 +375,13 @@ export function Navbar() {
     setActiveMega(null);
     setSearchOpen(false);
     setSettingsOpen(false);
+
+    setMobileNavbarVisible(
+      true
+    );
+
+    lastScrollY.current =
+      window.scrollY;
   }, [pathname]);
 
   /* ---------------------------------------------------------------------- */

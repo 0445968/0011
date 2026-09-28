@@ -20,8 +20,8 @@ export function ServiceCard({
         group
         relative
         block
-        h-[345px]
-        w-[260px]
+        h-[300px]
+        w-[220px]
         shrink-0
         cursor-grab
         select-none
@@ -43,7 +43,7 @@ export function ServiceCard({
         fill
         draggable={false}
         sizes="
-          (max-width: 640px) 260px,
+          (max-width: 640px) 220px,
           (max-width: 768px) 280px,
           (max-width: 1024px) 310px,
           330px
@@ -65,11 +65,12 @@ export function ServiceCard({
           absolute
           inset-x-0
           bottom-0
-          h-48
+          h-40
           bg-gradient-to-t
           from-black/90
           via-black/50
           to-transparent
+          sm:h-48
         "
       />
 
@@ -81,17 +82,20 @@ export function ServiceCard({
           inset-x-0
           bottom-0
           z-10
-          p-6
+          p-5
+          sm:p-6
           md:p-7
         "
       >
         <h3
           className="
             font-heading
-            text-xl
+            text-lg
             font-semibold
+            leading-[1.05]
             tracking-tight
             text-white
+            sm:text-xl
             md:text-2xl
           "
         >

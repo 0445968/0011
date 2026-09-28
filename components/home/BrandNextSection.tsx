@@ -1,7 +1,12 @@
 'use client';
 
 import Image from 'next/image';
-import { useState } from 'react';
+
+import {
+  useRef,
+  useState,
+} from 'react';
+
 import {
   ArrowUpRight,
   Check,
@@ -190,11 +195,122 @@ const tabs = [
   },
 ];
 
+const SWIPE_THRESHOLD = 55;
+
 export function BrandNextSection() {
-  const [activeId, setActiveId] = useState('launch');
+  const [
+    activeId,
+    setActiveId,
+  ] = useState('launch');
+
+  const touchStartX =
+    useRef<number | null>(null);
+
+  const touchStartY =
+    useRef<number | null>(null);
+
+  const activeIndex =
+    tabs.findIndex(
+      (tab) =>
+        tab.id === activeId
+    );
 
   const activeTab =
-    tabs.find((tab) => tab.id === activeId) ?? tabs[0];
+    tabs[activeIndex] ??
+    tabs[0];
+
+  const goToTab = (
+    index: number
+  ) => {
+    if (
+      index < 0 ||
+      index >= tabs.length
+    ) {
+      return;
+    }
+
+    setActiveId(
+      tabs[index].id
+    );
+  };
+
+  const handleTouchStart = (
+    event: React.TouchEvent<HTMLDivElement>
+  ) => {
+    const touch =
+      event.touches[0];
+
+    touchStartX.current =
+      touch.clientX;
+
+    touchStartY.current =
+      touch.clientY;
+  };
+
+  const handleTouchEnd = (
+    event: React.TouchEvent<HTMLDivElement>
+  ) => {
+    if (
+      touchStartX.current ===
+        null ||
+      touchStartY.current ===
+        null
+    ) {
+      return;
+    }
+
+    const touch =
+      event.changedTouches[0];
+
+    const deltaX =
+      touch.clientX -
+      touchStartX.current;
+
+    const deltaY =
+      touch.clientY -
+      touchStartY.current;
+
+    touchStartX.current =
+      null;
+
+    touchStartY.current =
+      null;
+
+    /*
+     * Ignore mostly vertical gestures
+     * so normal page scrolling still works.
+     */
+    if (
+      Math.abs(deltaY) >
+      Math.abs(deltaX)
+    ) {
+      return;
+    }
+
+    if (
+      Math.abs(deltaX) <
+      SWIPE_THRESHOLD
+    ) {
+      return;
+    }
+
+    /*
+     * Swipe left -> next
+     */
+    if (deltaX < 0) {
+      goToTab(
+        activeIndex + 1
+      );
+      return;
+    }
+
+    /*
+     * Swipe right -> previous
+     */
+    goToTab(
+      activeIndex - 1
+    );
+  };
 
   return (
     <section
@@ -202,12 +318,12 @@ export function BrandNextSection() {
         relative
         overflow-hidden
         bg-background
+        pb-14
         pt-12
-pb-14
-sm:pt-14
-sm:pb-16
-lg:pt-16
-lg:pb-20
+        sm:pb-16
+        sm:pt-14
+        lg:pb-20
+        lg:pt-16
       "
     >
       <div className="container-page">
@@ -266,57 +382,78 @@ lg:pb-20
             sm:mt-12
           "
         >
-          {tabs.map((tab) => {
-            const isActive = activeId === tab.id;
+          {tabs.map(
+            (tab) => {
+              const isActive =
+                activeId ===
+                tab.id;
 
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveId(tab.id)}
-                className={`
-  rounded-full
-  border
-  border-dashed
-  px-4
-  py-2
-  font-mono
-  text-xs
-  font-medium
-  uppercase
-  tracking-[0.08em]
-                  transition-colors
-                  duration-200
-                  ${isActive
-                    ? `
-                        border-primary
-                        bg-primary/5
-                        text-primary
-                      `
-                    : `
-                        border-border
-                        bg-background
-                        text-muted-foreground
-                        hover:border-foreground/30
-                        hover:text-foreground
-                      `
+              return (
+                <button
+                  key={
+                    tab.id
                   }
-                `}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
+                  type="button"
+                  onClick={() =>
+                    setActiveId(
+                      tab.id
+                    )
+                  }
+                  className={`
+                    rounded-full
+                    border
+                    border-dashed
+                    px-4
+                    py-2
+                    font-mono
+                    text-xs
+                    font-medium
+                    uppercase
+                    tracking-[0.08em]
+                    transition-colors
+                    duration-200
+
+                    ${
+                      isActive
+                        ? `
+                          border-primary
+                          bg-primary/5
+                          text-primary
+                        `
+                        : `
+                          border-border
+                          bg-background
+                          text-muted-foreground
+                          hover:border-foreground/30
+                          hover:text-foreground
+                        `
+                    }
+                  `}
+                >
+                  {
+                    tab.label
+                  }
+                </button>
+              );
+            }
+          )}
         </div>
 
         {/* Main panel */}
 
         <div
+          onTouchStart={
+            handleTouchStart
+          }
+          onTouchEnd={
+            handleTouchEnd
+          }
           className="
             mt-10
+            touch-pan-y
             rounded-[28px]
             bg-muted
-            p-6
+            p-5
             sm:mt-12
             sm:p-8
             lg:p-12
@@ -325,7 +462,8 @@ lg:pb-20
           <div
             className="
               grid
-              gap-10
+              gap-8
+              sm:gap-10
               lg:grid-cols-[0.9fr_1.1fr]
               lg:items-center
               lg:gap-16
@@ -336,20 +474,23 @@ lg:pb-20
             <div>
               <p
                 className="
-    font-mono
-    text-[12px]
-    font-medium
-    uppercase
-    tracking-[0.16em]
-    text-primary
-  "
+                  font-mono
+                  text-[12px]
+                  font-medium
+                  uppercase
+                  tracking-[0.16em]
+                  text-primary
+                "
               >
-                {activeTab.label}
+                {
+                  activeTab.label
+                }
               </p>
 
               <h3
                 style={{
-                  lineHeight: '1.1',
+                  lineHeight:
+                    '1.1',
                 }}
                 className="
                   mt-4
@@ -362,7 +503,9 @@ lg:pb-20
                   lg:text-4xl
                 "
               >
-                {activeTab.title}
+                {
+                  activeTab.title
+                }
               </h3>
 
               <p
@@ -376,45 +519,60 @@ lg:pb-20
                   sm:leading-8
                 "
               >
-                {activeTab.description}
+                {
+                  activeTab.description
+                }
               </p>
 
               <div
                 className="
-                  mt-8
+                  mt-7
                   space-y-3
+                  sm:mt-8
                 "
               >
-                {activeTab.points.map((point) => (
-                  <div
-                    key={point}
-                    className="
-                      flex
-                      items-center
-                      gap-3
-                      text-sm
-                      text-foreground
-                      sm:text-base
-                    "
-                  >
-                    <span
+                {activeTab.points.map(
+                  (
+                    point
+                  ) => (
+                    <div
+                      key={
+                        point
+                      }
                       className="
                         flex
-                        h-5
-                        w-5
-                        shrink-0
                         items-center
-                        justify-center
-                        rounded-full
-                        bg-background
+                        gap-3
+                        text-sm
+                        text-foreground
+                        sm:text-base
                       "
                     >
-                      <Check size={13} />
-                    </span>
+                      <span
+                        className="
+                          flex
+                          h-5
+                          w-5
+                          shrink-0
+                          items-center
+                          justify-center
+                          rounded-full
+                          bg-background
+                        "
+                      >
+                        <Check
+                          size={
+                            13
+                          }
+                        />
+                      </span>
 
-                    {point}
-                  </div>
-                ))}
+                      {
+                        point
+                      }
+                    </div>
+                  )
+                )}
               </div>
             </div>
 
@@ -424,68 +582,92 @@ lg:pb-20
               className="
                 flex
                 flex-col
-                gap-3
+                gap-2
+                sm:gap-3
               "
             >
-              {activeTab.outputs.map((output) => (
-                <div
-                  key={output.label}
-                  className="
-                    flex
-                    min-h-[72px]
-                    items-center
-                    gap-4
-                    rounded-[16px]
-                    border
-                    border-border/60
-                    bg-background
-                    px-5
-                    py-4
-                    shadow-sm
-                    sm:px-6
-                  "
-                >
-                  {/* PNG icon */}
-
+              {activeTab.outputs.map(
+                (
+                  output
+                ) => (
                   <div
+                    key={
+                      output.label
+                    }
                     className="
                       flex
-                      h-10
-                      w-10
-                      shrink-0
+                      min-h-[54px]
                       items-center
-                      justify-center
-                      overflow-hidden
-                      rounded-[10px]
-                      bg-transparent
+                      gap-3
+                      rounded-[14px]
+                      border
+                      border-border/60
+                      bg-background
+                      px-4
+                      py-2.5
+                      shadow-sm
+                      sm:min-h-[72px]
+                      sm:gap-4
+                      sm:rounded-[16px]
+                      sm:px-6
+                      sm:py-4
                     "
                   >
-                    <Image
-                      src={output.icon}
-                      alt=""
-                      width={32}
-                      height={32}
+                    {/* PNG icon */}
+
+                    <div
                       className="
+                        flex
                         h-8
                         w-8
-                        object-contain
+                        shrink-0
+                        items-center
+                        justify-center
+                        overflow-hidden
+                        rounded-[8px]
+                        bg-transparent
+                        sm:h-10
+                        sm:w-10
+                        sm:rounded-[10px]
                       "
-                    />
-                  </div>
+                    >
+                      <Image
+                        src={
+                          output.icon
+                        }
+                        alt=""
+                        width={
+                          32
+                        }
+                        height={
+                          32
+                        }
+                        className="
+                          h-6
+                          w-6
+                          object-contain
+                          sm:h-8
+                          sm:w-8
+                        "
+                      />
+                    </div>
 
-                  <span
-                    className="
-                      font-heading
-                      text-base
-                      font-semibold
-                      tracking-tight
-                      sm:text-lg
-                    "
-                  >
-                    {output.label}
-                  </span>
-                </div>
-              ))}
+                    <span
+                      className="
+                        font-heading
+                        text-[15px]
+                        font-semibold
+                        tracking-tight
+                        sm:text-lg
+                      "
+                    >
+                      {
+                        output.label
+                      }
+                    </span>
+                  </div>
+                )
+              )}
 
               <a
                 href="/process"
@@ -510,11 +692,65 @@ lg:pb-20
                 Explore how we work
 
                 <ArrowUpRight
-                  size={16}
+                  size={
+                    16
+                  }
                   className="shrink-0"
                 />
               </a>
             </div>
+          </div>
+
+          {/* Mobile swipe indicator */}
+
+          <div
+            className="
+              mt-5
+              flex
+              items-center
+              justify-center
+              gap-1.5
+              sm:hidden
+            "
+          >
+            {tabs.map(
+              (
+                tab,
+                index
+              ) => (
+                <button
+                  key={
+                    tab.id
+                  }
+                  type="button"
+                  aria-label={`Go to ${tab.label}`}
+                  onClick={() =>
+                    goToTab(
+                      index
+                    )
+                  }
+                  className={`
+                    h-1.5
+                    rounded-full
+                    transition-all
+                    duration-300
+
+                    ${
+                      activeIndex ===
+                      index
+                        ? `
+                          w-5
+                          bg-primary
+                        `
+                        : `
+                          w-1.5
+                          bg-foreground/20
+                        `
+                    }
+                  `}
+                />
+              )
+            )}
           </div>
         </div>
       </div>
