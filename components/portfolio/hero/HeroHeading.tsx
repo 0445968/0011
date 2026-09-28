@@ -12,17 +12,51 @@ const transitionEase = [
 export function HeroHeading() {
   return (
     <>
+      {/* Eyebrow */}
+
+      <motion.p
+        initial={{
+          opacity: 0,
+          y: 14,
+        }}
+        animate={{
+          opacity: 1,
+          y: 0,
+        }}
+        transition={{
+          duration: 0.65,
+          ease: transitionEase,
+        }}
+        className="
+          font-mono
+          text-[11px]
+          font-semibold
+          uppercase
+          tracking-[0.22em]
+          text-[#BBFF1B]
+          sm:text-xs
+        "
+      >
+        Brand strategy & design
+      </motion.p>
+
       {/* Heading */}
+
       <h1
         className="
-          max-w-none
+          mt-6
+          max-w-[14ch]
           text-balance
-          font-serif
-          text-[clamp(2.4rem,4.2vw,5.25rem)]
+          font-heading
+          text-[2.35rem]
           font-medium
-          leading-[0.94]
-          tracking-[-0.055em]
+          leading-[0.98]
+          tracking-[-0.045em]
           text-white
+          sm:text-[3rem]
+          md:text-[3.6rem]
+          lg:text-[4.15rem]
+          xl:max-w-none
           xl:whitespace-nowrap
         "
       >
@@ -78,18 +112,14 @@ export function HeroHeading() {
             delay: 0.44,
             ease: transitionEase,
           }}
-          className="
-            inline
-            font-normal
-            italic
-            text-muted/80
-          "
+          className="inline"
         >
-          forward.
+          onward
         </motion.span>
       </h1>
 
       {/* Description */}
+
       <motion.p
         initial={{
           opacity: 0,
@@ -107,19 +137,17 @@ export function HeroHeading() {
         className="
           mt-7
           max-w-2xl
-          text-[15px]
+          text-balance
+          text-base
           leading-7
-          text-white/90
-          sm:text-[17px]
+          text-white/70
+          sm:text-lg
           sm:leading-8
         "
       >
-        From strategic brand systems to thoughtful digital tools,
+        From helpful brand systems to thoughtful digital tools,
         <br className="hidden sm:block" />
-        we build the pieces that help your brand{' '}
-        <span className="font-bold">
-          grow with confidence.
-        </span>
+        we build the pieces that help your brand grow with confidence.
       </motion.p>
     </>
   );

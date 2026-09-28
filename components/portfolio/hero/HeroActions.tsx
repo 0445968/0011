@@ -48,7 +48,7 @@ export function HeroActions({
         "
       >
         {/* Get Started */}
-        <div className="relative w-full sm:w-auto">
+        <div className="relative w-auto">
           {/* Pulse */}
           {hasSelectedOptions && (
             <span
@@ -67,24 +67,25 @@ export function HeroActions({
           <a
             href={getStartedHref}
             className="
-              relative
-              z-10
-              inline-flex
-              h-[52px]
-              w-full
-              items-center
-              justify-center
-              gap-2
-              rounded-[14px]
-              bg-[#BBFF1B]
-              px-8
-              text-[16px]
-              font-bold
-              leading-none
-              text-black
-              hover:bg-[#BBFF1B]/90
-              sm:w-auto
-            "
+  relative
+  z-10
+  inline-flex
+  h-12
+  w-auto
+  items-center
+  justify-center
+  gap-2
+  rounded-[14px]
+  bg-[#BBFF1B]
+  px-5
+  text-[15px]
+  font-bold
+  leading-none
+  text-black
+  hover:bg-[#BBFF1B]/90
+  sm:px-8
+  sm:text-[16px]
+"
           >
             Get Started
 

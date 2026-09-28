@@ -59,7 +59,6 @@
     "embla-carousel": "^8.6.0",
     "embla-carousel-auto-scroll": "^8.6.0",
     "embla-carousel-react": "^8.6.0",
-    "eslint": "8.49.0",
     "eslint-config-next": "13.5.1",
     "framer-motion": "^12.42.2",
     "input-otp": "^1.2.4",
@@ -83,5 +82,8 @@
     "typescript": "5.2.2",
     "vaul": "^0.9.9",
     "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.1"
   }
 }

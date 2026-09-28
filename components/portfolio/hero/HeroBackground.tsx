@@ -1,34 +1,39 @@
-const BACKGROUND_VIDEO =
-  '/images/hero/hero-background.mp4';
+import Image from 'next/image';
+
+const BACKGROUND_IMAGE =
+  '/images/hero/hero-background.jpg';
 
 export function HeroBackground() {
   return (
     <>
-      {/* Background video */}
-      <div className="absolute inset-0 -z-30">
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="auto"
+      {/* Background image */}
+      <div
+        className="
+          absolute
+          inset-0
+          -z-30
+        "
+      >
+        <Image
+          src={BACKGROUND_IMAGE}
+          alt=""
+          fill
+          priority
+          sizes="100vw"
           className="
-            h-full
-            w-full
             object-cover
-            object-center
           "
-        >
-          <source
-            src={BACKGROUND_VIDEO}
-            type="video/mp4"
-          />
-        </video>
+          style={{
+            objectPosition: 'center bottom',
+          }}
+        />
       </div>
 
       {/* Black fade */}
       <div
+        aria-hidden="true"
         className="
+          pointer-events-none
           absolute
           inset-0
           -z-20
@@ -41,6 +46,7 @@ export function HeroBackground() {
 
       {/* Texture */}
       <div
+        aria-hidden="true"
         className="
           grid-noise
           pointer-events-none

@@ -13,6 +13,15 @@ interface ProjectCustomizerProps {
   onToggle: (id: string) => void;
 }
 
+const MOBILE_OPTIONS = [
+  'brand strategy',
+  'creative direction',
+  'concept creation',
+  'graphic design',
+  'social media management',
+  'web & digital',
+];
+
 export function ProjectCustomizer({
   options,
   selectedOptions,
@@ -30,6 +39,7 @@ export function ProjectCustomizer({
       "
     >
       {/* Label */}
+
       <p
         className="
           mb-4
@@ -38,7 +48,7 @@ export function ProjectCustomizer({
           font-medium
           uppercase
           tracking-[0.22em]
-          text-[#BBFF1B]
+          text-white
           sm:text-[11px]
         "
       >
@@ -46,6 +56,7 @@ export function ProjectCustomizer({
       </p>
 
       {/* Options */}
+
       <div
         className="
           flex
@@ -60,15 +71,23 @@ export function ProjectCustomizer({
           const isSelected =
             selectedOptions.includes(option.id);
 
+          const showOnMobile =
+            MOBILE_OPTIONS.includes(
+              option.label
+                .trim()
+                .toLowerCase()
+            );
+
           return (
             <button
               key={option.id}
               type="button"
               aria-pressed={isSelected}
-              onClick={() => onToggle(option.id)}
+              onClick={() =>
+                onToggle(option.id)
+              }
               className={`
                 relative
-                inline-flex
                 h-[42px]
                 items-center
                 justify-center
@@ -80,6 +99,12 @@ export function ProjectCustomizer({
                 leading-none
 
                 active:scale-[0.98]
+
+                ${
+                  showOnMobile
+                    ? 'inline-flex'
+                    : 'hidden sm:inline-flex'
+                }
 
                 ${
                   isSelected
