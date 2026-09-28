@@ -53,24 +53,24 @@ export function BrandComparison() {
         {/* Header */}
         <div className="mx-auto max-w-4xl text-center">
           <h2
-            style={{
-              lineHeight: '1.15',
-            }}
-            className="
-              text-balance
-              font-heading
-              text-3xl
-              font-semibold
-              tracking-[-0.045em]
-              text-foreground
-              sm:text-4xl
-              lg:text-5xl
-            "
-          >
-            Growing a strong business
-            <br />
-            requires the right support
-          </h2>
+          style={{
+    lineHeight: 1.15,
+  }}
+  className="
+    text-balance
+    font-heading
+    text-[2.2rem]
+    font-semibold
+    tracking-[-0.035em]
+    text-foreground
+    sm:text-4xl
+    lg:text-5xl
+  "
+>
+  Growing a strong business
+  <br />
+  requires the right support
+</h2>
 
           <p
             className="

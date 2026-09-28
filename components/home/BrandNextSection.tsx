@@ -337,20 +337,20 @@ export function BrandNextSection() {
           "
         >
           <h2
-            style={{
-              lineHeight: '1.15',
-            }}
-            className="
-              font-heading
-              text-3xl
-              font-semibold
-              tracking-tight
-              sm:text-4xl
-              md:text-5xl
-            "
-          >
-            Turn the next chapter into your best one yet
-          </h2>
+          style={{
+    lineHeight: 1.15,
+  }}
+  className="
+    font-heading
+    text-[2.2rem]
+    font-semibold
+    tracking-[-0.035em]
+    sm:text-4xl
+    md:text-5xl
+  "
+>
+  Turn the next chapter into your best one yet
+</h2>
 
           <p
             className="
@@ -591,81 +591,69 @@ export function BrandNextSection() {
                   output
                 ) => (
                   <div
-                    key={
-                      output.label
-                    }
-                    className="
-                      flex
-                      min-h-[54px]
-                      items-center
-                      gap-3
-                      rounded-[14px]
-                      border
-                      border-border/60
-                      bg-background
-                      px-4
-                      py-2.5
-                      shadow-sm
-                      sm:min-h-[72px]
-                      sm:gap-4
-                      sm:rounded-[16px]
-                      sm:px-6
-                      sm:py-4
-                    "
-                  >
-                    {/* PNG icon */}
+  key={output.label}
+  className="
+    flex
+    min-h-[44px]
+    items-center
+    gap-2
+    rounded-[12px]
+    border
+    border-border/60
+    bg-background
+    px-3
+    py-2
+    shadow-sm
+    sm:min-h-[72px]
+    sm:gap-4
+    sm:rounded-[16px]
+    sm:px-6
+    sm:py-4
+  "
+>
+  <div
+    className="
+      flex
+      h-7
+      w-7
+      shrink-0
+      items-center
+      justify-center
+      overflow-hidden
+      rounded-[7px]
+      bg-transparent
+      sm:h-10
+      sm:w-10
+      sm:rounded-[10px]
+    "
+  >
+    <Image
+      src={output.icon}
+      alt=""
+      width={32}
+      height={32}
+      className="
+        h-5
+        w-5
+        object-contain
+        sm:h-8
+        sm:w-8
+      "
+    />
+  </div>
 
-                    <div
-                      className="
-                        flex
-                        h-8
-                        w-8
-                        shrink-0
-                        items-center
-                        justify-center
-                        overflow-hidden
-                        rounded-[8px]
-                        bg-transparent
-                        sm:h-10
-                        sm:w-10
-                        sm:rounded-[10px]
-                      "
-                    >
-                      <Image
-                        src={
-                          output.icon
-                        }
-                        alt=""
-                        width={
-                          32
-                        }
-                        height={
-                          32
-                        }
-                        className="
-                          h-6
-                          w-6
-                          object-contain
-                          sm:h-8
-                          sm:w-8
-                        "
-                      />
-                    </div>
-
-                    <span
-                      className="
-                        font-heading
-                        text-[15px]
-                        font-semibold
-                        tracking-tight
-                        sm:text-lg
-                      "
-                    >
-                      {
-                        output.label
-                      }
-                    </span>
-                  </div>
+  <span
+    className="
+      font-heading
+      text-[13px]
+      font-semibold
+      tracking-tight
+      sm:text-lg
+    "
+  >
+    {output.label}
+  </span>
+</div>
                 )
               )}
 
@@ -705,7 +693,7 @@ export function BrandNextSection() {
 
           <div
             className="
-              mt-5
+              mt-8
               flex
               items-center
               justify-center
@@ -740,7 +728,7 @@ export function BrandNextSection() {
                       index
                         ? `
                           w-5
-                          bg-primary
+                          bg-foreground/50
                         `
                         : `
                           w-1.5

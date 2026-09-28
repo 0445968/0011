@@ -64,42 +64,42 @@ export function BrandStrategyProblem() {
           "
         >
           <motion.h2
-            initial={{
-              opacity: 0,
-              y: 18,
-            }}
-            whileInView={{
-              opacity: 1,
-              y: 0,
-            }}
-            viewport={{
-              once: true,
-              amount: 0.5,
-            }}
-            transition={{
-              duration: 0.65,
-              delay: 0.08,
-              ease: transitionEase,
-            }}
-            style={{
-              lineHeight: '1.15',
-            }}
-            className="
-              mx-auto
-              mt-4
-              max-w-5xl
-              font-heading
-              text-3xl
-              font-semibold
-              tracking-tight
-              sm:text-4xl
-              md:text-5xl
-            "
-          >
-            94% of brands fail to make
-            <br />
-            their value unmistakable
-          </motion.h2>
+  initial={{
+    opacity: 0,
+    y: 18,
+  }}
+  whileInView={{
+    opacity: 1,
+    y: 0,
+  }}
+  viewport={{
+    once: true,
+    amount: 0.5,
+  }}
+  transition={{
+    duration: 0.65,
+    delay: 0.08,
+    ease: transitionEase,
+  }}
+  style={{
+    lineHeight: 1.15,
+  }}
+  className="
+    mx-auto
+    mt-4
+    max-w-5xl
+    font-heading
+    text-[2.2rem]
+    font-semibold
+    tracking-[-0.035em]
+    sm:text-4xl
+    md:text-5xl
+  "
+>
+  94% of brands fail to make
+  <br />
+  their value unmistakable
+</motion.h2>
 
           <motion.p
             initial={{

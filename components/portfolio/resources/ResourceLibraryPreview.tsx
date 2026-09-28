@@ -39,20 +39,23 @@ export function ResourceLibraryPreview() {
 
           <Reveal delay={0.1}>
             <h2
-              className="
-                mt-4
-                text-balance
-                font-heading
-                text-3xl
-                font-semibold
-                leading-[1]
-                tracking-tight
-                sm:text-4xl
-                md:text-5xl
-              "
-            >
-              Resources for your next move
-            </h2>
+            style={{
+    lineHeight: 1.15,
+  }}
+  className="
+    mt-4
+    text-balance
+    font-heading
+    text-[2.2rem]
+    font-semibold
+    leading-[1.15]
+    tracking-[-0.035em]
+    sm:text-4xl
+    md:text-5xl
+  "
+>
+  Resources for your next move
+</h2>
           </Reveal>
 
           <Reveal delay={0.2}>
