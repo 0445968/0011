@@ -12,184 +12,266 @@ import {
   Check,
 } from 'lucide-react';
 
-const tabs = [
+import {
+  BrandNextMobile,
+  type BrandNextTab,
+} from './BrandNextMobile';
+
+const tabs: BrandNextTab[] = [
   {
     id: 'launch',
     label: 'Launch',
-    title: 'Start with a brand built to move',
+    title:
+      'Start with a brand built to move',
     description:
       'Turn a strong idea into a clear foundation that gives your launch more focus, confidence, and consistency.',
+
+    backgroundImage:
+      '/images/brand-next/cards/launch.jpg',
+
+    overlayColor: '#DFA100',
+
     points: [
       'Define your positioning',
       'Clarify your core message',
       'Build a recognizable identity',
     ],
+
     outputs: [
       {
         label: 'Positioning',
-        icon: '/images/brand-next/positioning.png',
+        icon:
+          '/images/brand-next/positioning.png',
       },
       {
         label: 'Messaging',
-        icon: '/images/brand-next/messaging.png',
+        icon:
+          '/images/brand-next/messaging.png',
       },
       {
         label: 'Visual direction',
-        icon: '/images/brand-next/visual-direction.png',
+        icon:
+          '/images/brand-next/visual-direction.png',
       },
       {
         label: 'Launch system',
-        icon: '/images/brand-next/launch-system.png',
+        icon:
+          '/images/brand-next/launch-system.png',
       },
     ],
   },
+
   {
     id: 'clarify',
     label: 'Clarify',
-    title: 'Make your value unmistakable',
+    title:
+      'Make your value unmistakable',
     description:
       'Turn what makes your business different into a focused story people can understand, remember, and choose.',
+
+    backgroundImage:
+      '/images/brand-next/cards/clarify.jpg',
+
+    overlayColor: '#382207',
+
     points: [
       'Sharpen your positioning',
       'Clarify your value',
       'Define what sets you apart',
     ],
+
     outputs: [
       {
         label: 'Audience',
-        icon: '/images/brand-next/audience.png',
+        icon:
+          '/images/brand-next/audience.png',
       },
       {
         label: 'Positioning',
-        icon: '/images/brand-next/positioning.png',
+        icon:
+          '/images/brand-next/positioning.png',
       },
       {
         label: 'Messaging',
-        icon: '/images/brand-next/messaging.png',
+        icon:
+          '/images/brand-next/messaging.png',
       },
       {
         label: 'Brand direction',
-        icon: '/images/brand-next/brand-direction.png',
+        icon:
+          '/images/brand-next/brand-direction.png',
       },
     ],
   },
+
   {
     id: 'grow',
     label: 'Grow',
-    title: 'Build a brand that grows with you',
+    title:
+      'Build a brand that grows with you',
     description:
       'Create a stronger system around your brand so every new touchpoint feels connected, consistent, and intentional.',
+
+    backgroundImage:
+      '/images/brand-next/cards/grow.jpg',
+
+    overlayColor: '#113E52',
+
     points: [
       'Strengthen brand consistency',
       'Create scalable systems',
       'Support new channels',
     ],
+
     outputs: [
       {
         label: 'Brand system',
-        icon: '/images/brand-next/brand-system.png',
+        icon:
+          '/images/brand-next/brand-system.png',
       },
       {
         label: 'Design language',
-        icon: '/images/brand-next/design-language.png',
+        icon:
+          '/images/brand-next/design-language.png',
       },
       {
         label: 'Campaign direction',
-        icon: '/images/brand-next/campaign-direction.png',
+        icon:
+          '/images/brand-next/campaign-direction.png',
       },
       {
         label: 'Digital experience',
-        icon: '/images/brand-next/digital-experience.png',
+        icon:
+          '/images/brand-next/digital-experience.png',
       },
     ],
   },
+
   {
     id: 'reposition',
     label: 'Reposition',
-    title: 'Change how people see the business',
+    title:
+      'Change how people see the business',
     description:
       'When the company has evolved beyond its original story, we help redefine the position and bring the brand with it.',
+
+    backgroundImage:
+      '/images/brand-next/cards/reposition.jpg',
+
+    overlayColor: '#271412',
+
     points: [
       'Reframe your position',
       'Update your message',
       'Align identity with direction',
     ],
+
     outputs: [
       {
         label: 'Market position',
-        icon: '/images/brand-next/market-position.png',
+        icon:
+          '/images/brand-next/market-position.png',
       },
       {
         label: 'Value proposition',
-        icon: '/images/brand-next/value-proposition.png',
+        icon:
+          '/images/brand-next/value-proposition.png',
       },
       {
         label: 'Narrative',
-        icon: '/images/brand-next/narrative.png',
+        icon:
+          '/images/brand-next/narrative.png',
       },
       {
         label: 'Identity direction',
-        icon: '/images/brand-next/identity-direction.png',
+        icon:
+          '/images/brand-next/identity-direction.png',
       },
     ],
   },
+
   {
     id: 'unify',
     label: 'Unify',
-    title: 'Bring every part of the brand together',
+    title:
+      'Bring every part of the brand together',
     description:
       'Replace disconnected decisions with one clear system your team can use across messaging, design, and experience.',
+
+    backgroundImage:
+      '/images/brand-next/cards/unify.jpg',
+
+    overlayColor: '#3F6DB3',
+
     points: [
       'Align teams around one idea',
       'Create consistent messaging',
       'Unify visual execution',
     ],
+
     outputs: [
       {
         label: 'Brand principles',
-        icon: '/images/brand-next/brand-principles.png',
+        icon:
+          '/images/brand-next/brand-principles.png',
       },
       {
         label: 'Messaging system',
-        icon: '/images/brand-next/messaging-system.png',
+        icon:
+          '/images/brand-next/messaging-system.png',
       },
       {
         label: 'Visual system',
-        icon: '/images/brand-next/visual-system.png',
+        icon:
+          '/images/brand-next/visual-system.png',
       },
       {
         label: 'Guidelines',
-        icon: '/images/brand-next/guidelines.png',
+        icon:
+          '/images/brand-next/guidelines.png',
       },
     ],
   },
+
   {
     id: 'evolve',
     label: 'Evolve',
-    title: 'Move forward without losing what works',
+    title:
+      'Move forward without losing what works',
     description:
       'Refine the parts of your brand that feel dated while protecting the recognition and equity you have already built.',
+
+    backgroundImage:
+      '/images/brand-next/cards/evolve.jpg',
+
+    overlayColor: '#2C2B2B',
+
     points: [
       'Keep what still matters',
       'Modernize the expression',
       'Create room to evolve',
     ],
+
     outputs: [
       {
         label: 'Brand audit',
-        icon: '/images/brand-next/brand-audit.png',
+        icon:
+          '/images/brand-next/brand-audit.png',
       },
       {
         label: 'Creative direction',
-        icon: '/images/brand-next/creative-direction.png',
+        icon:
+          '/images/brand-next/creative-direction.png',
       },
       {
         label: 'Identity refinement',
-        icon: '/images/brand-next/identity-refinement.png',
+        icon:
+          '/images/brand-next/identity-refinement.png',
       },
       {
         label: 'Updated system',
-        icon: '/images/brand-next/updated-system.png',
+        icon:
+          '/images/brand-next/updated-system.png',
       },
     ],
   },
@@ -276,10 +358,6 @@ export function BrandNextSection() {
     touchStartY.current =
       null;
 
-    /*
-     * Ignore mostly vertical gestures
-     * so normal page scrolling still works.
-     */
     if (
       Math.abs(deltaY) >
       Math.abs(deltaX)
@@ -294,105 +372,120 @@ export function BrandNextSection() {
       return;
     }
 
-    /*
-     * Swipe left -> next
-     */
     if (deltaX < 0) {
       goToTab(
         activeIndex + 1
       );
+
       return;
     }
 
-    /*
-     * Swipe right -> previous
-     */
     goToTab(
       activeIndex - 1
     );
   };
 
   return (
-    <section
-      className="
-        relative
-        overflow-hidden
-        bg-background
-        pb-14
-        pt-12
-        sm:pb-16
-        sm:pt-14
-        lg:pb-20
-        lg:pt-16
-      "
-    >
-      <div className="container-page">
-        {/* Header */}
+    <>
+      {/* ============================================================ */}
+      {/* Mobile / small screens                                      */}
+      {/* ============================================================ */}
 
-        <div
-          className="
-            mx-auto
-            max-w-4xl
-            text-center
-          "
-        >
-          <h2
-          style={{
-    lineHeight: 1.15,
-  }}
-  className="
-    font-heading
-    text-[2.2rem]
-    font-semibold
-    tracking-[-0.035em]
-    sm:text-4xl
-    md:text-5xl
-  "
->
-  Turn the next chapter into your best one yet
-</h2>
+      <BrandNextMobile
+        tabs={tabs}
+        activeTab={
+          activeTab
+        }
+        activeId={activeId}
+        activeIndex={
+          activeIndex
+        }
+        setActiveId={
+          setActiveId
+        }
+        goToTab={goToTab}
+        handleTouchStart={
+          handleTouchStart
+        }
+        handleTouchEnd={
+          handleTouchEnd
+        }
+      />
 
-          <p
+      {/* ============================================================ */}
+      {/* Desktop / md and up                                         */}
+      {/* ============================================================ */}
+
+      <section
+        className="
+          relative
+          hidden
+          overflow-hidden
+          bg-background
+          pb-20
+          pt-16
+          md:block
+        "
+      >
+        <div className="container-page">
+          {/* Header */}
+
+          <div
             className="
               mx-auto
-              mt-5
-              max-w-2xl
-              text-base
-              leading-7
-              text-muted-foreground
-              sm:text-lg
-              sm:leading-8
+              max-w-4xl
+              text-center
             "
           >
-            Wherever your brand is headed,
-            Bivi transforms challenges into success.
-          </p>
-        </div>
+            <h2
+              style={{
+                lineHeight: 1.15,
+              }}
+              className="
+                font-heading
+                text-5xl
+                font-semibold
+                tracking-[-0.035em]
+              "
+            >
+              Turn the next chapter into your best one yet
+            </h2>
 
-        {/* Tabs */}
+            <p
+              className="
+                mx-auto
+                mt-5
+                max-w-2xl
+                text-lg
+                leading-8
+                text-muted-foreground
+              "
+            >
+              Wherever your brand is headed, Bivi transforms
+              challenges into success.
+            </p>
+          </div>
 
-        <div
-          className="
-            mt-10
-            flex
-            flex-wrap
-            items-center
-            justify-center
-            gap-2
-            sm:mt-12
-          "
-        >
-          {tabs.map(
-            (tab) => {
+          {/* Tabs */}
+
+          <div
+            className="
+              mt-12
+              flex
+              flex-wrap
+              items-center
+              justify-center
+              gap-2
+            "
+          >
+            {tabs.map((tab) => {
               const isActive =
                 activeId ===
                 tab.id;
 
               return (
                 <button
-                  key={
-                    tab.id
-                  }
+                  key={tab.id}
                   type="button"
                   onClick={() =>
                     setActiveId(
@@ -430,318 +523,232 @@ export function BrandNextSection() {
                     }
                   `}
                 >
-                  {
-                    tab.label
-                  }
+                  {tab.label}
                 </button>
               );
-            }
-          )}
-        </div>
+            })}
+          </div>
 
-        {/* Main panel */}
+          {/* Main panel */}
 
-        <div
-          onTouchStart={
-            handleTouchStart
-          }
-          onTouchEnd={
-            handleTouchEnd
-          }
-          className="
-            mt-10
-            touch-pan-y
-            rounded-[28px]
-            bg-muted
-            p-5
-            sm:mt-12
-            sm:p-8
-            lg:p-12
-          "
-        >
           <div
             className="
-              grid
-              gap-8
-              sm:gap-10
-              lg:grid-cols-[0.9fr_1.1fr]
-              lg:items-center
-              lg:gap-16
+              mt-12
+              rounded-[28px]
+              bg-muted
+              p-8
+              lg:p-12
             "
           >
-            {/* Left content */}
+            <div
+              className="
+                grid
+                gap-10
+                lg:grid-cols-[0.9fr_1.1fr]
+                lg:items-center
+                lg:gap-16
+              "
+            >
+              {/* Left content */}
 
-            <div>
-              <p
-                className="
-                  font-mono
-                  text-[12px]
-                  font-medium
-                  uppercase
-                  tracking-[0.16em]
-                  text-primary
-                "
-              >
-                {
-                  activeTab.label
-                }
-              </p>
+              <div>
+                <p
+                  className="
+                    font-mono
+                    text-[12px]
+                    font-medium
+                    uppercase
+                    tracking-[0.16em]
+                    text-primary
+                  "
+                >
+                  {
+                    activeTab.label
+                  }
+                </p>
 
-              <h3
-                style={{
-                  lineHeight:
-                    '1.1',
-                }}
-                className="
-                  mt-4
-                  max-w-xl
-                  font-heading
-                  text-2xl
-                  font-semibold
-                  tracking-tight
-                  sm:text-3xl
-                  lg:text-4xl
-                "
-              >
-                {
-                  activeTab.title
-                }
-              </h3>
+                <h3
+                  style={{
+                    lineHeight:
+                      1.1,
+                  }}
+                  className="
+                    mt-4
+                    max-w-xl
+                    font-heading
+                    text-3xl
+                    font-semibold
+                    tracking-tight
+                    lg:text-4xl
+                  "
+                >
+                  {
+                    activeTab.title
+                  }
+                </h3>
 
-              <p
-                className="
-                  mt-5
-                  max-w-xl
-                  text-base
-                  leading-7
-                  text-muted-foreground
-                  sm:text-lg
-                  sm:leading-8
-                "
-              >
-                {
-                  activeTab.description
-                }
-              </p>
+                <p
+                  className="
+                    mt-5
+                    max-w-xl
+                    text-lg
+                    leading-8
+                    text-muted-foreground
+                  "
+                >
+                  {
+                    activeTab.description
+                  }
+                </p>
+
+                <div
+                  className="
+                    mt-8
+                    space-y-3
+                  "
+                >
+                  {activeTab.points.map(
+                    (point) => (
+                      <div
+                        key={point}
+                        className="
+                          flex
+                          items-center
+                          gap-3
+                          text-base
+                          text-foreground
+                        "
+                      >
+                        <span
+                          className="
+                            flex
+                            h-5
+                            w-5
+                            shrink-0
+                            items-center
+                            justify-center
+                            rounded-full
+                            bg-background
+                          "
+                        >
+                          <Check
+                            size={13}
+                          />
+                        </span>
+
+                        {point}
+                      </div>
+                    )
+                  )}
+                </div>
+              </div>
+
+              {/* Outputs */}
 
               <div
                 className="
-                  mt-7
-                  space-y-3
-                  sm:mt-8
+                  flex
+                  flex-col
+                  gap-3
                 "
               >
-                {activeTab.points.map(
+                {activeTab.outputs.map(
                   (
-                    point
+                    output
                   ) => (
                     <div
                       key={
-                        point
+                        output.label
                       }
                       className="
                         flex
+                        min-h-[72px]
                         items-center
-                        gap-3
-                        text-sm
-                        text-foreground
-                        sm:text-base
+                        gap-4
+                        rounded-[16px]
+                        border
+                        border-border/60
+                        bg-background
+                        px-6
+                        py-4
+                        shadow-sm
                       "
                     >
-                      <span
+                      <div
                         className="
                           flex
-                          h-5
-                          w-5
+                          h-10
+                          w-10
                           shrink-0
                           items-center
                           justify-center
-                          rounded-full
-                          bg-background
+                          overflow-hidden
+                          rounded-[10px]
                         "
                       >
-                        <Check
-                          size={
-                            13
+                        <Image
+                          src={
+                            output.icon
                           }
+                          alt=""
+                          width={32}
+                          height={32}
+                          className="
+                            h-8
+                            w-8
+                            object-contain
+                          "
                         />
-                      </span>
+                      </div>
 
-                      {
-                        point
-                      }
+                      <span
+                        className="
+                          font-heading
+                          text-lg
+                          font-semibold
+                          tracking-tight
+                        "
+                      >
+                        {
+                          output.label
+                        }
+                      </span>
                     </div>
                   )
                 )}
+
+                <a
+                  href="/process"
+                  className="
+                    mt-2
+                    inline-flex
+                    w-fit
+                    items-center
+                    justify-center
+                    gap-2
+                    rounded-[12px]
+                    bg-black
+                    px-5
+                    py-3
+                    text-sm
+                    font-bold
+                    text-white
+                    transition-colors
+                    hover:bg-[#333333]
+                  "
+                >
+                  Explore how we work
+
+                  <ArrowUpRight
+                    size={16}
+                    className="shrink-0"
+                  />
+                </a>
               </div>
             </div>
-
-            {/* Right output cards */}
-
-            <div
-              className="
-                flex
-                flex-col
-                gap-2
-                sm:gap-3
-              "
-            >
-              {activeTab.outputs.map(
-                (
-                  output
-                ) => (
-                  <div
-  key={output.label}
-  className="
-    flex
-    min-h-[44px]
-    items-center
-    gap-2
-    rounded-[12px]
-    border
-    border-border/60
-    bg-background
-    px-3
-    py-2
-    shadow-sm
-    sm:min-h-[72px]
-    sm:gap-4
-    sm:rounded-[16px]
-    sm:px-6
-    sm:py-4
-  "
->
-  <div
-    className="
-      flex
-      h-7
-      w-7
-      shrink-0
-      items-center
-      justify-center
-      overflow-hidden
-      rounded-[7px]
-      bg-transparent
-      sm:h-10
-      sm:w-10
-      sm:rounded-[10px]
-    "
-  >
-    <Image
-      src={output.icon}
-      alt=""
-      width={32}
-      height={32}
-      className="
-        h-5
-        w-5
-        object-contain
-        sm:h-8
-        sm:w-8
-      "
-    />
-  </div>
-
-  <span
-    className="
-      font-heading
-      text-[13px]
-      font-semibold
-      tracking-tight
-      sm:text-lg
-    "
-  >
-    {output.label}
-  </span>
-</div>
-                )
-              )}
-
-              <a
-                href="/process"
-                className="
-                  mt-2
-                  inline-flex
-                  w-fit
-                  items-center
-                  justify-center
-                  gap-2
-                  rounded-[12px]
-                  bg-black
-                  px-5
-                  py-3
-                  text-sm
-                  font-bold
-                  text-white
-                  transition-colors
-                  hover:bg-[#333333]
-                "
-              >
-                Explore how we work
-
-                <ArrowUpRight
-                  size={
-                    16
-                  }
-                  className="shrink-0"
-                />
-              </a>
-            </div>
-          </div>
-
-          {/* Mobile swipe indicator */}
-
-          <div
-            className="
-              mt-8
-              flex
-              items-center
-              justify-center
-              gap-1.5
-              sm:hidden
-            "
-          >
-            {tabs.map(
-              (
-                tab,
-                index
-              ) => (
-                <button
-                  key={
-                    tab.id
-                  }
-                  type="button"
-                  aria-label={`Go to ${tab.label}`}
-                  onClick={() =>
-                    goToTab(
-                      index
-                    )
-                  }
-                  className={`
-                    h-1.5
-                    rounded-full
-                    transition-all
-                    duration-300
-
-                    ${
-                      activeIndex ===
-                      index
-                        ? `
-                          w-5
-                          bg-foreground/50
-                        `
-                        : `
-                          w-1.5
-                          bg-foreground/20
-                        `
-                    }
-                  `}
-                />
-              )
-            )}
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </>
   );
 }

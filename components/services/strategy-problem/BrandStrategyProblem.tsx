@@ -98,12 +98,7 @@ const serviceLabels = [
   'Launch Emails',
 ];
 
-const transitionEase = [
-  0.16,
-  1,
-  0.3,
-  1,
-] as const;
+const transitionEase = [0.16, 1, 0.3, 1] as const;
 
 const ROW_COUNT = 7;
 
@@ -195,7 +190,6 @@ function ServiceMarqueeRow({
           flex
           w-max
           items-center
-
           ${
             reverse
               ? 'service-marquee-reverse'
@@ -203,8 +197,7 @@ function ServiceMarqueeRow({
           }
         `}
         style={{
-          animationDuration:
-            `${duration}s`,
+          animationDuration: `${duration}s`,
         }}
       >
         <MarqueeGroup
@@ -222,18 +215,17 @@ function ServiceMarqueeRow({
 export function BrandStrategyProblem() {
   return (
     <section
-  className="
-    relative
-    overflow-hidden
-    border-t
-    border-border
-    bg-background
-    pt-20
-    sm:pt-24
-    lg:pt-32
-    pb-4
-  "
->
+      className="
+        relative
+        overflow-hidden
+        border-t
+        border-border
+        bg-background
+        pt-20
+        sm:pt-24
+        lg:pt-32
+      "
+    >
       {/* ============================================================ */}
       {/* Header                                                       */}
       {/* ============================================================ */}
@@ -313,11 +305,10 @@ export function BrandStrategyProblem() {
               sm:leading-8
             "
           >
-            Bivi brings strategy, design,
-digital, and creative support
-together{' '}
-<br className="hidden sm:block" />
-to make your value unmistakable.
+            Bivi combines strategy and creative support
+            {' '}
+            <br className="hidden sm:block" />
+            to make your value unmistakable.
           </motion.p>
         </div>
       </div>
@@ -382,8 +373,7 @@ to make your value unmistakable.
                 key={index}
                 labels={labels}
                 reverse={
-                  index % 2 ===
-                  1
+                  index % 2 === 1
                 }
                 duration={
                   72 +
@@ -411,101 +401,85 @@ to make your value unmistakable.
         >
           <div
             className="
-  relative
-  w-[460px]
-  max-w-none
-  sm:w-[600px]
-  md:w-[700px]
-  lg:w-[820px]
-  xl:w-[900px]
-"
+              relative
+              w-[560px]
+              max-w-none
+              sm:w-[600px]
+              md:w-[700px]
+              lg:w-[820px]
+              xl:w-[900px]
+            "
           >
             <Image
-              src={
-                FEATURE_IMAGE
-              }
+              src={FEATURE_IMAGE}
               alt=""
-              width={
-                1080
-              }
-              height={
-                1500
-              }
+              width={1080}
+              height={1500}
               priority
               className="
                 h-auto
                 w-full
+                origin-bottom
+                scale-[1.4]
                 object-contain
-              "
-            />
-
-            {/* Image bottom fade */}
-
-            <div
-              aria-hidden="true"
-              className="
-                absolute
-                inset-x-0
-                bottom-0
-                h-24
-                bg-gradient-to-t
-                from-background
-                via-background/70
-                to-transparent
-                sm:h-32
-                lg:h-40
+                min-[460px]:scale-[1.28]
+                min-[540px]:scale-[1.18]
+                sm:scale-[1.1]
+                md:scale-100
               "
             />
           </div>
         </div>
 
         {/* ========================================================== */}
-        {/* Edge fades                                                */}
+        {/* Left / right fades                                        */}
+        {/* Hidden on mobile                                          */}
+        {/* Stop before bottom fade                                   */}
         {/* ========================================================== */}
 
-        {/* Left */}
+        <div
+  aria-hidden="true"
+  className="
+    pointer-events-none
+    absolute
+    bottom-0
+    left-0
+    top-0
+    z-20
+    hidden
+    w-24
+    bg-gradient-to-r
+    from-background
+    via-background/75
+    to-transparent
+    sm:block
+    lg:w-40
+  "
+/>
 
         <div
-          aria-hidden="true"
-          className="
-            pointer-events-none
-            absolute
-            bottom-0
-            left-0
-            top-0
-            z-20
-            w-10
-            bg-gradient-to-r
-            from-background
-            via-background/80
-            to-transparent
-            sm:w-24
-            lg:w-40
-          "
-        />
+  aria-hidden="true"
+  className="
+    pointer-events-none
+    absolute
+    bottom-0
+    right-0
+    top-0
+    z-20
+    hidden
+    w-24
+    bg-gradient-to-l
+    from-background
+    via-background/75
+    to-transparent
+    sm:block
+    lg:w-40
+  "
+/>
 
-        {/* Right */}
-
-        <div
-          aria-hidden="true"
-          className="
-            pointer-events-none
-            absolute
-            bottom-0
-            right-0
-            top-0
-            z-20
-            w-10
-            bg-gradient-to-l
-            from-background
-            via-background/80
-            to-transparent
-            sm:w-24
-            lg:w-40
-          "
-        />
-
-        {/* Top */}
+        {/* ========================================================== */}
+        {/* Top fade                                                  */}
+        {/* ========================================================== */}
 
         <div
           aria-hidden="true"
@@ -523,28 +497,54 @@ to make your value unmistakable.
           "
         />
 
-        {/* Bottom */}
+        {/* ========================================================== */}
+        {/* Single full-width bottom fade                             */}
+        {/* ========================================================== */}
 
-        <div
-          aria-hidden="true"
-          className="
-            pointer-events-none
-            absolute
-            inset-x-0
-            bottom-0
-            z-20
-            h-14
-            bg-gradient-to-t
-            from-background
-            to-transparent
-            sm:h-20
-            lg:h-24
-          "
-        />
+        {/* Smooth full-width bottom fade */}
+
+<div
+  aria-hidden="true"
+  className="
+    pointer-events-none
+    absolute
+    inset-x-0
+    bottom-0
+    z-30
+    h-56
+    bg-gradient-to-t
+    from-black
+    via-black/50
+    to-transparent
+    sm:h-64
+    md:h-72
+    md:from-background
+    md:via-background/50
+    lg:h-80
+  "
+/>
+
+<div
+  aria-hidden="true"
+  className="
+    pointer-events-none
+    absolute
+    inset-x-0
+    bottom-0
+    z-30
+    h-24
+    bg-gradient-to-t
+    from-black
+    to-transparent
+    sm:h-28
+    md:h-32
+    md:from-background
+  "
+/>
       </motion.div>
 
       {/* ============================================================ */}
-      {/* Marquee animations                                           */}
+      {/* Marquee animations                                          */}
       {/* ============================================================ */}
 
       <style jsx global>{`
@@ -606,10 +606,7 @@ to make your value unmistakable.
             transform;
         }
 
-        @media (
-          max-width:
-            639px
-        ) {
+        @media (max-width: 639px) {
           .service-marquee,
           .service-marquee-reverse {
             animation-duration:
