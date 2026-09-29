@@ -6,12 +6,22 @@ import {
 } from 'react';
 
 import useEmblaCarousel from 'embla-carousel-react';
-import type { ScrollBodyType } from 'embla-carousel';
 
-import { ArrowUpRight } from 'lucide-react';
+import type {
+  ScrollBodyType,
+} from 'embla-carousel';
 
-import { services } from '@/data/services';
-import { ServiceCard } from './ServiceCard';
+import {
+  ArrowUpRight,
+} from 'lucide-react';
+
+import {
+  services,
+} from '@/data/services';
+
+import {
+  ServiceCard,
+} from './ServiceCard';
 
 const NORMAL_SPEED = 0.5;
 const HOVER_SPEED = 0.25;
@@ -33,6 +43,7 @@ export function ServicesCarousel() {
     align: 'start',
     dragFree: true,
     containScroll: false,
+    watchDrag: true,
   });
 
   useEffect(() => {
@@ -42,6 +53,14 @@ export function ServicesCarousel() {
 
     const engine =
       emblaApi.internalEngine();
+
+    /*
+     * Save Embla's native scroll body.
+     *
+     * We use our custom body for continuous
+     * auto-scroll, but restore Embla's native
+     * body while the user is physically dragging.
+     */
 
     const defaultScrollBody =
       engine.scrollBody;
@@ -54,10 +73,12 @@ export function ServicesCarousel() {
       scrollTarget,
       index,
       indexPrevious,
+
       limit: {
         reachedMin,
         constrain,
       },
+
       options: {
         loop,
       },
@@ -74,17 +95,37 @@ export function ServicesCarousel() {
 
     let hasSettled = false;
 
+    let isDragging =
+      false;
+
     const noop =
       (): ScrollBodyType =>
         scrollBody;
 
+    /* ========================================================== */
+    /* Continuous auto-scroll body                                */
+    /* ========================================================== */
+
     const seek =
       (): ScrollBodyType => {
+        /*
+         * While dragging we should not push
+         * the carousel ourselves.
+         *
+         * Embla's native scroll body handles
+         * the physical pointer movement.
+         */
+
+        if (isDragging) {
+          return scrollBody;
+        }
+
         currentSpeedRef.current +=
           (
             targetSpeedRef.current -
             currentSpeedRef.current
-          ) * SPEED_EASING;
+          ) *
+          SPEED_EASING;
 
         previousLocation.set(
           location
@@ -196,12 +237,93 @@ export function ServicesCarousel() {
         noop,
     };
 
+    /* ========================================================== */
+    /* Drag handling                                              */
+    /* ========================================================== */
+
+    const handlePointerDown =
+      () => {
+        isDragging =
+          true;
+
+        /*
+         * Give full control back to Embla.
+         *
+         * This is what makes mobile touch dragging
+         * follow the user's finger instead of
+         * fighting against auto-scroll.
+         */
+
+        engine.scrollBody =
+          defaultScrollBody;
+      };
+
+    const handlePointerUp =
+      () => {
+        /*
+         * Synchronize our continuous-scroll position
+         * with wherever the user finished dragging.
+         */
+
+        rawLocation =
+          location.get();
+
+        rawLocationPrevious =
+          rawLocation;
+
+        previousLocation.set(
+          location
+        );
+
+        target.set(
+          location
+        );
+
+        bodyVelocity = 0;
+
+        isDragging =
+          false;
+
+        /*
+         * Resume continuous movement.
+         */
+
+        engine.scrollBody =
+          scrollBody;
+
+        engine.animation.start();
+      };
+
+    emblaApi.on(
+      'pointerDown',
+      handlePointerDown
+    );
+
+    emblaApi.on(
+      'pointerUp',
+      handlePointerUp
+    );
+
+    /* ========================================================== */
+    /* Start auto-scroll                                          */
+    /* ========================================================== */
+
     engine.scrollBody =
       scrollBody;
 
     engine.animation.start();
 
     return () => {
+      emblaApi.off(
+        'pointerDown',
+        handlePointerDown
+      );
+
+      emblaApi.off(
+        'pointerUp',
+        handlePointerUp
+      );
+
       engine.scrollBody =
         defaultScrollBody;
     };
@@ -219,7 +341,10 @@ export function ServicesCarousel() {
         lg:pt-16
       "
     >
-      {/* Header */}
+      {/* ========================================================== */}
+      {/* Header                                                     */}
+      {/* ========================================================== */}
+
       <div
         className="
           container-page
@@ -229,6 +354,9 @@ export function ServicesCarousel() {
         "
       >
         <h2
+          style={{
+            lineHeight: 1.15,
+          }}
           className="
             mx-auto
             mt-4
@@ -237,7 +365,6 @@ export function ServicesCarousel() {
             font-heading
             text-[2.2rem]
             font-semibold
-            leading-[1.15]
             tracking-[-0.035em]
             sm:max-w-none
             sm:whitespace-nowrap
@@ -245,7 +372,8 @@ export function ServicesCarousel() {
             md:text-5xl
           "
         >
-          Build a better brand with Bivi
+          Build a better brand
+          with Bivi
         </h2>
 
         <p
@@ -260,12 +388,15 @@ export function ServicesCarousel() {
             sm:leading-8
           "
         >
-          Make your brand stand out and grow
-          with confidence.
+          Make your brand stand out
+          and grow with confidence.
         </p>
       </div>
 
-      {/* Actions */}
+      {/* ========================================================== */}
+      {/* Actions                                                    */}
+      {/* ========================================================== */}
+
       <div
         className="
           container-page
@@ -282,7 +413,6 @@ export function ServicesCarousel() {
         <a
           href="/services"
           className="
-          
             inline-flex
             h-[52px]
             items-center
@@ -291,9 +421,8 @@ export function ServicesCarousel() {
             rounded-[14px]
             bg-black
             px-7
-            text-[16px]
             font-mono
-            uppercase
+            text-[16px]
             font-bold
             leading-none
             text-white
@@ -319,9 +448,8 @@ export function ServicesCarousel() {
             rounded-[14px]
             bg-[#eaeaea]
             px-7
-            text-[16px]
             font-mono
-            uppercase
+            text-[16px]
             font-bold
             leading-none
             text-foreground
@@ -333,7 +461,10 @@ export function ServicesCarousel() {
         </a>
       </div>
 
-      {/* Carousel */}
+      {/* ========================================================== */}
+      {/* Carousel                                                   */}
+      {/* ========================================================== */}
+
       <div
         className="
           relative
@@ -351,7 +482,10 @@ export function ServicesCarousel() {
         <div
           ref={emblaRef}
           className="
+            cursor-grab
+            touch-pan-y
             overflow-hidden
+            active:cursor-grabbing
           "
         >
           <div
@@ -364,9 +498,13 @@ export function ServicesCarousel() {
             "
           >
             {services.map(
-              (service) => (
+              (
+                service
+              ) => (
                 <div
-                  key={service.id}
+                  key={
+                    service.id
+                  }
                   className="
                     shrink-0
                   "

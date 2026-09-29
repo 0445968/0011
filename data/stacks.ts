@@ -64,14 +64,14 @@ export const stacks: StackTool[] = [
   },
   {
     "slug": "adobephotoshop",
-    "name": "Adobe Photoshop",
+    "name": "Photoshop",
     "hex": "31A8FF",
     "category": "Design",
     "logo": "/images/integrations/adobe-photoshop.svg"
   },
   {
     "slug": "adobeillustrator",
-    "name": "Adobe Illustrator",
+    "name": "Illustrator",
     "hex": "FF9A00",
     "category": "Design",
     "logo": "/images/integrations/adobe-illustrator.svg"
@@ -92,7 +92,7 @@ export const stacks: StackTool[] = [
   },
   {
     "slug": "affinitydesigner",
-    "name": "Affinity Designer",
+    "name": "Affinity",
     "hex": "1B72BE",
     "category": "Design",
     "logo": "/images/integrations/affinity-designer.svg"

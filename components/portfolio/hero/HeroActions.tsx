@@ -79,7 +79,6 @@ export function HeroActions({
   bg-[#BBFF1B]
   px-5
   text-[15px]
-  uppercase
   font-mono
   font-bold
   leading-none
@@ -112,7 +111,6 @@ export function HeroActions({
               bg-white/20
               px-6
               text-[15px]
-              uppercase
               font-mono
               font-bold
               text-white

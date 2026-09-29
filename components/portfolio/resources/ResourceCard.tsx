@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { ArrowUpRight } from 'lucide-react';
 
 import type { Resource } from '@/data/resources';
 
@@ -21,30 +22,180 @@ export function ResourceCard({
     <article
       className="
         group
-        h-full
-        rounded-[16px]
-        bg-[#f5f5f5]
-        p-3
-        dark:bg-white/[0.06]
+        relative
+        isolate
+        w-full
+        overflow-hidden
+
+        h-[480px]
+        rounded-[18px]
+        bg-neutral-900
+
+        sm:h-full
+        sm:rounded-[16px]
+        sm:bg-[#f5f5f5]
+        sm:p-3
+
+        dark:sm:bg-white/[0.06]
       "
     >
       <Link
         href={resource.href}
         className="
-          flex
+          relative
+          block
           h-full
-          flex-col
+          w-full
+          overflow-hidden
+
+          sm:flex
+          sm:flex-col
+          sm:overflow-visible
         "
       >
-        {/* Image */}
+        {/* ====================================================== */}
+        {/* MOBILE                                                 */}
+        {/* ====================================================== */}
+
+        <div
+          className="
+            absolute
+            inset-0
+            z-0
+            sm:hidden
+          "
+        >
+          {preview ? (
+            <Image
+              src={preview}
+              alt={resource.title}
+              fill
+              sizes="78vw"
+              className="
+                object-cover
+                object-center
+              "
+            />
+          ) : (
+            <div
+              className="
+                flex
+                h-full
+                w-full
+                items-center
+                justify-center
+                bg-neutral-900
+                text-sm
+                text-white/50
+              "
+            >
+              Resource Preview
+            </div>
+          )}
+
+          {/* Darker at top for text */}
+          <div
+            className="
+              absolute
+              inset-0
+              bg-gradient-to-b
+              from-black/65
+              via-black/15
+              to-black/10
+            "
+          />
+        </div>
+
         <div
           className="
             relative
+            z-10
+            flex
+            h-full
+            w-full
+            flex-col
+            px-6
+            py-7
+
+            sm:hidden
+          "
+        >
+          <span
+            className="
+              font-mono
+              text-[11px]
+              font-semibold
+              uppercase
+              tracking-[0.16em]
+              text-white/70
+            "
+          >
+            Resource
+          </span>
+
+          <h3
+            className="
+              mt-7
+              max-w-[90%]
+              text-balance
+              font-heading
+              text-[24px]
+              font-semibold
+              leading-[1.08]
+              tracking-[-0.035em]
+              text-white
+            "
+          >
+            {resource.title}
+          </h3>
+
+<div className="mt-auto">
+  <span
+    className="
+      inline-flex
+      h-[46px]
+      items-center
+      justify-center
+      gap-2
+      rounded-[14px]
+      bg-white
+      px-5
+      font-mono
+      text-[13px]
+      font-medium
+      text-black
+      transition-transform
+      duration-200
+      group-active:scale-[0.98]
+    "
+  >
+    Read resource
+
+    <ArrowUpRight
+      className="h-4 w-4"
+      strokeWidth={2}
+    />
+  </span>
+</div>
+        </div>
+
+        {/* ====================================================== */}
+        {/* DESKTOP IMAGE                                          */}
+        {/* ====================================================== */}
+
+        <div
+          className="
+            relative
+            hidden
             aspect-[1.6/1]
             w-full
+            shrink-0
             overflow-hidden
             rounded-[16px]
             bg-neutral-200
+
+            sm:block
+
             dark:bg-white/10
           "
         >
@@ -54,7 +205,6 @@ export function ResourceCard({
               alt={resource.title}
               fill
               sizes="
-                (max-width: 640px) 90vw,
                 (max-width: 768px) 50vw,
                 (max-width: 1024px) 33vw,
                 320px
@@ -84,34 +234,37 @@ export function ResourceCard({
           )}
         </div>
 
-        {/* Content */}
+        {/* ====================================================== */}
+        {/* DESKTOP CONTENT                                        */}
+        {/* ====================================================== */}
+
         <div
           className="
-            flex
+            hidden
             flex-1
             flex-col
             px-0.5
             pb-0.5
             pt-4
+
+            sm:flex
           "
         >
-          {/* Title */}
           <h3
             className="
               font-heading
-              text-[16px]
+              text-[18px]
               font-semibold
               leading-[1.15]
               tracking-[-0.025em]
               text-[#090d1d]
-              sm:text-[18px]
+
               dark:text-white
             "
           >
             {resource.title}
           </h3>
 
-          {/* Button */}
           <div className="mt-auto pt-5">
             <span
               className="
@@ -128,7 +281,6 @@ export function ResourceCard({
                 text-[15px]
                 font-semibold
                 text-white
-
                 transition-colors
                 duration-200
 

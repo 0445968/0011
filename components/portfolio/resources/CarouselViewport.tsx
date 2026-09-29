@@ -24,9 +24,11 @@ export function CarouselViewport({
         className="
           flex
           w-full
+
           snap-x
           snap-mandatory
-          gap-5
+
+          gap-4
 
           overflow-x-auto
           overflow-y-hidden
@@ -45,8 +47,9 @@ export function CarouselViewport({
         {resources.map((resource) => (
           <div
             key={resource.id}
+            data-carousel-card
             className="
-              w-[82%]
+              w-[88%]
               shrink-0
               snap-start
 

@@ -13,6 +13,7 @@ import { BrandStrategyProblem } from '@/components/services/strategy-problem/Bra
 import { BrandNextSection } from '@/components/home/BrandNextSection';
 import { BrandComparison } from '@/components/home/BrandComparison';
 import { IntegrationsGrid } from '@/components/home/IntegrationsGrid';
+import { HomepageCTA } from '@/components/home/HomepageCTA';
 
 
 export default function Home() {
@@ -25,6 +26,7 @@ export default function Home() {
       <BrandComparison />
       <IntegrationsGrid />
       <ResourceLibraryPreview />
+      <HomepageCTA />
     </>
   );
 }

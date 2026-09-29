@@ -87,7 +87,7 @@ export const resources: Resource[] = [
     href: '/resources/brand-identity-guide',
     badge: 'PDF · 32 pages',
     date: '2025-07-10',
-    preview: '/images/resources/guide-brand.webp',
+    preview: '/images/services/services-hero-01.jpg',
     body:
       'A step-by-step walkthrough of building a brand identity system that holds up at scale. Covers positioning statements, logo construction, typographic hierarchy, color tokens, motion principles, and a brand guidelines template you can adapt.',
   },
@@ -103,7 +103,7 @@ export const resources: Resource[] = [
     href: '/resources/color-systems-handbook',
     badge: 'PDF · 18 pages',
     date: '2025-06-22',
-    preview: '/images/resources/guide-color.webp',
+    preview: '/images/services/showcase/print-01.webp',
     body:
       'Color is the most leveraged decision in a design system. This guide covers HSL/LCH fundamentals, building ramps, ensuring WCAG contrast across states, and structuring tokens so dark mode is a variable, not a rewrite.',
   },

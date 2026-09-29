@@ -1,6 +1,8 @@
 'use client';
 
 import {
+  ArrowLeft,
+  ArrowRight,
   ArrowUpRight,
 } from 'lucide-react';
 
@@ -60,35 +62,16 @@ export function ResourceCarousel({
             gap-4
           "
         >
-          {/* Empty left column */}
-
           <div />
 
-          {/* Centered arrows */}
-
           <CarouselArrows
-            onPrevious={
-              scrollPrevious
-            }
-            onNext={
-              scrollNext
-            }
-            canScrollPrevious={
-              canScrollPrevious
-            }
-            canScrollNext={
-              canScrollNext
-            }
+            onPrevious={scrollPrevious}
+            onNext={scrollNext}
+            canScrollPrevious={canScrollPrevious}
+            canScrollNext={canScrollNext}
           />
 
-          {/* Browse all */}
-
-          <div
-            className="
-              flex
-              justify-end
-            "
-          >
+          <div className="flex justify-end">
             <a
               href="/resources"
               className="
@@ -128,138 +111,165 @@ export function ResourceCarousel({
       {/* ============================================================ */}
 
       <CarouselViewport
-        resources={
-          resources
-        }
-        containerRef={
-          containerRef
-        }
+        resources={resources}
+        containerRef={containerRef}
       />
 
       {/* ============================================================ */}
-      {/* Pagination                                                   */}
+      {/* Mobile controls                                              */}
+      {/* ============================================================ */}
+
+      <div
+        className="
+          container-page
+          mt-7
+          sm:hidden
+        "
+      >
+        <div
+          className="
+            flex
+            items-center
+            justify-end
+            gap-3
+          "
+        >
+          {/* Previous */}
+
+          <button
+            type="button"
+            onClick={scrollPrevious}
+            disabled={!canScrollPrevious}
+            aria-label="Previous resources"
+            className="
+              flex
+              h-14
+              w-14
+              shrink-0
+              items-center
+              justify-center
+              rounded-full
+              bg-muted
+              text-foreground
+              transition-all
+              duration-300
+
+              active:scale-95
+
+              disabled:cursor-not-allowed
+              disabled:opacity-30
+            "
+          >
+            <ArrowLeft
+              className="h-5 w-5"
+              strokeWidth={2}
+            />
+          </button>
+
+          {/* Next */}
+
+          <button
+            type="button"
+            onClick={scrollNext}
+            disabled={!canScrollNext}
+            aria-label="Next resources"
+            className="
+              flex
+              h-14
+              w-14
+              shrink-0
+              items-center
+              justify-center
+              rounded-full
+              bg-foreground
+              text-background
+              transition-all
+              duration-300
+
+              active:scale-95
+
+              disabled:cursor-not-allowed
+              disabled:opacity-30
+            "
+          >
+            <ArrowRight
+              className="h-5 w-5"
+              strokeWidth={2}
+            />
+          </button>
+        </div>
+      </div>
+
+      {/* ============================================================ */}
+      {/* Desktop pagination                                           */}
       {/* ============================================================ */}
 
       <div
         className="
           mt-7
-          flex
+          hidden
           items-center
           justify-center
           gap-3
+          sm:flex
         "
       >
         {Array.from({
-          length:
-            pageCount,
-        }).map(
-          (
-            _,
-            index
-          ) => {
-            const isActive =
-              index ===
-              currentPage;
+          length: pageCount,
+        }).map((_, index) => {
+          const isActive =
+            index === currentPage;
 
-            return (
-              <button
-                key={
-                  index
-                }
-                type="button"
-                onClick={() =>
-                  scrollToPage(
-                    index
-                  )
-                }
-                aria-label={`Go to resource page ${
-                  index + 1
-                }`}
-                aria-current={
-                  isActive
-                    ? 'true'
-                    : undefined
-                }
-                className="
-                  flex
-                  h-6
-                  items-center
-                  justify-center
-                "
-              >
-                <span
-                  className={`
-                    block
-                    h-2
-                    rounded-full
-                    transition-all
-                    duration-500
-                    ease-[cubic-bezier(0.16,1,0.3,1)]
+          return (
+            <button
+              key={index}
+              type="button"
+              onClick={() =>
+                scrollToPage(index)
+              }
+              aria-label={`Go to resource page ${
+                index + 1
+              }`}
+              aria-current={
+                isActive
+                  ? 'true'
+                  : undefined
+              }
+              className="
+                flex
+                h-6
+                items-center
+                justify-center
+              "
+            >
+              <span
+                className={`
+                  block
+                  h-2
+                  rounded-full
+                  transition-all
+                  duration-500
+                  ease-[cubic-bezier(0.16,1,0.3,1)]
 
-                    ${
-                      isActive
-                        ? `
-                          w-12
-                          bg-foreground
-                        `
-                        : `
-                          w-2
-                          bg-muted-foreground/30
-                        `
-                    }
-                  `}
-                />
-              </button>
-            );
-          }
-        )}
+                  ${
+                    isActive
+                      ? `
+                        w-12
+                        bg-foreground
+                      `
+                      : `
+                        w-2
+                        bg-muted-foreground/30
+                      `
+                  }
+                `}
+              />
+            </button>
+          );
+        })}
       </div>
 
-      {/* ============================================================ */}
-      {/* Mobile browse all                                            */}
-      {/* ============================================================ */}
-
-      <div
-        className="
-          mt-8
-          flex
-          justify-center
-          sm:hidden
-        "
-      >
-        <a
-          href="/resources"
-          className="
-            group
-            inline-flex
-            items-center
-            gap-2
-            border-b
-            border-foreground
-            pb-1
-            text-sm
-            font-semibold
-            text-foreground
-            transition-colors
-            duration-200
-            active:border-[#0B65F3]
-            active:text-[#0B65F3]
-          "
-        >
-          Browse all resources
-
-          <ArrowUpRight
-            className="
-              h-4
-              w-4
-              shrink-0
-            "
-            strokeWidth={
-              2
-            }
-          />
-        </a>
-      </div>
+      
     </div>
   );
 }

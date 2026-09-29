@@ -110,16 +110,23 @@ const featuredIntegrationSlugs = [
   'notion',
   'slack',
   'github',
+  'affinitydesigner',
+  'adobeillustrator',
   'wordpress',
   'adobe-creative-cloud',
   'mailchimp',
   'hubspot',
-  'stripe',
-  'affinity-designer',
+  'stripe',  
   'google-workspace',
 ];
 
-const featuredIntegrations =
+/*
+ * Resolve preferred integrations.
+ * Any slug that doesn't exist in stacks
+ * is safely skipped.
+ */
+
+const preferredIntegrations =
   featuredIntegrationSlugs
     .map((slug) =>
       stacks.find(
@@ -130,9 +137,39 @@ const featuredIntegrations =
     .filter(
       (
         tool
-      ): tool is (typeof stacks)[number] =>
+      ): tool is StackItem =>
         Boolean(tool)
     );
+
+/*
+ * Fill any missing preferred integrations
+ * with other available integrations.
+ */
+
+const fallbackIntegrations =
+  stacks.filter(
+    (tool) =>
+      !preferredIntegrations.some(
+        (featured) =>
+          featured.slug ===
+          tool.slug
+      )
+  );
+
+/*
+ * Keep 13 total featured integrations
+ * for tablet / desktop.
+ */
+
+const featuredIntegrations = [
+  ...preferredIntegrations,
+  ...fallbackIntegrations,
+].slice(0, 13);
+
+/*
+ * Mobile always gets the first 10
+ * available integrations.
+ */
 
 const mobileFeaturedIntegrations =
   featuredIntegrations.slice(
@@ -444,6 +481,7 @@ function ResponsiveGrid({
               leading-5
               text-muted-foreground
               lg:text-sm
+              
             "
           >
             more tools across
@@ -451,17 +489,6 @@ function ResponsiveGrid({
           </span>
         </div>
 
-        <ArrowUpRight
-          className="
-            h-5
-            w-5
-            shrink-0
-            text-muted-foreground
-            transition-colors
-            duration-200
-            group-hover:text-foreground
-          "
-        />
       </Link>
     </div>
   );
@@ -739,14 +766,7 @@ export function IntegrationsGrid() {
                 </span>
               </div>
 
-              <ArrowUpRight
-                className="
-                  h-4
-                  w-4
-                  shrink-0
-                  text-muted-foreground
-                "
-              />
+              
             </Link>
           </div>
 
@@ -824,48 +844,49 @@ export function IntegrationsGrid() {
             />
           </div>
 
-          {/* Bottom link */}
+{/* Bottom link */}
 
-          <div
-            className="
-              mt-8
-              flex
-              justify-center
-              sm:mt-9
-            "
-          >
-            <Link
-              href="/integrations"
-              className="
-                group
-                inline-flex
-                items-center
-                gap-2
-                border-b
-                border-foreground
-                pb-1
-                text-sm
-                font-semibold
-                text-foreground
-                transition-colors
-                duration-200
-                hover:border-[#0B65F3]
-                hover:text-[#0B65F3]
-              "
-            >
-              Explore all integrations
+<div
+  className="
+    mt-2
+    flex
+    justify-center
+    sm:mt-3
+  "
+>
+  <Link
+    href="/integrations"
+    className="
+      group
+      inline-flex
+      items-center
+      gap-2
+      rounded-[14px]
+      bg-muted
+      px-5
+      py-3
+      font-mono
+      text-[15px]
+      font-bold
+      tracking-[0.06em]
+      text-foreground
+      transition-colors
+      duration-200
+      hover:bg-muted/70
+    "
+  >
+    Explore all integrations
 
-              <ArrowUpRight
-                className="
-                  h-4
-                  w-4
-                "
-                strokeWidth={
-                  2
-                }
-              />
-            </Link>
-          </div>
+    <ArrowUpRight
+      className="
+        h-4
+        w-4
+        shrink-0
+      "
+      strokeWidth={2}
+    />
+  </Link>
+</div>
         </div>
       </div>
     </section>

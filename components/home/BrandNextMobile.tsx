@@ -1184,9 +1184,8 @@ useEffect(() => {
             px-6
             py-4
             font-mono
-            text-[15px]
+            text-[13px]
             font-semibold
-            uppercase
             tracking-[0.04em]
             text-white
             transition-colors

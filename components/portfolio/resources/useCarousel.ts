@@ -23,154 +23,157 @@ export function useCarousel() {
   const [pageCount, setPageCount] =
     useState(1);
 
-  const getCarouselMeasurements = useCallback(() => {
+  /* ============================================================ */
+  /* Get actual carousel cards                                    */
+  /* ============================================================ */
+
+  const getCards = useCallback(() => {
     const container = containerRef.current;
 
     if (!container) {
-      return {
-        visibleCount: 1,
-        totalCards: 0,
-        gap: 0,
-        cardWidth: 0,
-      };
+      return [];
     }
 
-    const cards = Array.from(
-      container.children
-    ) as HTMLElement[];
-
-    const firstCard = cards[0];
-
-    if (!firstCard) {
-      return {
-        visibleCount: 1,
-        totalCards: 0,
-        gap: 0,
-        cardWidth: 0,
-      };
-    }
-
-    const cardWidth =
-      firstCard.getBoundingClientRect().width;
-
-    const gap = Number.parseFloat(
-      getComputedStyle(container).gap || '0'
-    );
-
-    const visibleCount = Math.max(
-      1,
-      Math.round(
-        (container.clientWidth + gap) /
-          (cardWidth + gap)
+    return Array.from(
+      container.querySelectorAll<HTMLElement>(
+        '[data-carousel-card]'
       )
     );
-
-    return {
-      visibleCount,
-      totalCards: cards.length,
-      gap,
-      cardWidth,
-    };
   }, []);
+
+  /* ============================================================ */
+  /* Find card closest to left edge                               */
+  /* ============================================================ */
+
+  const getCurrentIndex = useCallback(() => {
+    const container = containerRef.current;
+    const cards = getCards();
+
+    if (!container || cards.length === 0) {
+      return 0;
+    }
+
+    const scrollLeft = container.scrollLeft;
+
+    let closestIndex = 0;
+    let closestDistance = Infinity;
+
+    cards.forEach((card, index) => {
+      const distance = Math.abs(
+        card.offsetLeft - scrollLeft
+      );
+
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestIndex = index;
+      }
+    });
+
+    return closestIndex;
+  }, [getCards]);
+
+  /* ============================================================ */
+  /* Update state                                                 */
+  /* ============================================================ */
 
   const updateScrollState = useCallback(() => {
     const container = containerRef.current;
+    const cards = getCards();
 
-    if (!container) return;
+    if (!container || cards.length === 0) {
+      return;
+    }
 
-    const {
-      scrollLeft,
-      scrollWidth,
-      clientWidth,
-    } = container;
+    const index = getCurrentIndex();
 
-    const {
-      visibleCount,
-      totalCards,
-      cardWidth,
-      gap,
-    } = getCarouselMeasurements();
+    setCurrentPage(index);
+    setPageCount(cards.length);
 
-    const calculatedPageCount = Math.max(
-      1,
-      Math.ceil(totalCards / visibleCount)
-    );
+    setCanScrollPrevious(index > 0);
 
-    setPageCount(calculatedPageCount);
-
-    setCanScrollPrevious(scrollLeft > 8);
+    const maxScrollLeft =
+      container.scrollWidth -
+      container.clientWidth;
 
     setCanScrollNext(
-      scrollLeft + clientWidth <
-        scrollWidth - 8
+      container.scrollLeft <
+        maxScrollLeft - 4
     );
+  }, [
+    getCards,
+    getCurrentIndex,
+  ]);
 
-    const pageWidth =
-      (cardWidth + gap) * visibleCount;
+  /* ============================================================ */
+  /* Scroll directly to a card                                    */
+  /* ============================================================ */
 
-    if (pageWidth > 0) {
-      const page = Math.min(
-        calculatedPageCount - 1,
-        Math.max(
-          0,
-          Math.round(scrollLeft / pageWidth)
+  const scrollToPage = useCallback(
+    (index: number) => {
+      const container = containerRef.current;
+      const cards = getCards();
+
+      if (
+        !container ||
+        cards.length === 0
+      ) {
+        return;
+      }
+
+      const safeIndex = Math.max(
+        0,
+        Math.min(
+          index,
+          cards.length - 1
         )
       );
 
-      setCurrentPage(page);
-    }
-  }, [getCarouselMeasurements]);
-
-  const scrollToPage = useCallback(
-    (page: number) => {
-      const container = containerRef.current;
-
-      if (!container) return;
-
-      const {
-        visibleCount,
-        cardWidth,
-        gap,
-      } = getCarouselMeasurements();
-
-      const target =
-        page *
-        visibleCount *
-        (cardWidth + gap);
+      const card = cards[safeIndex];
 
       container.scrollTo({
-        left: target,
+        left: card.offsetLeft,
         behavior: 'smooth',
       });
     },
-    [getCarouselMeasurements]
+    [getCards]
   );
 
-  const scrollNext = useCallback(() => {
-    scrollToPage(
-      Math.min(currentPage + 1, pageCount - 1)
-    );
+  /* ============================================================ */
+  /* Previous                                                     */
+  /* ============================================================ */
+
+  const scrollPrevious = useCallback(() => {
+    const index = getCurrentIndex();
+
+    scrollToPage(index - 1);
   }, [
-    currentPage,
-    pageCount,
+    getCurrentIndex,
     scrollToPage,
   ]);
 
-  const scrollPrevious = useCallback(() => {
-    scrollToPage(
-      Math.max(currentPage - 1, 0)
-    );
+  /* ============================================================ */
+  /* Next                                                         */
+  /* ============================================================ */
+
+  const scrollNext = useCallback(() => {
+    const index = getCurrentIndex();
+
+    scrollToPage(index + 1);
   }, [
-    currentPage,
+    getCurrentIndex,
     scrollToPage,
   ]);
+
+  /* ============================================================ */
+  /* Events                                                       */
+  /* ============================================================ */
 
   useEffect(() => {
     const container = containerRef.current;
 
-    if (!container) return;
-
-    updateScrollState();
+    if (!container) {
+      return;
+    }
 
     const handleScroll = () => {
       updateScrollState();
@@ -182,6 +185,8 @@ export function useCarousel() {
       });
 
     resizeObserver.observe(container);
+
+    updateScrollState();
 
     container.addEventListener(
       'scroll',

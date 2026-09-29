@@ -9,9 +9,37 @@ interface ServiceCardProps {
   service: Service;
 }
 
+function getServiceLabels(
+  title: string
+) {
+  const normalized =
+    title.toLowerCase();
+
+  if (
+    normalized.includes(
+      'packaging'
+    ) &&
+    normalized.includes(
+      'merch'
+    )
+  ) {
+    return [
+      'Packaging Design',
+      'Merchandise Design',
+    ];
+  }
+
+  return [title];
+}
+
 export function ServiceCard({
   service,
 }: ServiceCardProps) {
+  const labels =
+    getServiceLabels(
+      service.title
+    );
+
   return (
     <Link
       href={service.href}
@@ -37,6 +65,7 @@ export function ServiceCard({
       "
     >
       {/* Background image */}
+
       <Image
         src={service.image}
         alt={service.title}
@@ -59,7 +88,9 @@ export function ServiceCard({
       />
 
       {/* Bottom gradient */}
+
       <div
+        aria-hidden="true"
         className="
           pointer-events-none
           absolute
@@ -74,7 +105,8 @@ export function ServiceCard({
         "
       />
 
-      {/* Title */}
+      {/* Labels */}
+
       <div
         className="
           pointer-events-none
@@ -82,25 +114,46 @@ export function ServiceCard({
           inset-x-0
           bottom-0
           z-10
+          flex
+          flex-wrap
+          items-center
+          gap-2
           p-5
           sm:p-6
           md:p-7
         "
       >
-        <h3
-          className="
-            font-heading
-            text-lg
-            font-semibold
-            leading-[1.05]
-            tracking-tight
-            text-white
-            sm:text-xl
-            md:text-2xl
-          "
-        >
-          {service.title}
-        </h3>
+        {labels.map(
+          (label) => (
+            <span
+              key={label}
+              className="
+                inline-flex
+                w-fit
+                items-center
+                rounded-full
+                border
+                border-dashed
+                border-[#BBFF1B]/70
+                bg-black/40
+                px-3
+                py-2
+                text-[12px]
+                font-semibold
+                leading-none
+                tracking-tight
+                text-white
+                backdrop-blur-[2px]
+                sm:px-4
+                sm:py-2.5
+                sm:text-base
+                md:text-lg
+              "
+            >
+              {label}
+            </span>
+          )
+        )}
       </div>
     </Link>
   );
