@@ -8,6 +8,8 @@ import {
   useState,
 } from 'react';
 
+import { flushSync } from 'react-dom';
+
 import {
   animate,
   motion,
@@ -25,6 +27,7 @@ export type BrandNextTab = {
   backgroundImage?: string;
   overlayColor?: string;
   points: string[];
+
   outputs: {
     label: string;
     icon: string;
@@ -59,14 +62,16 @@ type BrandNextMobileProps = {
 /* ================================================================ */
 
 const DRAG_DISTANCE = 270;
+
 const SWIPE_THRESHOLD = 65;
+
 const VELOCITY_THRESHOLD = 450;
 
 const SPRING = {
   type: 'spring' as const,
-  stiffness: 300,
+  stiffness: 280,
   damping: 30,
-  mass: 0.85,
+  mass: 0.82,
 };
 
 /* ================================================================ */
@@ -93,7 +98,12 @@ function CardBackground({
   }
 
   return (
-    <div className="absolute inset-0">
+    <div
+      className="
+        absolute
+        inset-0
+      "
+    >
       <Image
         src={src}
         alt=""
@@ -110,7 +120,7 @@ function CardBackground({
 }
 
 /* ================================================================ */
-/* Card gradient                                                    */
+/* Color-matched top gradient                                       */
 /* ================================================================ */
 
 function CardGradient({
@@ -128,13 +138,13 @@ function CardGradient({
         pointer-events-none
         absolute
         inset-x-0
-        top-0
+        bottom-0
         z-10
-        h-[50%]
+        h-[55%]
       "
       style={{
         background: `linear-gradient(
-          to bottom,
+          to top,
           ${overlay} 0%,
           ${overlay}E6 34%,
           ${overlay}80 68%,
@@ -146,7 +156,7 @@ function CardGradient({
 }
 
 /* ================================================================ */
-/* Card content                                                     */
+/* Card text                                                        */
 /* ================================================================ */
 
 function CardContent({
@@ -158,12 +168,14 @@ function CardContent({
     <div
       className="
         pointer-events-none
-        relative
+        absolute
+        inset-x-0
+        bottom-0
         z-20
         px-9
-        pt-10
+        pb-10
         sm:px-12
-        sm:pt-12
+        sm:pb-12
       "
     >
       <div className="max-w-[82%]">
@@ -225,7 +237,7 @@ export function BrandNextMobile({
     >([]);
 
   /* ============================================================ */
-  /* Adjacent tabs                                                */
+  /* Adjacent cards                                              */
   /* ============================================================ */
 
   const previousIndex =
@@ -258,9 +270,9 @@ export function BrandNextMobile({
         DRAG_DISTANCE,
       ],
       [
-        0.94,
+        0.96,
         1,
-        0.94,
+        0.96,
       ]
     );
 
@@ -276,6 +288,25 @@ export function BrandNextMobile({
         0.82,
         1,
         0.82,
+      ]
+    );
+
+  const activeTextOpacity =
+    useTransform(
+      dragX,
+      [
+        -DRAG_DISTANCE,
+        -DRAG_DISTANCE * 0.25,
+        0,
+        DRAG_DISTANCE * 0.25,
+        DRAG_DISTANCE,
+      ],
+      [
+        0,
+        0.85,
+        1,
+        0.85,
+        0,
       ]
     );
 
@@ -307,13 +338,13 @@ export function BrandNextMobile({
         DRAG_DISTANCE,
       ],
       [
-        0.92,
         0.94,
+        0.96,
         1,
       ]
     );
 
-  const previousOverlayOpacity =
+  const previousDarkOpacity =
     useTransform(
       dragX,
       [
@@ -325,6 +356,23 @@ export function BrandNextMobile({
         0.65,
         0.42,
         0,
+      ]
+    );
+
+  const previousTextOpacity =
+    useTransform(
+      dragX,
+      [
+        0,
+        DRAG_DISTANCE * 0.3,
+        DRAG_DISTANCE * 0.62,
+        DRAG_DISTANCE,
+      ],
+      [
+        0,
+        0,
+        0.55,
+        1,
       ]
     );
 
@@ -357,12 +405,12 @@ export function BrandNextMobile({
       ],
       [
         1,
+        0.96,
         0.94,
-        0.92,
       ]
     );
 
-  const nextOverlayOpacity =
+  const nextDarkOpacity =
     useTransform(
       dragX,
       [
@@ -377,8 +425,25 @@ export function BrandNextMobile({
       ]
     );
 
+  const nextTextOpacity =
+    useTransform(
+      dragX,
+      [
+        -DRAG_DISTANCE,
+        -DRAG_DISTANCE * 0.62,
+        -DRAG_DISTANCE * 0.3,
+        0,
+      ],
+      [
+        1,
+        0.55,
+        0,
+        0,
+      ]
+    );
+
   /* ============================================================ */
-  /* Keep selected tab centered                                  */
+  /* Keep active tab centered                                    */
   /* ============================================================ */
 
   useEffect(() => {
@@ -399,27 +464,32 @@ export function BrandNextMobile({
   }, [activeIndex]);
 
   /* ============================================================ */
-  /* Complete card change                                        */
+  /* Seamless state handoff                                      */
   /* ============================================================ */
 
   const completeChange = (
     index: number
   ) => {
-    goToTab(index);
+    /*
+     * The incoming card is already visually centered and
+     * full-size when this runs.
+     *
+     * We update the parent's active tab synchronously, then
+     * immediately reset the shared motion value. This prevents
+     * the newly-active card from visibly popping in size.
+     */
+
+    flushSync(() => {
+      goToTab(index);
+    });
 
     dragX.set(0);
 
-    requestAnimationFrame(
-      () => {
-        setIsAnimating(
-          false
-        );
-      }
-    );
+    setIsAnimating(false);
   };
 
   /* ============================================================ */
-  /* Animate to next / previous                                  */
+  /* Animate carousel to another card                            */
   /* ============================================================ */
 
   const animateToIndex = (
@@ -473,7 +543,7 @@ export function BrandNextMobile({
   };
 
   /* ============================================================ */
-  /* Drag release                                                */
+  /* Drag end                                                    */
   /* ============================================================ */
 
   const handleDragEnd = (
@@ -485,6 +555,7 @@ export function BrandNextMobile({
         x: number;
         y: number;
       };
+
       velocity: {
         x: number;
         y: number;
@@ -503,8 +574,12 @@ export function BrandNextMobile({
       info.velocity.x >
         VELOCITY_THRESHOLD;
 
+    /* Go to next */
+
     if (moveNext) {
-      setIsAnimating(true);
+      setIsAnimating(
+        true
+      );
 
       animate(
         dragX,
@@ -519,8 +594,12 @@ export function BrandNextMobile({
       return;
     }
 
+    /* Go to previous */
+
     if (movePrevious) {
-      setIsAnimating(true);
+      setIsAnimating(
+        true
+      );
 
       animate(
         dragX,
@@ -535,7 +614,7 @@ export function BrandNextMobile({
       return;
     }
 
-    /* Not enough swipe — return naturally */
+    /* Return to active card */
 
     animate(
       dragX,
@@ -692,7 +771,7 @@ export function BrandNextMobile({
       </div>
 
       {/* ========================================================== */}
-      {/* Linked card carousel                                       */}
+      {/* Linked carousel                                            */}
       {/* ========================================================== */}
 
       <div
@@ -705,8 +784,8 @@ export function BrandNextMobile({
         <div
           className="
             relative
-            h-[500px]
-            sm:h-[560px]
+            h-[480px]
+            sm:h-[5400px]
           "
         >
           {/* ====================================================== */}
@@ -754,11 +833,13 @@ export function BrandNextMobile({
               }
             />
 
+            {/* Dark resting overlay */}
+
             <motion.div
               aria-hidden="true"
               style={{
                 opacity:
-                  previousOverlayOpacity,
+                  previousDarkOpacity,
               }}
               className="
                 pointer-events-none
@@ -769,11 +850,25 @@ export function BrandNextMobile({
               "
             />
 
-            <CardContent
-              tab={
-                previousTab
-              }
-            />
+            {/* Text appears only while moving forward */}
+
+            <motion.div
+              style={{
+                opacity:
+                  previousTextOpacity,
+              }}
+              className="
+                absolute
+                inset-0
+                z-30
+              "
+            >
+              <CardContent
+                tab={
+                  previousTab
+                }
+              />
+            </motion.div>
           </motion.button>
 
           {/* ====================================================== */}
@@ -821,11 +916,13 @@ export function BrandNextMobile({
               }
             />
 
+            {/* Dark resting overlay */}
+
             <motion.div
               aria-hidden="true"
               style={{
                 opacity:
-                  nextOverlayOpacity,
+                  nextDarkOpacity,
               }}
               className="
                 pointer-events-none
@@ -836,9 +933,23 @@ export function BrandNextMobile({
               "
             />
 
-            <CardContent
-              tab={nextTab}
-            />
+            {/* Text appears only while moving forward */}
+
+            <motion.div
+              style={{
+                opacity:
+                  nextTextOpacity,
+              }}
+              className="
+                absolute
+                inset-0
+                z-30
+              "
+            >
+              <CardContent
+                tab={nextTab}
+              />
+            </motion.div>
           </motion.button>
 
           {/* ====================================================== */}
@@ -901,9 +1012,23 @@ export function BrandNextMobile({
               }
             />
 
-            <CardContent
-              tab={activeTab}
-            />
+            {/* Active content fades away as card leaves */}
+
+            <motion.div
+              style={{
+                opacity:
+                  activeTextOpacity,
+              }}
+              className="
+                absolute
+                inset-0
+                z-30
+              "
+            >
+              <CardContent
+                tab={activeTab}
+              />
+            </motion.div>
           </motion.div>
         </div>
 
@@ -960,43 +1085,55 @@ export function BrandNextMobile({
         </div>
       </div>
 
-      {/* ========================================================== */}
-      {/* CTA                                                        */}
-      {/* ========================================================== */}
+{/* ========================================================== */}
+{/* CTA                                                        */}
+{/* ========================================================== */}
 
-      <div
-        className="
-          mt-8
-          flex
-          justify-center
-          px-5
-          sm:px-8
-        "
-      >
-        <a
-          href="/process"
-          className="
-            inline-flex
-            items-center
-            gap-2
-            border-b
-            border-white/70
-            pb-1
-            text-sm
-            font-semibold
-            text-white
-            transition-colors
-            hover:border-[#BBFF1B]
-            hover:text-[#BBFF1B]
-          "
-        >
-          Explore how we work
+<div
+  className="
+    mt-8
+    px-5
+    sm:px-8
+  "
+>
+  <a
+    href="/process"
+    className="
+      flex
+      w-full
+      items-center
+      justify-between
+      rounded-[14px]
+      bg-white/10
+      px-6
+      py-4
+      font-mono
+      text-[15px]
+      font-semibold
+      uppercase
+      tracking-[0.08em]
+      text-white
+      transition-colors
+      duration-300
+      hover:bg-white/30
+      sm:px-8
+      sm:py-7
+      sm:text-base
+    "
+  >
+    <span>
+      Explore how we work
+    </span>
 
-          <ArrowUpRight
-            size={16}
-          />
-        </a>
-      </div>
+    <ArrowUpRight
+      size={20}
+      className="
+        shrink-0
+        text-white
+      "
+    />
+  </a>
+</div>
     </section>
   );
 }
