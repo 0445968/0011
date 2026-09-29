@@ -9,8 +9,10 @@ import {
 } from 'react';
 
 import {
-  AnimatePresence,
+  animate,
   motion,
+  useMotionValue,
+  useTransform,
 } from 'framer-motion';
 
 import { ArrowUpRight } from 'lucide-react';
@@ -53,21 +55,22 @@ type BrandNextMobileProps = {
 };
 
 /* ================================================================ */
-/* Animation settings                                               */
+/* Carousel settings                                                */
 /* ================================================================ */
 
-const SWIPE_DISTANCE = 75;
-const SWIPE_VELOCITY = 500;
+const DRAG_DISTANCE = 270;
+const SWIPE_THRESHOLD = 65;
+const VELOCITY_THRESHOLD = 450;
 
-const CARD_TRANSITION = {
+const SPRING = {
   type: 'spring' as const,
-  stiffness: 260,
-  damping: 28,
+  stiffness: 300,
+  damping: 30,
   mass: 0.85,
 };
 
 /* ================================================================ */
-/* Card background                                                  */
+/* Background image                                                 */
 /* ================================================================ */
 
 function CardBackground({
@@ -90,12 +93,7 @@ function CardBackground({
   }
 
   return (
-    <div
-      className="
-        absolute
-        inset-0
-      "
-    >
+    <div className="absolute inset-0">
       <Image
         src={src}
         alt=""
@@ -112,161 +110,93 @@ function CardBackground({
 }
 
 /* ================================================================ */
-/* Side card                                                        */
+/* Card gradient                                                    */
 /* ================================================================ */
 
-function SideCard({
-  tab,
-  side,
-  onClick,
+function CardGradient({
+  color,
 }: {
-  tab: BrandNextTab;
-  side: 'left' | 'right';
-  onClick: () => void;
+  color?: string;
 }) {
-  const isLeft =
-    side === 'left';
+  const overlay =
+    color ?? '#000000';
 
   return (
-    <motion.button
-      type="button"
-      aria-label={`Go to ${tab.label}`}
-      onClick={onClick}
-      initial={false}
-      animate={{
-        scale: 0.95,
-        opacity: 0.84,
-      }}
-      transition={
-        CARD_TRANSITION
-      }
-      whileTap={{
-        scale: 0.93,
-      }}
-      className={`
+    <div
+      aria-hidden="true"
+      className="
+        pointer-events-none
         absolute
-        bottom-5
-        top-5
-        z-0
-        w-[76%]
-        overflow-hidden
-        rounded-[16px]
-        bg-[#29292e]
-        text-left
-        text-white
-        shadow-[0_18px_50px_rgba(0,0,0,0.25)]
+        inset-x-0
+        top-0
+        z-10
+        h-[50%]
+      "
+      style={{
+        background: `linear-gradient(
+          to bottom,
+          ${overlay} 0%,
+          ${overlay}E6 34%,
+          ${overlay}80 68%,
+          transparent 100%
+        )`,
+      }}
+    />
+  );
+}
 
-        ${
-          isLeft
-            ? `
-              left-3
-              sm:left-5
-            `
-            : `
-              right-3
-              sm:right-5
-            `
-        }
+/* ================================================================ */
+/* Card content                                                     */
+/* ================================================================ */
 
-        sm:w-[73%]
-      `}
+function CardContent({
+  tab,
+}: {
+  tab: BrandNextTab;
+}) {
+  return (
+    <div
+      className="
+        pointer-events-none
+        relative
+        z-20
+        px-9
+        pt-10
+        sm:px-12
+        sm:pt-12
+      "
     >
-      <CardBackground
-        src={
-          tab.backgroundImage
-        }
-      />
-
-      {/* Darken previews */}
-
-      <div
-        className="
-          absolute
-          inset-0
-          bg-black/38
-        "
-      />
-
-      {/* Edge shading */}
-
-      <div
-        className={`
-          absolute
-          inset-0
-
-          ${
-            isLeft
-              ? `
-                bg-gradient-to-r
-                from-black/10
-                via-transparent
-                to-black/40
-              `
-              : `
-                bg-gradient-to-l
-                from-black/10
-                via-transparent
-                to-black/40
-              `
-          }
-        `}
-      />
-
-      {/* Preview content */}
-
-      <div
-        className="
-          relative
-          z-10
-          h-full
-          px-5
-          pt-7
-          sm:px-7
-          sm:pt-8
-        "
-      >
-        <div
-          className={`
-            max-w-[68%]
-
-            ${
-              isLeft
-                ? ''
-                : 'ml-auto'
-            }
-          `}
+      <div className="max-w-[82%]">
+        <h3
+          style={{
+            lineHeight: 1.08,
+          }}
+          className="
+            font-heading
+            text-[1.4rem]
+            font-semibold
+            tracking-[-0.03em]
+            text-white
+            sm:text-[1.65rem]
+          "
         >
-          <h3
-            style={{
-              lineHeight: 1.08,
-            }}
-            className="
-              font-heading
-              text-[1.35rem]
-              font-semibold
-              tracking-[-0.03em]
-              text-white
-              sm:text-[1.6rem]
-            "
-          >
-            {tab.title}
-          </h3>
+          {tab.title}
+        </h3>
 
-          <p
-            className="
-              mt-3
-              text-[13px]
-              leading-5
-              text-white/65
-              sm:text-sm
-              sm:leading-6
-            "
-          >
-            {tab.description}
-          </p>
-        </div>
+        <p
+          className="
+            mt-3
+            text-[14px]
+            leading-6
+            text-white/70
+            sm:text-[15px]
+            sm:leading-6
+          "
+        >
+          {tab.description}
+        </p>
       </div>
-    </motion.button>
+    </div>
   );
 }
 
@@ -281,20 +211,22 @@ export function BrandNextMobile({
   activeIndex,
   goToTab,
 }: BrandNextMobileProps) {
-  const [
-    direction,
-    setDirection,
-  ] = useState(1);
+  const dragX =
+    useMotionValue(0);
 
   const [
-    dragging,
-    setDragging,
+    isAnimating,
+    setIsAnimating,
   ] = useState(false);
 
   const tabRefs =
     useRef<
       Array<HTMLButtonElement | null>
     >([]);
+
+  /* ============================================================ */
+  /* Adjacent tabs                                                */
+  /* ============================================================ */
 
   const previousIndex =
     activeIndex > 0
@@ -312,6 +244,138 @@ export function BrandNextMobile({
 
   const nextTab =
     tabs[nextIndex];
+
+  /* ============================================================ */
+  /* Active card transforms                                      */
+  /* ============================================================ */
+
+  const activeScale =
+    useTransform(
+      dragX,
+      [
+        -DRAG_DISTANCE,
+        0,
+        DRAG_DISTANCE,
+      ],
+      [
+        0.94,
+        1,
+        0.94,
+      ]
+    );
+
+  const activeOpacity =
+    useTransform(
+      dragX,
+      [
+        -DRAG_DISTANCE,
+        0,
+        DRAG_DISTANCE,
+      ],
+      [
+        0.82,
+        1,
+        0.82,
+      ]
+    );
+
+  /* ============================================================ */
+  /* Previous card transforms                                    */
+  /* ============================================================ */
+
+  const previousX =
+    useTransform(
+      dragX,
+      [
+        -DRAG_DISTANCE,
+        0,
+        DRAG_DISTANCE,
+      ],
+      [
+        '-105%',
+        '-88%',
+        '0%',
+      ]
+    );
+
+  const previousScale =
+    useTransform(
+      dragX,
+      [
+        -DRAG_DISTANCE,
+        0,
+        DRAG_DISTANCE,
+      ],
+      [
+        0.92,
+        0.94,
+        1,
+      ]
+    );
+
+  const previousOverlayOpacity =
+    useTransform(
+      dragX,
+      [
+        -DRAG_DISTANCE,
+        0,
+        DRAG_DISTANCE,
+      ],
+      [
+        0.65,
+        0.42,
+        0,
+      ]
+    );
+
+  /* ============================================================ */
+  /* Next card transforms                                        */
+  /* ============================================================ */
+
+  const nextX =
+    useTransform(
+      dragX,
+      [
+        -DRAG_DISTANCE,
+        0,
+        DRAG_DISTANCE,
+      ],
+      [
+        '0%',
+        '88%',
+        '105%',
+      ]
+    );
+
+  const nextScale =
+    useTransform(
+      dragX,
+      [
+        -DRAG_DISTANCE,
+        0,
+        DRAG_DISTANCE,
+      ],
+      [
+        1,
+        0.94,
+        0.92,
+      ]
+    );
+
+  const nextOverlayOpacity =
+    useTransform(
+      dragX,
+      [
+        -DRAG_DISTANCE,
+        0,
+        DRAG_DISTANCE,
+      ],
+      [
+        0,
+        0.42,
+        0.65,
+      ]
+    );
 
   /* ============================================================ */
   /* Keep selected tab centered                                  */
@@ -335,19 +399,42 @@ export function BrandNextMobile({
   }, [activeIndex]);
 
   /* ============================================================ */
-  /* Navigation                                                   */
+  /* Complete card change                                        */
   /* ============================================================ */
 
-  const selectTab = (
+  const completeChange = (
+    index: number
+  ) => {
+    goToTab(index);
+
+    dragX.set(0);
+
+    requestAnimationFrame(
+      () => {
+        setIsAnimating(
+          false
+        );
+      }
+    );
+  };
+
+  /* ============================================================ */
+  /* Animate to next / previous                                  */
+  /* ============================================================ */
+
+  const animateToIndex = (
     index: number
   ) => {
     if (
+      isAnimating ||
+      index === activeIndex ||
       index < 0 ||
-      index >= tabs.length ||
-      index === activeIndex
+      index >= tabs.length
     ) {
       return;
     }
+
+    setIsAnimating(true);
 
     const wrappingForward =
       activeIndex ===
@@ -359,46 +446,40 @@ export function BrandNextMobile({
       index ===
         tabs.length - 1;
 
+    let target =
+      index > activeIndex
+        ? -DRAG_DISTANCE
+        : DRAG_DISTANCE;
+
     if (wrappingForward) {
-      setDirection(1);
-    } else if (
-      wrappingBackward
-    ) {
-      setDirection(-1);
-    } else {
-      setDirection(
-        index >
-          activeIndex
-          ? 1
-          : -1
-      );
+      target =
+        -DRAG_DISTANCE;
     }
 
-    goToTab(index);
-  };
-
-  const selectById = (
-    id: string
-  ) => {
-    const index =
-      tabs.findIndex(
-        (tab) =>
-          tab.id === id
-      );
-
-    if (index === -1) {
-      return;
+    if (wrappingBackward) {
+      target =
+        DRAG_DISTANCE;
     }
 
-    selectTab(index);
+    animate(
+      dragX,
+      target,
+      SPRING
+    ).then(() => {
+      completeChange(
+        index
+      );
+    });
   };
 
   /* ============================================================ */
-  /* Drag                                                         */
+  /* Drag release                                                */
   /* ============================================================ */
 
   const handleDragEnd = (
-    _: MouseEvent | TouchEvent | PointerEvent,
+    _: MouseEvent |
+      TouchEvent |
+      PointerEvent,
     info: {
       offset: {
         x: number;
@@ -410,57 +491,57 @@ export function BrandNextMobile({
       };
     }
   ) => {
-    setDragging(false);
-
-    const draggedLeft =
+    const moveNext =
       info.offset.x <
-      -SWIPE_DISTANCE;
-
-    const draggedRight =
-      info.offset.x >
-      SWIPE_DISTANCE;
-
-    const flickedLeft =
+        -SWIPE_THRESHOLD ||
       info.velocity.x <
-      -SWIPE_VELOCITY;
+        -VELOCITY_THRESHOLD;
 
-    const flickedRight =
+    const movePrevious =
+      info.offset.x >
+        SWIPE_THRESHOLD ||
       info.velocity.x >
-      SWIPE_VELOCITY;
+        VELOCITY_THRESHOLD;
 
-    if (
-      draggedLeft ||
-      flickedLeft
-    ) {
-      setDirection(1);
+    if (moveNext) {
+      setIsAnimating(true);
 
-      window.setTimeout(
-        () => {
-          goToTab(
-            nextIndex
-          );
-        },
-        30
-      );
+      animate(
+        dragX,
+        -DRAG_DISTANCE,
+        SPRING
+      ).then(() => {
+        completeChange(
+          nextIndex
+        );
+      });
 
       return;
     }
 
-    if (
-      draggedRight ||
-      flickedRight
-    ) {
-      setDirection(-1);
+    if (movePrevious) {
+      setIsAnimating(true);
 
-      window.setTimeout(
-        () => {
-          goToTab(
-            previousIndex
-          );
-        },
-        30
-      );
+      animate(
+        dragX,
+        DRAG_DISTANCE,
+        SPRING
+      ).then(() => {
+        completeChange(
+          previousIndex
+        );
+      });
+
+      return;
     }
+
+    /* Not enough swipe — return naturally */
+
+    animate(
+      dragX,
+      0,
+      SPRING
+    );
   };
 
   return (
@@ -469,9 +550,10 @@ export function BrandNextMobile({
         relative
         overflow-hidden
         bg-black
+        pb-14
         pt-20
-        py-14
         text-white
+        sm:pt-24
         md:hidden
       "
     >
@@ -563,8 +645,8 @@ export function BrandNextMobile({
                 }}
                 type="button"
                 onClick={() =>
-                  selectById(
-                    tab.id
+                  animateToIndex(
+                    index
                   )
                 }
                 className={`
@@ -610,7 +692,7 @@ export function BrandNextMobile({
       </div>
 
       {/* ========================================================== */}
-      {/* Card carousel                                              */}
+      {/* Linked card carousel                                       */}
       {/* ========================================================== */}
 
       <div
@@ -624,250 +706,205 @@ export function BrandNextMobile({
           className="
             relative
             h-[500px]
-            sm:h-[520px]
+            sm:h-[560px]
           "
         >
-          {/* Previous */}
+          {/* ====================================================== */}
+          {/* Previous card                                         */}
+          {/* ====================================================== */}
 
-          <SideCard
-            key={`previous-${previousTab.id}`}
-            tab={
-              previousTab
-            }
-            side="left"
+          <motion.button
+            type="button"
+            aria-label={`Go to ${previousTab.label}`}
             onClick={() =>
-              selectTab(
+              animateToIndex(
                 previousIndex
               )
             }
-          />
+            style={{
+              x: previousX,
+              scale:
+                previousScale,
+            }}
+            className="
+              absolute
+              bottom-5
+              left-[10%]
+              right-[10%]
+              top-5
+              z-0
+              overflow-hidden
+              rounded-[16px]
+              text-left
+              text-white
+              shadow-[0_18px_50px_rgba(0,0,0,0.28)]
+              sm:left-[13%]
+              sm:right-[13%]
+            "
+          >
+            <CardBackground
+              src={
+                previousTab.backgroundImage
+              }
+            />
 
-          {/* Next */}
+            <CardGradient
+              color={
+                previousTab.overlayColor
+              }
+            />
 
-          <SideCard
-            key={`next-${nextTab.id}`}
-            tab={nextTab}
-            side="right"
+            <motion.div
+              aria-hidden="true"
+              style={{
+                opacity:
+                  previousOverlayOpacity,
+              }}
+              className="
+                pointer-events-none
+                absolute
+                inset-0
+                z-20
+                bg-black
+              "
+            />
+
+            <CardContent
+              tab={
+                previousTab
+              }
+            />
+          </motion.button>
+
+          {/* ====================================================== */}
+          {/* Next card                                             */}
+          {/* ====================================================== */}
+
+          <motion.button
+            type="button"
+            aria-label={`Go to ${nextTab.label}`}
             onClick={() =>
-              selectTab(
+              animateToIndex(
                 nextIndex
               )
             }
-          />
+            style={{
+              x: nextX,
+              scale:
+                nextScale,
+            }}
+            className="
+              absolute
+              bottom-5
+              left-[10%]
+              right-[10%]
+              top-5
+              z-0
+              overflow-hidden
+              rounded-[16px]
+              text-left
+              text-white
+              shadow-[0_18px_50px_rgba(0,0,0,0.28)]
+              sm:left-[13%]
+              sm:right-[13%]
+            "
+          >
+            <CardBackground
+              src={
+                nextTab.backgroundImage
+              }
+            />
+
+            <CardGradient
+              color={
+                nextTab.overlayColor
+              }
+            />
+
+            <motion.div
+              aria-hidden="true"
+              style={{
+                opacity:
+                  nextOverlayOpacity,
+              }}
+              className="
+                pointer-events-none
+                absolute
+                inset-0
+                z-20
+                bg-black
+              "
+            />
+
+            <CardContent
+              tab={nextTab}
+            />
+          </motion.button>
 
           {/* ====================================================== */}
           {/* Active draggable card                                 */}
           {/* ====================================================== */}
 
-          <AnimatePresence
-            initial={false}
-            custom={direction}
-            mode="popLayout"
+          <motion.div
+            drag={
+              isAnimating
+                ? false
+                : 'x'
+            }
+            dragMomentum={false}
+            dragElastic={0}
+            style={{
+              x: dragX,
+              scale:
+                activeScale,
+              opacity:
+                activeOpacity,
+              touchAction:
+                'pan-y',
+            }}
+            onDragEnd={
+              handleDragEnd
+            }
+            whileDrag={{
+              cursor:
+                'grabbing',
+            }}
+            className="
+              absolute
+              bottom-0
+              left-[10%]
+              right-[10%]
+              top-0
+              z-10
+              cursor-grab
+              overflow-hidden
+              rounded-[18px]
+              text-white
+              shadow-[0_24px_70px_rgba(0,0,0,0.38)]
+              sm:left-[13%]
+              sm:right-[13%]
+            "
           >
-            <motion.div
-              key={
-                activeTab.id
+            <CardBackground
+              src={
+                activeTab.backgroundImage
               }
-              custom={direction}
-
-              initial={{
-                x:
-                  direction >
-                  0
-                    ? '105%'
-                    : '-105%',
-                scale: 0.95,
-                opacity: 0.6,
-              }}
-
-              animate={{
-                x: 0,
-                scale: 1,
-                opacity: 1,
-              }}
-
-              exit={{
-                x:
-                  direction >
-                  0
-                    ? '-105%'
-                    : '105%',
-                scale: 0.95,
-                opacity: 0.55,
-              }}
-
-              transition={
-                CARD_TRANSITION
+              priority={
+                activeIndex ===
+                0
               }
+            />
 
-              drag="x"
-dragSnapToOrigin
-dragMomentum={false}
-
-              onDragStart={() =>
-                setDragging(
-                  true
-                )
+            <CardGradient
+              color={
+                activeTab.overlayColor
               }
+            />
 
-              onDragEnd={
-                handleDragEnd
-              }
-
-              whileDrag={{
-                scale: 0.985,
-                cursor:
-                  'grabbing',
-              }}
-
-              style={{
-                touchAction:
-                  'pan-y',
-              }}
-
-              className="
-                absolute
-                bottom-0
-                left-[10%]
-                right-[10%]
-                top-0
-                z-10
-                cursor-grab
-                overflow-hidden
-                rounded-[18px]
-                bg-[#dcd9ff]
-                text-white
-                shadow-[0_24px_70px_rgba(0,0,0,0.38)]
-                sm:left-[13%]
-                sm:right-[13%]
-              "
-            >
-              {/* Background */}
-
-              <CardBackground
-                src={
-                  activeTab.backgroundImage
-                }
-                priority={
-                  activeIndex ===
-                  0
-                }
-              />
-
-              {/* Color-matched top fade */}
-
-              <div
-                aria-hidden="true"
-                className="
-                  pointer-events-none
-                  absolute
-                  inset-x-0
-                  top-0
-                  z-10
-                  h-[50%]
-                "
-                style={{
-                  background: `linear-gradient(
-                    to bottom,
-                    ${
-                      activeTab.overlayColor ??
-                      '#000000'
-                    } 0%,
-                    ${
-                      activeTab.overlayColor ??
-                      '#000000'
-                    }E6 34%,
-                    ${
-                      activeTab.overlayColor ??
-                      '#000000'
-                    }80 68%,
-                    transparent 100%
-                  )`,
-                }}
-              />
-
-              {/* Very subtle text shading */}
-
-              <div
-                aria-hidden="true"
-                className="
-                  pointer-events-none
-                  absolute
-                  inset-x-0
-                  top-0
-                  z-10
-                  h-[38%]
-                  bg-gradient-to-b
-                  from-black/10
-                  to-transparent
-                "
-              />
-
-              {/* Card content */}
-
-              <div
-                className="
-                  pointer-events-none
-                  relative
-                  z-20
-                  px-9
-                  pt-10
-                  sm:px-12
-                  sm:pt-12
-                "
-              >
-                <div className="max-w-[82%]">
-                  <h3
-                    style={{
-                      lineHeight:
-                        1.08,
-                    }}
-                    className="
-                      font-heading
-                      text-[1.4rem]
-                      font-semibold
-                      tracking-[-0.03em]
-                      text-white
-                      sm:text-[1.65rem]
-                    "
-                  >
-                    {
-                      activeTab.title
-                    }
-                  </h3>
-
-                  <p
-                    className="
-                      mt-3
-                      text-[14px]
-                      leading-6
-                      text-white/70
-                      sm:text-[15px]
-                      sm:leading-6
-                    "
-                  >
-                    {
-                      activeTab.description
-                    }
-                  </p>
-                </div>
-              </div>
-
-              {/* Drag surface helper */}
-
-              {dragging && (
-                <div
-                  aria-hidden="true"
-                  className="
-                    pointer-events-none
-                    absolute
-                    inset-0
-                    z-30
-                  "
-                />
-              )}
-            </motion.div>
-          </AnimatePresence>
+            <CardContent
+              tab={activeTab}
+            />
+          </motion.div>
         </div>
 
         {/* ======================================================== */}
@@ -893,7 +930,7 @@ dragMomentum={false}
                 type="button"
                 aria-label={`Go to ${tab.label}`}
                 onClick={() =>
-                  selectTab(
+                  animateToIndex(
                     index
                   )
                 }
