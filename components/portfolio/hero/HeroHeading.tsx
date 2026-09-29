@@ -145,7 +145,7 @@ export function HeroHeading() {
           sm:leading-8
         "
       >
-        From helpful brand systems to thoughtful digital tools,
+        From helpful brand systems to thoughtful digital tools,{' '}
         <br className="hidden sm:block" />
         we build the pieces that help your brand grow with confidence.
       </motion.p>

@@ -19,7 +19,6 @@ export default function Home() {
   return (
     <>
       <Hero />
-      <AboutCustomers />
       <BrandStrategyProblem />
       <BrandNextSection />
       <ServicesCarousel />
