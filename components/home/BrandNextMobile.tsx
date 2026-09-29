@@ -17,7 +17,7 @@ import {
   useTransform,
 } from 'framer-motion';
 
-import { ArrowUpRight } from 'lucide-react';
+import { Binoculars } from 'lucide-react';
 
 export type BrandNextTab = {
   id: string;
@@ -67,11 +67,21 @@ const SWIPE_THRESHOLD = 65;
 
 const VELOCITY_THRESHOLD = 450;
 
-const SPRING = {
+const SETTLE_TRANSITION = {
+  duration: 0.32,
+  ease: [
+    0.22,
+    1,
+    0.36,
+    1,
+  ] as const,
+};
+
+const RETURN_SPRING = {
   type: 'spring' as const,
-  stiffness: 280,
-  damping: 30,
-  mass: 0.82,
+  stiffness: 340,
+  damping: 32,
+  mass: 0.7,
 };
 
 /* ================================================================ */
@@ -120,7 +130,7 @@ function CardBackground({
 }
 
 /* ================================================================ */
-/* Color-matched top gradient                                       */
+/* Color-matched bottom gradient                                    */
 /* ================================================================ */
 
 function CardGradient({
@@ -140,16 +150,25 @@ function CardGradient({
         inset-x-0
         bottom-0
         z-10
-        h-[55%]
+        h-[65%]
       "
       style={{
-        background: `linear-gradient(
-          to top,
-          ${overlay} 0%,
-          ${overlay}E6 34%,
-          ${overlay}80 68%,
-          transparent 100%
-        )`,
+        background: `
+          linear-gradient(
+            to top,
+            rgba(0, 0, 0, 0.75) 0%,
+            rgba(0, 0, 0, 0.38) 28%,
+            rgba(0, 0, 0, 0.12) 55%,
+            transparent 82%
+          ),
+          linear-gradient(
+            to top,
+            ${overlay} 0%,
+            ${overlay}E6 34%,
+            ${overlay}80 68%,
+            transparent 100%
+          )
+        `,
       }}
     />
   );
@@ -178,7 +197,11 @@ function CardContent({
         sm:pb-12
       "
     >
-      <div className="max-w-[82%]">
+      <div
+        className="
+          max-w-[100%]
+        "
+      >
         <h3
           style={{
             lineHeight: 1.08,
@@ -236,6 +259,9 @@ export function BrandNextMobile({
       Array<HTMLButtonElement | null>
     >([]);
 
+    const tabBarRef =
+      useRef<HTMLDivElement | null>(null);
+
   /* ============================================================ */
   /* Adjacent cards                                              */
   /* ============================================================ */
@@ -270,9 +296,9 @@ export function BrandNextMobile({
         DRAG_DISTANCE,
       ],
       [
-        0.96,
+        0.94,
         1,
-        0.96,
+        0.94,
       ]
     );
 
@@ -339,7 +365,7 @@ export function BrandNextMobile({
       ],
       [
         0.94,
-        0.96,
+        0.94,
         1,
       ]
     );
@@ -405,7 +431,7 @@ export function BrandNextMobile({
       ],
       [
         1,
-        0.96,
+        0.94,
         0.94,
       ]
     );
@@ -446,50 +472,68 @@ export function BrandNextMobile({
   /* Keep active tab centered                                    */
   /* ============================================================ */
 
-  useEffect(() => {
-    const selected =
-      tabRefs.current[
-        activeIndex
-      ];
+useEffect(() => {
+  const container =
+    tabBarRef.current;
 
-    if (!selected) {
-      return;
-    }
+  const selected =
+    tabRefs.current[
+      activeIndex
+    ];
 
-    selected.scrollIntoView({
-      behavior: 'smooth',
-      inline: 'center',
-      block: 'nearest',
-    });
-  }, [activeIndex]);
+  if (
+    !container ||
+    !selected
+  ) {
+    return;
+  }
+
+  const target =
+    selected.offsetLeft -
+    container.clientWidth / 2 +
+    selected.clientWidth / 2;
+
+  container.scrollTo({
+    left: target,
+    behavior: 'smooth',
+  });
+}, [activeIndex]);
 
   /* ============================================================ */
-  /* Seamless state handoff                                      */
+  /* Seamless handoff                                            */
   /* ============================================================ */
 
   const completeChange = (
     index: number
   ) => {
     /*
-     * The incoming card is already visually centered and
-     * full-size when this runs.
+     * Incoming card has already reached:
      *
-     * We update the parent's active tab synchronously, then
-     * immediately reset the shared motion value. This prevents
-     * the newly-active card from visibly popping in size.
+     * x = 0
+     * scale = 1
+     * full card height
+     *
+     * before the active state changes.
      */
 
     flushSync(() => {
       goToTab(index);
     });
 
+    /*
+     * Reset the shared drag value immediately after the state
+     * handoff, in the same frame.
+     */
+
     dragX.set(0);
 
-    setIsAnimating(false);
+    setIsAnimating(
+      false
+    );
   };
 
   /* ============================================================ */
-  /* Animate carousel to another card                            */
+  /* Animate to another card                                     */
   /* ============================================================ */
 
   const animateToIndex = (
@@ -504,7 +548,9 @@ export function BrandNextMobile({
       return;
     }
 
-    setIsAnimating(true);
+    setIsAnimating(
+      true
+    );
 
     const wrappingForward =
       activeIndex ===
@@ -521,12 +567,16 @@ export function BrandNextMobile({
         ? -DRAG_DISTANCE
         : DRAG_DISTANCE;
 
-    if (wrappingForward) {
+    if (
+      wrappingForward
+    ) {
       target =
         -DRAG_DISTANCE;
     }
 
-    if (wrappingBackward) {
+    if (
+      wrappingBackward
+    ) {
       target =
         DRAG_DISTANCE;
     }
@@ -534,7 +584,7 @@ export function BrandNextMobile({
     animate(
       dragX,
       target,
-      SPRING
+      SETTLE_TRANSITION
     ).then(() => {
       completeChange(
         index
@@ -574,7 +624,7 @@ export function BrandNextMobile({
       info.velocity.x >
         VELOCITY_THRESHOLD;
 
-    /* Go to next */
+    /* Move to next */
 
     if (moveNext) {
       setIsAnimating(
@@ -584,7 +634,7 @@ export function BrandNextMobile({
       animate(
         dragX,
         -DRAG_DISTANCE,
-        SPRING
+        SETTLE_TRANSITION
       ).then(() => {
         completeChange(
           nextIndex
@@ -594,7 +644,7 @@ export function BrandNextMobile({
       return;
     }
 
-    /* Go to previous */
+    /* Move to previous */
 
     if (movePrevious) {
       setIsAnimating(
@@ -604,7 +654,7 @@ export function BrandNextMobile({
       animate(
         dragX,
         DRAG_DISTANCE,
-        SPRING
+        SETTLE_TRANSITION
       ).then(() => {
         completeChange(
           previousIndex
@@ -614,12 +664,12 @@ export function BrandNextMobile({
       return;
     }
 
-    /* Return to active card */
+    /* Cancel swipe and return */
 
     animate(
       dragX,
       0,
-      SPRING
+      RETURN_SPRING
     );
   };
 
@@ -692,6 +742,7 @@ export function BrandNextMobile({
       {/* ========================================================== */}
 
       <div
+        ref={tabBarRef}
         className="
           mt-8
           flex
@@ -701,6 +752,7 @@ export function BrandNextMobile({
           px-14
           pb-3
           sm:px-[4.5rem]
+          
           [scrollbar-width:none]
           [&::-webkit-scrollbar]:hidden
         "
@@ -771,7 +823,7 @@ export function BrandNextMobile({
       </div>
 
       {/* ========================================================== */}
-      {/* Linked carousel                                            */}
+      {/* Carousel                                                   */}
       {/* ========================================================== */}
 
       <div
@@ -784,8 +836,8 @@ export function BrandNextMobile({
         <div
           className="
             relative
-            h-[480px]
-            sm:h-[5400px]
+            h-[500px]
+            sm:h-[560px]
           "
         >
           {/* ====================================================== */}
@@ -801,19 +853,20 @@ export function BrandNextMobile({
               )
             }
             style={{
-              x: previousX,
+              x:
+                previousX,
               scale:
                 previousScale,
             }}
             className="
               absolute
-              bottom-5
+              bottom-0
               left-[10%]
               right-[10%]
-              top-5
+              top-0
               z-0
               overflow-hidden
-              rounded-[16px]
+              rounded-[18px]
               text-left
               text-white
               shadow-[0_18px_50px_rgba(0,0,0,0.28)]
@@ -833,7 +886,23 @@ export function BrandNextMobile({
               }
             />
 
-            {/* Dark resting overlay */}
+            <div
+  aria-hidden="true"
+  className="
+    pointer-events-none
+    absolute
+    inset-x-0
+    bottom-0
+    z-20
+    h-[55%]
+    bg-gradient-to-t
+    from-black/80
+    via-black/20
+    to-transparent
+  "
+/>
+
+            {/* Dark overlay disappears as card approaches center */}
 
             <motion.div
               aria-hidden="true"
@@ -845,12 +914,12 @@ export function BrandNextMobile({
                 pointer-events-none
                 absolute
                 inset-0
-                z-20
+                z-30
                 bg-black
               "
             />
 
-            {/* Text appears only while moving forward */}
+            {/* Text appears only as card approaches center */}
 
             <motion.div
               style={{
@@ -884,19 +953,20 @@ export function BrandNextMobile({
               )
             }
             style={{
-              x: nextX,
+              x:
+                nextX,
               scale:
                 nextScale,
             }}
             className="
               absolute
-              bottom-5
+              bottom-0
               left-[10%]
               right-[10%]
-              top-5
+              top-0
               z-0
               overflow-hidden
-              rounded-[16px]
+              rounded-[18px]
               text-left
               text-white
               shadow-[0_18px_50px_rgba(0,0,0,0.28)]
@@ -916,7 +986,7 @@ export function BrandNextMobile({
               }
             />
 
-            {/* Dark resting overlay */}
+            {/* Dark overlay disappears as card approaches center */}
 
             <motion.div
               aria-hidden="true"
@@ -933,7 +1003,7 @@ export function BrandNextMobile({
               "
             />
 
-            {/* Text appears only while moving forward */}
+            {/* Text appears only as card approaches center */}
 
             <motion.div
               style={{
@@ -947,7 +1017,9 @@ export function BrandNextMobile({
               "
             >
               <CardContent
-                tab={nextTab}
+                tab={
+                  nextTab
+                }
               />
             </motion.div>
           </motion.button>
@@ -1012,7 +1084,7 @@ export function BrandNextMobile({
               }
             />
 
-            {/* Active content fades away as card leaves */}
+            {/* Active text fades while card moves away */}
 
             <motion.div
               style={{
@@ -1026,7 +1098,9 @@ export function BrandNextMobile({
               "
             >
               <CardContent
-                tab={activeTab}
+                tab={
+                  activeTab
+                }
               />
             </motion.div>
           </motion.div>
@@ -1051,7 +1125,9 @@ export function BrandNextMobile({
               index
             ) => (
               <button
-                key={tab.id}
+                key={
+                  tab.id
+                }
                 type="button"
                 aria-label={`Go to ${tab.label}`}
                 onClick={() =>
@@ -1085,55 +1161,55 @@ export function BrandNextMobile({
         </div>
       </div>
 
-{/* ========================================================== */}
-{/* CTA                                                        */}
-{/* ========================================================== */}
+      {/* ========================================================== */}
+      {/* CTA                                                        */}
+      {/* ========================================================== */}
 
-<div
-  className="
-    mt-8
-    px-5
-    sm:px-8
-  "
->
-  <a
-    href="/process"
-    className="
-      flex
-      w-full
-      items-center
-      justify-between
-      rounded-[14px]
-      bg-white/10
-      px-6
-      py-4
-      font-mono
-      text-[15px]
-      font-semibold
-      uppercase
-      tracking-[0.08em]
-      text-white
-      transition-colors
-      duration-300
-      hover:bg-white/30
-      sm:px-8
-      sm:py-7
-      sm:text-base
-    "
-  >
-    <span>
-      Explore how we work
-    </span>
+      <div
+        className="
+          mt-8
+          px-5
+          sm:px-8
+        "
+      >
+        <a
+          href="/process"
+          className="
+            flex
+            w-full
+            items-center
+            justify-between
+            rounded-[16px]
+            bg-white/10
+            px-6
+            py-4
+            font-mono
+            text-[15px]
+            font-semibold
+            uppercase
+            tracking-[0.04em]
+            text-white
+            transition-colors
+            duration-300
+            hover:bg-white/15
+            sm:px-7
+            sm:py-5
+            sm:text-base
+          "
+        >
+          <span>
+            Explore how we work
+          </span>
 
-    <ArrowUpRight
-      size={20}
-      className="
-        shrink-0
-        text-white
-      "
-    />
-  </a>
-</div>
+          <Binoculars
+            size={20}
+            className="
+              shrink-0
+              text-white
+            "
+          />
+        </a>
+      </div>
     </section>
   );
 }

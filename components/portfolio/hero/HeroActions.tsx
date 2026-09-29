@@ -86,7 +86,7 @@ export function HeroActions({
   text-black
   hover:bg-[#BBFF1B]/90
   sm:px-8
-  sm:text-[16px]
+  sm:text-[15px]
 "
           >
             Get Started

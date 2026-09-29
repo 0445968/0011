@@ -282,6 +282,7 @@ export function ServicesCarousel() {
         <a
           href="/services"
           className="
+          
             inline-flex
             h-[52px]
             items-center
@@ -291,6 +292,8 @@ export function ServicesCarousel() {
             bg-black
             px-7
             text-[16px]
+            font-mono
+            uppercase
             font-bold
             leading-none
             text-white
@@ -317,6 +320,8 @@ export function ServicesCarousel() {
             bg-[#eaeaea]
             px-7
             text-[16px]
+            font-mono
+            uppercase
             font-bold
             leading-none
             text-foreground
