@@ -29,7 +29,6 @@ export type BrandNextTab = {
   }[];
 };
 
-
 type BrandNextMobileProps = {
   tabs: BrandNextTab[];
   activeTab: BrandNextTab;
@@ -53,16 +52,18 @@ type BrandNextMobileProps = {
   ) => void;
 };
 
-const SWIPE_THRESHOLD = 55;
+/* ================================================================ */
+/* Animation settings                                               */
+/* ================================================================ */
+
+const SWIPE_DISTANCE = 75;
+const SWIPE_VELOCITY = 500;
 
 const CARD_TRANSITION = {
-  duration: 0.58,
-  ease: [
-    0.16,
-    1,
-    0.3,
-    1,
-  ] as const,
+  type: 'spring' as const,
+  stiffness: 260,
+  damping: 28,
+  mass: 0.85,
 };
 
 /* ================================================================ */
@@ -100,10 +101,7 @@ function CardBackground({
         alt=""
         fill
         priority={priority}
-        sizes="
-          (max-width: 767px)
-          90vw
-        "
+        sizes="(max-width: 767px) 90vw"
         className="
           object-cover
           object-center
@@ -123,9 +121,7 @@ function SideCard({
   onClick,
 }: {
   tab: BrandNextTab;
-  side:
-    | 'left'
-    | 'right';
+  side: 'left' | 'right';
   onClick: () => void;
 }) {
   const isLeft =
@@ -136,12 +132,17 @@ function SideCard({
       type="button"
       aria-label={`Go to ${tab.label}`}
       onClick={onClick}
+      initial={false}
       animate={{
-        x: 0,
-        scale: 0.94,
-        opacity: 0.86,
+        scale: 0.95,
+        opacity: 0.84,
       }}
-      transition={CARD_TRANSITION}
+      transition={
+        CARD_TRANSITION
+      }
+      whileTap={{
+        scale: 0.93,
+      }}
       className={`
         absolute
         bottom-5
@@ -176,17 +177,17 @@ function SideCard({
         }
       />
 
-      {/* Darken side previews */}
+      {/* Darken previews */}
 
       <div
         className="
           absolute
           inset-0
-          bg-black/48
+          bg-black/38
         "
       />
 
-      {/* Directional edge shading */}
+      {/* Edge shading */}
 
       <div
         className={`
@@ -197,15 +198,15 @@ function SideCard({
             isLeft
               ? `
                 bg-gradient-to-r
-                from-black/20
+                from-black/10
                 via-transparent
-                to-black/45
+                to-black/40
               `
               : `
                 bg-gradient-to-l
-                from-black/20
+                from-black/10
                 via-transparent
-                to-black/45
+                to-black/40
               `
           }
         `}
@@ -278,7 +279,6 @@ export function BrandNextMobile({
   activeTab,
   activeId,
   activeIndex,
-  setActiveId,
   goToTab,
 }: BrandNextMobileProps) {
   const [
@@ -286,15 +286,10 @@ export function BrandNextMobile({
     setDirection,
   ] = useState(1);
 
-  const touchStartX =
-    useRef<number | null>(
-      null
-    );
-
-  const touchStartY =
-    useRef<number | null>(
-      null
-    );
+  const [
+    dragging,
+    setDragging,
+  ] = useState(false);
 
   const tabRefs =
     useRef<
@@ -354,9 +349,6 @@ export function BrandNextMobile({
       return;
     }
 
-    const movingForward =
-      index > activeIndex;
-
     const wrappingForward =
       activeIndex ===
         tabs.length - 1 &&
@@ -375,7 +367,8 @@ export function BrandNextMobile({
       setDirection(-1);
     } else {
       setDirection(
-        movingForward
+        index >
+          activeIndex
           ? 1
           : -1
       );
@@ -397,81 +390,77 @@ export function BrandNextMobile({
       return;
     }
 
-    setActiveId(id);
     selectTab(index);
   };
 
   /* ============================================================ */
-  /* Swipe                                                        */
+  /* Drag                                                         */
   /* ============================================================ */
 
-  const handleLocalTouchStart = (
-    event: React.TouchEvent<HTMLDivElement>
+  const handleDragEnd = (
+    _: MouseEvent | TouchEvent | PointerEvent,
+    info: {
+      offset: {
+        x: number;
+        y: number;
+      };
+      velocity: {
+        x: number;
+        y: number;
+      };
+    }
   ) => {
-    const touch =
-      event.touches[0];
+    setDragging(false);
 
-    touchStartX.current =
-      touch.clientX;
+    const draggedLeft =
+      info.offset.x <
+      -SWIPE_DISTANCE;
 
-    touchStartY.current =
-      touch.clientY;
-  };
+    const draggedRight =
+      info.offset.x >
+      SWIPE_DISTANCE;
 
-  const handleLocalTouchEnd = (
-    event: React.TouchEvent<HTMLDivElement>
-  ) => {
-    if (
-      touchStartX.current ===
-        null ||
-      touchStartY.current ===
-        null
-    ) {
-      return;
-    }
+    const flickedLeft =
+      info.velocity.x <
+      -SWIPE_VELOCITY;
 
-    const touch =
-      event.changedTouches[0];
-
-    const deltaX =
-      touch.clientX -
-      touchStartX.current;
-
-    const deltaY =
-      touch.clientY -
-      touchStartY.current;
-
-    touchStartX.current =
-      null;
-
-    touchStartY.current =
-      null;
+    const flickedRight =
+      info.velocity.x >
+      SWIPE_VELOCITY;
 
     if (
-      Math.abs(deltaY) >
-      Math.abs(deltaX)
+      draggedLeft ||
+      flickedLeft
     ) {
-      return;
-    }
+      setDirection(1);
 
-    if (
-      Math.abs(deltaX) <
-      SWIPE_THRESHOLD
-    ) {
-      return;
-    }
-
-    if (deltaX < 0) {
-      selectTab(
-        nextIndex
+      window.setTimeout(
+        () => {
+          goToTab(
+            nextIndex
+          );
+        },
+        30
       );
 
       return;
     }
 
-    selectTab(
-      previousIndex
-    );
+    if (
+      draggedRight ||
+      flickedRight
+    ) {
+      setDirection(-1);
+
+      window.setTimeout(
+        () => {
+          goToTab(
+            previousIndex
+          );
+        },
+        30
+      );
+    }
   };
 
   return (
@@ -480,6 +469,7 @@ export function BrandNextMobile({
         relative
         overflow-hidden
         bg-black
+        pt-20
         py-14
         text-white
         md:hidden
@@ -624,33 +614,26 @@ export function BrandNextMobile({
       {/* ========================================================== */}
 
       <div
-        onTouchStart={
-          handleLocalTouchStart
-        }
-        onTouchEnd={
-          handleLocalTouchEnd
-        }
         className="
           relative
           mt-7
-          touch-pan-y
           overflow-hidden
         "
       >
         <div
           className="
             relative
-            h-[560px]
-            sm:h-[620px]
+            h-[500px]
+            sm:h-[520px]
           "
         >
-          {/* ====================================================== */}
-          {/* Previous card                                         */}
-          {/* ====================================================== */}
+          {/* Previous */}
 
           <SideCard
             key={`previous-${previousTab.id}`}
-            tab={previousTab}
+            tab={
+              previousTab
+            }
             side="left"
             onClick={() =>
               selectTab(
@@ -659,9 +642,7 @@ export function BrandNextMobile({
             }
           />
 
-          {/* ====================================================== */}
-          {/* Next card                                             */}
-          {/* ====================================================== */}
+          {/* Next */}
 
           <SideCard
             key={`next-${nextTab.id}`}
@@ -675,7 +656,7 @@ export function BrandNextMobile({
           />
 
           {/* ====================================================== */}
-          {/* Active animated card                                  */}
+          {/* Active draggable card                                 */}
           {/* ====================================================== */}
 
           <AnimatePresence
@@ -684,32 +665,66 @@ export function BrandNextMobile({
             mode="popLayout"
           >
             <motion.div
-              key={activeTab.id}
+              key={
+                activeTab.id
+              }
               custom={direction}
+
               initial={{
                 x:
-                  direction > 0
-                    ? '42%'
-                    : '-42%',
-                opacity: 0.4,
-                scale: 0.94,
+                  direction >
+                  0
+                    ? '105%'
+                    : '-105%',
+                scale: 0.95,
+                opacity: 0.6,
               }}
+
               animate={{
                 x: 0,
-                opacity: 1,
                 scale: 1,
+                opacity: 1,
               }}
+
               exit={{
                 x:
-                  direction > 0
-                    ? '-42%'
-                    : '42%',
-                opacity: 0.3,
-                scale: 0.94,
+                  direction >
+                  0
+                    ? '-105%'
+                    : '105%',
+                scale: 0.95,
+                opacity: 0.55,
               }}
+
               transition={
                 CARD_TRANSITION
               }
+
+              drag="x"
+dragSnapToOrigin
+dragMomentum={false}
+
+              onDragStart={() =>
+                setDragging(
+                  true
+                )
+              }
+
+              onDragEnd={
+                handleDragEnd
+              }
+
+              whileDrag={{
+                scale: 0.985,
+                cursor:
+                  'grabbing',
+              }}
+
+              style={{
+                touchAction:
+                  'pan-y',
+              }}
+
               className="
                 absolute
                 bottom-0
@@ -717,6 +732,7 @@ export function BrandNextMobile({
                 right-[10%]
                 top-0
                 z-10
+                cursor-grab
                 overflow-hidden
                 rounded-[18px]
                 bg-[#dcd9ff]
@@ -726,52 +742,63 @@ export function BrandNextMobile({
                 sm:right-[13%]
               "
             >
-              {/* Background image */}
+              {/* Background */}
 
               <CardBackground
                 src={
                   activeTab.backgroundImage
                 }
                 priority={
-                  activeIndex === 0
+                  activeIndex ===
+                  0
                 }
               />
 
-
-
-              {/* Readability overlay */}
+              {/* Color-matched top fade */}
 
               <div
-  aria-hidden="true"
-  className="
-    absolute
-    inset-x-0
-    top-0
-    z-10
-    h-[50%]
-    pointer-events-none
-  "
-  style={{
-    background: `linear-gradient(
-      to bottom,
-      ${activeTab.overlayColor ?? '#000000'} 0%,
-      ${activeTab.overlayColor ?? '#000000'}E6 34%,
-      ${activeTab.overlayColor ?? '#000000'}80 68%,
-      transparent 100%
-    )`,
-  }}
-/>
-
-              {/* Subtle upper text shadow */}
-
-              <div
+                aria-hidden="true"
                 className="
+                  pointer-events-none
                   absolute
                   inset-x-0
                   top-0
-                  h-[45%]
+                  z-10
+                  h-[50%]
+                "
+                style={{
+                  background: `linear-gradient(
+                    to bottom,
+                    ${
+                      activeTab.overlayColor ??
+                      '#000000'
+                    } 0%,
+                    ${
+                      activeTab.overlayColor ??
+                      '#000000'
+                    }E6 34%,
+                    ${
+                      activeTab.overlayColor ??
+                      '#000000'
+                    }80 68%,
+                    transparent 100%
+                  )`,
+                }}
+              />
+
+              {/* Very subtle text shading */}
+
+              <div
+                aria-hidden="true"
+                className="
+                  pointer-events-none
+                  absolute
+                  inset-x-0
+                  top-0
+                  z-10
+                  h-[38%]
                   bg-gradient-to-b
-                  from-black/30
+                  from-black/10
                   to-transparent
                 "
               />
@@ -780,6 +807,7 @@ export function BrandNextMobile({
 
               <div
                 className="
+                  pointer-events-none
                   relative
                   z-20
                   px-9
@@ -824,6 +852,20 @@ export function BrandNextMobile({
                   </p>
                 </div>
               </div>
+
+              {/* Drag surface helper */}
+
+              {dragging && (
+                <div
+                  aria-hidden="true"
+                  className="
+                    pointer-events-none
+                    absolute
+                    inset-0
+                    z-30
+                  "
+                />
+              )}
             </motion.div>
           </AnimatePresence>
         </div>

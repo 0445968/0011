@@ -275,7 +275,7 @@ export function ProjectCustomizer({
   return (
     <div
       className="
-        mt-8
+        mt-10
         flex
         w-full
         max-w-4xl

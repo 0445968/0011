@@ -273,7 +273,7 @@ export function BrandStrategyProblem() {
               md:text-5xl
             "
           >
-            Most brands struggle to stand out
+            Most brands go unnoticed
           </motion.h2>
 
           <motion.p
