@@ -85,7 +85,7 @@ export function BrandComparison() {
             "
           >
             We know it can be easy to self-sabotage.
-            Bivi prepares your brand to grow
+            Bivi prepares you to grow
             with confidence.
           </p>
         </div>

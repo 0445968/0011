@@ -558,20 +558,22 @@ export function Navbar() {
             : `
                 absolute
               `,
+navbarSurfaceActive
+  ? `
+      bg-transparent
+      text-foreground
 
-          navbarSurfaceActive
-            ? `
-                border-b
-                border-border/60
-                bg-background
-                text-foreground
-              `
-            : `
-                border-b
-                border-transparent
-                bg-transparent
-                text-white
-              `,
+      lg:border-b
+      lg:border-border/60
+      lg:bg-background
+    `
+  : `
+      bg-transparent
+      text-white
+
+      lg:border-b
+      lg:border-transparent
+    `,
 
           navbarIsFixed &&
           navbarSurfaceActive &&
@@ -600,11 +602,13 @@ export function Navbar() {
           {/* Brand                                                       */}
           {/* ----------------------------------------------------------- */}
 
-          <NavbarBrand
-            surfaceActive={
-              navbarSurfaceActive
-            }
-          />
+<div className="hidden lg:block">
+  <NavbarBrand
+    surfaceActive={
+      navbarSurfaceActive
+    }
+  />
+</div>
 
           {/* ----------------------------------------------------------- */}
           {/* Desktop navigation                                         */}
@@ -668,35 +672,29 @@ export function Navbar() {
           {/* Mobile utilities                                           */}
           {/* ----------------------------------------------------------- */}
 
-          <NavbarMobileUtilities
-            surfaceActive={
-              navbarSurfaceActive
-            }
-            open={
-              open
-            }
-            setOpen={
-              setOpen
-            }
-            searchOpen={
-              searchOpen
-            }
-            setSearchOpen={
-              setSearchOpen
-            }
-            settingsOpen={
-              settingsOpen
-            }
-            setSettingsOpen={
-              setSettingsOpen
-            }
-            onSearchOpen={
-              handleSearchOpen
-            }
-            onSettingsOpen={
-              handleSettingsOpen
-            }
-          />
+<NavbarMobileUtilities
+  surfaceActive={
+    navbarSurfaceActive
+  }
+  open={
+    open
+  }
+  setOpen={
+    setOpen
+  }
+  searchOpen={
+    searchOpen
+  }
+  setSearchOpen={
+    setSearchOpen
+  }
+  settingsOpen={
+    settingsOpen
+  }
+  onSearchOpen={
+    handleSearchOpen
+  }
+/>
         </nav>
 
         {/* ------------------------------------------------------------- */}
@@ -737,14 +735,21 @@ export function Navbar() {
         {/* Mobile menu                                                   */}
         {/* ------------------------------------------------------------- */}
 
-        <NavbarMobileMenu
-          open={
-            open
-          }
-          onNavigate={
-            handleNav
-          }
-        />
+<NavbarMobileMenu
+  open={
+    open
+  }
+  onNavigate={
+    handleNav
+  }
+  onSettingsOpen={() => {
+    setOpen(false);
+    setSearchOpen(false);
+    setActiveMega(null);
+
+    setSettingsOpen(true);
+  }}
+/>
       </motion.header>
     </>
   );

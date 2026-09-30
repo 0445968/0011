@@ -1,46 +1,32 @@
 'use client';
 
-import {
-  useState,
-} from 'react';
-
+import { useState } from 'react';
 import Link from 'next/link';
-
-import {
-  usePathname,
-} from 'next/navigation';
-
-import {
-  AnimatePresence,
-  motion,
-} from 'framer-motion';
-
+import { usePathname } from 'next/navigation';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowRight,
   ArrowUpRight,
   ChevronDown,
+  Settings,
+  X,
 } from 'lucide-react';
 
-import {
-  megaPanels,
-  navSections,
-} from '@/data/site';
-
-import {
-  cn,
-} from '@/lib/utils';
+import { megaPanels, navSections } from '@/data/site';
+import { cn } from '@/lib/utils';
 
 interface NavbarMobileMenuProps {
   open: boolean;
   onNavigate: () => void;
+  onSettingsOpen: () => void;
 }
 
 export function NavbarMobileMenu({
   open,
   onNavigate,
+  onSettingsOpen,
 }: NavbarMobileMenuProps) {
-  const pathname =
-    usePathname();
+  const pathname = usePathname();
 
   const isHelpCenter =
     pathname === '/help' ||
@@ -50,48 +36,59 @@ export function NavbarMobileMenu({
     <AnimatePresence>
       {open && (
         <motion.div
-          initial={{
-            opacity: 0,
-            y: -8,
-          }}
-          animate={{
-            opacity: 1,
-            y: 0,
-          }}
-          exit={{
-            opacity: 0,
-            y: -8,
-          }}
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
           transition={{
             duration: 0.2,
             ease: 'easeOut',
           }}
           className="
             fixed
-            inset-x-0
-            top-16
-            z-[60]
-            h-[calc(100dvh-4rem)]
+            inset-0
+            z-[100]
+            h-dvh
             overflow-y-auto
-            border-t
-            border-border
             bg-background
-            md:top-20
-            md:h-[calc(100dvh-5rem)]
             lg:hidden
           "
         >
+          <button
+            type="button"
+            onClick={onNavigate}
+            aria-label="Close menu"
+            className="
+              fixed
+              right-5
+              top-5
+              z-[110]
+              flex
+              h-11
+              w-11
+              items-center
+              justify-center
+              rounded-full
+              border
+              border-border
+              bg-background
+              text-foreground
+              shadow-sm
+              transition-colors
+              duration-150
+              hover:bg-secondary
+            "
+          >
+            <X size={21} strokeWidth={2.25} />
+          </button>
+
           {isHelpCenter ? (
             <HelpCenterMobileMenu
-              onNavigate={
-                onNavigate
-              }
+              onNavigate={onNavigate}
             />
           ) : (
             <DefaultMobileMenu
-              onNavigate={
-                onNavigate
-              }
+              onNavigate={onNavigate}
+              onSettingsOpen={onSettingsOpen}
             />
           )}
         </motion.div>
@@ -106,239 +103,196 @@ export function NavbarMobileMenu({
 
 function DefaultMobileMenu({
   onNavigate,
+  onSettingsOpen,
 }: {
   onNavigate: () => void;
+  onSettingsOpen: () => void;
 }) {
-  const [
-    openSection,
-    setOpenSection,
-  ] = useState<string | null>(
-    null
-  );
+  const [openSection, setOpenSection] = useState<string | null>(null);
 
   return (
-    <div
-      className="
-        container-page
-        py-6
-      "
-    >
+    <div className="container-page pb-6 pt-20">
       <nav>
-        <ul
-          className="
-            divide-y
-            divide-border
-          "
-        >
-          {navSections.map(
-            (item) => {
-              const panel =
-                megaPanels[
-                item.id
-                ];
+        <ul className="divide-y divide-border">
+          {navSections.map((item) => {
+            const panel = megaPanels[item.id];
+            const hasMegaMenu = Boolean(panel);
+            const expanded = openSection === item.id;
 
-              const hasMegaMenu =
-                Boolean(panel);
-
-              const expanded =
-                openSection ===
-                item.id;
-
-              if (
-                !hasMegaMenu
-              ) {
-                return (
-                  <li
-                    key={
-                      item.id
-                    }
-                  >
-                    <Link
-                      href={
-                        item.href
-                      }
-                      onClick={
-                        onNavigate
-                      }
-                      className="
-                        flex
-                        items-center
-                        justify-between
-                        py-5
-                        text-[17px]
-                        font-semibold
-                        text-foreground
-                      "
-                    >
-                      <span>
-                        {
-                          item.label
-                        }
-                      </span>
-
-                      <ArrowRight
-                        size={18}
-                        strokeWidth={
-                          1.8
-                        }
-                        className="
-                          text-muted-foreground
-                        "
-                      />
-                    </Link>
-                  </li>
-                );
-              }
-
+            if (!hasMegaMenu) {
               return (
-                <li
-                  key={
-                    item.id
-                  }
-                >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setOpenSection(
-                        expanded
-                          ? null
-                          : item.id
-                      );
-                    }}
+                <li key={item.id}>
+                  <Link
+                    href={item.href}
+                    onClick={onNavigate}
                     className="
                       flex
-                      w-full
                       items-center
                       justify-between
                       py-5
-                      text-left
+                      text-[17px]
+                      font-semibold
+                      text-foreground
                     "
-                    aria-expanded={
-                      expanded
-                    }
                   >
-                    <span
-                      className="
-                        text-[17px]
-                        font-semibold
-                        text-foreground
-                      "
-                    >
-                      {
-                        item.label
-                      }
-                    </span>
+                    <span>{item.label}</span>
 
-                    <ChevronDown
+                    <ArrowRight
                       size={18}
-                      strokeWidth={
-                        1.8
-                      }
-                      className={cn(
-                        `
-                          text-muted-foreground
-                          transition-transform
-                          duration-200
-                        `,
-                        expanded
-                          ? 'rotate-180'
-                          : 'rotate-0'
-                      )}
+                      strokeWidth={1.8}
+                      className="text-muted-foreground"
                     />
-                  </button>
-
-                  <AnimatePresence
-                    initial={
-                      false
-                    }
-                  >
-                    {expanded && (
-                      <motion.div
-                        initial={{
-                          height: 0,
-                          opacity: 0,
-                        }}
-                        animate={{
-                          height:
-                            'auto',
-                          opacity: 1,
-                        }}
-                        exit={{
-                          height: 0,
-                          opacity: 0,
-                        }}
-                        transition={{
-                          duration: 0.22,
-                          ease: 'easeOut',
-                        }}
-                        className="
-                          overflow-hidden
-                        "
-                      >
-                        {item.id ===
-                          'resources' ? (
-                          <ResourcesMobilePanel
-                            onNavigate={
-                              onNavigate
-                            }
-                          />
-                        ) : (
-                          <StandardMobilePanel
-                            itemId={
-                              item.id
-                            }
-                            itemHref={
-                              item.href
-                            }
-                            onNavigate={
-                              onNavigate
-                            }
-                          />
-                        )}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  </Link>
                 </li>
               );
             }
-          )}
+
+            return (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpenSection(
+                      expanded ? null : item.id
+                    );
+                  }}
+                  className="
+                    flex
+                    w-full
+                    items-center
+                    justify-between
+                    py-5
+                    text-left
+                  "
+                  aria-expanded={expanded}
+                >
+                  <span
+                    className="
+                      text-[17px]
+                      font-semibold
+                      text-foreground
+                    "
+                  >
+                    {item.label}
+                  </span>
+
+                  <ChevronDown
+                    size={18}
+                    strokeWidth={1.8}
+                    className={cn(
+                      `
+                        text-muted-foreground
+                        transition-transform
+                        duration-200
+                      `,
+                      expanded
+                        ? 'rotate-180'
+                        : 'rotate-0'
+                    )}
+                  />
+                </button>
+
+                <AnimatePresence initial={false}>
+                  {expanded && (
+                    <motion.div
+                      initial={{
+                        height: 0,
+                        opacity: 0,
+                      }}
+                      animate={{
+                        height: 'auto',
+                        opacity: 1,
+                      }}
+                      exit={{
+                        height: 0,
+                        opacity: 0,
+                      }}
+                      transition={{
+                        duration: 0.22,
+                        ease: 'easeOut',
+                      }}
+                      className="overflow-hidden"
+                    >
+                      {item.id === 'resources' ? (
+                        <ResourcesMobilePanel
+                          onNavigate={onNavigate}
+                        />
+                      ) : (
+                        <StandardMobilePanel
+                          itemId={item.id}
+                          itemHref={item.href}
+                          onNavigate={onNavigate}
+                        />
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </li>
+            );
+          })}
         </ul>
       </nav>
 
-      <div
-        className="
-          mt-8
-          border-t
-          border-border
-          pt-6
-        "
-      >
-        <Link
-          href="/contact"
-          onClick={
-            onNavigate
-          }
+      <div className="mt-8 border-t border-border pt-4">
+        <button
+          type="button"
+          onClick={onSettingsOpen}
           className="
             flex
             w-full
             items-center
-            justify-center
-            gap-2
-            rounded-full
-            bg-foreground
-            px-5
-            py-3.5
-            text-sm
+            justify-between
+            rounded-xl
+            py-4
+            text-left
+            text-[16px]
             font-semibold
-            text-background
+            text-foreground
+            transition-colors
+            duration-150
+            hover:text-primary
           "
         >
-          Start a project
+          <span className="flex items-center gap-3">
+            <Settings
+              size={18}
+              strokeWidth={1.9}
+              className="text-muted-foreground"
+            />
+            Settings
+          </span>
 
           <ArrowRight
-            size={16}
+            size={18}
+            strokeWidth={1.8}
+            className="text-muted-foreground"
           />
-        </Link>
+        </button>
+
+        <div className="mt-3 border-t border-border pt-5">
+          <Link
+            href="/contact"
+            onClick={onNavigate}
+            className="
+              flex
+              w-full
+              items-center
+              justify-center
+              gap-2
+              rounded-[14px]
+              bg-foreground
+              px-5
+              py-3.5
+              text-sm
+              font-mono
+              font-semibold
+              text-background
+            "
+          >
+            Start a project
+            <ArrowRight size={16} />
+          </Link>
+        </div>
       </div>
     </div>
   );
@@ -357,167 +311,118 @@ function StandardMobilePanel({
   itemHref: string;
   onNavigate: () => void;
 }) {
-  const panel =
-    megaPanels[itemId];
+  const panel = megaPanels[itemId];
 
   if (!panel) {
     return null;
   }
 
   return (
-    <div
-      className="
-        pb-6
-      "
-    >
-      {panel.groups.map(
-        (group) => (
-          <div
-            key={
-              group.id
-            }
+    <div className="pb-6">
+      {panel.groups.map((group) => (
+        <div
+          key={group.id}
+          className="mb-5 last:mb-0"
+        >
+          <p
             className="
-              mb-5
-              last:mb-0
+              mb-2
+              text-[11px]
+              font-semibold
+              uppercase
+              tracking-[0.12em]
+              text-muted-foreground
             "
           >
-            <p
-              className="
-                mb-2
-                text-[11px]
-                font-semibold
-                uppercase
-                tracking-[0.12em]
-                text-muted-foreground
-              "
-            >
-              {
-                group.title
-              }
-            </p>
+            {group.title}
+          </p>
 
-            <ul
-              className="
-                space-y-0.5
-              "
-            >
-              {group.links.map(
-                (link) => (
-                  <li
-                    key={
-                      link.label
-                    }
-                  >
-                    <Link
-                      href={
-                        link.href
-                      }
-                      onClick={
-                        onNavigate
-                      }
+          <ul className="space-y-0.5">
+            {group.links.map((link) => (
+              <li key={link.label}>
+                <Link
+                  href={link.href}
+                  onClick={onNavigate}
+                  className="
+                    flex
+                    items-start
+                    gap-3
+                    rounded-2xl
+                    border
+                    border-dashed
+                    border-transparent
+                    px-2.5
+                    py-2.5
+                    transition-all
+                    hover:border-primary
+                    hover:bg-primary/[0.03]
+                  "
+                >
+                  {link.icon && (
+                    <div
                       className="
+                        mt-0.5
                         flex
-                        items-start
-                        gap-3
-                        rounded-2xl
-                        border
-                        border-dashed
-                        border-transparent
-                        px-2.5
-                        py-2.5
-                        transition-all
-                        hover:border-primary
-                        hover:bg-primary/[0.03]
+                        h-9
+                        w-9
+                        shrink-0
+                        items-center
+                        justify-center
+                        rounded-xl
+                        bg-secondary
                       "
                     >
-                      {link.icon && (
-                        <div
-                          className="
-                            mt-0.5
-                            flex
-                            h-9
-                            w-9
-                            shrink-0
-                            items-center
-                            justify-center
-                            rounded-xl
-                            bg-secondary
-                          "
-                        >
-                          <img
-                            src={
-                              link.icon
-                            }
-                            alt=""
-                            aria-hidden="true"
-                            className="
-                              h-[18px]
-                              w-[18px]
-                              object-contain
-                            "
-                          />
-                        </div>
-                      )}
-
-                      <div
+                      <img
+                        src={link.icon}
+                        alt=""
+                        aria-hidden="true"
                         className="
-                          min-w-0
+                          h-[18px]
+                          w-[18px]
+                          object-contain
+                        "
+                      />
+                    </div>
+                  )}
+
+                  <div className="min-w-0">
+                    <span
+                      className="
+                        block
+                        text-sm
+                        font-semibold
+                        leading-snug
+                        text-foreground
+                      "
+                    >
+                      {link.label}
+                    </span>
+
+                    {link.description && (
+                      <span
+                        className="
+                          mt-1
+                          block
+                          text-xs
+                          leading-relaxed
+                          text-muted-foreground
                         "
                       >
-                        <span
-                          className="
-                            block
-                            text-sm
-                            font-semibold
-                            leading-snug
-                            text-foreground
-                          "
-                        >
-                          {
-                            link.label
-                          }
-                        </span>
+                        {link.description}
+                      </span>
+                    )}
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
 
-                        {link.description && (
-                          <span
-                            className="
-                              mt-1
-                              block
-                              text-xs
-                              leading-relaxed
-                              text-muted-foreground
-                            "
-                          >
-                            {
-                              link.description
-                            }
-                          </span>
-                        )}
-                      </div>
-                    </Link>
-                  </li>
-                )
-              )}
-            </ul>
-          </div>
-        )
-      )}
-
-      <div
-        className="
-          mt-5
-          border-t
-          border-border
-          pt-4
-        "
-      >
+      <div className="mt-5 border-t border-border pt-4">
         <Link
-          href={
-            itemHref
-          }
-          onClick={
-            onNavigate
-          }
+          href={itemHref}
+          onClick={onNavigate}
           className="
             inline-flex
             items-center
@@ -528,10 +433,7 @@ function StandardMobilePanel({
           "
         >
           View all
-
-          <ArrowUpRight
-            size={14}
-          />
+          <ArrowUpRight size={14} />
         </Link>
       </div>
     </div>
@@ -547,122 +449,60 @@ function ResourcesMobilePanel({
 }: {
   onNavigate: () => void;
 }) {
-  const panel =
-    megaPanels.resources;
+  const panel = megaPanels.resources;
 
-  const resourceLibrary =
-    panel.groups.find(
-      (group) =>
-        group.id ===
-        'resource-library'
-    );
+  const resourceLibrary = panel.groups.find(
+    (group) => group.id === 'resource-library'
+  );
 
-  const journal =
-    panel.groups.find(
-      (group) =>
-        group.id ===
-        'journal'
-    );
+  const journal = panel.groups.find(
+    (group) => group.id === 'journal'
+  );
 
-  const tools =
-    panel.tools ?? [];
-
-  const previews =
-    panel.previews ?? [];
-
-  const journalPreview =
-    previews[0];
-
-  const pdfPreviews =
-    previews.slice(1);
+  const tools = panel.tools ?? [];
+  const previews = panel.previews ?? [];
+  const journalPreview = previews[0];
+  const pdfPreviews = previews.slice(1);
 
   return (
-    <div
-      className="
-        pb-6
-      "
-    >
-      {/* ------------------------------------------------------------------ */}
-      {/* Resource Library                                                    */}
-      {/* ------------------------------------------------------------------ */}
-
+    <div className="pb-6">
       {resourceLibrary && (
         <div>
           <MobileSectionHeading
-            title={
-              resourceLibrary.title
-            }
+            title={resourceLibrary.title}
             href={
               resourceLibrary.href ??
               '/resources'
             }
-            onNavigate={
-              onNavigate
-            }
+            onNavigate={onNavigate}
           />
 
-          <ul
-            className="
-              mt-2
-              space-y-0.5
-            "
-          >
-            {resourceLibrary.links.map(
-              (link) => (
-                <li
-                  key={
-                    link.label
-                  }
-                >
-                  <MobileDirectoryLink
-                    label={
-                      link.label
-                    }
-                    href={
-                      link.href
-                    }
-                    onNavigate={
-                      onNavigate
-                    }
-                  />
-                </li>
-              )
-            )}
+          <ul className="mt-2 space-y-0.5">
+            {resourceLibrary.links.map((link) => (
+              <li key={link.label}>
+                <MobileDirectoryLink
+                  label={link.label}
+                  href={link.href}
+                  onNavigate={onNavigate}
+                />
+              </li>
+            ))}
           </ul>
         </div>
       )}
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Journal                                                             */}
-      {/* ------------------------------------------------------------------ */}
-
       {journal && (
-        <div
-          className="
-            mt-5
-          "
-        >
+        <div className="mt-5">
           <MobileSectionHeading
-            title={
-              journal.title
-            }
-            href={
-              journal.href ??
-              '/blog'
-            }
-            onNavigate={
-              onNavigate
-            }
+            title={journal.title}
+            href={journal.href ?? '/blog'}
+            onNavigate={onNavigate}
           />
 
           {journalPreview && (
             <Link
-              href={
-                journalPreview.href
-              }
-              onClick={
-                onNavigate
-              }
+              href={journalPreview.href}
+              onClick={onNavigate}
               className="
                 mt-2.5
                 grid
@@ -687,12 +527,8 @@ function ResourcesMobilePanel({
                   "
                 >
                   <img
-                    src={
-                      journalPreview.image
-                    }
-                    alt={
-                      journalPreview.title
-                    }
+                    src={journalPreview.image}
+                    alt={journalPreview.title}
                     className="
                       absolute
                       inset-0
@@ -729,9 +565,7 @@ function ResourcesMobilePanel({
                       leading-snug
                     "
                   >
-                    {
-                      journalPreview.title
-                    }
+                    {journalPreview.title}
                   </p>
 
                   <ArrowUpRight
@@ -751,9 +585,7 @@ function ResourcesMobilePanel({
                       text-muted-foreground
                     "
                   >
-                    {
-                      journalPreview.meta
-                    }
+                    {journalPreview.meta}
                   </span>
                 )}
               </div>
@@ -762,19 +594,8 @@ function ResourcesMobilePanel({
         </div>
       )}
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Tools                                                               */}
-      {/* ------------------------------------------------------------------ */}
-
       {tools.length > 0 && (
-        <div
-          className="
-            mt-4
-            border-t
-            border-border
-            pt-3
-          "
-        >
+        <div className="mt-4 border-t border-border pt-3">
           <div
             className="
               mb-1.5
@@ -792,15 +613,12 @@ function ResourcesMobilePanel({
                 text-muted-foreground
               "
             >
-              Tools &
-              Calculators
+              Tools & Calculators
             </p>
 
             <Link
               href="/resources?type=tool"
-              onClick={
-                onNavigate
-              }
+              onClick={onNavigate}
               className="
                 inline-flex
                 items-center
@@ -810,195 +628,139 @@ function ResourcesMobilePanel({
               "
             >
               View all
-
-              <ArrowUpRight
-                size={11}
-              />
+              <ArrowUpRight size={11} />
             </Link>
           </div>
 
-          <div
-            className="
-              grid
-              grid-cols-2
-              gap-1
-            "
-          >
-            {tools.map(
-              (tool) => (
-                <Link
-                  key={
-                    tool.label
-                  }
-                  href={
-                    tool.href
-                  }
-                  onClick={
-                    onNavigate
-                  }
-                  className="
-                    flex
-                    min-h-[38px]
-                    items-center
-                    rounded-xl
-                    border
-                    border-dashed
-                    border-transparent
-                    px-2.5
-                    py-1.5
-                    text-[12px]
-                    font-medium
-                    leading-tight
-                    text-foreground
-                    transition-all
-                    hover:border-primary
-                    hover:bg-primary/[0.03]
-                  "
-                >
-                  {
-                    tool.label
-                  }
-                </Link>
-              )
-            )}
+          <div className="grid grid-cols-2 gap-1">
+            {tools.map((tool) => (
+              <Link
+                key={tool.label}
+                href={tool.href}
+                onClick={onNavigate}
+                className="
+                  flex
+                  min-h-[38px]
+                  items-center
+                  rounded-xl
+                  border
+                  border-dashed
+                  border-transparent
+                  px-2.5
+                  py-1.5
+                  text-[12px]
+                  font-medium
+                  leading-tight
+                  text-foreground
+                  transition-all
+                  hover:border-primary
+                  hover:bg-primary/[0.03]
+                "
+              >
+                {tool.label}
+              </Link>
+            ))}
           </div>
         </div>
       )}
 
-      {/* ------------------------------------------------------------------ */}
-      {/* PDF previews                                                        */}
-      {/* ------------------------------------------------------------------ */}
-
-      {pdfPreviews.length >
-        0 && (
+      {pdfPreviews.length > 0 && (
+        <div className="mt-5 border-t border-border pt-3">
           <div
             className="
-            mt-5
-            border-t
-            border-border
-            pt-3
-          "
-          >
-            <div
-              className="
               mb-2
               flex
               items-center
               justify-between
             "
-            >
-              <p
-                className="
+          >
+            <p
+              className="
                 text-[11px]
                 font-semibold
                 uppercase
                 tracking-[0.12em]
                 text-muted-foreground
               "
-              >
-                Guides & PDFs
-              </p>
+            >
+              Guides & PDFs
+            </p>
 
-              <Link
-                href="/guides"
-                onClick={
-                  onNavigate
-                }
-                className="
+            <Link
+              href="/guides"
+              onClick={onNavigate}
+              className="
                 inline-flex
                 items-center
                 gap-1
                 text-[11px]
                 text-muted-foreground
               "
+            >
+              View all
+              <ArrowUpRight size={11} />
+            </Link>
+          </div>
+
+          <div className="space-y-1">
+            {pdfPreviews.map((preview) => (
+              <Link
+                key={preview.title}
+                href={preview.href}
+                onClick={onNavigate}
+                className="
+                  flex
+                  items-center
+                  justify-between
+                  gap-3
+                  rounded-xl
+                  border
+                  border-dashed
+                  border-transparent
+                  px-3
+                  py-2.5
+                  transition-all
+                  hover:border-primary
+                  hover:bg-primary/[0.03]
+                "
               >
-                View all
+                <div className="min-w-0">
+                  <p
+                    className="
+                      truncate
+                      text-[12px]
+                      font-semibold
+                      text-foreground
+                    "
+                  >
+                    {preview.title}
+                  </p>
+
+                  {preview.meta && (
+                    <p
+                      className="
+                        mt-0.5
+                        text-[10px]
+                        text-muted-foreground
+                      "
+                    >
+                      {preview.meta}
+                    </p>
+                  )}
+                </div>
 
                 <ArrowUpRight
-                  size={11}
+                  size={12}
+                  className="
+                    shrink-0
+                    text-muted-foreground
+                  "
                 />
               </Link>
-            </div>
-
-            <div
-              className="
-              space-y-1
-            "
-            >
-              {pdfPreviews.map(
-                (preview) => (
-                  <Link
-                    key={
-                      preview.title
-                    }
-                    href={
-                      preview.href
-                    }
-                    onClick={
-                      onNavigate
-                    }
-                    className="
-                    flex
-                    items-center
-                    justify-between
-                    gap-3
-                    rounded-xl
-                    border
-                    border-dashed
-                    border-transparent
-                    px-3
-                    py-2.5
-                    transition-all
-                    hover:border-primary
-                    hover:bg-primary/[0.03]
-                  "
-                  >
-                    <div
-                      className="
-                      min-w-0
-                    "
-                    >
-                      <p
-                        className="
-                        truncate
-                        text-[12px]
-                        font-semibold
-                        text-foreground
-                      "
-                      >
-                        {
-                          preview.title
-                        }
-                      </p>
-
-                      {preview.meta && (
-                        <p
-                          className="
-                          mt-0.5
-                          text-[10px]
-                          text-muted-foreground
-                        "
-                        >
-                          {
-                            preview.meta
-                          }
-                        </p>
-                      )}
-                    </div>
-
-                    <ArrowUpRight
-                      size={12}
-                      className="
-                      shrink-0
-                      text-muted-foreground
-                    "
-                    />
-                  </Link>
-                )
-              )}
-            </div>
+            ))}
           </div>
-        )}
+        </div>
+      )}
     </div>
   );
 }
@@ -1018,12 +780,8 @@ function MobileSectionHeading({
 }) {
   return (
     <Link
-      href={
-        href
-      }
-      onClick={
-        onNavigate
-      }
+      href={href}
+      onClick={onNavigate}
       className="
         flex
         items-center
@@ -1036,15 +794,11 @@ function MobileSectionHeading({
         text-foreground
       "
     >
-      {
-        title
-      }
+      {title}
 
       <ArrowUpRight
         size={14}
-        className="
-          text-muted-foreground
-        "
+        className="text-muted-foreground"
       />
     </Link>
   );
@@ -1065,12 +819,8 @@ function MobileDirectoryLink({
 }) {
   return (
     <Link
-      href={
-        href
-      }
-      onClick={
-        onNavigate
-      }
+      href={href}
+      onClick={onNavigate}
       className="
         flex
         min-h-[36px]
@@ -1089,15 +839,11 @@ function MobileDirectoryLink({
         hover:bg-primary/[0.03]
       "
     >
-      {
-        label
-      }
+      {label}
 
       <ArrowUpRight
         size={11}
-        className="
-          text-muted-foreground
-        "
+        className="text-muted-foreground"
       />
     </Link>
   );
@@ -1139,16 +885,10 @@ function HelpCenterMobileMenu({
 }: {
   onNavigate: () => void;
 }) {
-  const pathname =
-    usePathname();
+  const pathname = usePathname();
 
   return (
-    <div
-      className="
-        container-page
-        py-6
-      "
-    >
+    <div className="container-page pb-6 pt-20">
       <p
         className="
           mb-5
@@ -1163,79 +903,48 @@ function HelpCenterMobileMenu({
       </p>
 
       <nav>
-        <ul
-          className="
-            divide-y
-            divide-border
-          "
-        >
-          {helpLinks.map(
-            (item) => {
-              const active =
-                pathname ===
-                item.href ||
-                pathname.startsWith(
-                  `${item.href}/`
-                );
+        <ul className="divide-y divide-border">
+          {helpLinks.map((item) => {
+            const active =
+              pathname === item.href ||
+              pathname.startsWith(`${item.href}/`);
 
-              return (
-                <li
-                  key={
-                    item.href
-                  }
+            return (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  onClick={onNavigate}
+                  className={cn(
+                    `
+                      flex
+                      items-center
+                      justify-between
+                      py-4
+                      text-[16px]
+                      font-medium
+                    `,
+                    active
+                      ? 'text-primary'
+                      : 'text-foreground'
+                  )}
                 >
-                  <Link
-                    href={
-                      item.href
-                    }
-                    onClick={
-                      onNavigate
-                    }
-                    className={cn(
-                      `
-                        flex
-                        items-center
-                        justify-between
-                        py-4
-                        text-[16px]
-                        font-medium
-                      `,
-                      active
-                        ? 'text-primary'
-                        : 'text-foreground'
-                    )}
-                  >
-                    {
-                      item.label
-                    }
+                  {item.label}
 
-                    <ArrowRight
-                      size={17}
-                      className="
-                        text-muted-foreground
-                      "
-                    />
-                  </Link>
-                </li>
-              );
-            }
-          )}
+                  <ArrowRight
+                    size={17}
+                    className="text-muted-foreground"
+                  />
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       </nav>
 
-      <div
-        className="
-          mt-8
-          border-t
-          border-border
-          pt-6
-        "
-      >
+      <div className="mt-8 border-t border-border pt-6">
         <Link
           href="/contact"
-          onClick={
-            onNavigate
-          }
+          onClick={onNavigate}
           className="
             flex
             w-full
@@ -1252,10 +961,7 @@ function HelpCenterMobileMenu({
           "
         >
           Contact Bivi
-
-          <ArrowRight
-            size={16}
-          />
+          <ArrowRight size={16} />
         </Link>
       </div>
     </div>

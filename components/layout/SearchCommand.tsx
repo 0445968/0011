@@ -1,6 +1,11 @@
 'use client';
 
-import { Search } from 'lucide-react';
+import {
+  Search,
+  X,
+} from 'lucide-react';
+
+import { cn } from '@/lib/utils';
 
 export function SearchCommand({
   open,
@@ -12,18 +17,19 @@ export function SearchCommand({
   onOpen?: () => void;
 }) {
   const handleClick = () => {
-    /*
-     * If Search is already open,
-     * clicking the icon again closes it.
-     */
     if (open) {
       setOpen(false);
       return;
     }
 
     /*
-     * Opening Search lets Navbar.tsx
-     * close Settings / Mega Menu first.
+     * Navbar.tsx handles closing any
+     * competing navigation surfaces.
+     *
+     * Search itself does not focus an
+     * input here. Mobile focus is left
+     * entirely to the user tapping the
+     * actual search field.
      */
     onOpen?.();
 
@@ -44,21 +50,36 @@ export function SearchCommand({
             : 'Search'
         }
         aria-expanded={open}
-        className="
-          flex
-          h-10
-          w-10
-          items-center
-          justify-center
-          rounded-full
-          text-muted-foreground
-          hover:text-foreground
-        "
+        className={cn(
+          `
+            flex
+            h-10
+            w-10
+            items-center
+            justify-center
+
+            rounded-full
+
+            text-muted-foreground
+
+            transition-colors
+            duration-150
+
+            hover:text-foreground
+          `
+        )}
       >
-        <Search
-          size={19}
-          strokeWidth={2.25}
-        />
+        {open ? (
+          <X
+            size={19}
+            strokeWidth={2.25}
+          />
+        ) : (
+          <Search
+            size={19}
+            strokeWidth={2.25}
+          />
+        )}
       </button>
     </div>
   );
