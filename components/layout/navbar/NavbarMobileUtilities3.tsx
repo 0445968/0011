@@ -129,33 +129,33 @@ export function NavbarMobileUtilities3({
 
       {/* Sticky navigation */}
       {surfaceActive && !panelOpen && (
-        <div
-          className="
-            fixed
-            inset-x-0
-            top-0
-            z-[80]
-            h-[100px]
-            animate-in
-            fade-in
-            duration-200
-            lg:hidden
-          "
-        >
+<div
+  className="
+    fixed
+    inset-x-0
+    top-0
+    z-[80]
+    h-[100px]
+    animate-in
+    fade-in
+    duration-200
+    lg:hidden
+    drop-shadow-[0_8px_20px_rgba(0,0,0,0.18)]
+    drop-shadow-[0_2px_6px_rgba(0,0,0,0.10)]
+  "
+>
           <svg
             aria-hidden="true"
             viewBox="0 0 375 100"
             preserveAspectRatio="none"
-            className="
-              pointer-events-none
-              absolute
-              inset-0
-              h-full
-              w-full
-              overflow-visible
-              drop-shadow-[0_8px_20px_rgba(0,0,0,0.18)]
-              drop-shadow-[0_2px_6px_rgba(0,0,0,0.10)]
-            "
+className="
+  pointer-events-none
+  absolute
+  inset-0
+  h-full
+  w-full
+  overflow-visible
+"
           >
             <defs>
               <linearGradient
@@ -168,12 +168,12 @@ export function NavbarMobileUtilities3({
                 <stop
                   offset="0%"
                   stopColor="#FFFFFF"
-                  stopOpacity="0.98"
+                  stopOpacity="1"
                 />
                 <stop
                   offset="100%"
                   stopColor="#FFFFFF"
-                  stopOpacity="0.94"
+                  stopOpacity="0.98"
                 />
               </linearGradient>
 
@@ -197,39 +197,79 @@ export function NavbarMobileUtilities3({
               </linearGradient>
             </defs>
 
-            <path
-              fill="url(#mobileNavbarGlass3)"
-              stroke="url(#mobileNavbarBorder3)"
-              strokeWidth="1"
-              fillRule="evenodd"
-              clipRule="evenodd"
-              d="
-                M0 0
-                H375
-                V56
-                C375 60.4183 371.418 64 367 64
+<defs>
+  <linearGradient
+    id="mobileNavbarGlass3"
+    x1="0"
+    y1="0"
+    x2="0"
+    y2="1"
+  >
+    <stop
+      offset="0%"
+      stopColor="#FFFFFF"
+      stopOpacity="0.98"
+    />
+    <stop
+      offset="100%"
+      stopColor="#FFFFFF"
+      stopOpacity="0.94"
+    />
+  </linearGradient>
 
-                H247
+  <filter
+    id="mobileNavbarShadow3"
+    x="-20%"
+    y="-20%"
+    width="140%"
+    height="160%"
+  >
+    <feDropShadow
+      dx="0"
+      dy="8"
+      stdDeviation="10"
+      floodColor="#000000"
+      floodOpacity="0.18"
+    />
+    <feDropShadow
+      dx="0"
+      dy="2"
+      stdDeviation="3"
+      floodColor="#000000"
+      floodOpacity="0.10"
+    />
+  </filter>
+</defs>
 
-                C230 64 230 19 187.5 19
-                C145 19 145 64 128 64
+<g filter="url(#mobileNavbarShadow3)">
+  <path
+    fill="url(#mobileNavbarGlass3)"
+    d="
+      M0 0
+      H375
+      V56
+      C375 60.4183 371.418 64 367 64
 
-                H8
-                C3.58172 64 0 60.4183 0 56
+      H247
 
-                V0
-                Z
-              "
-            />
+      C230 64 230 19 187.5 19
+      C145 19 145 64 128 64
 
-            <circle
-              cx="187.5"
-              cy="55"
-              r="29"
-              fill="url(#mobileNavbarGlass3)"
-              stroke="url(#mobileNavbarBorder3)"
-              strokeWidth="1"
-            />
+      H8
+      C3.58172 64 0 60.4183 0 56
+
+      V0
+      Z
+    "
+  />
+
+  <circle
+    cx="187.5"
+    cy="55"
+    r="29"
+    fill="url(#mobileNavbarGlass3)"
+  />
+</g>
           </svg>
 
           {/* Search */}
