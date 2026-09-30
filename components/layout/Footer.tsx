@@ -602,7 +602,7 @@ export function Footer() {
               text-muted-foreground
             "
           >
-            Follow Bivi
+            Follow Us
           </p>
 
           <ul
