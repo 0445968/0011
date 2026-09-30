@@ -4,11 +4,42 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
 
-import type { Resource } from '@/data/resources';
+import type {
+  Resource,
+  ResourceType,
+} from '@/data/resources';
 
 interface ResourceCardProps {
   resource: Resource;
 }
+
+const resourceLabels: Record<
+  ResourceType,
+  {
+    tag: string;
+    action: string;
+  }
+> = {
+  article: {
+    tag: 'Journal',
+    action: 'Read article',
+  },
+
+  guide: {
+    tag: 'Handbook',
+    action: 'Read guide',
+  },
+
+  tool: {
+    tag: 'Studio Lab',
+    action: 'Open tool',
+  },
+
+  link: {
+    tag: 'Curated',
+    action: 'Visit resource',
+  },
+};
 
 export function ResourceCard({
   resource,
@@ -18,16 +49,20 @@ export function ResourceCard({
     resource.previewHorizontal ??
     resource.preview;
 
+  const {
+    tag,
+    action,
+  } = resourceLabels[resource.type];
+
   return (
     <article
       className="
         group
         relative
         isolate
+        h-[480px]
         w-full
         overflow-hidden
-
-        h-[480px]
         rounded-[18px]
         bg-neutral-900
 
@@ -70,7 +105,7 @@ export function ResourceCard({
               src={preview}
               alt={resource.title}
               fill
-              sizes="78vw"
+              sizes="84vw"
               className="
                 object-cover
                 object-center
@@ -93,18 +128,22 @@ export function ResourceCard({
             </div>
           )}
 
-          {/* Darker at top for text */}
+          {/* Dark gray image overlay */}
           <div
             className="
               absolute
               inset-0
               bg-gradient-to-b
-              from-black/65
-              via-black/15
-              to-black/10
+              from-[#3d3d3d]/60
+              via-[#202124]/30
+              to-[#202124]/10
             "
           />
         </div>
+
+        {/* ====================================================== */}
+        {/* MOBILE CONTENT                                         */}
+        {/* ====================================================== */}
 
         <div
           className="
@@ -120,6 +159,7 @@ export function ResourceCard({
             sm:hidden
           "
         >
+          {/* Dynamic tag */}
           <span
             className="
               font-mono
@@ -130,9 +170,10 @@ export function ResourceCard({
               text-white/70
             "
           >
-            Resource
+            {tag}
           </span>
 
+          {/* Title */}
           <h3
             className="
               mt-7
@@ -149,34 +190,36 @@ export function ResourceCard({
             {resource.title}
           </h3>
 
-<div className="mt-auto">
-  <span
-    className="
-      inline-flex
-      h-[46px]
-      items-center
-      justify-center
-      gap-2
-      rounded-[14px]
-      bg-white
-      px-5
-      font-mono
-      text-[13px]
-      font-medium
-      text-black
-      transition-transform
-      duration-200
-      group-active:scale-[0.98]
-    "
-  >
-    Read resource
+          {/* Dynamic action */}
+          <div className="mt-auto">
+            <span
+              className="
+                inline-flex
+                h-[46px]
+                items-center
+                justify-center
+                gap-2
+                rounded-[14px]
+                bg-white
+                px-5
+                font-mono
+                text-[13px]
+                font-medium
+                text-black
+                transition-transform
+                duration-200
 
-    <ArrowUpRight
-      className="h-4 w-4"
-      strokeWidth={2}
-    />
-  </span>
-</div>
+                group-active:scale-[0.98]
+              "
+            >
+              {action}
+
+              <ArrowUpRight
+                className="h-4 w-4"
+                strokeWidth={2}
+              />
+            </span>
+          </div>
         </div>
 
         {/* ====================================================== */}
@@ -214,6 +257,7 @@ export function ResourceCard({
                 transition-transform
                 duration-500
                 ease-out
+
                 group-hover:scale-[1.02]
               "
             />
@@ -226,6 +270,7 @@ export function ResourceCard({
                 justify-center
                 text-sm
                 text-neutral-500
+
                 dark:text-white/50
               "
             >
@@ -250,6 +295,24 @@ export function ResourceCard({
             sm:flex
           "
         >
+          {/* Dynamic tag */}
+          <span
+            className="
+              mb-2
+              font-mono
+              text-[10px]
+              font-semibold
+              uppercase
+              tracking-[0.14em]
+              text-black/45
+
+              dark:text-white/45
+            "
+          >
+            {tag}
+          </span>
+
+          {/* Title */}
           <h3
             className="
               font-heading
@@ -265,6 +328,7 @@ export function ResourceCard({
             {resource.title}
           </h3>
 
+          {/* Dynamic action */}
           <div className="mt-auto pt-5">
             <span
               className="
@@ -273,13 +337,14 @@ export function ResourceCard({
                 w-full
                 items-center
                 justify-center
+                gap-2
                 rounded-[10px]
                 bg-[#1f1f1f]
                 px-4
                 text-center
-                font-heading
-                text-[15px]
-                font-semibold
+                font-mono
+                text-[13px]
+                font-medium
                 text-white
                 transition-colors
                 duration-200
@@ -291,7 +356,12 @@ export function ResourceCard({
                 dark:group-hover:bg-[#BBFF1B]
               "
             >
-              Read more
+              {action}
+
+              <ArrowUpRight
+                className="h-4 w-4"
+                strokeWidth={2}
+              />
             </span>
           </div>
         </div>

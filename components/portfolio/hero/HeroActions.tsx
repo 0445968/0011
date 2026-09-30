@@ -145,10 +145,10 @@ export function HeroActions({
           }
 
           100% {
-            top: -16px;
-            right: -16px;
-            bottom: -16px;
-            left: -16px;
+            top: -10px;
+            right: -10px;
+            bottom: -10px;
+            left: -10px;
             border-radius: 26px;
             opacity: 0;
           }

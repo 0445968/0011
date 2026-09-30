@@ -308,7 +308,7 @@ export function BrandStrategyProblem() {
             Bivi combines strategy and creative support
             {' '}
             <br className="hidden sm:block" />
-            to make your value unmistakable.
+            to make you stand out.
           </motion.p>
         </div>
       </div>

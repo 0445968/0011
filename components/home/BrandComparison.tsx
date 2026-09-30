@@ -67,9 +67,9 @@ export function BrandComparison() {
     lg:text-5xl
   "
 >
-  Growing a strong business
+  Scale up with
   <br />
-  requires the right support
+  the right support
 </h2>
 
           <p
@@ -84,9 +84,9 @@ export function BrandComparison() {
               sm:leading-8
             "
           >
-            Without a clear strategy, a business can self-sabotage.
-            Bivi enhances your vision so your brand is ready to scale
-            exponentially.
+            We know it can be easy to self-sabotage.
+            Bivi prepares your brand to grow
+            with confidence.
           </p>
         </div>
 
@@ -292,6 +292,7 @@ export function BrandComparison() {
                 bg-muted
                 px-5
                 text-sm
+                font-mono
                 font-bold
                 text-black
                 transition-colors

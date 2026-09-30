@@ -57,7 +57,6 @@ export function CarouselArrows({
         className="
           rounded-full
           border
-          border-border
           p-3
           transition
           hover:bg-secondary

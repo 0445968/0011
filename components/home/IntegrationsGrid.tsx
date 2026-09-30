@@ -559,9 +559,9 @@ export function IntegrationsGrid() {
               lg:text-5xl
             "
           >
-            We adapt to the tools
+            We adapt to your
             <br />
-            your business already uses
+            existing tools
           </h2>
 
           <p
@@ -569,17 +569,16 @@ export function IntegrationsGrid() {
               mx-auto
               mt-5
               max-w-2xl
-              text-sm
+              text-base
               leading-6
               text-muted-foreground
               sm:text-base
               sm:leading-7
             "
           >
-            From design and development
-            to marketing and collaboration,
+            
             Bivi works within the tools
-            that keep your business moving.
+            that keep your business moving, avoiding slowdowns.
           </p>
         </div>
 

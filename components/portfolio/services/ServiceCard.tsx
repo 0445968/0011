@@ -134,11 +134,12 @@ export function ServiceCard({
                 rounded-full
                 border
                 border-dashed
-                border-[#BBFF1B]/70
+                border-white/70
                 bg-black/40
                 px-3
                 py-2
                 text-[12px]
+                font-mono
                 font-semibold
                 leading-none
                 tracking-tight

@@ -181,12 +181,17 @@ export function ResourceCarousel({
               items-center
               justify-center
               rounded-full
+              border
+              border-dashed
+              border-white/20
               bg-foreground
               text-background
               transition-all
               duration-300
 
               active:scale-95
+
+  hover:border-white
 
               disabled:cursor-not-allowed
               disabled:opacity-30
