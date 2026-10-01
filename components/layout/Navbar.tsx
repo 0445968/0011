@@ -1,52 +1,19 @@
 'use client';
 
-import {
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
-
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { motion } from 'framer-motion';
 
-import {
-  usePathname,
-} from 'next/navigation';
+import { cn } from '@/lib/utils';
 
-import {
-  motion,
-} from 'framer-motion';
-
-import {
-  cn,
-} from '@/lib/utils';
-
-import {
-  NavbarMenu,
-} from './NavbarMenu';
-
-import {
-  MegaMenu,
-} from './MegaMenu';
-
-import {
-  NavbarBrand,
-} from './navbar/NavbarBrand';
-
-import {
-  NavbarDesktopUtilities,
-} from './navbar/NavbarDesktopUtilities';
-
-import {
-  NavbarMobileUtilities,
-} from './navbar/NavbarMobileUtilities';
-
-import {
-  NavbarMobileMenu,
-} from './navbar/NavbarMobileMenu';
-
-import {
-  NavbarUtilityPanel,
-} from './navbar/NavbarUtilityPanel';
+import { NavbarMenu } from './NavbarMenu';
+import { MegaMenu } from './MegaMenu';
+import { NavbarBrand } from './navbar/NavbarBrand';
+import { NavbarDesktopUtilities } from './navbar/NavbarDesktopUtilities';
+import { NavbarMobileUtilities } from './navbar/NavbarMobileUtilities';
+import { NavbarMobileMenu } from './navbar/NavbarMobileMenu';
+import { NavbarUtilityPanel } from './navbar/NavbarUtilityPanel';
 
 /* -------------------------------------------------------------------------- */
 /* Help Center navigation                                                     */
@@ -82,68 +49,20 @@ const helpNavigation = [
 const STICKY_START = 0;
 const STICKY_SHOW = 0;
 
-/*
- * Small movements are ignored on mobile
- * so the navbar does not flicker while
- * the user is resting their finger.
- */
-const MOBILE_SCROLL_THRESHOLD = 5;
-
 export function Navbar() {
-  const pathname =
-    usePathname();
+  const pathname = usePathname();
 
-  const [
-    scrolled,
-    setScrolled,
-  ] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [stickyVisible, setStickyVisible] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [activeMega, setActiveMega] = useState<string | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const [
-    stickyVisible,
-    setStickyVisible,
-  ] = useState(false);
-
-  const [
-    mobileNavbarVisible,
-    setMobileNavbarVisible,
-  ] = useState(true);
-
-  const [
-    isMobileViewport,
-    setIsMobileViewport,
-  ] = useState(false);
-
-  const [
-    open,
-    setOpen,
-  ] = useState(false);
-
-  const [
-    activeMega,
-    setActiveMega,
-  ] = useState<string | null>(
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
-
-  const [
-    searchOpen,
-    setSearchOpen,
-  ] = useState(false);
-
-  const [
-    settingsOpen,
-    setSettingsOpen,
-  ] = useState(false);
-
-  const closeTimer =
-    useRef<
-      ReturnType<
-        typeof setTimeout
-      > | null
-    >(null);
-
-  const lastScrollY =
-    useRef(0);
 
   /* ---------------------------------------------------------------------- */
   /* Route state                                                            */
@@ -151,9 +70,7 @@ export function Navbar() {
 
   const isHelpCenter =
     pathname === '/help' ||
-    pathname.startsWith(
-      '/help/'
-    );
+    pathname.startsWith('/help/');
 
   const allowTransparentNavbar =
     pathname === '/' ||
@@ -183,11 +100,12 @@ export function Navbar() {
         : null;
 
   /*
-   * On pages with transparent headers:
-   * - transparent at the top
-   * - solid after entering sticky mode
+   * Desktop surface behavior.
    *
-   * Opening a menu/search/settings also activates the solid surface.
+   * Existing desktop behavior is preserved:
+   * - selected pages may be transparent at the top
+   * - normal pages use the solid navbar
+   * - menus/utilities activate the solid surface
    */
   const navbarSurfaceActive =
     !allowTransparentNavbar ||
@@ -198,17 +116,31 @@ export function Navbar() {
     open;
 
   /*
-   * Normal pages retain their fixed navbar.
+   * Mobile surface behavior.
    *
-   * Transparent pages begin as an absolute navbar
-   * and become fixed after scrolling.
+   * Mobile is always transparent at scrollY === 0.
+   * As soon as the user scrolls, the sticky design activates.
+   *
+   * Scroll direction does not matter.
+   */
+  const mobileNavbarSurfaceActive =
+    scrolled ||
+    open ||
+    searchOpen ||
+    settingsOpen;
+
+  /*
+   * Normal desktop pages retain their fixed navbar.
+   *
+   * Transparent desktop pages begin absolute and become fixed
+   * after scrolling.
    */
   const navbarIsFixed =
     !allowTransparentNavbar ||
     scrolled;
 
   /*
-   * Existing desktop behavior.
+   * Preserve existing desktop visibility behavior.
    */
   const desktopNavbarShouldShow =
     !allowTransparentNavbar ||
@@ -216,23 +148,17 @@ export function Navbar() {
     stickyVisible;
 
   /*
-   * Mobile behavior:
+   * Mobile navbar never hides because of scroll direction.
    *
-   * - visible at the top
-   * - hidden while scrolling down
-   * - visible while scrolling up
-   * - forced visible whenever a mobile overlay is open
+   * At the top:
+   *   transparent mobile design
    *
-   * Desktop continues using the original behavior.
+   * Anywhere below the top:
+   *   sticky mobile design
    */
   const navbarShouldShow =
     isMobileViewport
-      ? (
-          mobileNavbarVisible ||
-          open ||
-          searchOpen ||
-          settingsOpen
-        )
+      ? true
       : desktopNavbarShouldShow;
 
   /* ---------------------------------------------------------------------- */
@@ -240,30 +166,14 @@ export function Navbar() {
   /* ---------------------------------------------------------------------- */
 
   useEffect(() => {
-    const mediaQuery =
-      window.matchMedia(
-        '(max-width: 767px)'
-      );
+    const mediaQuery = window.matchMedia(
+      '(max-width: 767px)'
+    );
 
     const updateViewport = () => {
-      const mobile =
-        mediaQuery.matches;
-
       setIsMobileViewport(
-        mobile
+        mediaQuery.matches
       );
-
-      /*
-       * When moving from mobile back
-       * to desktop, make sure mobile
-       * visibility state cannot leave
-       * the navbar hidden.
-       */
-      if (!mobile) {
-        setMobileNavbarVisible(
-          true
-        );
-      }
     };
 
     updateViewport();
@@ -286,66 +196,26 @@ export function Navbar() {
   /* ---------------------------------------------------------------------- */
 
   useEffect(() => {
-    lastScrollY.current =
-      window.scrollY;
-
     const onScroll = () => {
-      const scrollY =
-        window.scrollY;
-
-      const previousScrollY =
-        lastScrollY.current;
-
-      const scrollDifference =
-        scrollY -
-        previousScrollY;
+      const scrollY = window.scrollY;
 
       /*
-       * Keep the existing desktop
-       * sticky behavior unchanged.
+       * As soon as scrollY becomes greater than zero,
+       * the mobile sticky navbar activates.
+       *
+       * Returning all the way to scrollY === 0 restores
+       * the transparent mobile navbar.
        */
       setScrolled(
         scrollY > STICKY_START
       );
 
+      /*
+       * Existing desktop sticky behavior.
+       */
       setStickyVisible(
         scrollY > STICKY_SHOW
       );
-
-      /*
-       * Mobile:
-       *
-       * Scroll down  -> hide
-       * Scroll up    -> show
-       * Near top     -> always show
-       */
-      if (
-        window.innerWidth <
-        768
-      ) {
-        if (scrollY <= 8) {
-          setMobileNavbarVisible(
-            true
-          );
-        } else if (
-          scrollDifference >
-          MOBILE_SCROLL_THRESHOLD
-        ) {
-          setMobileNavbarVisible(
-            false
-          );
-        } else if (
-          scrollDifference <
-          -MOBILE_SCROLL_THRESHOLD
-        ) {
-          setMobileNavbarVisible(
-            true
-          );
-        }
-      }
-
-      lastScrollY.current =
-        scrollY;
     };
 
     onScroll();
@@ -376,12 +246,17 @@ export function Navbar() {
     setSearchOpen(false);
     setSettingsOpen(false);
 
-    setMobileNavbarVisible(
-      true
+    /*
+     * Immediately synchronize the navbar with the
+     * current scroll position after navigation.
+     */
+    setScrolled(
+      window.scrollY > STICKY_START
     );
 
-    lastScrollY.current =
-      window.scrollY;
+    setStickyVisible(
+      window.scrollY > STICKY_SHOW
+    );
   }, [pathname]);
 
   /* ---------------------------------------------------------------------- */
@@ -393,8 +268,7 @@ export function Navbar() {
       open ? 'hidden' : '';
 
     return () => {
-      document.body.style.overflow =
-        '';
+      document.body.style.overflow = '';
     };
   }, [open]);
 
@@ -402,11 +276,10 @@ export function Navbar() {
   /* Utility panel                                                          */
   /* ---------------------------------------------------------------------- */
 
-  const closeUtilityPanel =
-    () => {
-      setSearchOpen(false);
-      setSettingsOpen(false);
-    };
+  const closeUtilityPanel = () => {
+    setSearchOpen(false);
+    setSettingsOpen(false);
+  };
 
   /* ---------------------------------------------------------------------- */
   /* Mega menu                                                              */
@@ -415,9 +288,7 @@ export function Navbar() {
   const openMega = (
     id: string
   ) => {
-    if (
-      closeTimer.current
-    ) {
+    if (closeTimer.current) {
       clearTimeout(
         closeTimer.current
       );
@@ -425,14 +296,11 @@ export function Navbar() {
 
     setSearchOpen(false);
     setSettingsOpen(false);
-
     setActiveMega(id);
   };
 
   const closeMega = () => {
-    if (
-      closeTimer.current
-    ) {
+    if (closeTimer.current) {
       clearTimeout(
         closeTimer.current
       );
@@ -456,29 +324,27 @@ export function Navbar() {
   /* Search                                                                 */
   /* ---------------------------------------------------------------------- */
 
-  const handleSearchOpen =
-    () => {
-      setActiveMega(null);
-      setSettingsOpen(false);
+  const handleSearchOpen = () => {
+    setActiveMega(null);
+    setSettingsOpen(false);
 
-      if (open) {
-        setOpen(false);
-      }
-    };
+    if (open) {
+      setOpen(false);
+    }
+  };
 
   /* ---------------------------------------------------------------------- */
   /* Settings                                                               */
   /* ---------------------------------------------------------------------- */
 
-  const handleSettingsOpen =
-    () => {
-      setActiveMega(null);
-      setSearchOpen(false);
+  const handleSettingsOpen = () => {
+    setActiveMega(null);
+    setSearchOpen(false);
 
-      if (open) {
-        setOpen(false);
-      }
-    };
+    if (open) {
+      setOpen(false);
+    }
+  };
 
   /* ---------------------------------------------------------------------- */
   /* Render                                                                 */
@@ -486,9 +352,9 @@ export function Navbar() {
 
   return (
     <>
-      {/* --------------------------------------------------------------- */}
-      {/* Page overlay                                                    */}
-      {/* --------------------------------------------------------------- */}
+      {/* ------------------------------------------------------------------ */}
+      {/* Page overlay                                                       */}
+      {/* ------------------------------------------------------------------ */}
 
       {megaOpen && (
         <div
@@ -500,18 +366,16 @@ export function Navbar() {
             backdrop-blur-sm
           "
           onMouseEnter={() => {
-            if (
-              activeMega
-            ) {
+            if (activeMega) {
               closeMega();
             }
           }}
         />
       )}
 
-      {/* --------------------------------------------------------------- */}
-      {/* Navbar                                                          */}
-      {/* --------------------------------------------------------------- */}
+      {/* ------------------------------------------------------------------ */}
+      {/* Navbar                                                             */}
+      {/* ------------------------------------------------------------------ */}
 
       <motion.header
         initial={{
@@ -519,14 +383,12 @@ export function Navbar() {
           opacity: 0,
         }}
         animate={{
-          y:
-            navbarShouldShow
-              ? 0
-              : -96,
-          opacity:
-            navbarShouldShow
-              ? 1
-              : 0,
+          y: navbarShouldShow
+            ? 0
+            : -96,
+          opacity: navbarShouldShow
+            ? 1
+            : 0,
         }}
         transition={{
           y: {
@@ -550,7 +412,6 @@ export function Navbar() {
             transition-[background-color,border-color,box-shadow]
             duration-50
           `,
-
           navbarIsFixed
             ? `
                 fixed
@@ -558,33 +419,32 @@ export function Navbar() {
             : `
                 absolute
               `,
-navbarSurfaceActive
-  ? `
-      bg-transparent
-      text-foreground
+          navbarSurfaceActive
+            ? `
+                bg-transparent
+                text-foreground
 
-      lg:border-b
-      lg:border-border/60
-      lg:bg-background
-    `
-  : `
-      bg-transparent
-      text-white
+                lg:border-b
+                lg:border-border/60
+                lg:bg-background
+              `
+            : `
+                bg-transparent
+                text-white
 
-      lg:border-b
-      lg:border-transparent
-    `,
-
+                lg:border-b
+                lg:border-transparent
+              `,
           navbarIsFixed &&
-          navbarSurfaceActive &&
-          `
-              shadow-sm
+            navbarSurfaceActive &&
+            `
+              lg:shadow-sm
             `
         )}
       >
-        {/* ------------------------------------------------------------- */}
-        {/* Navigation bar                                               */}
-        {/* ------------------------------------------------------------- */}
+        {/* --------------------------------------------------------------- */}
+        {/* Navigation bar                                                  */}
+        {/* --------------------------------------------------------------- */}
 
         <nav
           className="
@@ -598,27 +458,25 @@ navbarSurfaceActive
             md:h-20
           "
         >
-          {/* ----------------------------------------------------------- */}
-          {/* Brand                                                       */}
-          {/* ----------------------------------------------------------- */}
+          {/* ------------------------------------------------------------- */}
+          {/* Brand                                                         */}
+          {/* ------------------------------------------------------------- */}
 
-<div className="hidden lg:block">
-  <NavbarBrand
-    surfaceActive={
-      navbarSurfaceActive
-    }
-  />
-</div>
+          <div className="hidden lg:block">
+            <NavbarBrand
+              surfaceActive={
+                navbarSurfaceActive
+              }
+            />
+          </div>
 
-          {/* ----------------------------------------------------------- */}
-          {/* Desktop navigation                                         */}
-          {/* ----------------------------------------------------------- */}
+          {/* ------------------------------------------------------------- */}
+          {/* Desktop navigation                                            */}
+          {/* ------------------------------------------------------------- */}
 
           {isHelpCenter ? (
             <HelpCenterNavigation
-              pathname={
-                pathname
-              }
+              pathname={pathname}
               surfaceActive={
                 navbarSurfaceActive
               }
@@ -640,9 +498,9 @@ navbarSurfaceActive
             />
           )}
 
-          {/* ----------------------------------------------------------- */}
-          {/* Desktop utilities                                          */}
-          {/* ----------------------------------------------------------- */}
+          {/* ------------------------------------------------------------- */}
+          {/* Desktop utilities                                             */}
+          {/* ------------------------------------------------------------- */}
 
           <NavbarDesktopUtilities
             surfaceActive={
@@ -668,38 +526,38 @@ navbarSurfaceActive
             }
           />
 
-          {/* ----------------------------------------------------------- */}
-          {/* Mobile utilities                                           */}
-          {/* ----------------------------------------------------------- */}
+          {/* ------------------------------------------------------------- */}
+          {/* Mobile utilities                                              */}
+          {/* ------------------------------------------------------------- */}
 
-<NavbarMobileUtilities
-  surfaceActive={
-    navbarSurfaceActive
-  }
-  open={
-    open
-  }
-  setOpen={
-    setOpen
-  }
-  searchOpen={
-    searchOpen
-  }
-  setSearchOpen={
-    setSearchOpen
-  }
-  settingsOpen={
-    settingsOpen
-  }
-  onSearchOpen={
-    handleSearchOpen
-  }
-/>
+          <NavbarMobileUtilities
+            surfaceActive={
+              mobileNavbarSurfaceActive
+            }
+            open={
+              open
+            }
+            setOpen={
+              setOpen
+            }
+            searchOpen={
+              searchOpen
+            }
+            setSearchOpen={
+              setSearchOpen
+            }
+            settingsOpen={
+              settingsOpen
+            }
+            onSearchOpen={
+              handleSearchOpen
+            }
+          />
         </nav>
 
-        {/* ------------------------------------------------------------- */}
-        {/* Search / Settings                                             */}
-        {/* ------------------------------------------------------------- */}
+        {/* --------------------------------------------------------------- */}
+        {/* Search / Settings                                               */}
+        {/* --------------------------------------------------------------- */}
 
         <NavbarUtilityPanel
           mode={
@@ -710,9 +568,9 @@ navbarSurfaceActive
           }
         />
 
-        {/* ------------------------------------------------------------- */}
-        {/* Mega menu                                                     */}
-        {/* ------------------------------------------------------------- */}
+        {/* --------------------------------------------------------------- */}
+        {/* Mega menu                                                       */}
+        {/* --------------------------------------------------------------- */}
 
         {!isHelpCenter && (
           <MegaMenu
@@ -731,25 +589,24 @@ navbarSurfaceActive
           />
         )}
 
-        {/* ------------------------------------------------------------- */}
-        {/* Mobile menu                                                   */}
-        {/* ------------------------------------------------------------- */}
+        {/* --------------------------------------------------------------- */}
+        {/* Mobile menu                                                     */}
+        {/* --------------------------------------------------------------- */}
 
-<NavbarMobileMenu
-  open={
-    open
-  }
-  onNavigate={
-    handleNav
-  }
-  onSettingsOpen={() => {
-    setOpen(false);
-    setSearchOpen(false);
-    setActiveMega(null);
-
-    setSettingsOpen(true);
-  }}
-/>
+        <NavbarMobileMenu
+          open={
+            open
+          }
+          onNavigate={
+            handleNav
+          }
+          onSettingsOpen={() => {
+            setOpen(false);
+            setSearchOpen(false);
+            setActiveMega(null);
+            setSettingsOpen(true);
+          }}
+        />
       </motion.header>
     </>
   );
@@ -783,8 +640,7 @@ function HelpCenterNavigation({
       {helpNavigation.map(
         (item) => {
           const active =
-            pathname ===
-            item.href ||
+            pathname === item.href ||
             pathname.startsWith(
               `${item.href}/`
             );
@@ -827,9 +683,7 @@ function HelpCenterNavigation({
                       `
               )}
             >
-              {
-                item.label
-              }
+              {item.label}
 
               <span
                 className={cn(

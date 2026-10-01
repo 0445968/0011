@@ -11,7 +11,6 @@ import { FeaturedCaseStudies } from '@/components/portfolio/FeaturedCaseStudies'
 import { ServicesCarousel } from '@/components/portfolio/services/ServicesCarousel';
 import { BrandStrategyProblem } from '@/components/services/strategy-problem/BrandStrategyProblem';
 import { BrandNextSection } from '@/components/home/BrandNextSection';
-import { BrandComparison } from '@/components/home/BrandComparison';
 import { IntegrationsGrid } from '@/components/home/IntegrationsGrid';
 import { HomepageCTA } from '@/components/home/HomepageCTA';
 
@@ -23,7 +22,6 @@ export default function Home() {
       <BrandStrategyProblem />
       <BrandNextSection />
       <ServicesCarousel />
-      <BrandComparison />
       <IntegrationsGrid />
       <ResourceLibraryPreview />
       <HomepageCTA />

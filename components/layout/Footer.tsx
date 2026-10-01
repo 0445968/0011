@@ -259,43 +259,18 @@ export function Footer() {
         {/* ================================================== */}
         {/* MAIN CONTENT                                       */}
         {/* ================================================== */}
+<div
+  className={`
+    grid
+    gap-8
 
-        <div
-          className={`
-            grid
-            gap-8
-            lg:grid-cols-12
-
-            ${
-              hideTagline
-                ? 'mt-0'
-                : 'mt-12'
-            }
-          `}
-        >
-          {/* ================================================== */}
-          {/* BRAND                                              */}
-          {/* ================================================== */}
-
-          <div className="lg:col-span-4">
-            <a
-              href="/"
-              aria-label="Bivi home"
-              className="
-                inline-flex
-                items-center
-              "
-            >
-              <img
-                src="/images/logo.svg"
-                alt={siteConfig.name}
-                className="
-                  h-8
-                  w-auto
-                "
-              />
-            </a>
-          </div>
+    ${
+      hideTagline
+        ? 'mt-0'
+        : 'mt-12'
+    }
+  `}
+>
 
           {/* ================================================== */}
           {/* MOBILE SITEMAP                                    */}
@@ -477,8 +452,7 @@ export function Footer() {
               hidden
               gap-x-7
               gap-y-8
-
-              lg:col-span-8
+              
               lg:grid
               lg:grid-cols-4
             "
@@ -592,18 +566,17 @@ export function Footer() {
             gap-4
           "
         >
-          <p
-            className="
-              font-mono
-              text-[10px]
-              font-medium
-              uppercase
-              tracking-[0.12em]
-              text-muted-foreground
-            "
-          >
-            Follow Us
-          </p>
+<a
+  href="/"
+  aria-label="Bivi home"
+  className="inline-flex items-center"
+>
+  <img
+    src="/images/logo.svg"
+    alt={siteConfig.name}
+    className="h-5 w-auto"
+  />
+</a>
 
           <ul
             className="

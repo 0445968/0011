@@ -102,7 +102,7 @@ export function HomepageCTA() {
               sm:text-[12px]
             "
           >
-            Let&apos;s work together
+            GET IN TOUCH
           </p>
 
           {/* Heading */}

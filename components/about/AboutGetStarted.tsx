@@ -157,7 +157,7 @@ export function AboutGetStarted() {
                   sm:text-xs
                 "
               >
-                Start something
+                Get started
               </p>
 
               {/* Heading */}
@@ -169,7 +169,7 @@ export function AboutGetStarted() {
                   text-balance
                   font-heading
                   text-[1.85rem]
-                  font-medium
+                  font-semibold
                   leading-[1.2]
                   tracking-[-0.04em]
                   sm:text-[2.2rem]
@@ -208,6 +208,7 @@ export function AboutGetStarted() {
                     bg-black
                     px-6
                     text-[15px]
+                    font-mono
                     font-semibold
                     text-white
                     shadow-sm
@@ -234,7 +235,7 @@ export function AboutGetStarted() {
                 </Link>
 
                 <Link
-                  href="/work"
+                  href="/process"
                   className="
                     group
                     inline-flex
@@ -249,6 +250,7 @@ export function AboutGetStarted() {
                     bg-background
                     px-6
                     text-[15px]
+                    font-mono
                     font-semibold
                     text-foreground
                     shadow-sm
@@ -258,7 +260,7 @@ export function AboutGetStarted() {
                     hover:shadow-md
                   "
                 >
-                  See our work
+                  See our process
 
                   <ArrowUpRight
                     size={16}

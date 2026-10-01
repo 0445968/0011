@@ -39,13 +39,13 @@ export function BrandComparison() {
       className="
         bg-background
         px-5
-        pt-8
+        pt-20
         pb-20
         sm:px-6
-        sm:pt-10
+        sm:pt-20
         sm:pb-24
         lg:px-8
-        lg:pt-12
+        lg:pt-24
         lg:pb-28
       "
     >

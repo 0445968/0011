@@ -215,7 +215,7 @@ function FaqItem({
       >
         <span
           className="
-            font-heading
+            font-mono
             text-base
             font-semibold
             tracking-tight

@@ -5,6 +5,8 @@ import { AboutWhyUs } from '@/components/about/AboutWhyUs';
 import { AboutFaq } from '@/components/about/AboutFaq';
 import { AboutGetStarted } from '@/components/about/AboutGetStarted';
 
+import { BrandComparison } from '@/components/home/BrandComparison';
+
 export const metadata: Metadata = {
   title: 'About',
   description:
@@ -15,7 +17,7 @@ export default function AboutPage() {
   return (
     <main>
       <AboutMission />
-      <AboutWhyUs />
+      <BrandComparison />
       <AboutFaq />
       <AboutGetStarted />
     </main>

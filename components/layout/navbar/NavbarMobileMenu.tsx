@@ -137,11 +137,6 @@ function DefaultMobileMenu({
                   >
                     <span>{item.label}</span>
 
-                    <ArrowRight
-                      size={18}
-                      strokeWidth={1.8}
-                      className="text-muted-foreground"
-                    />
                   </Link>
                 </li>
               );
@@ -259,7 +254,7 @@ function DefaultMobileMenu({
               strokeWidth={1.9}
               className="text-muted-foreground"
             />
-            Settings
+            Site settings
           </span>
 
           <ArrowRight
