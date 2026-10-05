@@ -418,7 +418,7 @@ export function ServicesCarousel() {
             items-center
             justify-center
             gap-2
-            rounded-[14px]
+            rounded-[18px]
             bg-black
             px-7
             font-mono
@@ -445,7 +445,7 @@ export function ServicesCarousel() {
             h-[52px]
             items-center
             justify-center
-            rounded-[14px]
+            rounded-[18px]
             bg-[#eaeaea]
             px-7
             font-mono

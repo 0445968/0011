@@ -148,6 +148,7 @@ export function NavbarMobileUtilities4({
               absolute
               inset-x-0
               top-0
+              rounded-b-[7px]
               h-[66px]
               bg-black
             "
@@ -192,7 +193,7 @@ export function NavbarMobileUtilities4({
             {/* White horizontal bar */}
             <path
               fill="url(#mobileNavbarGlass4)"
-              stroke="#262626"
+              stroke="#000000"
               strokeWidth="1"
               d="
                 M0 0
@@ -219,8 +220,8 @@ export function NavbarMobileUtilities4({
               cy="55"
               r="29"
               fill="url(#mobileNavbarGlass4)"
-              stroke="#262626"
-              strokeWidth="2.5"
+              stroke="#000000"
+              strokeWidth="2"
             />
           </svg>
 

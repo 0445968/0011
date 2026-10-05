@@ -8,12 +8,7 @@ interface HeroActionsProps {
   hasSelectedOptions: boolean;
 }
 
-const transitionEase = [
-  0.16,
-  1,
-  0.3,
-  1,
-] as const;
+const transitionEase = [0.16, 1, 0.3, 1] as const;
 
 export function HeroActions({
   getStartedHref,
@@ -43,12 +38,22 @@ export function HeroActions({
           items-center
           justify-center
           gap-3
+          px-1
+
           sm:w-auto
           sm:flex-row
+          sm:px-0
         "
       >
         {/* Get Started */}
-        <div className="relative w-auto">
+        <div
+          className="
+            relative
+            w-full
+
+            sm:w-auto
+          "
+        >
           {/* Pulse */}
           {hasSelectedOptions && (
             <span
@@ -67,26 +72,28 @@ export function HeroActions({
           <a
             href={getStartedHref}
             className="
-  relative
-  z-10
-  inline-flex
-  h-12
-  w-auto
-  items-center
-  justify-center
-  gap-2
-  rounded-[14px]
-  bg-[#BBFF1B]
-  px-5
-  text-[15px]
-  font-mono
-  font-bold
-  leading-none
-  text-black
-  hover:bg-[#BBFF1B]/90
-  sm:px-8
-  sm:text-[15px]
-"
+              relative
+              z-10
+              flex
+              h-12
+              w-full
+              items-center
+              justify-center
+              gap-2
+              rounded-[18px]
+              bg-[#BBFF1B]
+              px-6
+              text-[15px]
+              font-mono
+              font-bold
+              leading-none
+              text-black
+              transition-colors
+              hover:bg-[#BBFF1B]/90
+
+              sm:w-auto
+              sm:px-8
+            "
           >
             Get Started
 
@@ -101,23 +108,26 @@ export function HeroActions({
         <a
           href="/resources"
           className="
-              group
-              inline-flex
-              h-12
-              items-center
-              justify-center
-              gap-2
-              rounded-[14px]
-              bg-white/20
-              px-6
-              text-[15px]
-              font-mono
-              font-bold
-              text-white
-              backdrop-blur
-              transition-colors
-              hover:bg-white/30
-            "
+            group
+            flex
+            h-12
+            w-full
+            items-center
+            justify-center
+            gap-2
+            rounded-[18px]
+            bg-white/20
+            px-6
+            text-[15px]
+            font-mono
+            font-bold
+            text-white
+            backdrop-blur
+            transition-colors
+            hover:bg-white/30
+
+            sm:w-auto
+          "
         >
           Explore Resources
 

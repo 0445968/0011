@@ -1179,7 +1179,7 @@ useEffect(() => {
             w-full
             items-center
             justify-between
-            rounded-[16px]
+            rounded-[18px]
             bg-white/10
             px-6
             py-4

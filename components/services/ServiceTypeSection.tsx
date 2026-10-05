@@ -87,13 +87,25 @@ const serviceMedia: Record<
 };
 
 /* -------------------------------------------------------------------------- */
-/* Media helpers                                                              */
+/* Helpers                                                                    */
 /* -------------------------------------------------------------------------- */
 
 function isVideo(src: string) {
   return /\.(mp4|webm|mov|m4v)$/i.test(
     src
   );
+}
+
+function formatServiceTitle(
+  title: string
+) {
+  return title
+    .toLowerCase()
+    .replace(
+      /\b\w/g,
+      (character) =>
+        character.toUpperCase()
+    );
 }
 
 /* -------------------------------------------------------------------------- */
@@ -187,30 +199,32 @@ export function ServiceTypeSection({
           <Link
             href="/contact"
             className="
-    group
-    relative
-    inline-flex
-    min-w-0
-    items-center
-  "
+              group
+              relative
+              inline-flex
+              min-w-0
+              items-center
+            "
           >
             {/* Number */}
 
             <span
               className="
-      mr-3
-      shrink-0
-      font-heading
-      text-3xl
-      font-semibold
-      leading-none
-      tracking-[-0.035em]
-      text-white/25
-      sm:text-4xl
-      lg:text-[3.6rem]
-    "
+                mr-3
+                shrink-0
+                font-heading
+                text-3xl
+                font-semibold
+                leading-none
+                tracking-[-0.035em]
+                text-white/25
+                sm:text-4xl
+                lg:text-[3.6rem]
+              "
             >
-              {String(index + 1).padStart(
+              {String(
+                index + 1
+              ).padStart(
                 2,
                 '0'
               )}
@@ -220,99 +234,108 @@ export function ServiceTypeSection({
 
             <span
               className="
-      whitespace-nowrap
-      font-mono
-      text-base
-      font-medium
-      uppercase
-      leading-[1.15]
-      tracking-[0.02em]
-      text-[#BBFF1B]
-      sm:text-lg
-      lg:text-[18px]
-    "
+                whitespace-nowrap
+                font-mono
+                text-base
+                font-medium
+                leading-[1.15]
+                tracking-[0.02em]
+                text-white
+                sm:text-lg
+                lg:text-[18px]
+              "
             >
-              {service.title}
+              {formatServiceTitle(
+                service.title
+              )}
             </span>
 
             {/* CTA interaction */}
 
             <span
               className="
-    relative
-    ml-3
-    flex
-    h-8
-    w-[155px]
-    items-center
-  "
+                relative
+                ml-3
+                flex
+                h-8
+                w-[155px]
+                items-center
+              "
             >
               {/* Letter-by-letter reveal */}
 
               <span
                 className="
-      absolute
-      left-0
-      flex
-      items-center
-      whitespace-nowrap
-      font-mono
-      text-[10px]
-      font-semibold
-      uppercase
-      tracking-[0.16em]
-      text-white/55
-    "
+                  absolute
+                  left-0
+                  flex
+                  items-center
+                  whitespace-nowrap
+                  font-mono
+                  text-[10px]
+                  font-semibold
+                  uppercase
+                  tracking-[0.16em]
+                  text-white/55
+                "
                 aria-hidden="true"
               >
                 {projectCta
                   .split('')
-                  .map((character, characterIndex) => (
-                    <span
-                      key={`${character}-${characterIndex}`}
-                      className="
-            inline-block
-            translate-y-1
-            opacity-0
-            transition-none
+                  .map(
+                    (
+                      character,
+                      characterIndex
+                    ) => (
+                      <span
+                        key={`${character}-${characterIndex}`}
+                        className="
+                          inline-block
+                          translate-y-1
+                          opacity-0
+                          transition-none
 
-            group-hover:translate-y-0
-            group-hover:opacity-100
-            group-hover:transition-[opacity,transform]
-            group-hover:duration-200
-            group-hover:ease-out
-          "
-                      style={{
-                        transitionDelay: `${characterIndex * 25
+                          group-hover:translate-y-0
+                          group-hover:opacity-100
+                          group-hover:transition-[opacity,transform]
+                          group-hover:duration-200
+                          group-hover:ease-out
+                        "
+                        style={{
+                          transitionDelay: `${
+                            characterIndex *
+                            25
                           }ms`,
-                      }}
-                    >
-                      {character === ' '
-                        ? '\u00A0'
-                        : character}
-                    </span>
-                  ))}
+                        }}
+                      >
+                        {character ===
+                        ' '
+                          ? '\u00A0'
+                          : character}
+                      </span>
+                    )
+                  )}
               </span>
 
               {/* Moving arrow */}
 
               <ArrowUpRight
                 className="
-      absolute
-      left-0
-      z-10
-      h-5
-      w-5
-      text-[#BBFF1B]
+                  absolute
+                  left-0
+                  z-10
+                  h-5
+                  w-5
+                  text-[#BBFF1B]
 
-      transition-none
+                  transition-none
 
-      group-hover:translate-x-[130px]
-      group-hover:-translate-y-1
-      group-hover:transition-transform
-      group-hover:duration-[1800ms]
-      group-hover:ease-[cubic-bezier(0.22,1,0.36,1)]
-    "
+                  group-hover:translate-x-[130px]
+                  group-hover:-translate-y-1
+                  group-hover:transition-transform
+                  group-hover:duration-[1800ms]
+                  group-hover:ease-[cubic-bezier(0.22,1,0.36,1)]
+                "
               />
             </span>
           </Link>
@@ -326,9 +349,9 @@ export function ServiceTypeSection({
           className="
             mt-10
             grid
+            grid-cols-2
             gap-3
             sm:mt-12
-            sm:grid-cols-2
             sm:gap-4
             lg:grid-cols-[2.05fr_1fr_1fr]
           "
@@ -353,19 +376,25 @@ export function ServiceTypeSection({
                       rounded-[10px]
                       bg-[#071B34]
 
-                      ${mediaIndex === 0
-                        ? `
+                      ${
+                        mediaIndex ===
+                        0
+                          ? `
+                              col-span-2
                               aspect-[16/9]
-                              sm:col-span-2
+
                               lg:col-span-1
                               lg:aspect-auto
                               lg:h-[390px]
                             `
-                        : `
-                              aspect-[16/9]
-                              lg:aspect-auto
-                              lg:h-[390px]
-                            `
+: `
+    aspect-[3/4]
+
+    sm:aspect-[4/5]
+
+    lg:aspect-auto
+    lg:h-[390px]
+  `
                       }
                     `}
                   >
@@ -377,7 +406,10 @@ export function ServiceTypeSection({
                         loop
                         playsInline
                         preload="metadata"
-                        aria-label={`${service.title} example ${mediaIndex + 1}`}
+                        aria-label={`${service.title} example ${
+                          mediaIndex +
+                          1
+                        }`}
                         className="
                           absolute
                           inset-0
@@ -394,10 +426,14 @@ export function ServiceTypeSection({
                     ) : (
                       <Image
                         src={item}
-                        alt={`${service.title} example ${mediaIndex + 1}`}
+                        alt={`${service.title} example ${
+                          mediaIndex +
+                          1
+                        }`}
                         fill
                         sizes={
-                          mediaIndex === 0
+                          mediaIndex ===
+                          0
                             ? `
                                 (max-width: 1024px) 100vw,
                                 50vw
@@ -454,30 +490,9 @@ export function ServiceTypeSection({
         <ServiceProductStrip
           service={{
             slug: service.id,
-            title: service.title,
+            title:
+              service.title,
           }}
-        />
-      </div>
-
-      {/* ---------------------------------------------------------- */}
-      {/* Section divider                                            */}
-      {/* ---------------------------------------------------------- */}
-
-      <div
-        className="
-          container-page
-          relative
-          z-10
-          py-14
-          sm:py-16
-          lg:py-20
-        "
-      >
-        <div
-          className="
-            h-px
-            bg-white/[0.2]
-          "
         />
       </div>
     </section>

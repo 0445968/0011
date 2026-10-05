@@ -237,10 +237,11 @@ export function DemoHero() {
               items-center
               justify-center
               gap-2
-              rounded-[14px]
+              rounded-[18px]
               bg-white
               px-6
               text-[16px]
+              font-mono
               font-bold
               text-black
               transition-opacity
@@ -268,10 +269,11 @@ export function DemoHero() {
               items-center
               justify-center
               gap-2
-              rounded-[14px]
+              rounded-[18px]
               bg-white/10
               px-6
               text-[16px]
+              font-mono
               font-bold
               text-white
               backdrop-blur

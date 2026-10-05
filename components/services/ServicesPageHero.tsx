@@ -117,17 +117,18 @@ export function ServicesPageHero() {
           <h1
             className="
               mx-auto
-              mt-4
-              max-w-3xl
+              mt-6
+              max-w-[14ch]
               text-balance
               font-heading
-              text-3xl
-              font-semibold
-              leading-[1.08]
-              tracking-[-0.04em]
-              sm:text-4xl
-              lg:text-5xl
-              xl:text-[3.4rem]
+              text-[2.35rem]
+              font-medium
+              leading-[0.98]
+              tracking-[-0.045em]
+              text-white
+              sm:text-[3rem]
+              md:text-[3.6rem]
+              lg:text-[4.15rem]
             "
           >
             Built around where your business
@@ -136,13 +137,14 @@ export function ServicesPageHero() {
 
           <p
             className="
-              mx-auto
-              mt-5
-              max-w-2xl
-              text-sm
-              leading-6
-              text-white/70
-              sm:text-base
+            mt-7
+            max-w-2xl
+            text-balance
+            text-base
+            leading-7
+            text-white/70
+            sm:text-lg
+            sm:leading-8
             "
           >
             Strategy, design, and digital
@@ -171,10 +173,11 @@ export function ServicesPageHero() {
                 items-center
                 justify-center
                 gap-2
-                rounded-[14px]
+                rounded-[18px]
                 bg-white
                 px-5
                 text-sm
+                font-mono
                 font-bold
                 text-black
                 transition-colors
@@ -216,10 +219,11 @@ export function ServicesPageHero() {
     items-center
     justify-center
     gap-2
-    rounded-[14px]
+    rounded-[18px]
     bg-white/20
     px-5
     text-sm
+    font-mono
     font-bold
     text-white
     backdrop-blur-sm
