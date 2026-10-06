@@ -53,12 +53,12 @@ Approval applies to the displayed update and its linked materials. It does not r
 
 ## Delivery and withdrawal
 
-Delivery uses external HTTPS links, with client-facing labels and notes. Uploaded-file storage is a later phase. Grant intended clients access at the file provider; portal membership does not change external file permissions. Links without embedded usernames/passwords are supported; never paste account passwords or access tokens into summaries or notes. Time-limited file links expire according to their provider and should be republished when replaced.
+Delivery uses external HTTPS links, with client-facing labels and notes. Private uploaded-file exchange is available after migration 008; follow FILE_EXCHANGE_SETUP.md. Grant intended clients access at the file provider; portal membership does not change external file permissions. Links without embedded usernames/passwords are supported; never paste account passwords or access tokens into summaries or notes. Time-limited file links expire according to their provider and should be republished when replaced.
 
-**Withdraw version** hides that update from client access while retaining its staff record. If the latest version is withdrawn, the portal shows the newest remaining available update. Withdraw all versions to hide all project content. Previously received client decisions remain stored. Already shared external links must be revoked separately at the provider when needed; withdrawal cannot remove copies already downloaded.
+**Withdraw version** hides that update from client access while retaining its staff record. If the latest version is withdrawn, the portal shows the newest remaining available update. Withdraw all versions to hide published updates. Project file access is managed separately through file withdrawal or assignment revocation. Previously received client decisions remain stored. Already shared external links must be revoked separately at the provider when needed; withdrawal cannot remove copies already downloaded.
 
 ## Verification
 
 Local checks cover TypeScript, production build using test Google Fonts responses, project membership, viewer/approver permissions, internal-data isolation, publication validation, immutable versions, stale/duplicate review rejection, withdrawal and membership revocation. The production browser workflow uses a local Supabase simulation. Real credentials were unavailable: test with separate real staff/client/viewer accounts, verify only assigned projects appear, publish → request changes → republish → approve, then verify withdrawal and revocation in your configured environment.
 
-Resources and Helpdesk remain outside the roadmap. Next work: file exchange and production rollout verification, including client account recovery and notification handling when selected.
+Resources and Helpdesk remain outside the roadmap. Next work: production rollout verification. Client account recovery and notification handling remain future work when selected.
