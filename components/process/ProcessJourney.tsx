@@ -314,6 +314,7 @@ export function ProcessJourney() {
                 bg-white
                 px-6
                 text-[16px]
+                font-mono
                 font-bold
                 text-black
                 transition-opacity
