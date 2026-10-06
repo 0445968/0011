@@ -1,0 +1,5 @@
+import 'server-only';import {cookies} from 'next/headers';import {redirect} from 'next/navigation';import {createStaffClient,staffAuthConfigured,type StaffAccess} from '@/lib/admin/auth';
+export const CLIENT_COOKIE='bivi_client_access';
+export async function authorizeClient(token:string|undefined):Promise<StaffAccess>{if(!token)return {allowed:false,status:401};if(!staffAuthConfigured())return {allowed:false,status:503};try{const client=createStaffClient(token);const {data,error}=await client.auth.getUser(token);if(error||!data.user)return {allowed:false,status:error?.status&&error.status>=500?503:401};return {allowed:true,user:data.user,client};}catch{return {allowed:false,status:503};}}
+export function getClientAccess(){return authorizeClient(cookies().get(CLIENT_COOKIE)?.value);}
+export async function requireClient(){const access=await getClientAccess();if(!access.allowed){if(access.status===503)throw new Error('Client access is temporarily unavailable.');redirect('/client/login');}return access;}

@@ -27,7 +27,7 @@ export function SiteChrome({
       '/embed'
     );
 
-  if (pathname === '/admin' || pathname.startsWith('/admin/')) return <>{children}</>;
+  if (pathname === '/admin' || pathname.startsWith('/admin/') || pathname === '/client' || pathname.startsWith('/client/')) return <>{children}</>;
 
   if (isDemoEmbed) {
     return (

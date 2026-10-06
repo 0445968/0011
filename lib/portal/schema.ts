@@ -1,0 +1,7 @@
+import {z} from 'zod';
+const text=(n:number)=>z.string().trim().max(n);
+export const deliveryUrl=z.string().max(2000).url().refine(v=>{try{const u=new URL(v);return u.protocol==='https:'&&!u.username&&!u.password;}catch{return false;}},'Use an HTTPS link without credentials.');
+export const publishedBodySchema=z.object({title:text(200).min(1),summary:text(4000).min(1),nextSteps:text(4000),progress:z.number().int().min(0).max(100),reviewRequested:z.boolean(),milestones:z.array(z.object({title:text(300).min(1),status:z.enum(['planned','in_progress','done']),dueOn:z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable()}).strict()).max(20),deliveries:z.array(z.object({id:text(100).min(1),label:text(300).min(1),url:deliveryUrl,notes:text(2000)}).strict()).max(20)}).strict().refine(b=>new Set(b.deliveries.map(d=>d.id)).size===b.deliveries.length,'Delivery IDs must be unique.');
+export type PublishedBody=z.infer<typeof publishedBodySchema>;
+export const publishCommandSchema=z.discriminatedUnion('action',[z.object({action:z.literal('publish'),expectedVersion:z.number().int().min(0),body:publishedBodySchema}).strict(),z.object({action:z.literal('withdraw'),expectedVersion:z.number().int().min(1),version:z.number().int().min(1)}).strict()]);
+export const clientReviewSchema=z.object({version:z.number().int().min(1),decision:z.enum(['approved','changes_requested']),note:text(4000)}).strict().refine(c=>c.decision!=='changes_requested'||c.note.length>0,'Describe the requested changes.');
