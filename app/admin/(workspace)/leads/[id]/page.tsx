@@ -20,6 +20,7 @@ export default async function InquiryPage({ params }: { params: { id: string } }
   return <>
     <Link href="/admin" className="text-sm text-muted-foreground underline underline-offset-4">Back to inquiries</Link>
     <header className="mt-6"><div className="flex flex-wrap items-center gap-3"><h1 className="font-heading text-3xl font-semibold sm:text-4xl">{payload.company || payload.name}</h1><span className="rounded-full bg-muted px-3 py-1 text-xs">{statusLabels[inquiry.status]}</span></div><p className="mt-4 text-sm text-muted-foreground">Received {formatDate(inquiry.created_at)}</p><p className="mt-2 break-all font-mono text-xs text-muted-foreground">Reference: {inquiry.request_id}</p></header>
+    <Link href={`/admin/leads/${inquiry.request_id}/proposals`} className="mt-6 inline-block rounded-xl border border-border px-4 py-3 text-sm">Open proposals and accepted scope</Link>
     <div className="mt-8 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
       <div className="min-w-0 space-y-6">
         <section className="rounded-2xl border border-border bg-card p-6"><h2 className="font-heading text-xl font-semibold">Contact and context</h2><dl className="mt-5 grid gap-5 sm:grid-cols-2">
