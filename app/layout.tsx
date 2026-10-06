@@ -47,24 +47,20 @@ export const metadata: Metadata = {
 
   title: {
     default:
-      'Bivi | Creative Studio & Resource Library',
+      'Bivi | Brand Strategy and Design Studio',
 
     template:
       '%s — Bivi',
   },
 
   description:
-    'Bivi is an independent creative studio crafting premium websites, brand systems, and a free resource library of guides, tools, and curated links for designers and founders.',
+    'Bivi is an independent creative studio helping businesses grow through brand strategy, visual identity, websites, and design.',
 
   keywords: [
     'design studio',
     'web design',
     'frontend development',
     'branding',
-    'resource library',
-    'design guides',
-    'color palette generator',
-    'creative tools',
   ],
 
   authors: [
@@ -79,10 +75,10 @@ export const metadata: Metadata = {
       'website',
 
     title:
-      'Bivi | Creative Studio & Resource Library',
+      'Bivi | Brand Strategy and Design Studio',
 
     description:
-      'An independent creative studio crafting premium websites, brand systems, and a free resource library of guides, tools, and curated links.',
+      'An independent creative studio creating brand strategies, visual identities, websites, and digital experiences.',
 
     siteName:
       'Bivi',
@@ -99,7 +95,7 @@ export const metadata: Metadata = {
           630,
 
         alt:
-          'Bivi | Creative Studio & Resource Library',
+          'Bivi | Brand Strategy and Design Studio',
       },
     ],
   },
@@ -109,10 +105,10 @@ export const metadata: Metadata = {
       'summary_large_image',
 
     title:
-      'Bivi — Creative Studio & Resource Library',
+      'Bivi — Brand Strategy and Design Studio',
 
     description:
-      'An independent creative studio crafting premium websites, brand systems, and a free resource library.',
+      'An independent creative studio creating brand strategies, visual identities, and websites.',
 
     images: [
       '/images/og-image.svg',

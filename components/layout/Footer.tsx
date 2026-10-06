@@ -63,32 +63,6 @@ const footerGroups: FooterGroup[] = [
   },
 
   {
-    titleKey: 'footer.resources',
-    links: [
-      {
-        labelKey: 'footer.portfolio',
-        href: '/portfolio',
-      },
-      {
-        labelKey: 'nav.journal',
-        href: '/blog',
-      },
-      {
-        labelKey: 'nav.guides',
-        href: '/guides',
-      },
-      {
-        labelKey: 'nav.inspiration',
-        href: '/inspiration',
-      },
-      {
-        labelKey: 'footer.freeResources',
-        href: '/resources',
-      },
-    ],
-  },
-
-  {
     titleKey: 'footer.solutions',
     links: [
       {
@@ -122,6 +96,8 @@ const footerGroups: FooterGroup[] = [
   {
     titleKey: 'footer.tools',
     links: [
+      { labelKey: 'footer.portfolio', href: '/work' },
+      { labelKey: 'nav.journal', href: '/blog' },
       {
         labelKey: 'nav.demos',
         href: '/demos',
@@ -136,11 +112,6 @@ const footerGroups: FooterGroup[] = [
         labelKey: 'footer.inspiration',
         href: '/inspiration',
         icon: '/images/footer/tools/inspiration.png',
-      },
-      {
-        labelKey: 'footer.resourcesLibrary',
-        href: '/resources',
-        icon: '/images/footer/tools/resources.png',
       },
     ],
   },

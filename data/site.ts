@@ -11,7 +11,7 @@ export const siteConfig = {
   name: 'Bivi',
   domain: 'bivi.pro',
   url: 'https://bivi.pro',
-  tagline: 'Creative Studio & Resource Library',
+  tagline: 'Brand strategy, design, and digital experiences',
 };
 
 /* -------------------------------------------------------------------------- */
@@ -81,6 +81,8 @@ export interface NavItem {
 }
 
 export const navSections: NavItem[] = [
+  { id: 'work', label: 'Work', href: '/work' },
+  { id: 'about', label: 'About', href: '/about' },
   {
     id: 'services',
     label: 'Services',
@@ -92,19 +94,9 @@ export const navSections: NavItem[] = [
     href: '/process',
   },
   {
-    id: 'resources',
-    label: 'Resources',
-    href: '/resources',
-  },
-  {
     id: 'demos',
     label: 'Demos',
     href: '/demos',
-  },
-  {
-    id: 'helpCenter',
-    label: 'Help Center',
-    href: '/help',
   },
 ];
 
@@ -433,16 +425,6 @@ export const footerLinks: NavItem[] = [
     id: 'demos',
     label: 'Demos',
     href: '/demos',
-  },
-  {
-    id: 'resources',
-    label: 'Resources',
-    href: '/resources',
-  },
-  {
-    id: 'studioLab',
-    label: 'Studio Lab',
-    href: '/studio-lab',
   },
   {
     id: 'integrations',

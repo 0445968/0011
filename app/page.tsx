@@ -4,7 +4,6 @@ import { AboutFeature } from '@/components/home/about/AboutFeature';
 import { IntegrationsPromo } from '@/components/home/IntegrationsPromo';
 import { Projects } from '@/components/portfolio/Projects';
 import { Differences } from '@/components/portfolio/differences/Differences';
-import { ResourceLibraryPreview } from '@/components/portfolio/resources/ResourceLibraryPreview';
 import { ExploreHub } from '@/components/home/ExploreHub';
 import { CaseStudy } from '@/components/portfolio/CaseStudy';
 import { FeaturedCaseStudies } from '@/components/portfolio/FeaturedCaseStudies'
@@ -23,7 +22,6 @@ export default function Home() {
       <BrandNextSection />
       <ServicesCarousel />
       <IntegrationsGrid />
-      <ResourceLibraryPreview />
       <HomepageCTA />
     </>
   );

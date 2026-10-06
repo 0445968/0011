@@ -1,4 +1,3 @@
-import { resources, type ResourceType } from './resources';
 import { blogPosts } from './blog';
 import { templates } from './templates';
 import { projects } from './projects';
@@ -40,30 +39,8 @@ export const searchTypeOrder: SearchResultType[] = [
   'resource',
 ];
 
-const resourceTypeLabel: Record<ResourceType, string> = {
-  guide: 'Guide',
-  tool: 'Tool',
-  article: 'Article',
-  link: 'Link',
-};
-
 function buildSearchIndex(): SearchResult[] {
   const results: SearchResult[] = [];
-
-  for (const r of resources) {
-    results.push({
-      id: `resource-${r.id}`,
-      type: 'resource',
-      title: r.title,
-      description: r.description,
-      href: r.href,
-      tags: r.tags,
-      category: r.category,
-      external: r.external,
-      badge: r.badge ?? resourceTypeLabel[r.type],
-      image: r.preview,
-    });
-  }
 
   for (const p of blogPosts) {
     results.push({

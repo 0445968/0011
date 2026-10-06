@@ -104,9 +104,9 @@ export function HeroActions({
           </a>
         </div>
 
-        {/* Explore Resources */}
+        {/* View our work */}
         <a
-          href="/resources"
+          href="/work"
           className="
             group
             flex
@@ -129,7 +129,7 @@ export function HeroActions({
             sm:w-auto
           "
         >
-          Explore Resources
+          View our work
 
           <ArrowUpRight
             size={17}
