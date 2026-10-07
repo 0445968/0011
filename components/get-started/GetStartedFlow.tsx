@@ -24,7 +24,13 @@ function Field({ label, id, error, children }: { label: string; id: string; erro
   </div>;
 }
 
-export function GetStartedFlow({ initialSelections }: { initialSelections: string }) {
+export function GetStartedFlow({
+  initialSelections,
+  initialEmail,
+}: {
+  initialSelections: string;
+  initialEmail: string;
+}) {
   const router = useRouter();
   const [fields, setFields] = useState<InquiryFields>(emptyInquiry);
   const [pendingIds, setPendingIds] = useState<string[]>([]);
@@ -52,24 +58,85 @@ export function GetStartedFlow({ initialSelections }: { initialSelections: strin
       saved = parseDraft(localStorage.getItem(DRAFT_KEY));
       if (!saved) localStorage.removeItem(DRAFT_KEY);
     } catch { setDraftStatus('Saving is unavailable in this browser.'); }
-    const base: InquiryFields = saved?.fields ?? { ...emptyInquiry, services: [] };
+    const base: InquiryFields =
+  saved?.fields ?? {
+    ...emptyInquiry,
+    services: [],
+  };
+
+if (initialEmail) {
+  base.email = initialEmail;
+}
     const selections = resolveSelections(initialSelections).slice(0, 30);
     const services = [...base.services];
-    const pending = [...(saved?.pendingIds ?? [])];
-    for (const selection of selections) {
-      if (selection.kind === 'service') {
-        if (!services.some((item) => item.serviceId === selection.serviceId)) {
-          services.push({ serviceId: selection.serviceId, quantity: 1, details: '' });
-        }
-      } else if (selection.inputId.length <= 80 && !pending.includes(selection.inputId)) pending.push(selection.inputId);
+const pending = [
+  ...(saved?.pendingIds ?? []),
+];
+
+for (const selection of selections) {
+  if (selection.kind === 'service') {
+    if (
+      !services.some(
+        (item) =>
+          item.serviceId ===
+          selection.serviceId
+      )
+    ) {
+      services.push({
+        serviceId:
+          selection.serviceId,
+        quantity: 1,
+        details: '',
+      });
     }
-    setFields({ ...base, services });
-    setPendingIds(pending.slice(0, 30));
-    // A new URL selection changes the draft; an unchanged saved draft retains its retry key.
-    setRequestId(selections.length ? crypto.randomUUID() : saved?.requestId ?? crypto.randomUUID());
-    setReady(true);
-    if (initialSelections) router.replace('/get-started', { scroll: false });
-  }, [initialSelections, router]);
+  } else if (
+    selection.inputId.length <= 80 &&
+    !pending.includes(
+      selection.inputId
+    )
+  ) {
+    pending.push(
+      selection.inputId
+    );
+  }
+}
+
+setFields({
+  ...base,
+  services,
+});
+
+setPendingIds(
+  pending.slice(0, 30)
+);
+
+// A new URL selection changes the draft;
+// an unchanged saved draft retains its retry key.
+setRequestId(
+  selections.length
+    ? crypto.randomUUID()
+    : saved?.requestId ??
+        crypto.randomUUID()
+);
+
+setReady(true);
+
+if (
+  initialSelections ||
+  initialEmail
+) {
+  router.replace(
+    '/get-started',
+    {
+      scroll: false,
+    }
+  );
+}
+}, [
+  initialSelections,
+  initialEmail,
+  router,
+]);
 
   useEffect(() => {
     if (!ready || receipt) return;

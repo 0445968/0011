@@ -1,13 +1,17 @@
 'use client';
 
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
   type FormEvent,
 } from 'react';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+
+import { X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +23,7 @@ declare global {
         id: {
           initialize: (options: {
             client_id: string;
+
             callback: (response: {
               credential?: string;
             }) => void;
@@ -27,20 +32,36 @@ declare global {
           renderButton: (
             element: HTMLElement,
             options: {
-              type?: 'standard' | 'icon';
-              theme?: 'outline' | 'filled_blue' | 'filled_black';
-              size?: 'large' | 'medium' | 'small';
+              type?:
+                | 'standard'
+                | 'icon';
+
+              theme?:
+                | 'outline'
+                | 'filled_blue'
+                | 'filled_black';
+
+              size?:
+                | 'large'
+                | 'medium'
+                | 'small';
+
               text?:
                 | 'signin_with'
                 | 'signup_with'
                 | 'continue_with'
                 | 'signin';
+
               shape?:
                 | 'rectangular'
                 | 'pill'
                 | 'circle'
                 | 'square';
-              logo_alignment?: 'left' | 'center';
+
+              logo_alignment?:
+                | 'left'
+                | 'center';
+
               width?: number;
             }
           ) => void;
@@ -55,65 +76,88 @@ export function ClientLogin({
 }: {
   configured: boolean;
 }) {
-  const router = useRouter();
+  const router =
+    useRouter();
 
   const googleButtonRef =
-    useRef<HTMLDivElement>(null);
+    useRef<HTMLDivElement>(
+      null
+    );
+
+  const googleContainerRef =
+    useRef<HTMLDivElement>(
+      null
+    );
 
   const [busy, setBusy] =
     useState(false);
 
-  const [googleBusy, setGoogleBusy] =
-    useState(false);
+  const [
+    googleBusy,
+    setGoogleBusy,
+  ] = useState(false);
 
   const [error, setError] =
     useState('');
 
-  useEffect(() => {
-    if (
-      !configured ||
-      !process.env
-        .NEXT_PUBLIC_GOOGLE_CLIENT_ID
-    ) {
+  const [
+    accessDialogOpen,
+    setAccessDialogOpen,
+  ] = useState(false);
+
+  function handleAuthFailure(
+    status: number,
+    message: string
+  ) {
+    if (status === 403) {
+      setAccessDialogOpen(
+        true
+      );
+
+      setError('');
+
       return;
     }
 
-    function initializeGoogle() {
-      if (
-        !window.google ||
-        !googleButtonRef.current
-      ) {
-        return;
-      }
+    setError(message);
+  }
 
-      window.google.accounts.id.initialize({
-        client_id:
-          process.env
-            .NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
-        callback: async (response) => {
-          if (!response.credential) {
-            setError(
-              'Google sign-in could not be completed.'
-            );
-            return;
-          }
+  const handleGoogleCredential =
+    useCallback(
+      async (
+        credential:
+          | string
+          | undefined
+      ) => {
+        if (!credential) {
+          setError(
+            'Google sign-in could not be completed.'
+          );
 
-          setGoogleBusy(true);
-          setError('');
+          return;
+        }
 
-          try {
-            const result = await fetch(
+        setGoogleBusy(true);
+        setError('');
+
+        try {
+          const result =
+            await fetch(
               '/api/client/google-session',
               {
-                method: 'POST',
+                method:
+                  'POST',
+
                 headers: {
                   'Content-Type':
                     'application/json',
                 },
-                body: JSON.stringify({
-                  credential:
-                    response.credential,
-                }),
+
+                body:
+                  JSON.stringify({
+                    credential,
+                  }),
+
                 signal:
                   AbortSignal.timeout(
                     20000
@@ -121,31 +165,92 @@ export function ClientLogin({
               }
             );
 
-            const data =
-              await result.json();
+          const data =
+            await result.json();
 
-            if (!result.ok) {
-              throw new Error(
-                data.error ||
-                  'Google sign-in could not be completed.'
-              );
-            }
+          if (!result.ok) {
+            handleAuthFailure(
+              result.status,
 
-            router.replace('/client');
-            router.refresh();
-          } catch (err) {
-            setError(
-              err instanceof Error &&
-                err.name !==
-                  'TimeoutError'
-                ? err.message
-                : 'Google sign-in could not be confirmed. Please try again.'
+              data.error ||
+                'Google sign-in could not be completed.'
             );
-          } finally {
-            setGoogleBusy(false);
+
+            return;
           }
-        },
-      });
+
+          router.replace(
+            data.redirect ||
+              '/client'
+          );
+
+          router.refresh();
+        } catch (err) {
+          setError(
+            err instanceof Error &&
+              err.name !==
+                'TimeoutError'
+              ? err.message
+              : 'Google sign-in could not be confirmed. Please try again.'
+          );
+        } finally {
+          setGoogleBusy(false);
+        }
+      },
+      [router]
+    );
+
+  const initializeGoogle =
+    useCallback(() => {
+      if (
+        !window.google ||
+        !googleButtonRef.current ||
+        !googleContainerRef.current
+      ) {
+        return;
+      }
+
+      const measuredWidth =
+        Math.floor(
+          googleContainerRef.current
+            .getBoundingClientRect()
+            .width
+        );
+
+      if (
+        measuredWidth <= 0
+      ) {
+        return;
+      }
+
+      /*
+       * Leave a tiny amount of breathing
+       * room around the Google iframe.
+       */
+      const buttonWidth =
+        Math.max(
+          200,
+          Math.min(
+            measuredWidth - 2,
+            400
+          )
+        );
+
+      window.google.accounts.id.initialize(
+        {
+          client_id:
+            process.env
+              .NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
+
+          callback: (
+            response
+          ) => {
+            void handleGoogleCredential(
+              response.credential
+            );
+          },
+        }
+      );
 
       googleButtonRef.current.innerHTML =
         '';
@@ -157,11 +262,25 @@ export function ClientLogin({
           theme: 'outline',
           size: 'large',
           text: 'continue_with',
-          shape: 'pill',
-          logo_alignment: 'left',
-          width: 350,
+          shape:
+            'pill',
+          logo_alignment:
+            'left',
+          width:
+            buttonWidth,
         }
       );
+    }, [
+      handleGoogleCredential,
+    ]);
+
+  useEffect(() => {
+    if (
+      !configured ||
+      !process.env
+        .NEXT_PUBLIC_GOOGLE_CLIENT_ID
+    ) {
+      return;
     }
 
     const existingScript =
@@ -169,26 +288,35 @@ export function ClientLogin({
         'script[src="https://accounts.google.com/gsi/client"]'
       );
 
+    const handleLoaded =
+      () => {
+        window.requestAnimationFrame(
+          initializeGoogle
+        );
+      };
+
     if (existingScript) {
       if (window.google) {
-        initializeGoogle();
+        handleLoaded();
       } else {
         existingScript.addEventListener(
           'load',
-          initializeGoogle
+          handleLoaded
         );
       }
 
       return () => {
         existingScript.removeEventListener(
           'load',
-          initializeGoogle
+          handleLoaded
         );
       };
     }
 
     const script =
-      document.createElement('script');
+      document.createElement(
+        'script'
+      );
 
     script.src =
       'https://accounts.google.com/gsi/client';
@@ -198,68 +326,151 @@ export function ClientLogin({
 
     script.addEventListener(
       'load',
-      initializeGoogle
+      handleLoaded
     );
 
-    document.head.appendChild(script);
+    document.head.appendChild(
+      script
+    );
 
     return () => {
       script.removeEventListener(
         'load',
-        initializeGoogle
+        handleLoaded
       );
     };
-  }, [configured, router]);
+  }, [
+    configured,
+    initializeGoogle,
+  ]);
+
+  /*
+   * Re-render Google's iframe whenever
+   * its actual available width changes.
+   */
+  useEffect(() => {
+    const container =
+      googleContainerRef.current;
+
+    if (!container) {
+      return;
+    }
+
+    let frame:
+      | number
+      | null = null;
+
+    const observer =
+      new ResizeObserver(
+        () => {
+          if (!window.google) {
+            return;
+          }
+
+          if (frame !== null) {
+            window.cancelAnimationFrame(
+              frame
+            );
+          }
+
+          frame =
+            window.requestAnimationFrame(
+              initializeGoogle
+            );
+        }
+      );
+
+    observer.observe(
+      container
+    );
+
+    return () => {
+      observer.disconnect();
+
+      if (frame !== null) {
+        window.cancelAnimationFrame(
+          frame
+        );
+      }
+    };
+  }, [
+    initializeGoogle,
+  ]);
 
   async function submit(
     event: FormEvent<HTMLFormElement>
   ) {
     event.preventDefault();
 
-    if (busy) return;
+    if (busy) {
+      return;
+    }
 
-    const form = new FormData(
-      event.currentTarget
-    );
+    const form =
+      new FormData(
+        event.currentTarget
+      );
 
     setBusy(true);
     setError('');
 
     try {
-      const response = await fetch(
-        '/api/client/session',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type':
-              'application/json',
-          },
-          body: JSON.stringify({
-            email: form.get('email'),
-            password:
-              form.get('password'),
-          }),
-          signal:
-            AbortSignal.timeout(20000),
-        }
-      );
+      const response =
+        await fetch(
+          '/api/client/session',
+          {
+            method: 'POST',
+
+            headers: {
+              'Content-Type':
+                'application/json',
+            },
+
+            body:
+              JSON.stringify({
+                email:
+                  form.get(
+                    'email'
+                  ),
+
+                password:
+                  form.get(
+                    'password'
+                  ),
+              }),
+
+            signal:
+              AbortSignal.timeout(
+                20000
+              ),
+          }
+        );
 
       const data =
         await response.json();
 
       if (!response.ok) {
-        throw new Error(
+        handleAuthFailure(
+          response.status,
+
           data.error ||
             'Could not sign in.'
         );
+
+        return;
       }
 
-      router.replace('/client');
+      router.replace(
+        data.redirect ||
+          '/client'
+      );
+
       router.refresh();
     } catch (err) {
       setError(
         err instanceof Error &&
-          err.name !== 'TimeoutError'
+          err.name !==
+            'TimeoutError'
           ? err.message
           : 'Sign-in could not be confirmed. Please try again.'
       );
@@ -275,119 +486,449 @@ export function ClientLogin({
     );
 
   return (
-    <div className="mt-8">
-      {/* Google renders its official
-          button here, including logo */}
-      <div className="relative flex min-h-11 w-full justify-center">
-        <div ref={googleButtonRef} />
+    <>
+      <div className="mt-5">
+        {/* GOOGLE */}
 
-        {googleBusy && (
-          <div className="absolute inset-0 flex items-center justify-center rounded-full bg-background/80 text-sm">
-            Signing in…
-          </div>
-        )}
-      </div>
-
-      {!googleConfigured && (
-        <p className="mt-3 text-center text-xs text-muted-foreground">
-          Google sign-in is not
-          configured.
-        </p>
-      )}
-
-      <div className="my-6 flex items-center gap-4">
-        <div className="h-px flex-1 bg-border" />
-
-        <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-          or
-        </span>
-
-        <div className="h-px flex-1 bg-border" />
-      </div>
-
-      <form
-        onSubmit={submit}
-        className="space-y-5"
-      >
-        <fieldset
-          disabled={
-            busy ||
-            googleBusy ||
-            !configured
+        <div
+          ref={
+            googleContainerRef
           }
-          className="space-y-5"
+          className="
+            relative
+            flex
+            min-h-[42px]
+            w-full
+            items-center
+            justify-center
+          "
         >
-          <legend className="sr-only">
-            Client sign-in
-          </legend>
+          <div
+            ref={
+              googleButtonRef
+            }
+            className="
+              flex
+              min-w-0
+              max-w-full
+              items-center
+              justify-center
+            "
+          />
 
-          <div>
-            <label
-              htmlFor="email"
-              className="mb-2 block text-sm font-medium"
+          {googleBusy && (
+            <div
+              className="
+                absolute
+                inset-0
+                flex
+                items-center
+                justify-center
+                rounded-[4px]
+                bg-white
+                font-mono
+                text-[10px]
+                font-semibold
+                text-black
+              "
             >
-              Email
-            </label>
+              Signing in…
+            </div>
+          )}
+        </div>
 
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="username"
-              maxLength={254}
-              required
-              className="h-12 rounded-xl"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="password"
-              className="mb-2 block text-sm font-medium"
-            >
-              Password
-            </label>
-
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              maxLength={1024}
-              required
-              className="h-12 rounded-xl"
-            />
-          </div>
-
-          <Button
-            type="submit"
-            className="h-12 w-full rounded-[18px] font-mono"
-          >
-            {busy
-              ? 'Signing in…'
-              : 'Sign in'}
-          </Button>
-        </fieldset>
-
-        {!configured && (
+        {!googleConfigured && (
           <p
-            role="status"
-            className="text-sm text-muted-foreground"
+            className="
+              mt-2
+              text-center
+              text-[9px]
+              text-white/25
+            "
           >
-            Client access has not been
-            configured yet. Contact Bivi.
+            Google sign-in is
+            not configured.
           </p>
         )}
 
-        {error && (
-          <p
-            role="alert"
-            className="text-sm text-red-600 dark:text-red-400"
+        {/* DIVIDER */}
+
+        <div
+          className="
+            my-4
+            flex
+            items-center
+            gap-3
+          "
+        >
+          <div
+            className="
+              h-px
+              flex-1
+              bg-white/[0.07]
+            "
+          />
+
+          <span
+            className="
+              font-mono
+              text-[8px]
+              uppercase
+              tracking-[0.18em]
+              text-white/25
+            "
           >
-            {error}
-          </p>
-        )}
-      </form>
-    </div>
+            or
+          </span>
+
+          <div
+            className="
+              h-px
+              flex-1
+              bg-white/[0.07]
+            "
+          />
+        </div>
+
+        {/* EMAIL / PASSWORD */}
+
+        <form
+          onSubmit={submit}
+          className="space-y-3.5"
+        >
+          <fieldset
+            disabled={
+              busy ||
+              googleBusy ||
+              !configured
+            }
+            className="space-y-3.5"
+          >
+            <legend className="sr-only">
+              Client sign-in
+            </legend>
+
+            <div>
+              <label
+                htmlFor="email"
+                className="
+                  mb-1.5
+                  block
+                  text-[10px]
+                  font-medium
+                  text-white/50
+                "
+              >
+                Email
+              </label>
+
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="username"
+                maxLength={254}
+                required
+                placeholder="you@company.com"
+                className="
+                  h-11
+                  rounded-[12px]
+                  border-white/[0.08]
+                  bg-white/[0.045]
+                  px-3.5
+                  text-sm
+                  text-white
+                  shadow-none
+                  placeholder:text-white/20
+                  focus-visible:ring-1
+                  focus-visible:ring-white/20
+                "
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="password"
+                className="
+                  mb-1.5
+                  block
+                  text-[10px]
+                  font-medium
+                  text-white/50
+                "
+              >
+                Password
+              </label>
+
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                maxLength={1024}
+                required
+                className="
+                  h-11
+                  rounded-[12px]
+                  border-white/[0.08]
+                  bg-white/[0.045]
+                  px-3.5
+                  text-sm
+                  text-white
+                  shadow-none
+                  focus-visible:ring-1
+                  focus-visible:ring-white/20
+                "
+              />
+            </div>
+
+            <Button
+              type="submit"
+              className="
+                h-11
+                w-full
+                rounded-[12px]
+                bg-white
+                font-mono
+                text-[13px]
+                font-semibold
+                text-black
+                hover:bg-white/90
+              "
+            >
+              {busy
+                ? 'Signing in…'
+                : 'Sign in'}
+            </Button>
+          </fieldset>
+
+          {!configured && (
+            <p
+              role="status"
+              className="
+                text-[10px]
+                leading-4
+                text-white/35
+              "
+            >
+              Client access has
+              not been configured
+              yet. Contact Bivi.
+            </p>
+          )}
+
+          {error && (
+            <p
+              role="alert"
+              className="
+                text-[10px]
+                leading-4
+                text-red-300
+              "
+            >
+              {error}
+            </p>
+          )}
+        </form>
+      </div>
+
+      {/* ---------------------------------------------------------- */}
+      {/* UNAUTHORIZED USER                                         */}
+      {/* ---------------------------------------------------------- */}
+
+      {accessDialogOpen && (
+        <div
+          className="
+            fixed
+            inset-0
+            z-[300]
+            flex
+            items-center
+            justify-center
+            bg-black/75
+            px-5
+            backdrop-blur-sm
+          "
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="client-access-title"
+            className="
+              relative
+              w-full
+              max-w-md
+              rounded-[22px]
+              border
+              border-white/10
+              bg-[#151515]
+              p-6
+              text-white
+              shadow-2xl
+            "
+          >
+            <button
+              type="button"
+              onClick={() =>
+                setAccessDialogOpen(
+                  false
+                )
+              }
+              aria-label="Close"
+              className="
+                absolute
+                right-4
+                top-4
+                flex
+                h-8
+                w-8
+                items-center
+                justify-center
+                rounded-full
+                bg-white/[0.05]
+                text-white/50
+                transition
+                hover:bg-white/10
+                hover:text-white
+              "
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <p
+              className="
+                font-mono
+                text-[9px]
+                uppercase
+                tracking-[0.17em]
+                text-white/30
+              "
+            >
+              Client portal
+            </p>
+
+            <h2
+              id="client-access-title"
+              className="
+                mt-3
+                pr-8
+                font-heading
+                text-2xl
+                font-semibold
+                tracking-tight
+              "
+            >
+              This account
+              doesn’t have portal
+              access.
+            </h2>
+
+            <p
+              className="
+                mt-4
+                text-sm
+                leading-6
+                text-white/50
+              "
+            >
+              The Bivi client
+              portal is available
+              only to current
+              clients and
+              authorized members
+              of their teams.
+            </p>
+
+            <p
+              className="
+                mt-3
+                text-sm
+                leading-6
+                text-white/50
+              "
+            >
+              If your organization
+              already works with
+              Bivi, contact your
+              enterprise or
+              project administrator
+              and ask them to add
+              this account to the
+              appropriate project.
+            </p>
+
+            <div
+              className="
+                mt-6
+                grid
+                gap-2
+                sm:grid-cols-2
+              "
+            >
+              <Link
+                href="/get-started"
+                className="
+                  flex
+                  h-11
+                  items-center
+                  justify-center
+                  rounded-[12px]
+                  bg-white
+                  px-4
+                  font-mono
+                  text-[10px]
+                  font-semibold
+                  text-black
+                  transition
+                  hover:bg-white/90
+                "
+              >
+                Get started
+              </Link>
+
+              <Link
+                href="/contact"
+                className="
+                  flex
+                  h-11
+                  items-center
+                  justify-center
+                  rounded-[12px]
+                  border
+                  border-white/10
+                  bg-white/[0.04]
+                  px-4
+                  font-mono
+                  text-[10px]
+                  font-medium
+                  text-white
+                  transition
+                  hover:bg-white/[0.08]
+                "
+              >
+                Contact us
+              </Link>
+            </div>
+
+            <Link
+              href="/help/contact"
+              className="
+                mt-4
+                block
+                text-center
+                font-mono
+                text-[9px]
+                text-white/30
+                transition
+                hover:text-white/60
+              "
+            >
+              Having trouble?
+              Contact Bivi Support
+            </Link>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

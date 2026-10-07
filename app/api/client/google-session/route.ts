@@ -28,10 +28,6 @@ const bodySchema = z
 export async function POST(
   request: Request
 ) {
-  /*
-   * Only accept requests originating
-   * from the Bivi application.
-   */
   if (!isSameOrigin(request)) {
     return adminReply(
       {
@@ -55,8 +51,7 @@ export async function POST(
   let raw: unknown;
 
   try {
-    raw =
-      await readAdminJson(request);
+    raw = await readAdminJson(request);
   } catch {
     return adminReply(
       {
@@ -81,13 +76,6 @@ export async function POST(
   }
 
   try {
-    /*
-     * Authenticate the Google ID
-     * credential through Supabase.
-     *
-     * This client does not persist
-     * sessions in browser storage.
-     */
     const supabase =
       createStaffClient();
 
@@ -118,12 +106,9 @@ export async function POST(
     }
 
     /*
-     * Google/Supabase authentication
-     * proves identity only.
-     *
-     * Bivi independently determines
-     * whether this user has access
-     * to any client projects.
+     * Google proves identity.
+     * Bivi still decides whether the
+     * user has active client access.
      */
     const access =
       await authorizeClient(
@@ -131,16 +116,12 @@ export async function POST(
       );
 
     if (!access.allowed) {
-      /*
-       * Best-effort cleanup of the
-       * temporary Supabase session.
-       */
       try {
         await supabase.auth.signOut({
           scope: 'local',
         });
       } catch {
-        // Ignore cleanup failure.
+        // Best effort only.
       }
 
       if (
@@ -164,14 +145,71 @@ export async function POST(
       );
     }
 
+    /*
+     * Check whether this account has
+     * a verified authenticator factor.
+     */
+    const factors =
+      await access.client.auth.mfa.listFactors();
+
+    if (factors.error) {
+      return adminReply(
+        {
+          error:
+            'Account security could not be verified.',
+        },
+        503
+      );
+    }
+
+    const hasVerifiedTotp =
+      factors.data.totp.some(
+        (factor) =>
+          factor.status ===
+          'verified'
+      );
+
+    let requiresMfa = false;
+
+    if (hasVerifiedTotp) {
+      const aal =
+        await access.client.auth.mfa.getAuthenticatorAssuranceLevel(
+          data.session.access_token
+        );
+
+      if (aal.error) {
+        return adminReply(
+          {
+            error:
+              'Account security could not be verified.',
+          },
+          503
+        );
+      }
+
+      requiresMfa =
+        aal.data.nextLevel ===
+          'aal2' &&
+        aal.data.currentLevel !==
+          'aal2';
+    }
+
     const response =
       adminReply({
-        redirect: '/client',
+        redirect: requiresMfa
+          ? '/client/mfa'
+          : '/client',
+        requiresMfa,
       });
 
     /*
-     * Preserve the existing Bivi
-     * HttpOnly client-session model.
+     * Store the current Supabase
+     * session in Bivi's HttpOnly
+     * client cookie.
+     *
+     * If MFA is required, this is an
+     * AAL1 session and /client/mfa
+     * will upgrade it to AAL2.
      */
     response.cookies.set(
       CLIENT_COOKIE,

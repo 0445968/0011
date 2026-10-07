@@ -1,46 +1,47 @@
 'use client';
 
-import { cn } from '@/lib/utils';
-import { useI18n } from '@/lib/i18n/context';
+import Link from 'next/link';
 
-import { SearchCommand } from '../SearchCommand';
-import { NavbarSettings } from '../settings/NavbarSettings';
+import {
+  SlidersHorizontal,
+} from 'lucide-react';
+
+import {
+  cn,
+} from '@/lib/utils';
 
 interface NavbarDesktopUtilitiesProps {
   surfaceActive: boolean;
 
-  searchOpen: boolean;
-  setSearchOpen: (
-    value: boolean
-  ) => void;
+  onLogin: () => void;
+  onSignup: () => void;
 
   settingsOpen: boolean;
+
   setSettingsOpen: (
     value: boolean
   ) => void;
 
-  onSearchOpen: () => void;
   onSettingsOpen: () => void;
 }
 
 export function NavbarDesktopUtilities({
   surfaceActive,
-  searchOpen,
-  setSearchOpen,
+  onSignup,
   settingsOpen,
   setSettingsOpen,
-  onSearchOpen,
   onSettingsOpen,
 }: NavbarDesktopUtilitiesProps) {
-  const { t } = useI18n();
+  const handleSettings =
+    () => {
+      if (settingsOpen) {
+        setSettingsOpen(false);
+        return;
+      }
 
-  const utilityColor = surfaceActive
-    ? `
-        [&_button]:!text-foreground
-      `
-    : `
-        [&_button]:!text-white
-      `;
+      onSettingsOpen();
+      setSettingsOpen(true);
+    };
 
   return (
     <div
@@ -51,103 +52,99 @@ export function NavbarDesktopUtilities({
         lg:flex
       "
     >
-      {/* Search */}
-      <div
+      <button
+        type="button"
+        onClick={
+          handleSettings
+        }
+        aria-label="Preferences"
         className={cn(
           `
-            [&_button]:!transition-none
+            flex
+            h-10
+            w-10
+            items-center
+            justify-center
+            rounded-full
+            transition-colors
           `,
-          utilityColor
+          surfaceActive
+            ? `
+                text-muted-foreground
+                hover:text-foreground
+              `
+            : `
+                text-white/70
+                hover:text-white
+              `
         )}
       >
-        <SearchCommand
-          open={searchOpen}
-          setOpen={setSearchOpen}
-          onOpen={onSearchOpen}
+        <SlidersHorizontal
+          size={18}
+          strokeWidth={2}
         />
-      </div>
+      </button>
 
-      {/* Settings */}
-      <div
+      <Link
+        href="/client/login"
         className={cn(
           `
-            [&_button]:!transition-none
+            inline-flex
+            h-10
+            items-center
+            justify-center
+            rounded-[12px]
+            px-4
+            font-mono
+            text-[11px]
+            font-semibold
+            transition-colors
           `,
-          utilityColor
+          surfaceActive
+            ? `
+                text-foreground
+                hover:bg-muted
+              `
+            : `
+                text-white
+                hover:bg-white/[0.08]
+              `
         )}
       >
-        <NavbarSettings
-          open={settingsOpen}
-          setOpen={setSettingsOpen}
-          onOpen={onSettingsOpen}
-        />
-      </div>
+        Log in
+      </Link>
 
-      {/* CTA group */}
-      <div
-        className="
-          ml-2
-          flex
-          items-center
-          gap-2
-        "
+      <button
+        type="button"
+        onClick={onSignup}
+        className={cn(
+          `
+            inline-flex
+            h-10
+            items-center
+            justify-center
+            rounded-[12px]
+            px-4
+            font-mono
+            text-[11px]
+            font-semibold
+            transition-colors
+          `,
+          surfaceActive
+            ? `
+                bg-black
+                text-white
+                dark:bg-white
+                dark:text-black
+              `
+            : `
+                bg-white
+                text-black
+              `
+        )}
       >
-        {/* Get a Demo */}
-        <a
-          href="/demos"
-          className={cn(
-            `
-              inline-flex
-              h-10
-              items-center
-              justify-center
-              px-3
-              text-[14px]
-              font-semibold
-            `,
-            surfaceActive
-              ? `
-                  text-foreground
-                `
-              : `
-                  text-white
-                `
-          )}
-        >
-          Get a Demo
-        </a>
-
-        {/* Start a Project */}
-        <a
-  href="/contact"
-  className={cn(
-    `
-      inline-flex
-      h-10
-      items-center
-      justify-center
-      rounded-[14px]
-      px-4
-      text-[14px]
-      font-bold
-      transition-none
-    `,
-    surfaceActive
-      ? `
-          bg-black
-          text-white
-          dark:bg-white
-          dark:text-black
-        `
-      : `
-          bg-white
-          text-black
-        `
-  )}
->
-  {t('nav.startProject')}
-</a>
-      </div>
+        Sign up
+      </button>
     </div>
   );
 }
