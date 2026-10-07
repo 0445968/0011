@@ -5,7 +5,7 @@ import {randomUUID} from 'node:crypto';
 const migrations=new URL('../../supabase/migrations/',import.meta.url);
 
 import assert from 'node:assert/strict';
-test('Bivi migrations 001–008: intake, workflow gates, client isolation and private files',async()=>{
+test('Bivi migrations 001–009: intake, workflow gates, client isolation and private files',async()=>{
 const db=new PGlite();
 try {
 await db.exec(`create role anon; create role authenticated; create role service_role bypassrls; create schema auth; create table auth.users(id uuid primary key); create function auth.uid() returns uuid language sql as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$; grant usage on schema public,auth to anon,authenticated,service_role; grant execute on function auth.uid() to authenticated;`);
@@ -268,5 +268,46 @@ await identity(staff);for(let i=0;i<19;i++)assert.equal((await fileCmd(reserve(r
 await db.exec(`reset role;insert into project_files(id,request_id,object_path,filename,size_bytes,mime_type) select md5('cap'||i)::uuid,'${otherProject}','${otherProject}/'||(md5('cap'||i)::uuid)::text,'cap.pdf',1,'application/pdf' from generate_series(1,200) i;`);await identity(staff);assert.equal((await db.query('select manage_project_file($1,$2) r',[otherProject,reserve(randomUUID())])).rows[0].r.result,'limit');
 await db.exec(`reset role;set role anon;select set_config('request.jwt.claim.sub','',false);`);await assert.rejects(db.query('select * from project_files'),/permission denied/);await assert.rejects(db.query("insert into storage.objects(bucket_id,name) values('bivi-project-files','anonymous')"));
 console.log('PASS: file migration, private bucket, retry-safe reservations, path/type/size validation, stored metadata verification, staff/client/project isolation, broad-policy guards, overwrite/delete denial, share/private/withdraw history, expiry, revocation and upload quotas');
+
+await db.exec('reset role;');
+await db.exec(fs.readFileSync(new URL('202610070009_project_discussion.sql',migrations),'utf8'));
+const currentProject=(await db.query('select * from inquiry_projects where request_id=$1',[id])).rows[0];const savedTask=currentProject.body.tasks[0];
+assert.ok(savedTask);
+const commentId=randomUUID();const commentCmd=async c=>(await db.query('select manage_project_comment($1,$2) r',[id,c])).rows[0].r;
+await identity(staff);
+const createComment={action:'create',id:commentId,body:'Coordinate draft review',taskId:savedTask.id,expectedProjectRevision:currentProject.revision};
+await assert.rejects(commentCmd({...createComment,body:'  '}),/Comment text/);
+assert.equal((await commentCmd({...createComment,expectedProjectRevision:currentProject.revision-1})).result,'conflict');
+assert.equal((await commentCmd({...createComment,id:randomUUID(),taskId:'missing-task'})).result,'task_missing');
+assert.equal((await commentCmd(createComment)).result,'saved');assert.equal((await commentCmd(createComment)).result,'saved');
+assert.equal((await db.query('select * from project_comment_history')).rows.length,1);
+await assert.rejects(db.query("update project_comments set body='tampered'"),/permission denied/);
+await identity(other);assert.equal((await db.query('select * from project_comments')).rows.length,0);assert.equal((await db.query('select * from project_comment_history')).rows.length,0);assert.equal((await db.query('select * from project_activity')).rows.length,0);
+await assert.rejects(commentCmd({...createComment,id:randomUUID()}),/Staff authorization/);
+await db.exec(`reset role;insert into inquiry_staff(user_id) values('${observer}');`);await identity(observer);
+assert.equal((await db.query('select * from project_comments')).rows.length,1);
+await assert.rejects(commentCmd({action:'edit',id:commentId,body:'Unauthorized edit',expectedRevision:1}),/author authorization/);
+await assert.rejects(commentCmd({action:'remove',id:commentId,expectedRevision:1}),/author authorization/);
+await identity(staff);
+assert.equal((await commentCmd({action:'edit',id:commentId,body:'Updated review notes',expectedRevision:1})).result,'saved');
+assert.equal((await commentCmd({action:'edit',id:commentId,body:'Stale text',expectedRevision:1})).result,'conflict');
+assert.equal((await commentCmd({action:'edit',id:commentId,body:'Updated review notes',expectedRevision:2})).result,'saved');
+assert.equal((await db.query('select * from project_comment_history')).rows.length,2);
+const changedProject={...currentProject.body,tasks:[]};assert.equal((await project({action:'save',expectedRevision:currentProject.revision,body:changedProject})).result,'saved');
+assert.equal((await commentCmd({...createComment,id:randomUUID()})).result,'conflict');
+assert.equal((await commentCmd({...createComment,id:randomUUID(),expectedProjectRevision:currentProject.revision+1})).result,'task_missing');
+assert.equal((await commentCmd({action:'edit',id:commentId,body:'Task removed; keep context',expectedRevision:2})).result,'saved');
+const preserved=(await db.query('select * from project_comments')).rows[0];assert.equal(preserved.task_title,savedTask.title);
+assert.equal((await commentCmd({action:'remove',id:commentId,expectedRevision:3})).result,'saved');
+assert.equal((await commentCmd({action:'edit',id:commentId,body:'Restore forbidden',expectedRevision:4})).result,'conflict');
+const removed=(await db.query('select * from project_comments')).rows[0];assert.equal(removed.body,'');assert.equal(removed.removed,true);
+const snapshots=(await db.query('select * from project_comment_history order by id')).rows;assert.equal(snapshots.length,4);assert.equal(snapshots[0].snapshot.body,'Coordinate draft review');
+const feed=(await db.query('select * from project_activity where request_id=$1',[id])).rows;assert.ok(feed.some(e=>e.source==='comment'&&e.action==='remove'));assert.ok(feed.some(e=>e.source==='publication'&&e.action==='withdraw'));assert.ok(feed.some(e=>e.source==='file'));assert.ok(feed.every(e=>e.request_id===id));
+const whole={action:'create',id:randomUUID(),body:'Project handoff note',taskId:null,expectedProjectRevision:currentProject.revision+1};assert.equal((await commentCmd(whole)).result,'saved');
+await db.exec(`reset role;insert into project_comments(id,request_id,body) select md5('comment-cap'||i)::uuid,'${id}','Capacity fixture' from generate_series(1,998) i;`);await identity(staff);assert.equal((await commentCmd({...whole,id:randomUUID()})).result,'limit');
+await db.exec(`reset role;update inquiry_staff set active=false where user_id='${staff}';`);await identity(staff);assert.equal((await db.query('select * from project_activity')).rows.length,0);await assert.rejects(commentCmd({...whole,id:randomUUID()}),/Staff authorization/);
+await db.exec('reset role;set role anon;');await assert.rejects(db.query('select * from project_activity'),/permission denied/);await assert.rejects(db.query('select * from project_comments'),/permission denied/);
+console.log('PASS: staff discussion migration, author-only editing/removal, client/anonymous/revoked-staff isolation, idempotency, stale project/comment revisions, removed-task context, soft removal history and unified activity');
+
 } finally { await db.close(); }
 });

@@ -1,0 +1,9 @@
+import {z} from 'zod';import {getStaffAccess} from '@/lib/admin/auth';import {adminReply,isSameOrigin,readAdminJson} from '@/lib/admin/http';import {commentCommandSchema} from '@/lib/discussion/schema';
+export async function POST(request:Request,{params}:{params:{id:string}}){
+ if(!isSameOrigin(request))return adminReply({error:'Use the project discussion to save comments.'},403);
+ const access=await getStaffAccess();if(!access.allowed)return adminReply({error:'Staff access is required.'},access.status);
+ if(!z.string().uuid().safeParse(params.id).success)return adminReply({error:'Project not found.'},404);
+ let raw:unknown;try{raw=await readAdminJson(request,32768);}catch{return adminReply({error:'The comment could not be read.'},400);}
+ const parsed=commentCommandSchema.safeParse(raw);if(!parsed.success)return adminReply({error:'Enter a comment up to 4,000 characters.'},400);
+ try{const {data,error}=await access.client.rpc('manage_project_comment',{p_request_id:params.id,p_command:parsed.data});if(error)return adminReply({error:'The comment could not be saved.'},error.code==='42501'?403:error.code==='22023'?400:503);if(data?.result==='saved')return adminReply({saved:true});if(!['limit','task_missing','not_found','conflict'].includes(data?.result))return adminReply({error:'The result could not be confirmed. Reload before retrying.'},503);return adminReply({error:data?.result==='limit'?'The project comment limit was reached.':data?.result==='task_missing'?'This task was removed. Reload the saved work plan.':data?.result==='not_found'?'Project or comment not found.':'The project or comment changed. Reload before retrying.'},data?.result==='not_found'?404:data?.result==='limit'?429:409);}catch{return adminReply({error:'The result could not be confirmed. Reload before retrying.'},503);}
+}

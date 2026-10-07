@@ -1,6 +1,6 @@
 # Repeatable production-readiness checks
 
-Apply after the private file exchange patch. This batch adds verification tools; it does not change project data, publish a deployment or require a ninth migration. Resources and Helpdesk remain outside scope.
+Apply after the private file exchange patch. This batch adds verification tools; it does not change project data or publish a deployment. The subsequent discussion enhancement requires migration 009. Resources and Helpdesk remain outside scope.
 
 ## Install and run local checks
 
@@ -14,7 +14,7 @@ npm run typecheck
 npm run verify:platform
 ```
 
-Use Node 20 or newer (your Node 24 setup works). `@electric-sql/pglite` is pinned as a development dependency. The database suite starts a fresh in-memory PostgreSQL-compatible database, applies migrations 001–008 and checks private intake, idempotency/rate limits, staff authorization, proposal immutability, readiness and onboarding gates, project decisions, client/viewer isolation, review version conflicts, file sharing/withdrawal, upload caps and expiry. A simulated Storage schema includes an intentionally broad old policy to verify that restrictive guards prevent unauthorized bucket access.
+Use Node 20 or newer (your Node 24 setup works). `@electric-sql/pglite` is pinned as a development dependency. The database suite starts a fresh in-memory PostgreSQL-compatible database, applies migrations 001–009 and checks private intake, idempotency/rate limits, staff authorization, proposal immutability, readiness and onboarding gates, project decisions, client/viewer isolation, review version conflicts, file sharing/withdrawal, upload caps and expiry. A simulated Storage schema includes an intentionally broad old policy to verify that restrictive guards prevent unauthorized bucket access.
 
 The suite runs without Supabase credentials and never connects to your hosted database. All records are test fixtures and are discarded. Additional tests verify that the configuration/deployment tools fail when keys are missing/exposed or endpoints do not enforce expected access boundaries.
 
@@ -44,7 +44,7 @@ For local production-server checks, run `npm run build`, then `npm run start -- 
 npm run verify:deployment -- http://localhost:3001 --allow-http
 ```
 
-The checker makes 40 requests: public intake/sign-in pages; unauthenticated staff/client page redirects; anonymous API denial; foreign-origin request denial; malformed sign-in-body rejection; no public intake read endpoint; JSON error shape and no-store headers. It sends no cookies or credentials, uses placeholder IDs and empty JSON bodies, and does not submit valid inquiries, sign in, upload, publish, review or modify data. It does not follow redirects automatically. Each failed/blocked request makes the final command exit nonzero.
+The checker makes 43 requests: public intake/sign-in pages; unauthenticated staff/client page redirects; anonymous API denial; foreign-origin request denial; malformed sign-in-body rejection; no public intake read endpoint; JSON error shape and no-store headers. It sends no cookies or credentials, uses placeholder IDs and empty JSON bodies, and does not submit valid inquiries, sign in, upload, publish, review or modify data. It does not follow redirects automatically. Each failed/blocked request makes the final command exit nonzero.
 
 Use a directly reachable deployment. Hosting-provider protection, a preview URL that redirects to production, or a mismatched canonical origin may cause failures before application checks complete. Run against the canonical origin; retain hosting access controls and use your existing authorized access process rather than disabling them to get a passing report.
 
@@ -54,4 +54,4 @@ The HTTP check does **not** verify active staff/client accounts, hosted RLS poli
 
 Record the commit/deployment SHA, environment and date alongside the output of `verify:platform`, `verify:config` and `verify:deployment`. These commands print no credentials and return nonzero on failures. Review output before sharing logs from any other command. Use the existing release-record table in `PRODUCTION_VERIFICATION.md` for the remaining authenticated workflow and Storage results.
 
-Implementation verification: platform/configuration/deployment-verifier tests passed; TypeScript passed; all 40 HTTP checks passed against the local production server. The application production build was previously verified with test Google Fonts responses. No real deployed endpoint or Supabase credentials were supplied for this batch, so live verification remains pending.
+Implementation verification: platform/configuration/deployment-verifier tests passed; TypeScript passed; all 43 HTTP checks passed against the local production server. The application production build was previously verified with test Google Fonts responses. No real deployed endpoint or Supabase credentials were supplied for this batch, so the owner subsequently reported the prior live verification complete on 2026-10-07. New enhancements still need their own live checks.

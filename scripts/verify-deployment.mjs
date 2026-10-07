@@ -9,13 +9,14 @@ export function deploymentCases(){
   for(const path of ['/get-started','/admin/login','/client/login']){
     cases.push({label:`Public page ${path}`,path,status:200,html:true,login:path.includes('login')});
   }
-  for(const path of ['/admin','/admin/projects',`/admin/leads/${fixtureId}`,`/admin/leads/${fixtureId}/onboarding`,`/admin/projects/${fixtureId}`,`/admin/projects/${fixtureId}/publish`,`/admin/projects/${fixtureId}/files`]){
+  for(const path of ['/admin','/admin/projects',`/admin/leads/${fixtureId}`,`/admin/leads/${fixtureId}/onboarding`,`/admin/projects/${fixtureId}`,`/admin/projects/${fixtureId}/publish`,`/admin/projects/${fixtureId}/files`,`/admin/projects/${fixtureId}/discussion`]){
     cases.push({label:`Staff gate ${path}`,path,status:307,redirect:'/admin/login'});
   }
   for(const path of ['/client',`/client/projects/${fixtureId}`]){
     cases.push({label:`Client gate ${path}`,path,status:307,redirect:'/client/login'});
   }
   const protectedPaths=[
+    `/api/admin/projects/${fixtureId}/comments`,
     `/api/admin/leads/${fixtureId}`,
     `/api/admin/leads/${fixtureId}/proposals`,
     `/api/admin/leads/${fixtureId}/readiness`,

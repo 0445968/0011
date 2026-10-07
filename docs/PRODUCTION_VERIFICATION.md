@@ -1,6 +1,6 @@
 # Bivi production verification
 
-Status: **live verification pending**. Run these checks in a configured staging environment with test files and separate real Supabase staff/client/viewer accounts. Record the deployment SHA, migration versions, tester and date before moving to real client work. This checklist does not claim that a deployed Supabase environment has passed.
+Status: **prior workflow verification reported complete by the owner on 2026-10-07**. The table below remains the release-evidence template; new enhancements need their own verification. Run these checks in a configured staging environment with test files and separate real Supabase staff/client/viewer accounts. Record the deployment SHA, migration versions, tester and date before moving to real client work. This checklist does not claim that a deployed Supabase environment has passed.
 
 ## Automated checks
 
@@ -12,7 +12,7 @@ Follow `PRODUCTION_READINESS_SETUP.md` for installation and commands. Automated 
 
 ## Configuration and access
 
-- [ ] All eight migrations are applied once in the same project. Retain a database backup before migration changes.
+- [ ] All nine migrations are applied once in the same project. Retain a database backup before migration changes.
 - [ ] `SUPABASE_URL`, `SUPABASE_ANON_KEY` (or the supported public-key variable), `SUPABASE_SERVICE_ROLE_KEY` and canonical HTTPS `INQUIRY_APP_URL` are configured server-side. Service key is absent from browser bundles/network responses; it is used for inquiry intake only.
 - [ ] Staff account is confirmed and active in `inquiry_staff`. Test a nonstaff account and deactivated staff account: staff pages and decisions must be denied.
 - [ ] Client accounts are confirmed and assigned to the intended activated project UUID only. Use one approver and one viewer. A separate unassigned account must see no project content.
@@ -80,3 +80,11 @@ where schemaname = 'public'
 | Approved for real client work by / date | Pending |
 
 Local implementation checks: TypeScript and production build (test Google Fonts responses), PostgreSQL-compatible migration/RLS tests and browser tests against simulated Supabase authentication/Storage. Record actual deployment results above; simulation does not verify hosted Storage, CORS, production cookies or the project's existing policies.
+
+## Project discussion enhancement (migration 009)
+
+- [ ] Create project/task comments with two real staff accounts. Only the author can edit/remove their own comment.
+- [ ] Verify removed-task context and removed-comment placeholders/history.
+- [ ] Client, unassigned account and revoked staff cannot read discussion/activity or save comments.
+- [ ] Timeline and pagination show the intended project records in newest-first order.
+- [ ] Run the updated 43-request deployment checker after installing this enhancement.
