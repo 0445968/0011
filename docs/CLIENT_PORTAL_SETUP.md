@@ -10,7 +10,7 @@ Requires all earlier patches and migrations 001–006. No new environment variab
 
 ## Assign client access
 
-Use an existing confirmed Supabase email/password account or create a confirmed client account through the Supabase Authentication dashboard. Copy its actual UUID. This application has no self-registration, invitation sending or password-reset flow yet.
+Use an existing confirmed Supabase email/password account or create a confirmed client account through the Supabase Authentication dashboard. Copy its actual UUID. Migration 010 adds staff-prepared invitation links and password recovery; follow CLIENT_ACCESS_SETUP.md. Self-registration remains unavailable.
 
 In the SQL editor, assign that account to an activated project's inquiry UUID:
 

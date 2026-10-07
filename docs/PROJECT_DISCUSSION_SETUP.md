@@ -7,7 +7,7 @@ Requires the private file exchange and production readiness batches, with migrat
 1. Run `git apply --check Bivi-Project-Discussion.patch`, then `git apply Bivi-Project-Discussion.patch`.
 2. Apply only `supabase/migrations/202610070009_project_discussion.sql` in the same Supabase project. Do not rerun earlier migrations. The activity view uses PostgreSQL 15+ security-invoker support, as the existing portal does.
 3. Restart the application. Open an activated project and choose **Discussion and activity**.
-4. Run `npm run typecheck` and `npm run verify:platform`. The HTTP verifier now checks the discussion page and comments API as well: 43 checks total.
+4. Run `npm run typecheck` and `npm run verify:platform`. The HTTP verifier now checks the discussion page and comments API as well: 43 checks for this batch; the account-access enhancement expands it to 55.
 
 ## Staff comments
 

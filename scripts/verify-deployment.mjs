@@ -6,16 +6,18 @@ const foreignOrigin='https://bivi-verification.invalid';
 
 export function deploymentCases(){
   const cases=[];
-  for(const path of ['/get-started','/admin/login','/client/login']){
+  for(const path of ['/get-started','/admin/login','/client/login','/client/recover','/client/confirm','/client/password']){
     cases.push({label:`Public page ${path}`,path,status:200,html:true,login:path.includes('login')});
   }
-  for(const path of ['/admin','/admin/projects',`/admin/leads/${fixtureId}`,`/admin/leads/${fixtureId}/onboarding`,`/admin/projects/${fixtureId}`,`/admin/projects/${fixtureId}/publish`,`/admin/projects/${fixtureId}/files`,`/admin/projects/${fixtureId}/discussion`]){
+  for(const path of ['/admin','/admin/projects',`/admin/leads/${fixtureId}`,`/admin/leads/${fixtureId}/onboarding`,`/admin/projects/${fixtureId}`,`/admin/projects/${fixtureId}/publish`,`/admin/projects/${fixtureId}/files`,`/admin/projects/${fixtureId}/discussion`,`/admin/projects/${fixtureId}/access`]){
     cases.push({label:`Staff gate ${path}`,path,status:307,redirect:'/admin/login'});
   }
   for(const path of ['/client',`/client/projects/${fixtureId}`]){
     cases.push({label:`Client gate ${path}`,path,status:307,redirect:'/client/login'});
   }
   const protectedPaths=[
+    `/api/admin/projects/${fixtureId}/access`,
+    '/api/client/password',
     `/api/admin/projects/${fixtureId}/comments`,
     `/api/admin/leads/${fixtureId}`,
     `/api/admin/leads/${fixtureId}/proposals`,
@@ -38,6 +40,7 @@ export function deploymentCases(){
     cases.push({label:`Invalid sign-in body ${path}`,path,method:'POST',status:400,privateJson:true});
     cases.push({label:`Foreign-origin sign-in denial ${path}`,path,method:'POST',status:403,origin:foreignOrigin,privateJson:true});
   }
+  for(const path of ['/api/client/recovery','/api/client/confirm']){cases.push({label:`Invalid account setup body ${path}`,path,method:'POST',status:400,privateJson:true});cases.push({label:`Foreign-origin account setup denial ${path}`,path,method:'POST',status:403,origin:foreignOrigin,privateJson:true});}
   cases.push({label:'Intake has no public read endpoint',path:'/api/inquiries',status:405});
   cases.push({label:'Foreign-origin intake denied before submission',path:'/api/inquiries',method:'POST',status:403,origin:foreignOrigin,privateJson:true});
   return cases;

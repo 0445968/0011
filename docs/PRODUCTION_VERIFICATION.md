@@ -13,11 +13,11 @@ Follow `PRODUCTION_READINESS_SETUP.md` for installation and commands. Automated 
 ## Configuration and access
 
 - [ ] All nine migrations are applied once in the same project. Retain a database backup before migration changes.
-- [ ] `SUPABASE_URL`, `SUPABASE_ANON_KEY` (or the supported public-key variable), `SUPABASE_SERVICE_ROLE_KEY` and canonical HTTPS `INQUIRY_APP_URL` are configured server-side. Service key is absent from browser bundles/network responses; it is used for inquiry intake only.
+- [ ] `SUPABASE_URL`, `SUPABASE_ANON_KEY` (or the supported public-key variable), `SUPABASE_SERVICE_ROLE_KEY` and canonical HTTPS `INQUIRY_APP_URL` are configured server-side. Service key is absent from browser bundles/network responses; it is used server-side for intake, Auth link generation and auth request limits.
 - [ ] Staff account is confirmed and active in `inquiry_staff`. Test a nonstaff account and deactivated staff account: staff pages and decisions must be denied.
 - [ ] Client accounts are confirmed and assigned to the intended activated project UUID only. Use one approver and one viewer. A separate unassigned account must see no project content.
 - [ ] HTTPS cookies are HttpOnly, Secure and SameSite Lax. Staff/client sign-out and expired/forged cookies require new sign-in. A different Origin cannot post decisions/file actions or request download URLs.
-- [ ] Existing account-recovery process is documented with the owner; there is no self-service password-reset or invitation flow in this batch. No automatic notifications are sent.
+- [ ] Existing account-recovery process is documented with the owner; migration 010 adds recovery and staff-prepared invitation links (CLIENT_ACCESS_SETUP.md). No automatic notifications are sent.
 
 ## Storage configuration
 
@@ -87,4 +87,13 @@ Local implementation checks: TypeScript and production build (test Google Fonts 
 - [ ] Verify removed-task context and removed-comment placeholders/history.
 - [ ] Client, unassigned account and revoked staff cannot read discussion/activity or save comments.
 - [ ] Timeline and pagination show the intended project records in newest-first order.
-- [ ] Run the updated 43-request deployment checker after installing this enhancement.
+- [ ] Run the updated 55-request deployment checker after installing this enhancement.
+
+## Account access enhancement (migration 010)
+
+- [ ] Apply migration 010 after 001–009, deploy the patch and configure canonical origin, keys, SMTP and recovery template.
+- [ ] Prepare a test invitation; verify no automatic invitation email, explicit link confirmation, password creation and client sign-in. Never retain tokens in verification evidence.
+- [ ] Assign an existing test account; confirm viewer/reviewer rights, stale-save conflict, revocation and access history.
+- [ ] Recover a test account password through the actual email provider; confirm expired/used links fail and setup expires after ten minutes.
+- [ ] Confirm nonexistent-email and quota-limited reset requests produce the same public response.
+- [ ] Run the deployment checker and retain results. Local tests use simulated Auth; live email delivery remains an owner check.

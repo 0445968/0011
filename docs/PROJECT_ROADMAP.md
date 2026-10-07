@@ -14,7 +14,7 @@ Current priorities are client onboarding and project management. Resources and H
 | File exchange | Implemented; owner reports verified | Private project uploads, stored-file verification, authorized attachment downloads, staff sharing/withdrawal and history |
 | Production rollout | Prior workflow verified by owner, 2026-10-07 | Repeatable checks and owner-reported live verification; enhancements need separate verification |
 | Project discussion and activity | Implemented; activation pending | Internal task/project comments, author edits/removal and a unified staff timeline |
-| Account recovery and invitations | Planned | Client access setup and recovery flows |
+| Account recovery and invitations | Implemented; activation pending | Staff access assignments, private invitation links and client password recovery |
 | Notifications and deadlines | Planned | Project updates, review alerts and deadline reminders |
 
 Apply the second migration and staff setup described in LEADS_WORKSPACE_SETUP.md before using internal review. A Qualified inquiry means ready for proposal preparation; it does not create a booked project.
@@ -34,3 +34,5 @@ File exchange activation: apply the eighth migration and follow FILE_EXCHANGE_SE
 Production readiness: follow PRODUCTION_READINESS_SETUP.md. Run `npm run verify:platform`, verify the deployment configuration, then run the HTTP checker against the canonical host. No additional migration is needed. Retain the authenticated-check evidence in PRODUCTION_VERIFICATION.md; the owner reported the prior workflow verified on 2026-10-07.
 
 Enhancement activation: apply migration 009 and follow PROJECT_DISCUSSION_SETUP.md. The owner reported prior live verification complete on 2026-10-07; new enhancements still require installation and live checks.
+
+Account access activation: apply migration 010 and follow CLIENT_ACCESS_SETUP.md. Configure recovery email delivery and its token-hash template before live testing. Next enhancement: notifications and deadlines.

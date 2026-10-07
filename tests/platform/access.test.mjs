@@ -5,7 +5,7 @@ import {randomUUID} from 'node:crypto';
 const migrations=new URL('../../supabase/migrations/',import.meta.url);
 
 import assert from 'node:assert/strict';
-test('Bivi migrations 001–009: intake, workflow gates, client isolation and private files',async()=>{
+test('Bivi migrations 001–010: intake, workflow gates, client isolation and private files',async()=>{
 const db=new PGlite();
 try {
 await db.exec(`create role anon; create role authenticated; create role service_role bypassrls; create schema auth; create table auth.users(id uuid primary key); create function auth.uid() returns uuid language sql as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$; grant usage on schema public,auth to anon,authenticated,service_role; grant execute on function auth.uid() to authenticated;`);
@@ -309,5 +309,36 @@ await db.exec(`reset role;update inquiry_staff set active=false where user_id='$
 await db.exec('reset role;set role anon;');await assert.rejects(db.query('select * from project_activity'),/permission denied/);await assert.rejects(db.query('select * from project_comments'),/permission denied/);
 console.log('PASS: staff discussion migration, author-only editing/removal, client/anonymous/revoked-staff isolation, idempotency, stale project/comment revisions, removed-task context, soft removal history and unified activity');
 
+await db.exec('reset role;');
+await db.exec(fs.readFileSync(new URL('202610070010_client_access.sql',migrations),'utf8'));
+await db.exec(`update inquiry_staff set active=true where user_id='${staff}';`);
+const assignment={userId:other,expectedRevision:1,active:true,canReview:false};
+const assign=async c=>(await db.query('select manage_project_client($1,$2) r',[id,c])).rows[0].r;
+await identity(staff);assert.equal((await assign(assignment)).result,'saved');
+assert.equal((await db.query('select revision from project_clients where user_id=$1',[other])).rows[0].revision,2);
+assert.equal((await assign(assignment)).result,'conflict');
+assert.equal((await assign({...assignment,expectedRevision:2})).result,'saved');
+assert.equal((await db.query('select * from project_access_history')).rows.length,1);
+await assert.rejects(db.query('update project_clients set active=false'),/permission denied/);
+assert.equal((await assign({...assignment,userId:randomUUID(),expectedRevision:0})).result,'not_found');
+assert.equal((await assign({...assignment,userId:staff,expectedRevision:0})).result,'saved');
+assert.equal((await assign({...assignment,expectedRevision:2,canReview:true})).result,'saved');
+await identity(other);assert.equal((await db.query('select * from project_clients')).rows.length,0);assert.equal((await db.query('select * from project_access_history')).rows.length,0);
+assert.equal((await db.query('select has_client_project($1) r',[id])).rows[0].r,true);
+assert.equal((await db.query('select can_review_project($1) r',[id])).rows[0].r,true);
+await assert.rejects(assign(assignment),/Staff authorization/);
+await assert.rejects(db.query('select reserve_portal_auth_action($1,$2)',['recovery','a'.repeat(64)]),/permission denied/);
+await identity(staff);assert.equal((await assign({...assignment,expectedRevision:3,active:false})).result,'saved');
+await identity(other);assert.equal((await db.query('select has_client_project($1) r',[id])).rows[0].r,false);
+await db.exec(`reset role;update inquiry_staff set active=false where user_id='${staff}';`);await identity(staff);await assert.rejects(assign(assignment),/Staff authorization/);
+await db.exec('reset role;set role service_role;');
+const reserveAuth=async(kind,bucket)=>(await db.query('select reserve_portal_auth_action($1,$2) r',[kind,bucket])).rows[0].r;
+for(let i=0;i<3;i++)assert.equal(await reserveAuth('recovery','a'.repeat(64)),true);
+assert.equal(await reserveAuth('recovery','a'.repeat(64)),false);assert.equal(await reserveAuth('invite','a'.repeat(64)),true);
+await db.exec("reset role;update portal_auth_limits set count=100 where kind='recovery' and bucket='global';set role service_role;");
+assert.equal(await reserveAuth('recovery','b'.repeat(64)),false);
+await assert.rejects(reserveAuth('invalid','a'.repeat(64)),/Invalid auth/);
+await db.exec('reset role;set role anon;');await assert.rejects(db.query('select * from portal_auth_limits'),/permission denied/);await assert.rejects(db.query('select * from project_clients'),/permission denied/);
+console.log('PASS: client access assignment, viewer/reviewer changes, revision conflicts, no-op history, revoked/client/anonymous isolation and server-only email/global auth quotas');
 } finally { await db.close(); }
 });
