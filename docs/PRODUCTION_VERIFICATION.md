@@ -2,6 +2,14 @@
 
 Status: **live verification pending**. Run these checks in a configured staging environment with test files and separate real Supabase staff/client/viewer accounts. Record the deployment SHA, migration versions, tester and date before moving to real client work. This checklist does not claim that a deployed Supabase environment has passed.
 
+## Automated checks
+
+Follow `PRODUCTION_READINESS_SETUP.md` for installation and commands. Automated checks are supporting evidence; authenticated workflow and real Storage tests below remain required.
+
+- [ ] `npm run verify:platform` passes in the installed checkout (test database only).
+- [ ] `npm run verify:config` passes with the deployment environment values.
+- [ ] `npm run verify:deployment -- https://YOUR_CANONICAL_HOST` passes against the canonical deployed origin.
+
 ## Configuration and access
 
 - [ ] All eight migrations are applied once in the same project. Retain a database backup before migration changes.
@@ -62,6 +70,7 @@ where schemaname = 'public'
 | Check | Evidence / result |
 | --- | --- |
 | Deployment SHA and date | Pending |
+| Platform / configuration / HTTP verification outputs | Pending |
 | Migrations / bucket / policies | Pending |
 | Staff, approver, viewer and unassigned account checks | Pending |
 | Inquiry → onboarding → project → publication / decision | Pending |

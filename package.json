@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "verify:platform": "node --test tests/platform/*.test.mjs",
+    "verify:config": "node scripts/verify-config.mjs",
+    "verify:deployment": "node scripts/verify-deployment.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -85,6 +88,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
     "eslint": "^8.57.1"
   }
 }

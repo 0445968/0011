@@ -12,7 +12,7 @@ Current priorities are client onboarding and project management. Resources and H
 | Internal project management | Implemented; activation pending | Gated activation, fixed starting snapshots, milestones, tasks, owners, due dates, progress and history |
 | Client progress, reviews and delivery links | Implemented; activation pending | Project-scoped client portal, explicit publications, versioned decisions and HTTPS handoff links |
 | File exchange | Implemented; activation pending | Private project uploads, stored-file verification, authorized attachment downloads, staff sharing/withdrawal and history |
-| Production rollout | Next; checklist prepared | Live authentication/Storage verification, access review and end-to-end operating checks |
+| Production rollout | Verification tools implemented; live checks pending | Repeatable database/configuration/HTTP checks plus real-account and hosted Storage verification |
 
 Apply the second migration and staff setup described in LEADS_WORKSPACE_SETUP.md before using internal review. A Qualified inquiry means ready for proposal preparation; it does not create a booked project.
 
@@ -27,3 +27,5 @@ Project workspace activation: apply the sixth migration and follow PROJECT_WORKS
 Client portal activation: apply the seventh migration and follow CLIENT_PORTAL_SETUP.md. Only assigned clients can access available published updates. The eighth migration adds private file exchange; live production verification remains pending.
 
 File exchange activation: apply the eighth migration and follow FILE_EXCHANGE_SETUP.md. PRODUCTION_VERIFICATION.md tracks the remaining live checks; local simulation is complete, and deployment verification remains pending. Resources and Helpdesk remain outside scope.
+
+Production readiness: follow PRODUCTION_READINESS_SETUP.md. Run `npm run verify:platform`, verify the deployment configuration, then run the HTTP checker against the canonical host. No additional migration is needed. Complete the authenticated checks in PRODUCTION_VERIFICATION.md before marking rollout verified.
