@@ -84,6 +84,8 @@ export function ClientLogin({
       null
     );
 
+  const googleRenderedRef = useRef(false);
+
   const googleContainerRef =
     useRef<HTMLDivElement>(
       null
@@ -200,79 +202,61 @@ export function ClientLogin({
       [router]
     );
 
-  const initializeGoogle =
-    useCallback(() => {
-      if (
-        !window.google ||
-        !googleButtonRef.current ||
-        !googleContainerRef.current
-      ) {
-        return;
-      }
 
-      const measuredWidth =
-        Math.floor(
-          googleContainerRef.current
-            .getBoundingClientRect()
-            .width
-        );
+const initializeGoogle = useCallback(() => {
+  if (
+    googleRenderedRef.current ||
+    !window.google ||
+    !googleButtonRef.current ||
+    !googleContainerRef.current
+  ) {
+    return;
+  }
 
-      if (
-        measuredWidth <= 0
-      ) {
-        return;
-      }
+  const measuredWidth = Math.floor(
+    googleContainerRef.current
+      .getBoundingClientRect().width
+  );
 
-      /*
-       * Leave a tiny amount of breathing
-       * room around the Google iframe.
-       */
-      const buttonWidth =
-        Math.max(
-          200,
-          Math.min(
-            measuredWidth - 2,
-            400
-          )
-        );
+  if (measuredWidth <= 0) {
+    return;
+  }
 
-      window.google.accounts.id.initialize(
-        {
-          client_id:
-            process.env
-              .NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
+  const buttonWidth = Math.max(
+    180,
+    Math.min(measuredWidth - 2, 400)
+  );
 
-          callback: (
-            response
-          ) => {
-            void handleGoogleCredential(
-              response.credential
-            );
-          },
-        }
+  window.google.accounts.id.initialize({
+    client_id:
+      process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
+    callback: (response) => {
+      void handleGoogleCredential(
+        response.credential
       );
+    },
+  });
 
-      googleButtonRef.current.innerHTML =
-        '';
+  googleButtonRef.current.innerHTML = '';
 
-      window.google.accounts.id.renderButton(
-        googleButtonRef.current,
-        {
-          type: 'standard',
-          theme: 'outline',
-          size: 'large',
-          text: 'continue_with',
-          shape:
-            'pill',
-          logo_alignment:
-            'left',
-          width:
-            buttonWidth,
-        }
-      );
-    }, [
-      handleGoogleCredential,
-    ]);
+  window.google.accounts.id.renderButton(
+    googleButtonRef.current,
+    {
+      type: 'standard',
+      theme: 'outline',
+      size: 'large',
+      text: 'continue_with',
+      shape: 'pill',
+      logo_alignment: 'left',
+      width: buttonWidth,
+    }
+  );
+
+  // Never rebuild this iframe during
+  // this component's mounted lifetime.
+  googleRenderedRef.current = true;
+}, [handleGoogleCredential]);
+
 
   useEffect(() => {
     if (
@@ -344,58 +328,6 @@ export function ClientLogin({
     initializeGoogle,
   ]);
 
-  /*
-   * Re-render Google's iframe whenever
-   * its actual available width changes.
-   */
-  useEffect(() => {
-    const container =
-      googleContainerRef.current;
-
-    if (!container) {
-      return;
-    }
-
-    let frame:
-      | number
-      | null = null;
-
-    const observer =
-      new ResizeObserver(
-        () => {
-          if (!window.google) {
-            return;
-          }
-
-          if (frame !== null) {
-            window.cancelAnimationFrame(
-              frame
-            );
-          }
-
-          frame =
-            window.requestAnimationFrame(
-              initializeGoogle
-            );
-        }
-      );
-
-    observer.observe(
-      container
-    );
-
-    return () => {
-      observer.disconnect();
-
-      if (frame !== null) {
-        window.cancelAnimationFrame(
-          frame
-        );
-      }
-    };
-  }, [
-    initializeGoogle,
-  ]);
 
   async function submit(
     event: FormEvent<HTMLFormElement>
@@ -497,7 +429,7 @@ export function ClientLogin({
           className="
             relative
             flex
-            min-h-[42px]
+            min-h-[44px]
             w-full
             items-center
             justify-center
