@@ -1,14 +1,10 @@
 'use client';
 
-import Link from 'next/link';
+import { SlidersHorizontal } from 'lucide-react';
 
-import {
-  SlidersHorizontal,
-} from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-import {
-  cn,
-} from '@/lib/utils';
+import { NavbarAccountControls } from './NavbarAccountControls';
 
 interface NavbarDesktopUtilitiesProps {
   surfaceActive: boolean;
@@ -32,16 +28,15 @@ export function NavbarDesktopUtilities({
   setSettingsOpen,
   onSettingsOpen,
 }: NavbarDesktopUtilitiesProps) {
-  const handleSettings =
-    () => {
-      if (settingsOpen) {
-        setSettingsOpen(false);
-        return;
-      }
+  const handleSettings = () => {
+    if (settingsOpen) {
+      setSettingsOpen(false);
+      return;
+    }
 
-      onSettingsOpen();
-      setSettingsOpen(true);
-    };
+    onSettingsOpen();
+    setSettingsOpen(true);
+  };
 
   return (
     <div
@@ -52,11 +47,11 @@ export function NavbarDesktopUtilities({
         lg:flex
       "
     >
+      {/* SETTINGS */}
+
       <button
         type="button"
-        onClick={
-          handleSettings
-        }
+        onClick={handleSettings}
         aria-label="Preferences"
         className={cn(
           `
@@ -85,66 +80,12 @@ export function NavbarDesktopUtilities({
         />
       </button>
 
-      <Link
-        href="/client/login"
-        className={cn(
-          `
-            inline-flex
-            h-10
-            items-center
-            justify-center
-            rounded-[12px]
-            px-4
-            font-mono
-            text-[11px]
-            font-semibold
-            transition-colors
-          `,
-          surfaceActive
-            ? `
-                text-foreground
-                hover:bg-muted
-              `
-            : `
-                text-white
-                hover:bg-white/[0.08]
-              `
-        )}
-      >
-        Log in
-      </Link>
+      {/* ACCOUNT CONTROLS */}
 
-      <button
-        type="button"
-        onClick={onSignup}
-        className={cn(
-          `
-            inline-flex
-            h-10
-            items-center
-            justify-center
-            rounded-[12px]
-            px-4
-            font-mono
-            text-[11px]
-            font-semibold
-            transition-colors
-          `,
-          surfaceActive
-            ? `
-                bg-black
-                text-white
-                dark:bg-white
-                dark:text-black
-              `
-            : `
-                bg-white
-                text-black
-              `
-        )}
-      >
-        Sign up
-      </button>
+      <NavbarAccountControls
+        surfaceActive={surfaceActive}
+        onSignup={onSignup}
+      />
     </div>
   );
 }

@@ -16,7 +16,7 @@ export async function POST(request:Request,{params}:{params:{id:string}}){
   let assignment:object,link:string|undefined;
   if(parsed.data.action==='invite'){
    const origin=accessOrigin();if(!await reserveAuth('invite',parsed.data.email))return adminReply({error:'Invitation limit reached. Try again later.'},429);
-   const {data,error}=await privilegedClient().auth.admin.generateLink({type:'invite',email:parsed.data.email,options:{redirectTo:origin+'/client/confirm'}});
+   const {data,error}=await privilegedClient().auth.admin.generateLink({type:'invite',email:parsed.data.email,options:{redirectTo:origin+'/confirm'}});
    if(error||!data.user||!data.properties?.hashed_token)return adminReply({error:'Invitation could not be prepared. For an existing account, assign its Auth account ID. Check Auth before retrying.'},409);
    createdUserId=data.user.id;assignment={userId:createdUserId,expectedRevision:0,active:true,canReview:parsed.data.canReview};
    link=origin+'/client/confirm?'+new URLSearchParams({token_hash:data.properties.hashed_token,type:'invite'});

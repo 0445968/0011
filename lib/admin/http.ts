@@ -6,10 +6,19 @@ export function adminReply(body: Record<string, unknown>, status = 200) {
 
 export function isSameOrigin(request: Request) {
   try {
-    const url = new URL(process.env.INQUIRY_APP_URL || request.url);
-    if (!process.env.INQUIRY_APP_URL && request.headers.get('host')) url.host = request.headers.get('host')!;
-    return request.headers.get('origin') === url.origin;
-  } catch { return false; }
+    const origin = request.headers.get('origin');
+    if (!origin) return false;
+
+    const requestUrl = new URL(request.url);
+    const forwardedHost = request.headers.get('x-forwarded-host')?.split(',')[0]?.trim();
+    const forwardedProto = request.headers.get('x-forwarded-proto')?.split(',')[0]?.trim();
+    const host = forwardedHost || request.headers.get('host') || requestUrl.host;
+    const protocol = forwardedProto || requestUrl.protocol.replace(':', '');
+
+    return new URL(origin).origin === `${protocol}://${host}`;
+  } catch {
+    return false;
+  }
 }
 
 export async function readAdminJson(request: Request, limit = 8192): Promise<unknown> {

@@ -4,8 +4,9 @@ import Link from 'next/link';
 
 import {
   Menu,
-  UserRound,
 } from 'lucide-react';
+
+import { NavbarAccountControls } from './NavbarAccountControls';
 
 import type {
   NavbarMobileUtilitiesProps,
@@ -78,47 +79,19 @@ export function NavbarMobileUtilities4({
                 gap-1
               "
             >
-              <button
-                type="button"
-                onClick={onSignup}
-                className="
-                  mr-1
-                  flex
-                  h-9
-                  items-center
-                  justify-center
-                  rounded-[11px]
-                  bg-white
-                  px-3
-                  font-mono
-                  text-[10px]
-                  font-semibold
-                  text-black
-                "
-              >
-                Sign up
-              </button>
+              <NavbarAccountControls
+                surfaceActive={false}
+                onSignup={onSignup}
+                mobile
+                mobileMode="signup"
+              />
 
-              <Link
-                href="/client/login"
-                aria-label="Account"
-                className="
-                  flex
-                  h-10
-                  w-10
-                  items-center
-                  justify-center
-                  rounded-full
-                  text-white
-                  transition-colors
-                  hover:bg-white/[0.08]
-                "
-              >
-                <UserRound
-                  size={20}
-                  strokeWidth={2}
-                />
-              </Link>
+              <NavbarAccountControls
+                surfaceActive={false}
+                onSignup={onSignup}
+                mobile
+                mobileMode="account"
+              />
 
               <button
                 type="button"
@@ -246,31 +219,15 @@ export function NavbarMobileUtilities4({
             </svg>
 
             {/* ACCOUNT */}
-            <Link
-              href="/client/login"
-              aria-label="Account"
-              className="
-                absolute
-                left-5
-                top-[32px]
-                z-10
-                flex
-                h-10
-                w-10
-                -translate-y-1/2
-                items-center
-                justify-center
-                rounded-full
-                text-black
-                transition-colors
-                hover:bg-black/[0.05]
-              "
-            >
-              <UserRound
-                size={20}
-                strokeWidth={2}
+            <div className="absolute left-5 top-[32px] z-10 -translate-y-1/2">
+              <NavbarAccountControls
+                surfaceActive
+                onSignup={onSignup}
+                mobile
+                mobileMode="account"
+                align="left"
               />
-            </Link>
+            </div>
 
             {/* CENTER LOGO */}
             <Link
@@ -315,25 +272,12 @@ export function NavbarMobileUtilities4({
                 gap-1
               "
             >
-              <button
-                type="button"
-                onClick={onSignup}
-                className="
-                  flex
-                  h-9
-                  items-center
-                  justify-center
-                  rounded-[11px]
-                  bg-black
-                  px-3
-                  font-mono
-                  text-[10px]
-                  font-semibold
-                  text-white
-                "
-              >
-                Sign up
-              </button>
+              <NavbarAccountControls
+                surfaceActive
+                onSignup={onSignup}
+                mobile
+                mobileMode="signup"
+              />
 
               <button
                 type="button"

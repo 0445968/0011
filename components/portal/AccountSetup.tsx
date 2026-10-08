@@ -27,7 +27,7 @@ export function AccountSetup({
 
   useEffect(() => {
     if (mode === 'confirm') {
-      window.history.replaceState(null, '', '/client/confirm');
+      window.history.replaceState(null, '', '/confirm');
     }
   }, [mode]);
 
@@ -75,7 +75,7 @@ export function AccountSetup({
       }
 
       if (mode === 'confirm') {
-        router.replace('/client/password');
+        router.replace('/password');
         return;
       }
 
@@ -84,7 +84,7 @@ export function AccountSetup({
         setRepeat('');
 
         router.replace(
-          '/client/login?password=updated'
+          '/login?password=updated'
         );
 
         router.refresh();
@@ -233,12 +233,12 @@ export function AccountSetup({
       )}
 
       <div className="mt-6 flex flex-wrap gap-4 text-sm underline">
-        <Link href="/client/login">
+        <Link href="/login">
           Sign in
         </Link>
 
         {mode !== 'recover' && (
-          <Link href="/client/recover">
+          <Link href="/recover">
             Request a new reset link
           </Link>
         )}

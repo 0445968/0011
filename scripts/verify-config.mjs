@@ -7,15 +7,24 @@ if(args.some(arg=>arg!=='--local')){console.error('Usage: npm run verify:config 
 const local=args.includes('--local');
 let failures=0;
 function check(label,ok){console.log(`${ok?'PASS':'FAIL'} ${label}`);if(!ok)failures++;}
-function validOrigin(value){try{const url=new URL(value);return !url.username&&!url.password&&!url.search&&!url.hash&&url.pathname==='/'&&(url.protocol==='https:'||(local&&url.protocol==='http:'&&['localhost','127.0.0.1','[::1]'].includes(url.hostname)));}catch{return false;}}
+function validOrigin(value){try{const url=new URL(value);const localHost=['localhost','127.0.0.1','[::1]'].includes(url.hostname)||url.hostname.endsWith('.localhost');return !url.username&&!url.password&&!url.search&&!url.hash&&url.pathname==='/'&&(url.protocol==='https:'||(local&&url.protocol==='http:'&&localHost));}catch{return false;}}
 const url=process.env.SUPABASE_URL;
 const anon=process.env.SUPABASE_ANON_KEY||process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const service=process.env.SUPABASE_SERVICE_ROLE_KEY;
+const publicOrigin=process.env.INQUIRY_APP_URL;
+const clientOrigin=process.env.NEXT_PUBLIC_BIVI_APP_URL;
+const staffOrigin=process.env.NEXT_PUBLIC_BIVI_STAFF_URL;
 check('Supabase URL is a valid HTTPS origin (or explicit local test origin)',validOrigin(url));
 check('A project public key is configured',Boolean(anon?.trim()));
 check('Server-only inquiry service key is configured',Boolean(service?.trim()));
 check('Public and privileged keys are different',Boolean(anon&&service&&anon!==service));
-check('Canonical application origin is configured and valid',validOrigin(process.env.INQUIRY_APP_URL));
+check('Public website origin is configured and valid',validOrigin(publicOrigin));
+check('Client app origin is configured and valid',validOrigin(clientOrigin));
+check('Staff app origin is configured and valid',validOrigin(staffOrigin));
+if(validOrigin(publicOrigin)&&validOrigin(clientOrigin)&&validOrigin(staffOrigin)){
+ const hosts=[publicOrigin,clientOrigin,staffOrigin].map(value=>new URL(value).host);
+ check('Public, client and staff hosts are distinct',new Set(hosts).size===3);
+}
 function isPrivilegedKey(value){if(value.startsWith('sb_secret_'))return true;try{return value.startsWith('eyJ')&&JSON.parse(Buffer.from(value.split('.')[1],'base64url').toString()).role==='service_role';}catch{return false;}}
 const publicSecrets=Object.entries(process.env).some(([name,value])=>name.startsWith('NEXT_PUBLIC_')&&value&&(name.includes('SERVICE_ROLE')||name==='NEXT_PUBLIC_SUPABASE_SECRET_KEY'||isPrivilegedKey(value)||(service&&value===service)));
 check('No privileged Supabase key is exposed through NEXT_PUBLIC_ configuration',!publicSecrets);

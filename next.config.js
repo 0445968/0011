@@ -3,7 +3,16 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  async headers() { return [{source:'/client/confirm',headers:[{key:'Referrer-Policy',value:'no-referrer'},{key:'Cache-Control',value:'no-store'}]}]; },
+  async headers() {
+    const privateSetupHeaders = [
+      { key: 'Referrer-Policy', value: 'no-referrer' },
+      { key: 'Cache-Control', value: 'no-store' },
+    ];
+    return [
+      { source: '/client/confirm', headers: privateSetupHeaders },
+      { source: '/confirm', headers: privateSetupHeaders },
+    ];
+  },
   images: { unoptimized: true },
 };
 

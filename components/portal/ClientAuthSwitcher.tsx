@@ -18,6 +18,7 @@ import { useRouter } from 'next/navigation';
 
 import { ClientLogin } from '@/components/portal/ClientLogin';
 import { Input } from '@/components/ui/input';
+import { browserAccountOrigins } from '@/lib/site/origins';
 
 export type ClientAuthMode =
   | 'login'
@@ -41,6 +42,10 @@ export function ClientAuthSwitcher({
 
   const [email, setEmail] =
     useState('');
+
+  const remoteLogin =
+    typeof window !== 'undefined' &&
+    browserAccountOrigins() !== null;
 
   useEffect(() => {
     setMode(initialMode);
@@ -207,31 +212,49 @@ export function ClientAuthSwitcher({
             mode !== 'login'
           }
         >
-          <ClientLogin
-            configured={
-              configured
-            }
-          />
+          {remoteLogin ? (
+            <div className="pt-6">
+              <p className="text-[12px] leading-5 text-white/45">
+                Account sign-in now lives in the secure Bivi client app.
+              </p>
 
-          <div className="mt-3 text-center">
-            <Link
-              href="/client/recover"
-              tabIndex={
-                mode === 'login'
-                  ? 0
-                  : -1
-              }
-              className="
-                font-mono
-                text-[11px]
-                text-white/28
-                transition-colors
-                hover:text-white/70
-              "
-            >
-              Forgot your password?
-            </Link>
-          </div>
+              <Link
+                href="/client/login"
+                tabIndex={mode === 'login' ? 0 : -1}
+                className="mt-5 flex h-11 w-full items-center justify-center rounded-[12px] bg-white px-4 font-mono text-[12px] font-semibold text-black transition hover:bg-white/90"
+              >
+                Continue to login
+              </Link>
+            </div>
+          ) : (
+            <>
+              <ClientLogin
+                configured={
+                  configured
+                }
+              />
+
+              <div className="mt-3 text-center">
+                <Link
+                  href="/client/recover"
+                  tabIndex={
+                    mode === 'login'
+                      ? 0
+                      : -1
+                  }
+                  className="
+                    font-mono
+                    text-[11px]
+                    text-white/28
+                    transition-colors
+                    hover:text-white/70
+                  "
+                >
+                  Forgot your password?
+                </Link>
+              </div>
+            </>
+          )}
         </div>
 
         {/* SIGN UP */}

@@ -1,7 +1,8 @@
+
 'use client';
 
 import {
-  usePathname,
+  useSelectedLayoutSegments,
 } from 'next/navigation';
 
 import {
@@ -19,15 +20,36 @@ interface SiteChromeProps {
 export function SiteChrome({
   children,
 }: SiteChromeProps) {
-  const pathname =
-    usePathname();
+  const segments = useSelectedLayoutSegments();
 
-  const isDemoEmbed =
-    pathname.includes(
-      '/embed'
-    );
+  // Detect account routes using the Next.js
+  // route tree rather than window.location.
+  //
+  // These correspond to the internal routes
+  // used by the subdomain middleware:
+  //
+  // app.bivi.pro   -> /client/*
+  // staff.bivi.pro -> /admin/*
 
-  if (pathname === '/admin' || pathname.startsWith('/admin/') || pathname === '/client' || pathname.startsWith('/client/')) return <>{children}</>;
+  const isAccountRoute = segments.some(
+    (segment) =>
+      segment === 'client' ||
+      segment === 'admin'
+  );
+
+  // Account pages have their own layouts
+  // and must never render the public
+  // navbar or footer.
+
+  if (isAccountRoute) {
+    return <>{children}</>;
+  }
+
+  // Embedded demos use a minimal layout.
+
+  const isDemoEmbed = segments.includes(
+    'embed'
+  );
 
   if (isDemoEmbed) {
     return (
@@ -36,6 +58,8 @@ export function SiteChrome({
       </main>
     );
   }
+
+  // Standard public website layout.
 
   return (
     <>
