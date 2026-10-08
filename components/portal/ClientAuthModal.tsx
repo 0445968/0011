@@ -1,25 +1,20 @@
+
 'use client';
 
 import {
   useEffect,
+  useState,
+  type FormEvent,
 } from 'react';
 
-import {
-  AnimatePresence,
-  motion,
-} from 'framer-motion';
+import { useRouter } from 'next/navigation';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowRight, X } from 'lucide-react';
 
-import {
-  X,
-} from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { clientOrigin } from '@/lib/site/origins';
 
-import {
-  ClientAuthSwitcher,
-} from '@/components/portal/ClientAuthSwitcher';
-
-export type ClientAuthMode =
-  | 'login'
-  | 'signup';
+export type ClientAuthMode = 'login' | 'signup';
 
 interface ClientAuthModalProps {
   open: boolean;
@@ -31,63 +26,68 @@ interface ClientAuthModalProps {
 export function ClientAuthModal({
   open,
   mode,
-  configured,
   onClose,
 }: ClientAuthModalProps) {
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+
+  const loginUrl = `${clientOrigin()}/login`;
+  const signupOpen = open && mode === 'signup';
+
+  // Old login-popup requests now go to the app.
   useEffect(() => {
-    if (!open) {
-      return;
+    if (open && mode === 'login') {
+      window.location.assign(loginUrl);
     }
+  }, [open, mode, loginUrl]);
+
+  // Lock scrolling while signup is open.
+  useEffect(() => {
+    if (!signupOpen) return;
 
     const previousOverflow =
       document.body.style.overflow;
 
-    document.body.style.overflow =
-      'hidden';
+    document.body.style.overflow = 'hidden';
 
-    const handleEscape = (
-      event: KeyboardEvent
-    ) => {
+    const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         onClose();
       }
     };
 
-    window.addEventListener(
-      'keydown',
-      handleEscape
-    );
+    window.addEventListener('keydown', handleEscape);
 
     return () => {
-      document.body.style.overflow =
-        previousOverflow;
-
-      window.removeEventListener(
-        'keydown',
-        handleEscape
-      );
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleEscape);
     };
-  }, [
-    open,
-    onClose,
-  ]);
+  }, [signupOpen, onClose]);
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const normalizedEmail = email.trim();
+
+    if (!normalizedEmail) return;
+
+    onClose();
+
+    router.push(
+      `/get-started?email=${encodeURIComponent(
+        normalizedEmail
+      )}`
+    );
+  }
 
   return (
     <AnimatePresence>
-      {open && (
+      {signupOpen && (
         <motion.div
-          initial={{
-            opacity: 0,
-          }}
-          animate={{
-            opacity: 1,
-          }}
-          exit={{
-            opacity: 0,
-          }}
-          transition={{
-            duration: 0.18,
-          }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.18 }}
           className="
             fixed
             inset-0
@@ -95,18 +95,14 @@ export function ClientAuthModal({
             flex
             items-center
             justify-center
+            overflow-y-auto
             bg-black/75
             px-4
             py-8
             backdrop-blur-md
           "
-          onMouseDown={(
-            event
-          ) => {
-            if (
-              event.target ===
-              event.currentTarget
-            ) {
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
               onClose();
             }
           }}
@@ -129,24 +125,19 @@ export function ClientAuthModal({
             }}
             transition={{
               duration: 0.24,
-              ease: [
-                0.16,
-                1,
-                0.3,
-                1,
-              ],
+              ease: [0.16, 1, 0.3, 1],
             }}
             role="dialog"
             aria-modal="true"
-            aria-label="Bivi account"
+            aria-labelledby="bivi-signup-title"
             className="
               relative
+              my-auto
               w-full
               max-w-[420px]
-              overflow-hidden
-              rounded-[26px]
+              rounded-[18px]
               border
-              border-white/[0.08]
+              border-white/10
               bg-[#111111]
               p-6
               text-white
@@ -162,7 +153,6 @@ export function ClientAuthModal({
                 absolute
                 right-4
                 top-4
-                z-20
                 flex
                 h-9
                 w-9
@@ -170,72 +160,163 @@ export function ClientAuthModal({
                 justify-center
                 rounded-full
                 border
-                border-white/[0.06]
-                bg-white/[0.04]
-                text-white/45
+                border-white/10
+                bg-white/10
+                text-white/50
                 transition-colors
-                hover:bg-white/[0.08]
                 hover:text-white
               "
             >
-              <X
-                size={17}
-                strokeWidth={2}
-              />
+              <X size={17} strokeWidth={2} />
             </button>
 
-            <div className="pr-12">
+            <div className="pr-10">
               <p
                 className="
                   font-mono
                   text-[9px]
                   uppercase
                   tracking-[0.2em]
-                  text-white/30
+                  text-white/40
                 "
               >
                 Bivi
               </p>
 
               <h2
+                id="bivi-signup-title"
                 className="
                   mt-2
                   font-heading
                   text-2xl
                   font-semibold
-                  tracking-[-0.035em]
+                  tracking-tight
                 "
               >
-                {mode ===
-                'signup'
-                  ? 'Start with Bivi.'
-                  : 'Welcome back.'}
-              </h2>
+                Let&apos;s create something great.              </h2>
 
               <p
                 className="
                   mt-2
-                  max-w-[310px]
-                  text-xs
+                  text-[12px]
                   leading-5
-                  text-white/40
+                  text-white/50
                 "
               >
-                {mode ===
-                'signup'
-                  ? 'Tell us where to reach you and begin your project.'
-                  : 'Sign in to access your client workspace.'}
+                Get ready to bring your ideas to life. Start your project request and collaborate with our team.
               </p>
             </div>
 
-            <ClientAuthSwitcher
-              configured={
-                configured
-              }
-              initialMode={
-                mode
-              }
-            />
+            <form
+              onSubmit={submit}
+              className="mt-7"
+            >
+
+
+              <div className="mt-5">
+                <label
+                  htmlFor="bivi-signup-email"
+                  className="
+                    mb-2
+                    block
+                    font-mono
+                    text-[10px]
+                    text-white/60
+                  "
+                >
+                  Email address
+                </label>
+
+                <Input
+                  id="bivi-signup-email"
+                  type="email"
+                  autoComplete="email"
+                  maxLength={254}
+                  required
+                  value={email}
+                  onChange={(event) =>
+                    setEmail(event.target.value)
+                  }
+                  placeholder="you@company.com"
+                  className="
+                    h-11
+                    rounded-[12px]
+                    border-white/10
+                    bg-white/10
+                    px-3.5
+                    text-sm
+                    text-white
+                    shadow-none
+                    placeholder:text-white/30
+                    focus-visible:ring-1
+                    focus-visible:ring-white/20
+                  "
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="
+                  mt-4
+                  flex
+                  h-11
+                  w-full
+                  items-center
+                  justify-center
+                  gap-2
+                  rounded-[12px]
+                  bg-[#BBFF1B]
+                  px-4
+                  font-mono
+                  text-[13px]
+                  font-semibold
+                  text-black
+                  transition-colors
+                  hover:bg-[#BBFF1B]/90
+                "
+              >
+                Start a project
+                <ArrowRight size={16} />
+              </button>
+
+              <p
+                className="
+                  mt-3
+                  text-center
+                  text-[10px]
+                  text-white/40
+                "
+              >
+                No payment required to get started.
+              </p>
+            </form>
+
+            <div
+              className="
+                mt-7
+                border-t
+                border-white/10
+                pt-5
+                text-center
+              "
+            >
+              <p className="text-[12px] text-white/50">
+                Already have an account?{' '}
+                <a
+                  href={loginUrl}
+                  className="
+                    font-semibold
+                    text-white
+                    underline
+                    underline-offset-4
+                    transition-colors
+                    hover:text-white/70
+                  "
+                >
+                  Log in
+                </a>
+              </p>
+            </div>
           </motion.div>
         </motion.div>
       )}

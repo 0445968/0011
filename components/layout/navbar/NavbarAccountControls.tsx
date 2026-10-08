@@ -1,10 +1,25 @@
+
 'use client';
 
-import Link from 'next/link';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronDown, LogOut, UserRound } from 'lucide-react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 
-import { browserAccountOrigins } from '@/lib/site/origins';
+import {
+  ChevronDown,
+  LogOut,
+  UserRound,
+} from 'lucide-react';
+
+import {
+  browserAccountOrigins,
+  clientOrigin,
+  staffOrigin,
+} from '@/lib/site/origins';
+
 import { cn } from '@/lib/utils';
 
 type PublicAccount = {
@@ -12,21 +27,31 @@ type PublicAccount = {
   initial: string;
 };
 
-type CachedAccount = PublicAccount | null | undefined;
+type CachedAccount =
+  | PublicAccount
+  | null
+  | undefined;
 
 let cachedAccount: CachedAccount;
 let inFlight: Promise<PublicAccount | null> | null = null;
 
-async function readAccount(origin: string, kind: PublicAccount['kind']) {
+async function readAccount(
+  origin: string,
+  kind: PublicAccount['kind']
+): Promise<PublicAccount | null> {
   try {
-    const response = await fetch(`${origin}/api/account/session`, {
-      method: 'GET',
-      credentials: 'include',
-      cache: 'no-store',
-      signal: AbortSignal.timeout(10000),
-    });
+    const response = await fetch(
+      `${origin}/api/account/session`,
+      {
+        method: 'GET',
+        credentials: 'include',
+        cache: 'no-store',
+        signal: AbortSignal.timeout(10000),
+      }
+    );
 
     if (!response.ok) return null;
+
     const data = await response.json();
 
     if (
@@ -38,10 +63,10 @@ async function readAccount(origin: string, kind: PublicAccount['kind']) {
       return {
         kind,
         initial: data.initial.charAt(0).toUpperCase(),
-      } satisfies PublicAccount;
+      };
     }
   } catch {
-    // Public navigation must still work if account status cannot be checked.
+    // Public navigation remains accessible.
   }
 
   return null;
@@ -49,9 +74,13 @@ async function readAccount(origin: string, kind: PublicAccount['kind']) {
 
 async function loadAccount(force = false) {
   const origins = browserAccountOrigins();
+
   if (!origins) return null;
 
-  if (!force && cachedAccount !== undefined) return cachedAccount;
+  if (!force && cachedAccount !== undefined) {
+    return cachedAccount;
+  }
+
   if (inFlight) return inFlight;
 
   inFlight = (async () => {
@@ -70,33 +99,42 @@ async function loadAccount(force = false) {
 }
 
 function dashboardHref(account: PublicAccount) {
-  const origins = browserAccountOrigins();
-  if (!origins) return account.kind === 'staff' ? '/admin' : '/client';
-  return account.kind === 'staff' ? origins.staff : origins.client;
+  return account.kind === 'staff'
+    ? staffOrigin()
+    : clientOrigin();
 }
 
 async function signOutAccount(account: PublicAccount) {
-  const origins = browserAccountOrigins();
-  if (!origins) {
-    window.location.assign(account.kind === 'staff' ? '/admin/login' : '/client/login');
-    return;
+  const origin =
+    account.kind === 'staff'
+      ? staffOrigin()
+      : clientOrigin();
+
+  const response = await fetch(
+    `${origin}/api/account/session`,
+    {
+      method: 'DELETE',
+      credentials: 'include',
+      signal: AbortSignal.timeout(10000),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      'Sign out could not be confirmed.'
+    );
   }
 
-  const origin = account.kind === 'staff' ? origins.staff : origins.client;
-  const response = await fetch(`${origin}/api/account/session`, {
-    method: 'DELETE',
-    credentials: 'include',
-    signal: AbortSignal.timeout(10000),
-  });
-
-  if (!response.ok) throw new Error('Sign out could not be confirmed.');
-
   cachedAccount = null;
-  window.dispatchEvent(new Event('bivi-account-changed'));
+
+  window.dispatchEvent(
+    new Event('bivi-account-changed')
+  );
 }
 
 function usePublicAccount() {
-  const [account, setAccount] = useState<CachedAccount>(cachedAccount);
+  const [account, setAccount] =
+    useState<CachedAccount>(cachedAccount);
 
   const refresh = useCallback(async (force = false) => {
     const next = await loadAccount(force);
@@ -106,19 +144,38 @@ function usePublicAccount() {
   useEffect(() => {
     void refresh();
 
-    const onFocus = () => void refresh(true);
-    const onChanged = () => setAccount(cachedAccount);
+    const onFocus = () => {
+      void refresh(true);
+    };
+
+    const onChanged = () => {
+      setAccount(cachedAccount);
+    };
 
     window.addEventListener('focus', onFocus);
-    window.addEventListener('bivi-account-changed', onChanged);
+    window.addEventListener(
+      'bivi-account-changed',
+      onChanged
+    );
 
     return () => {
       window.removeEventListener('focus', onFocus);
-      window.removeEventListener('bivi-account-changed', onChanged);
+      window.removeEventListener(
+        'bivi-account-changed',
+        onChanged
+      );
     };
   }, [refresh]);
 
   return account;
+}
+
+interface NavbarAccountControlsProps {
+  surfaceActive: boolean;
+  onSignup: () => void;
+  mobile?: boolean;
+  mobileMode?: 'combined' | 'account' | 'signup';
+  align?: 'left' | 'right';
 }
 
 export function NavbarAccountControls({
@@ -127,30 +184,38 @@ export function NavbarAccountControls({
   mobile = false,
   mobileMode = 'combined',
   align = 'right',
-}: {
-  surfaceActive: boolean;
-  onSignup: () => void;
-  mobile?: boolean;
-  mobileMode?: 'combined' | 'account' | 'signup';
-  align?: 'left' | 'right';
-}) {
+}: NavbarAccountControlsProps) {
   const account = usePublicAccount();
+
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+
   const rootRef = useRef<HTMLDivElement>(null);
+
+  const loginHref = `${clientOrigin()}/login`;
 
   useEffect(() => {
     if (!open) return;
 
     const close = (event: MouseEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+      if (
+        !rootRef.current?.contains(
+          event.target as Node
+        )
+      ) {
+        setOpen(false);
+      }
     };
+
     const escape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
+      if (event.key === 'Escape') {
+        setOpen(false);
+      }
     };
 
     document.addEventListener('mousedown', close);
     window.addEventListener('keydown', escape);
+
     return () => {
       document.removeEventListener('mousedown', close);
       window.removeEventListener('keydown', escape);
@@ -158,19 +223,26 @@ export function NavbarAccountControls({
   }, [open]);
 
   if (!account) {
-    const showSignup = !mobile || mobileMode === 'combined' || mobileMode === 'signup';
-    const showAccount = !mobile || mobileMode === 'combined' || mobileMode === 'account';
+    const showSignup =
+      !mobile ||
+      mobileMode === 'combined' ||
+      mobileMode === 'signup';
+
+    const showAccount =
+      !mobile ||
+      mobileMode === 'combined' ||
+      mobileMode === 'account';
 
     return (
       <>
         {showAccount && !mobile && (
           <a
-            href="/client/login"
+            href={loginHref}
             className={cn(
-              'inline-flex h-10 items-center justify-center rounded-[12px] px-4 font-mono text-[11px] font-semibold transition-colors',
+              'inline-flex h-10 items-center justify-center rounded-[16px] px-4 font-mono text-[13px] font-semibold transition-colors',
               surfaceActive
                 ? 'text-foreground hover:bg-muted'
-                : 'text-white hover:bg-white/[0.08]'
+                : 'text-white hover:bg-white/10'
             )}
           >
             Log in
@@ -183,10 +255,11 @@ export function NavbarAccountControls({
             onClick={onSignup}
             className={cn(
               'inline-flex h-9 items-center justify-center rounded-[11px] px-3 font-mono text-[10px] font-semibold transition-colors',
-              !mobile && 'h-10 rounded-[12px] px-4 text-[11px]',
+              !mobile &&
+                'h-10 rounded-[16px] px-4 text-[13px]',
               surfaceActive
                 ? 'bg-black text-white dark:bg-white dark:text-black'
-                : 'bg-white text-black'
+                : 'bg-[white] text-black'
             )}
           >
             Sign up
@@ -195,23 +268,28 @@ export function NavbarAccountControls({
 
         {showAccount && mobile && (
           <a
-            href="/client/login"
-            aria-label="Account"
+            href={loginHref}
+            aria-label="Log in to Bivi"
             className={cn(
               'flex h-10 w-10 items-center justify-center rounded-full transition-colors',
               surfaceActive
-                ? 'text-black hover:bg-black/[0.05]'
-                : 'text-white hover:bg-white/[0.08]'
+                ? 'text-black hover:bg-black/10'
+                : 'text-white hover:bg-white/10'
             )}
           >
-            <UserRound size={20} strokeWidth={2} />
+            <UserRound
+              size={20}
+              strokeWidth={2}
+            />
           </a>
         )}
       </>
     );
   }
 
-  if (mobile && mobileMode === 'signup') return null;
+  if (mobile && mobileMode === 'signup') {
+    return null;
+  }
 
   return (
     <div ref={rootRef} className="relative">
@@ -225,44 +303,86 @@ export function NavbarAccountControls({
           mobile ? 'w-10' : 'pl-1 pr-2',
           surfaceActive
             ? 'text-foreground hover:bg-muted'
-            : 'text-white hover:bg-white/[0.08]'
+            : 'text-white hover:bg-white/10'
         )}
       >
         <span
           className={cn(
             'flex h-8 w-8 items-center justify-center rounded-full font-mono text-[12px] font-semibold',
-            surfaceActive ? 'bg-foreground text-background' : 'bg-white text-black'
+            surfaceActive
+              ? 'bg-foreground text-background'
+              : 'bg-white text-black'
           )}
         >
           {account.initial}
         </span>
-        {!mobile && <ChevronDown size={13} strokeWidth={2} />}
+
+        {!mobile && (
+          <ChevronDown
+            size={13}
+            strokeWidth={2}
+          />
+        )}
       </button>
 
       {open && (
-        <div className={cn(
-        'absolute top-[calc(100%+10px)] z-[140] w-52',
-        align === 'left' ? 'left-0' : 'right-0'
-      ) + ' overflow-hidden rounded-[16px] border border-border bg-background p-1.5 text-foreground shadow-xl'}>
+        <div
+          className={cn(
+            'absolute top-[calc(100%+10px)] z-[140] w-52 overflow-hidden rounded-[16px] border border-border bg-background p-1.5 text-foreground shadow-xl',
+            align === 'left'
+              ? 'left-0'
+              : 'right-0'
+          )}
+        >
           <a
             href={dashboardHref(account)}
-            className="flex items-center rounded-xl px-3 py-2.5 text-sm font-medium transition-colors hover:bg-muted"
+            className="
+              flex
+              items-center
+              rounded-xl
+              px-3
+              py-2.5
+              text-sm
+              font-medium
+              transition-colors
+              hover:bg-muted
+            "
           >
             Go to dashboard
           </a>
+
           <button
             type="button"
             disabled={busy}
             onClick={async () => {
               setBusy(true);
+
               try {
                 await signOutAccount(account);
                 setOpen(false);
+              } catch {
+                window.alert(
+                  'Could not sign out. Please try again.'
+                );
               } finally {
                 setBusy(false);
               }
             }}
-            className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50"
+            className="
+              flex
+              w-full
+              items-center
+              gap-2
+              rounded-xl
+              px-3
+              py-2.5
+              text-left
+              text-sm
+              font-medium
+              transition-colors
+              hover:bg-muted
+              disabled:opacity-50
+            "
           >
             <LogOut size={15} />
             {busy ? 'Logging out…' : 'Log out'}

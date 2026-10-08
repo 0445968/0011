@@ -688,12 +688,12 @@ export function ClientLogin({
                 h-11
                 w-full
                 rounded-[12px]
-                bg-white
+                bg-[#BBFF1B]
                 font-mono
                 text-[13px]
                 font-semibold
                 text-black
-                hover:bg-white/90
+                hover:bg-[#BBFF1B]/90
               "
             >
               {busy
