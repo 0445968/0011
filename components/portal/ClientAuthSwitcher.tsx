@@ -47,11 +47,11 @@ export function ClientAuthSwitcher({
             href={`${publicOrigin()}/get-started`}
             className="
               font-semibold
-              text-white
-              underline
-              underline-offset-4
+              text-[#BBFF1B]/50
               transition-colors
-              hover:text-white/70
+              hover:underline
+              hover:underline-offset-4
+              hover:text-[#BBFF1B]/80
             "
           >
             Start a project

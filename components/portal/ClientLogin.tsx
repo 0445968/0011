@@ -564,7 +564,7 @@ const initializeGoogle = useCallback(() => {
                 placeholder="you@company.com"
                 className="
                   h-11
-                  rounded-[12px]
+                  rounded-[16px]
                   border-white/[0.08]
                   bg-white/[0.045]
                   px-3.5
@@ -601,7 +601,7 @@ const initializeGoogle = useCallback(() => {
                 required
                 className="
                   h-11
-                  rounded-[12px]
+                  rounded-[16px]
                   border-white/[0.08]
                   bg-white/[0.045]
                   px-3.5
@@ -619,7 +619,7 @@ const initializeGoogle = useCallback(() => {
               className="
                 h-11
                 w-full
-                rounded-[12px]
+                rounded-[16px]
                 bg-[#BBFF1B]
                 font-mono
                 text-[13px]
