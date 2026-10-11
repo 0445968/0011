@@ -5,7 +5,6 @@ import { X } from 'lucide-react';
 import { AppearanceSection } from './AppearanceSection';
 import { LanguageSection } from './LanguageSection';
 import { NewsletterSection } from './NewsletterSection';
-import { SupportSection } from './SupportSection';
 import { AboutSection } from './AboutSection';
 
 interface SettingsPanelProps {
@@ -91,8 +90,7 @@ export function SettingsPanel({
           "
         >
           Personalize the website, manage your preferences,
-          stay informed about new templates, and send us
-          feedback.
+          and stay informed about new templates.
         </p>
       </div>
 
@@ -110,8 +108,6 @@ export function SettingsPanel({
         <LanguageSection />
 
         <NewsletterSection />
-
-        <SupportSection />
       </div>
 
       {/* Footer */}

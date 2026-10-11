@@ -118,7 +118,7 @@ export default function SearchPage() {
               Find anything.
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
-              Search across projects, templates, articles, resources, and services. Filter by type, topic, or tag to narrow results.
+              Search across projects, templates, articles, and services. Filter by type, topic, or tag to narrow results.
             </p>
           </div>
         </Reveal>

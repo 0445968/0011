@@ -18,6 +18,7 @@ Current priorities are completing the Release 3 client workflow. Resources and H
 | Project brief and client tasks | Implemented; activation pending | Versioned brief approval, lifecycle phase, service-seeded tasks, client/Bivi ownership, dependencies, blockers and client next actions |
 | Approvals, change requests, QA and handoff | Implemented; activation pending | Deliverable-specific version approvals and revision rounds, structured scope changes, QA gates, final release, handoff, support terms and closeout |
 | Essential email and deadline communication | Implemented; activation pending | Inquiry acknowledgements, invitations, action/review/release notices, durable retries and bounded deadline reminders |
+| Launch cleanup and verification | Implemented; verification pending | Temporary noindex for Help, Resources, Guides and Inspiration, simplified public discovery, a separate three-domain check and full workflow dry-run checklist |
 
 Apply migrations in order. A Qualified inquiry remains a lead until the accepted scope, agreement/deposit readiness and onboarding gates are satisfied.
 
@@ -29,4 +30,4 @@ Migration 013 activation: apply `202610110013_project_approvals_changes_qa_hando
 
 Migration 014 activation: apply `202610110014_essential_email_deadlines.sql` after migration 013 and follow `ESSENTIAL_EMAIL_DEADLINES_SETUP.md`. Transactional messages are queued durably, workflow actions attempt immediate delivery, and a secured daily job handles retries plus bounded deadline reminders. The public `/login` entry point is regression-checked to redirect to `app.bivi.pro/login`.
 
-Release 3 workflow implementation is now complete. Remaining launch work is activation and end-to-end verification of migrations 011–014, final launch-service catalog decisions, public Resources/Helpdesk cleanup, and the full inquiry-to-handoff production dry run. Deeper estimates/recurring-service planning, billing and broader integrations remain later roadmap work.
+Release 3 workflow implementation is now complete. Launch cleanup keeps unfinished Help, Resources, Guides and Inspiration routes accessible but temporarily noindexed; the existing deployment verifier remains unchanged and a separate three-domain launch verifier is available. Remaining launch work is activation and end-to-end verification of migrations 011–014, final launch-service catalog decisions, and the full inquiry-to-handoff production dry run. Deeper estimates/recurring-service planning, billing and broader integrations remain later roadmap work.

@@ -369,7 +369,7 @@ export function NavbarUtilityPanel({
                   event.target.value
                 )
               }
-              placeholder="Search projects, services, resources..."
+              placeholder="Search services, projects, articles..."
               aria-label="Search"
               enterKeyHint="search"
               className="

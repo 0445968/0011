@@ -36,7 +36,6 @@ export const searchTypeOrder: SearchResultType[] = [
   'project',
   'template',
   'blog',
-  'resource',
 ];
 
 function buildSearchIndex(): SearchResult[] {

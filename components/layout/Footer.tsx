@@ -103,16 +103,6 @@ const footerGroups: FooterGroup[] = [
         href: '/demos',
         icon: '/images/footer/tools/demos.png',
       },
-      {
-        labelKey: 'footer.guides',
-        href: '/guides',
-        icon: '/images/footer/tools/guides.png',
-      },
-      {
-        labelKey: 'footer.inspiration',
-        href: '/inspiration',
-        icon: '/images/footer/tools/inspiration.png',
-      },
     ],
   },
 ];
