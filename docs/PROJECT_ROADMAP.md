@@ -15,12 +15,14 @@ Current priorities are completing the Release 3 client workflow. Resources and H
 | Production rollout | Prior workflow verified by owner, 2026-10-07 | Repeatable checks and owner-reported live verification; enhancements need separate verification |
 | Project discussion and activity | Implemented; activation pending | Internal task/project comments, author edits/removal and a unified staff timeline |
 | Account recovery and invitations | Implemented; activation pending | Staff access assignments, private invitation links and client password recovery |
-| Project brief and client tasks | Next | Structured brief review, lifecycle phase, client/Bivi task ownership, dependencies and next-action dashboard |
-| Approvals, change requests, QA and handoff | Planned | Version-linked approvals, revision rounds, scope changes, QA, final release, support and closeout |
+| Project brief and client tasks | Implemented; activation pending | Versioned brief approval, lifecycle phase, service-seeded tasks, client/Bivi ownership, dependencies, blockers and client next actions |
+| Approvals, change requests, QA and handoff | Next | Version-linked approvals, revision rounds, scope changes, QA, final release, support and closeout |
 | Essential email and deadline communication | Planned | Onboarding/action/review/delivery notices and bounded reminders |
 
 Apply migrations in order. A Qualified inquiry remains a lead until the accepted scope, agreement/deposit readiness and onboarding gates are satisfied.
 
 Migration 011 activation: apply `202610100011_client_profile_personalized_onboarding.sql` after migration 010 and follow `PERSONALIZED_ONBOARDING_SETUP.md`. It allows client workspace access after the accepted scope and agreement/deposit gate are ready, before project activation. Staff still owns final onboarding completion and project activation.
 
-The next Release 3 batch is the project brief and client-task model. Notifications are intentionally later so alerts are attached to stable actions rather than temporary workflow states.
+Migration 012 activation: apply `202610110012_project_brief_client_tasks.sql` after migration 011 and follow `PROJECT_BRIEF_CLIENT_TASKS_SETUP.md`. New activations seed the project brief and service tasks from the accepted proposal. Existing projects are backfilled conservatively: their existing tasks remain private to Bivi until staff explicitly marks a task as client-owned.
+
+The next Release 3 batch is approvals, change requests, QA and handoff. Notifications remain later so alerts are attached to stable workflow actions rather than temporary implementation states.

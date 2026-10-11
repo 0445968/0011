@@ -35,8 +35,8 @@ export default async function ClientProjectsPage({
         </h1>
 
         <p className="mt-4 text-sm text-muted-foreground">
-          Onboarding actions, published project updates, reviews
-          and deliveries from Bivi.
+          Onboarding actions, project tasks, briefs, reviews and
+          deliveries from Bivi.
         </p>
       </header>
 
@@ -51,24 +51,20 @@ export default async function ClientProjectsPage({
               const completed =
                 workspace.onboardingState === 'complete';
 
-              const status =
-                workspace.onboardingState === 'not_started'
+              const status = workspace.projectActive
+                ? 'Project active'
+                : workspace.onboardingState === 'not_started'
                   ? 'Preparing onboarding'
                   : completed
                     ? 'Onboarding complete'
                     : 'Onboarding in progress';
 
-              const description =
-                workspace.clientActions > 0
-                  ? `${
-                      workspace.clientActions
-                    } ${
-                      workspace.clientActions === 1
-                        ? 'item needs'
-                        : 'items need'
-                    } your attention.`
+              const description = workspace.projectActive
+                ? 'Open the project workspace to review the brief, see your assigned tasks and check what needs your attention next.'
+                : workspace.clientActions > 0
+                  ? `${workspace.clientActions} ${workspace.clientActions === 1 ? 'item needs' : 'items need'} your attention.`
                   : completed
-                    ? 'View your completed onboarding information and submitted files.'
+                    ? 'Your onboarding is complete. Bivi is preparing the project workspace.'
                     : workspace.onboardingState === 'not_started'
                       ? 'Bivi is preparing your onboarding requirements.'
                       : 'Your submitted items are with Bivi for review.';
@@ -90,14 +86,22 @@ export default async function ClientProjectsPage({
                     {description}
                   </p>
 
-                  <Link
-                    href={`/onboarding/${workspace.requestId}`}
-                    className="mt-5 inline-block text-sm font-medium underline underline-offset-4"
-                  >
-                    {completed
-                      ? 'View onboarding'
-                      : 'Open onboarding'}
-                  </Link>
+                  <div className="mt-5 flex flex-wrap gap-4 text-sm font-medium">
+                    <Link
+                      href={`/onboarding/${workspace.requestId}`}
+                      className="underline underline-offset-4"
+                    >
+                      {completed ? 'View onboarding' : 'Open onboarding'}
+                    </Link>
+                    {workspace.projectActive && (
+                      <Link
+                        href={`/projects/${workspace.requestId}`}
+                        className="underline underline-offset-4"
+                      >
+                        Open project
+                      </Link>
+                    )}
+                  </div>
                 </article>
               );
             })}
