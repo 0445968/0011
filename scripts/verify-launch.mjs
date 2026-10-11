@@ -60,14 +60,14 @@ export function launchCases(origins) {
 
     { label: 'Client login', origin: clientOrigin, path: '/login', status: 200, html: true, login: true },
     { label: 'Client recovery', origin: clientOrigin, path: '/recover', status: 200, html: true },
-    { label: 'Client dashboard requires authentication', origin: clientOrigin, path: '/', status: 307, redirectOrigin: clientOrigin, redirectPath: '/login' },
-    { label: 'Client project requires authentication', origin: clientOrigin, path: `/projects/${fixtureId}`, status: 307, redirectOrigin: clientOrigin, redirectPath: '/login' },
+    { label: 'Client dashboard requires authentication', origin: clientOrigin, path: '/', status: 307, redirectOrigin: clientOrigin, redirectPath: '/client/login' },
+    { label: 'Client project requires authentication', origin: clientOrigin, path: `/projects/${fixtureId}`, status: 307, redirectOrigin: clientOrigin, redirectPath: '/client/login' },
     redirectCase('Client surface rejects staff paths', clientOrigin, '/admin', staffOrigin, '/'),
     redirectCase('Client surface returns marketing pages to public site', clientOrigin, '/about', publicOrigin, '/about'),
 
     { label: 'Staff login', origin: staffOrigin, path: '/login', status: 200, html: true, login: true },
-    { label: 'Staff dashboard requires authentication', origin: staffOrigin, path: '/', status: 307, redirectOrigin: staffOrigin, redirectPath: '/login' },
-    { label: 'Staff projects require authentication', origin: staffOrigin, path: '/projects', status: 307, redirectOrigin: staffOrigin, redirectPath: '/login' },
+    { label: 'Staff dashboard requires authentication', origin: staffOrigin, path: '/', status: 307, redirectOrigin: staffOrigin, redirectPath: '/admin/login' },
+    { label: 'Staff projects require authentication', origin: staffOrigin, path: '/projects', status: 307, redirectOrigin: staffOrigin, redirectPath: '/admin/login' },
     redirectCase('Staff surface rejects client paths', staffOrigin, '/client', clientOrigin, '/'),
     redirectCase('Staff surface returns marketing pages to public site', staffOrigin, '/about', publicOrigin, '/about'),
 
