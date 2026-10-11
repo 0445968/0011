@@ -5,6 +5,7 @@ import { adminReply, isSameOrigin, readAdminJson } from '@/lib/admin/http';
 import { getReadiness } from '@/lib/onboarding/data';
 import { listProposals } from '@/lib/proposals/data';
 import { getProject } from '@/lib/projects/data';
+import { dispatchProjectCommunications, invitationEventKey, queueDirectProjectCommunication } from '@/lib/communications/email';
 import { accessOrigin, privilegedClient, reserveAuth } from '@/lib/access/server';
 
 const command = z.discriminatedUnion('action', [
@@ -47,6 +48,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
     let assignment: object;
     let link: string | undefined;
+    let becameActive = false;
+    if (parsed.data.action === 'assign' && parsed.data.active) {
+      const previous = await access.client.from('project_clients').select('active').eq('request_id', params.id).eq('user_id', parsed.data.userId).maybeSingle();
+      becameActive = !previous.error && previous.data?.active !== true;
+    }
     if (parsed.data.action === 'invite') {
       const origin = accessOrigin();
       if (!await reserveAuth('invite', parsed.data.email)) return adminReply({ error: 'Invitation limit reached. Try again later.' }, 429);
@@ -79,6 +85,28 @@ export async function POST(request: Request, { params }: { params: { id: string 
       const status = result === 'conflict' || result === 'gate_closed' ? 409 : result === 'not_found' ? 404 : 503;
       return adminReply({ error: message, ...(createdUserId ? { userId: createdUserId } : {}) }, status);
     }
+    if (link && createdUserId) {
+      await queueDirectProjectCommunication({
+        requestId: params.id,
+        userId: createdUserId,
+        kind: 'workspace_invitation',
+        eventKey: invitationEventKey(link),
+        subject: 'Your Bivi client workspace is ready',
+        body: 'You have been invited to your Bivi client workspace. Use this secure link to finish setting up your account and open onboarding.',
+        actionPath: link,
+      });
+    } else if (parsed.data.action === 'assign' && parsed.data.active && becameActive) {
+      await queueDirectProjectCommunication({
+        requestId: params.id,
+        userId: parsed.data.userId,
+        kind: 'workspace_access',
+        eventKey: `access-r${parsed.data.expectedRevision + 1}`,
+        subject: 'Your Bivi client workspace is available',
+        body: 'Your Bivi client workspace access is active. Open the workspace to review onboarding or project actions.',
+        actionPath: project ? `/projects/${params.id}` : `/onboarding/${params.id}`,
+      });
+    }
+    await dispatchProjectCommunications({ requestId: params.id, limit: 10 });
     return adminReply({ saved: true, ...(link ? { link, userId: createdUserId } : {}) });
   } catch {
     return adminReply({ error: 'Access could not be confirmed. Reload and check Auth before retrying.', ...(createdUserId ? { userId: createdUserId } : {}) }, 503);

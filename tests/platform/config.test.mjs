@@ -18,6 +18,9 @@ const valid = {
   INQUIRY_APP_URL: 'https://site.example.invalid',
   NEXT_PUBLIC_BIVI_APP_URL: 'https://app.example.invalid',
   NEXT_PUBLIC_BIVI_STAFF_URL: 'https://staff.example.invalid',
+  RESEND_API_KEY: 're_test_fixture',
+  BIVI_EMAIL_FROM: 'Bivi <hello@example.invalid>',
+  CRON_SECRET: 'test-only-secret-123456',
 };
 
 function run(env, args = []) {

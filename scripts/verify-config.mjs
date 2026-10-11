@@ -14,6 +14,9 @@ const service=process.env.SUPABASE_SERVICE_ROLE_KEY;
 const publicOrigin=process.env.INQUIRY_APP_URL;
 const clientOrigin=process.env.NEXT_PUBLIC_BIVI_APP_URL;
 const staffOrigin=process.env.NEXT_PUBLIC_BIVI_STAFF_URL;
+const resendKey=process.env.RESEND_API_KEY;
+const emailFrom=process.env.BIVI_EMAIL_FROM;
+const cronSecret=process.env.CRON_SECRET;
 check('Supabase URL is a valid HTTPS origin (or explicit local test origin)',validOrigin(url));
 check('A project public key is configured',Boolean(anon?.trim()));
 check('Server-only inquiry service key is configured',Boolean(service?.trim()));
@@ -21,6 +24,9 @@ check('Public and privileged keys are different',Boolean(anon&&service&&anon!==s
 check('Public website origin is configured and valid',validOrigin(publicOrigin));
 check('Client app origin is configured and valid',validOrigin(clientOrigin));
 check('Staff app origin is configured and valid',validOrigin(staffOrigin));
+check('Resend API key is configured',Boolean(resendKey?.trim()));
+check('Transactional email sender is configured',Boolean(emailFrom?.trim()&&emailFrom.includes('@')));
+check('Cron secret is configured with at least 16 characters',Boolean(cronSecret?.trim()&&cronSecret.trim().length>=16));
 if(validOrigin(publicOrigin)&&validOrigin(clientOrigin)&&validOrigin(staffOrigin)){
  const hosts=[publicOrigin,clientOrigin,staffOrigin].map(value=>new URL(value).host);
  check('Public, client and staff hosts are distinct',new Set(hosts).size===3);

@@ -17,7 +17,7 @@ Current priorities are completing the Release 3 client workflow. Resources and H
 | Account recovery and invitations | Implemented; activation pending | Staff access assignments, private invitation links and client password recovery |
 | Project brief and client tasks | Implemented; activation pending | Versioned brief approval, lifecycle phase, service-seeded tasks, client/Bivi ownership, dependencies, blockers and client next actions |
 | Approvals, change requests, QA and handoff | Implemented; activation pending | Deliverable-specific version approvals and revision rounds, structured scope changes, QA gates, final release, handoff, support terms and closeout |
-| Essential email and deadline communication | Next | Onboarding/action/review/delivery notices and bounded reminders |
+| Essential email and deadline communication | Implemented; activation pending | Inquiry acknowledgements, invitations, action/review/release notices, durable retries and bounded deadline reminders |
 
 Apply migrations in order. A Qualified inquiry remains a lead until the accepted scope, agreement/deposit readiness and onboarding gates are satisfied.
 
@@ -27,4 +27,6 @@ Migration 012 activation: apply `202610110012_project_brief_client_tasks.sql` af
 
 Migration 013 activation: apply `202610110013_project_approvals_changes_qa_handoff.sql` after migration 012 and follow `APPROVALS_CHANGES_QA_HANDOFF_SETUP.md`. Deliverable approvals are version-specific, scope changes have an explicit client decision trail, Delivery is gated by QA/approvals/resolved changes, and project completion is gated by release, receipt confirmation, handoff and support closeout.
 
-The next Release 3 batch is essential email and deadline communication. Alerts now have stable workflow events to attach to.
+Migration 014 activation: apply `202610110014_essential_email_deadlines.sql` after migration 013 and follow `ESSENTIAL_EMAIL_DEADLINES_SETUP.md`. Transactional messages are queued durably, workflow actions attempt immediate delivery, and a secured daily job handles retries plus bounded deadline reminders. The public `/login` entry point is regression-checked to redirect to `app.bivi.pro/login`.
+
+Release 3 workflow implementation is now complete. Remaining launch work is activation and end-to-end verification of migrations 011–014, final launch-service catalog decisions, public Resources/Helpdesk cleanup, and the full inquiry-to-handoff production dry run. Deeper estimates/recurring-service planning, billing and broader integrations remain later roadmap work.

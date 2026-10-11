@@ -4,8 +4,9 @@ const fixtureId='00000000-0000-4000-8000-000000000001';
 const fileId='00000000-0000-4000-8000-000000000002';
 const foreignOrigin='https://bivi-verification.invalid';
 
-export function deploymentCases(){
+export function deploymentCases(origin=''){
   const cases=[];
+  try{if(new URL(origin).hostname==='bivi.pro')cases.push({label:'Public /login redirects to app.bivi.pro/login',path:'/login?source=verify',status:307,redirect:'/login',redirectOrigin:'https://app.bivi.pro',redirectSearch:'?source=verify'});}catch{}
   for(const path of ['/get-started','/admin/login','/client/login','/client/recover','/client/confirm','/client/password']){
     cases.push({label:`Public page ${path}`,path,status:200,html:true,login:path.includes('login')});
   }
@@ -48,7 +49,7 @@ export function deploymentCases(){
 
 export async function verifyDeployment(origin,{fetchImpl=fetch,log=console.log}={}){
   const results=[];
-  for(const entry of deploymentCases()){
+  for(const entry of deploymentCases(origin)){
     let reason='';
     try{
       const response=await fetchImpl(new URL(entry.path,origin),{
@@ -61,7 +62,8 @@ export async function verifyDeployment(origin,{fetchImpl=fetch,log=console.log}=
       else if(entry.redirect){
         const location=response.headers.get('location');
         const target=location?new URL(location,origin):null;
-        if(!target||target.origin!==origin||target.pathname!==entry.redirect)reason='expected same-origin sign-in redirect';
+        const expectedOrigin=entry.redirectOrigin||origin;
+        if(!target||target.origin!==expectedOrigin||target.pathname!==entry.redirect||(entry.redirectSearch&&target.search!==entry.redirectSearch))reason=entry.redirectOrigin?'expected canonical cross-subdomain redirect':'expected same-origin sign-in redirect';
       }
       else if(entry.html){
         if(!response.headers.get('content-type')?.includes('text/html'))reason='expected HTML';

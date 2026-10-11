@@ -76,7 +76,9 @@ export function middleware(request: NextRequest) {
     }
 
     if (pathname === '/login') {
-      return NextResponse.redirect(withSearch(clientOrigin(), '/login', request));
+      // Keep the public marketing domain as an account entry point while the
+      // authenticated client experience stays isolated on app.bivi.pro.
+      return NextResponse.redirect(withSearch(clientOrigin(), '/login', request), 307);
     }
 
     if (pathname === '/client' || pathname.startsWith('/client/')) {

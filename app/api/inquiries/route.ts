@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { inquirySchema } from '@/lib/intake/schema';
 import { getServiceBlueprint } from '@/data/serviceCatalog';
+import { dispatchProjectCommunications } from '@/lib/communications/email';
 
 export const runtime = 'nodejs';
 const MAX_BODY_BYTES = 40 * 1024;
@@ -79,6 +80,7 @@ export async function POST(request: Request) {
     if (data === 'rate_limited') return reply({ error: 'Too many project requests have been sent recently. Please try again later or email hello@bivi.pro.' }, 429, { 'Retry-After': '3600' });
     if (data === 'conflict') return reply({ error: 'This submission reference is already in use. Edit your request and submit it again.' }, 409);
     if (data !== 'created' && data !== 'duplicate') return reply({ error: 'We could not confirm your request. Please try again.' }, 503);
+    if (data === 'created') await dispatchProjectCommunications({ requestId, limit: 5 });
     return reply({ reference: requestId }, data === 'created' ? 201 : 200);
   } catch {
     return reply({ error: 'We could not confirm your request. Please retry; the same submission will not be saved twice.' }, 503);

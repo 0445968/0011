@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { getStaffAccess } from '@/lib/admin/auth';
 import { adminReply, isSameOrigin, readAdminJson } from '@/lib/admin/http';
+import { dispatchProjectCommunications } from '@/lib/communications/email';
 import { getInquiry } from '@/lib/admin/inquiries';
 import { getOnboardingItems } from '@/lib/onboarding/item-data';
 import { listProposals } from '@/lib/proposals/data';
@@ -66,6 +67,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       return adminReply({ error: message }, status);
     }
     if (data?.result !== 'saved') return adminReply({ error: 'The result could not be confirmed. Reload before retrying.' }, 503);
+    await dispatchProjectCommunications({ requestId: params.id, limit: 10 });
     return adminReply({ revision: data.revision });
   } catch {
     return adminReply({ error: 'The result could not be confirmed. Reload before retrying.' }, 503);
