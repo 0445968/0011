@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { z } from 'zod';
 
 import { ProjectBriefEditor } from '@/components/admin/ProjectBriefEditor';
+import { ProjectDeliveryControls } from '@/components/admin/ProjectDeliveryControls';
 import { ProjectLifecycleControls } from '@/components/admin/ProjectLifecycleControls';
 import { ProjectWorkspace } from '@/components/admin/ProjectWorkspace';
 import { requireStaff } from '@/lib/admin/auth';
@@ -12,6 +13,7 @@ import { getReadiness } from '@/lib/onboarding/data';
 import { listProposals } from '@/lib/proposals/data';
 import { getProjectBrief } from '@/lib/projects/brief-data';
 import { getProject } from '@/lib/projects/data';
+import { getProjectDelivery } from '@/lib/projects/delivery-data';
 import { getProjectLifecycle } from '@/lib/projects/lifecycle-data';
 
 export default async function ProjectPage({ params }: { params: { id: string } }) {
@@ -39,12 +41,13 @@ export default async function ProjectPage({ params }: { params: { id: string } }
     onboarding.record.completed_readiness_revision === gate.record.revision &&
     (!data.record || data.record.proposal_version === accepted?.version);
 
-  const [lifecycle, brief] = data.record
+  const [lifecycle, brief, delivery] = data.record
     ? await Promise.all([
         getProjectLifecycle(client, params.id),
         getProjectBrief(client, params.id),
+        getProjectDelivery(client, params.id),
       ])
-    : [null, null];
+    : [null, null, null];
 
   return (
     <>
@@ -77,6 +80,17 @@ export default async function ProjectPage({ params }: { params: { id: string } }
             events={lifecycle.events}
           />
           <ProjectBriefEditor id={params.id} draft={brief.draft} versions={brief.versions} />
+          {delivery && (
+            <ProjectDeliveryControls
+              id={params.id}
+              deliverables={delivery.deliverables}
+              versions={delivery.versions}
+              changes={delivery.changes}
+              qaChecks={delivery.qaChecks}
+              handoffItems={delivery.handoffItems}
+              closeout={delivery.closeout}
+            />
+          )}
         </>
       )}
 

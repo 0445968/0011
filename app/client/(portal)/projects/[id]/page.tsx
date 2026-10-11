@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { z } from 'zod';
 
 import { ProjectFiles } from '@/components/files/ProjectFiles';
+import { ClientDeliveryControls } from '@/components/portal/ClientDeliveryControls';
 import { ClientProjectBrief } from '@/components/portal/ClientProjectBrief';
 import { ClientProjectTasks } from '@/components/portal/ClientProjectTasks';
 import { ClientReview } from '@/components/portal/ClientReview';
@@ -11,6 +12,7 @@ import { projectFiles } from '@/lib/files/data';
 import { requireClient } from '@/lib/portal/auth';
 import { projectFeedback, projectPublications } from '@/lib/portal/data';
 import { getClientBriefVersions } from '@/lib/projects/brief-data';
+import { getProjectDelivery } from '@/lib/projects/delivery-data';
 import { clientProjectWork } from '@/lib/projects/lifecycle-data';
 
 export default async function ClientProjectPage({ params }: { params: { id: string } }) {
@@ -20,12 +22,13 @@ export default async function ClientProjectPage({ params }: { params: { id: stri
   const work = await clientProjectWork(client, params.id);
   if (!work) notFound();
 
-  const [updatesRaw, files, feedback, briefVersions, review] = await Promise.all([
+  const [updatesRaw, files, feedback, briefVersions, review, delivery] = await Promise.all([
     projectPublications(client, params.id),
     projectFiles(client, params.id),
     projectFeedback(client, params.id),
     getClientBriefVersions(client, params.id),
     client.rpc('can_review_project', { p_id: params.id }),
+    getProjectDelivery(client, params.id),
   ]);
   if (review.error) throw new Error('Review access could not be checked.');
 
@@ -48,6 +51,15 @@ export default async function ClientProjectPage({ params }: { params: { id: stri
       <div className="mt-8 space-y-7">
         <ClientProjectTasks id={params.id} work={work} />
         <ClientProjectBrief id={params.id} version={latestBrief} canReview={canReview} />
+        <ClientDeliveryControls
+          id={params.id}
+          deliverables={delivery.deliverables}
+          versions={delivery.versions}
+          changes={delivery.changes}
+          handoffItems={delivery.handoffItems}
+          closeout={delivery.closeout}
+          canReview={canReview}
+        />
 
         <section className="rounded-[22px] border border-border bg-card p-6 sm:p-7">
           <p className="font-mono text-xs uppercase tracking-[0.14em] text-muted-foreground">Project updates</p>

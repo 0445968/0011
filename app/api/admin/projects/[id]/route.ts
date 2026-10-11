@@ -48,7 +48,10 @@ export async function POST(request: Request, { params }: { params: { id: string 
       p_request_id: params.id,
       p_command: command,
     });
-    if (error) return adminReply({ error: error.code === '22023' ? 'Check task references, dates and required fields.' : 'Project could not be saved.' }, error.code === '42501' ? 403 : error.code === '22023' ? 400 : 503);
+    if (error) {
+      if (error.code === '23514') return adminReply({ error: error.message || 'Complete handoff and closeout before completing the project.' }, 409);
+      return adminReply({ error: error.code === '22023' ? 'Check task references, dates and required fields.' : 'Project could not be saved.' }, error.code === '42501' ? 403 : error.code === '22023' ? 400 : 503);
+    }
 
     const failures: Record<string, [number, string]> = {
       conflict: [409, 'This project changed. Reload before continuing.'],

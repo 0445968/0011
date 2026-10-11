@@ -27,7 +27,10 @@ export async function POST(request: Request, { params }: { params: { id: string 
       p_command: parsed.data,
     });
 
-    if (error) return adminReply({ error: error.code === '22023' ? 'Check task references and lifecycle fields.' : 'The lifecycle update could not be saved.' }, error.code === '42501' ? 403 : error.code === '22023' ? 400 : 503);
+    if (error) {
+      if (error.code === '23514') return adminReply({ error: error.message || 'Complete delivery gates before advancing the lifecycle.' }, 409);
+      return adminReply({ error: error.code === '22023' ? 'Check task references and lifecycle fields.' : 'The lifecycle update could not be saved.' }, error.code === '42501' ? 403 : error.code === '22023' ? 400 : 503);
+    }
 
     const failures: Record<string, [number, string]> = {
       conflict: [409, 'This lifecycle record changed. Reload before continuing.'],
