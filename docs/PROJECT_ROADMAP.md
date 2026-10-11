@@ -1,6 +1,6 @@
 # Bivi project roadmap
 
-Current priorities are client onboarding and project management. Resources and Helpdesk pages are outside the current scope.
+Current priorities are completing the Release 3 client workflow. Resources and Helpdesk pages are outside the current scope.
 
 | Phase | Status | Deliverable |
 | --- | --- | --- |
@@ -8,31 +8,19 @@ Current priorities are client onboarding and project management. Resources and H
 | Internal leads review | Implemented; owner reports verified | Staff sign-in, filtered inquiry list, detail views, qualified/declined decisions, internal notes and review history |
 | Proposal and accepted scope | Implemented; owner reports verified | Numbered drafts, fixed issued versions, scope and commercial terms, recorded external acceptance |
 | Agreement and deposit references | Implemented; owner reports verified | Evidence records, reversible onboarding-readiness gate and snapshot history |
-| Client onboarding | Implemented; owner reports verified | Staff-managed client-input checklist, contacts, kickoff records, completion and review history |
+| Personalized client onboarding | Implemented; activation pending | Service-driven requirements, pre-activation client access, autosaved client responses, staff acceptance/clarification/waivers, onboarding uploads and client profile |
 | Internal project management | Implemented; owner reports verified | Gated activation, fixed starting snapshots, milestones, tasks, owners, due dates, progress and history |
 | Client progress, reviews and delivery links | Implemented; owner reports verified | Project-scoped client portal, explicit publications, versioned decisions and HTTPS handoff links |
-| File exchange | Implemented; owner reports verified | Private project uploads, stored-file verification, authorized attachment downloads, staff sharing/withdrawal and history |
+| File exchange | Implemented; owner reports verified | Private project/onboarding uploads, stored-file verification, authorized downloads, staff sharing/withdrawal and history |
 | Production rollout | Prior workflow verified by owner, 2026-10-07 | Repeatable checks and owner-reported live verification; enhancements need separate verification |
 | Project discussion and activity | Implemented; activation pending | Internal task/project comments, author edits/removal and a unified staff timeline |
 | Account recovery and invitations | Implemented; activation pending | Staff access assignments, private invitation links and client password recovery |
-| Notifications and deadlines | Planned | Project updates, review alerts and deadline reminders |
+| Project brief and client tasks | Next | Structured brief review, lifecycle phase, client/Bivi task ownership, dependencies and next-action dashboard |
+| Approvals, change requests, QA and handoff | Planned | Version-linked approvals, revision rounds, scope changes, QA, final release, support and closeout |
+| Essential email and deadline communication | Planned | Onboarding/action/review/delivery notices and bounded reminders |
 
-Apply the second migration and staff setup described in LEADS_WORKSPACE_SETUP.md before using internal review. A Qualified inquiry means ready for proposal preparation; it does not create a booked project.
+Apply migrations in order. A Qualified inquiry remains a lead until the accepted scope, agreement/deposit readiness and onboarding gates are satisfied.
 
-Proposal activation: apply the third migration and follow PROPOSALS_SETUP.md. Staff-recorded acceptance preserves the selected scope version; agreement and deposit checks still precede project activation.
+Migration 011 activation: apply `202610100011_client_profile_personalized_onboarding.sql` after migration 010 and follow `PERSONALIZED_ONBOARDING_SETUP.md`. It allows client workspace access after the accepted scope and agreement/deposit gate are ready, before project activation. Staff still owns final onboarding completion and project activation.
 
-Onboarding gate activation: apply the fourth migration and follow ONBOARDING_GATE_SETUP.md. The gate records readiness; checklist and project activation follow in the client-onboarding batch.
-
-Client onboarding activation: apply the fifth migration and follow CLIENT_ONBOARDING_SETUP.md. Completion is bound to the current readiness revision; project activation and task management are next.
-
-Project workspace activation: apply the sixth migration and follow PROJECT_WORKSPACE_SETUP.md. Internal project management is implemented; the client portal and file exchange batches extend it.
-
-Client portal activation: apply the seventh migration and follow CLIENT_PORTAL_SETUP.md. Only assigned clients can access available published updates. The eighth migration adds private file exchange; prior live verification was reported complete by the owner on 2026-10-07.
-
-File exchange activation: apply the eighth migration and follow FILE_EXCHANGE_SETUP.md. PRODUCTION_VERIFICATION.md tracks the remaining live checks; local simulation is complete, and the owner reported prior deployment verification complete on 2026-10-07. Resources and Helpdesk remain outside scope.
-
-Production readiness: follow PRODUCTION_READINESS_SETUP.md. Run `npm run verify:platform`, verify the deployment configuration, then run the HTTP checker against the canonical host. No additional migration is needed. Retain the authenticated-check evidence in PRODUCTION_VERIFICATION.md; the owner reported the prior workflow verified on 2026-10-07.
-
-Enhancement activation: apply migration 009 and follow PROJECT_DISCUSSION_SETUP.md. The owner reported prior live verification complete on 2026-10-07; new enhancements still require installation and live checks.
-
-Account access activation: apply migration 010 and follow CLIENT_ACCESS_SETUP.md. Configure recovery email delivery and its token-hash template before live testing. Next enhancement: notifications and deadlines.
+The next Release 3 batch is the project brief and client-task model. Notifications are intentionally later so alerts are attached to stable actions rather than temporary workflow states.

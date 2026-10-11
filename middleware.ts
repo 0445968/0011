@@ -33,6 +33,10 @@ function clientInternalPath(pathname: string) {
   if (pathname === '/password') return '/client/password';
   if (pathname === '/mfa') return '/client/mfa';
   if (pathname === '/security') return '/client/security';
+  if (pathname === '/profile') return '/client/profile';
+  if (pathname === '/onboarding' || pathname.startsWith('/onboarding/')) {
+    return `/client${pathname}`;
+  }
   if (pathname === '/projects' || pathname.startsWith('/projects/')) {
     return `/client${pathname}`;
   }
