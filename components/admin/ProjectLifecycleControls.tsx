@@ -1,6 +1,22 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import {
+  Fragment,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
+
+import {
+  AlertCircle,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  History,
+  RotateCcw,
+  Save,
+  Search,
+} from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +28,10 @@ import {
   type ProjectPhase,
   type ProjectTaskControl,
 } from '@/lib/projects/lifecycle-schema';
+
+type ProjectTask = ProjectBody['tasks'][number];
+type OwnershipFilter = 'all' | 'bivi' | 'client';
+type PhaseFilter = 'all' | 'current';
 
 type Lifecycle = {
   requestId: string;
@@ -28,16 +48,71 @@ type Event = {
   created_at: string;
 };
 
-function TaskControlCard({
+type TaskEntry = {
+  task: ProjectTask;
+  control: ProjectTaskControl;
+};
+
+const PAGE_SIZE = 10;
+
+const fieldClass =
+  'h-9 w-full min-w-0 rounded-lg border border-input bg-background px-3 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring disabled:opacity-60';
+
+const subtleButton =
+  'inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-muted px-3 text-xs font-medium text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50';
+
+function CompactSelect({
+  label,
+  value,
+  onChange,
+  children,
+  disabled,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  children: ReactNode;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="relative min-w-0">
+      <select
+        aria-label={label}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        disabled={disabled}
+        className={`${fieldClass} appearance-none pr-9`}
+      >
+        {children}
+      </select>
+      <ChevronDown
+        size={14}
+        aria-hidden="true"
+        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+      />
+    </div>
+  );
+}
+
+/* =========================================================
+   TASK CONTROL ROW
+   Each task saves independently using its own revision.
+   ========================================================= */
+
+function TaskControlRow({
   id,
   task,
   control,
   allTasks,
+  expanded,
+  onToggle,
 }: {
   id: string;
-  task: ProjectBody['tasks'][number];
+  task: ProjectTask;
   control: ProjectTaskControl;
-  allTasks: ProjectBody['tasks'];
+  allTasks: ProjectTask[];
+  expanded: boolean;
+  onToggle: () => void;
 }) {
   const [ownerType, setOwnerType] = useState(control.ownerType);
   const [phase, setPhase] = useState(control.phase);
@@ -45,89 +120,269 @@ function TaskControlCard({
   const [dependsOn, setDependsOn] = useState(control.dependsOn ?? '');
   const [blockerOwner, setBlockerOwner] = useState(control.blockerOwner ?? '');
   const [busy, setBusy] = useState(false);
+  const [blocked, setBlocked] = useState(false);
   const [message, setMessage] = useState('');
 
+  const dirty =
+    ownerType !== control.ownerType ||
+    phase !== control.phase ||
+    serviceId.trim() !== (control.serviceId ?? '') ||
+    dependsOn !== (control.dependsOn ?? '') ||
+    blockerOwner !== (control.blockerOwner ?? '');
+
+  const hasSecondarySettings = Boolean(
+    control.dependsOn || control.blockerOwner ||
+    control.serviceId || control.clientNote
+  );
+
   async function save() {
+    if (!dirty || busy || blocked) return;
     setBusy(true);
     setMessage('');
+
     try {
-      const response = await fetch(`/api/admin/projects/${id}/lifecycle`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'update_task',
-          taskId: task.id,
-          expectedRevision: control.revision,
-          ownerType,
-          phase,
-          serviceId: serviceId.trim() || null,
-          dependsOn: dependsOn || null,
-          blockerOwner: blockerOwner || null,
-        }),
-        signal: AbortSignal.timeout(20000),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Task controls could not be saved.');
+      const response = await fetch(
+        `/api/admin/projects/${id}/lifecycle`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'update_task',
+            taskId: task.id,
+            expectedRevision: control.revision,
+            ownerType,
+            phase,
+            serviceId: serviceId.trim() || null,
+            dependsOn: dependsOn || null,
+            blockerOwner: blockerOwner || null,
+          }),
+          signal: AbortSignal.timeout(20000),
+        }
+      );
+
+      const result = await response.json().catch(() => null);
+      if (response.status === 401) {
+        window.location.assign('/admin/login');
+        return;
+      }
+      if (response.status === 409) setBlocked(true);
+      if (!response.ok || result?.saved !== true) {
+        throw new Error(result?.error || 'Task controls could not be saved.');
+      }
       window.location.reload();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Task controls could not be saved.');
+      if (error instanceof Error &&
+          ['TimeoutError', 'TypeError', 'SyntaxError'].includes(error.name)) {
+        setBlocked(true);
+      }
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : 'The result could not be confirmed. Reload before retrying.'
+      );
     } finally {
       setBusy(false);
     }
   }
 
-  const controlClass = 'h-11 w-full rounded-xl border border-input bg-background px-3 text-sm';
-
   return (
-    <article className="rounded-xl border border-border p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h4 className="font-medium">{task.title}</h4>
-          <p className="mt-1 text-xs text-muted-foreground">{task.status} · {task.dueOn || 'No due date'} · revision {control.revision}</p>
-        </div>
-        <span className="rounded-full bg-muted px-2.5 py-1 text-xs">{ownerType === 'client' ? 'Waiting on client' : 'Bivi task'}</span>
-      </div>
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className="mb-2 block text-xs" htmlFor={`owner-type-${task.id}`}>Responsibility</label>
-          <select id={`owner-type-${task.id}`} className={controlClass} value={ownerType} onChange={(event) => setOwnerType(event.target.value as 'bivi' | 'client')}>
+    <Fragment>
+      <tr className={expanded ? 'bg-muted/50' : 'hover:bg-muted/30'}>
+        <td className="max-w-[290px] px-3 py-2.5 align-middle">
+          <p className="truncate text-xs font-semibold" title={task.title}>
+            {task.title}
+          </p>
+          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+            <span className="capitalize">{task.status.replace('_', ' ')}</span>
+            <span aria-hidden="true">·</span>
+            <span>{task.dueOn || 'No due date'}</span>
+            {task.status === 'blocked' && (
+              <span className="font-medium text-red-600 dark:text-red-400">
+                · Blocked
+              </span>
+            )}
+          </div>
+        </td>
+
+        <td className="px-3 py-2.5 align-middle">
+          <CompactSelect
+            label={`Responsibility for ${task.title}`}
+            value={ownerType}
+            disabled={busy || blocked}
+            onChange={(value) => setOwnerType(value as 'bivi' | 'client')}
+          >
             <option value="bivi">Bivi</option>
             <option value="client">Client</option>
-          </select>
-        </div>
-        <div>
-          <label className="mb-2 block text-xs" htmlFor={`phase-${task.id}`}>Lifecycle phase</label>
-          <select id={`phase-${task.id}`} className={controlClass} value={phase} onChange={(event) => setPhase(event.target.value as ProjectPhase)}>
-            {projectPhaseOrder.map((value) => <option key={value} value={value}>{projectPhaseLabels[value]}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="mb-2 block text-xs" htmlFor={`depends-${task.id}`}>Blocked by task</label>
-          <select id={`depends-${task.id}`} className={controlClass} value={dependsOn} onChange={(event) => setDependsOn(event.target.value)}>
-            <option value="">No task dependency</option>
-            {allTasks.filter((candidate) => candidate.id !== task.id).map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.title}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="mb-2 block text-xs" htmlFor={`blocker-${task.id}`}>Waiting on</label>
-          <select id={`blocker-${task.id}`} className={controlClass} value={blockerOwner} onChange={(event) => setBlockerOwner(event.target.value)}>
-            <option value="">No explicit blocker</option>
-            <option value="bivi">Bivi</option>
-            <option value="client">Client</option>
-            <option value="external">External party</option>
-          </select>
-        </div>
-        <div className="sm:col-span-2">
-          <label className="mb-2 block text-xs" htmlFor={`service-${task.id}`}>Service ID</label>
-          <Input id={`service-${task.id}`} maxLength={100} value={serviceId} onChange={(event) => setServiceId(event.target.value)} placeholder="Optional service link" />
-        </div>
-      </div>
-      {control.clientNote && <p className="mt-4 rounded-xl bg-muted/30 p-3 text-sm"><strong>Client note:</strong> {control.clientNote}</p>}
-      <Button type="button" variant="outline" className="mt-4" disabled={busy} onClick={() => void save()}>{busy ? 'Saving…' : 'Save task controls'}</Button>
-      {message && <p role="status" className="mt-3 text-sm text-muted-foreground">{message}</p>}
-    </article>
+          </CompactSelect>
+        </td>
+
+        <td className="px-3 py-2.5 align-middle">
+          <CompactSelect
+            label={`Lifecycle phase for ${task.title}`}
+            value={phase}
+            disabled={busy || blocked}
+            onChange={(value) => setPhase(value as ProjectPhase)}
+          >
+            {projectPhaseOrder.map((value) => (
+              <option key={value} value={value}>
+                {projectPhaseLabels[value]}
+              </option>
+            ))}
+          </CompactSelect>
+        </td>
+
+        <td className="px-3 py-2.5 align-middle text-xs text-muted-foreground">
+          {blockerOwner ? `Waiting on ${blockerOwner}` :
+            dependsOn ? 'Task dependency' : '—'}
+        </td>
+
+        <td className="px-3 py-2.5 align-middle">
+          <div className="flex items-center justify-end gap-1.5">
+            <button
+              type="button"
+              onClick={() => void save()}
+              disabled={!dirty || busy || blocked}
+              className={`inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                dirty
+                  ? 'bg-foreground text-background hover:opacity-85'
+                  : 'bg-muted text-muted-foreground'
+              }`}
+            >
+              <Save size={13} />
+              {busy ? 'Saving…' : 'Save'}
+            </button>
+            <button
+              type="button"
+              title={expanded ? 'Hide additional settings' : 'Show additional settings'}
+              aria-label={`${expanded ? 'Hide' : 'Show'} settings for ${task.title}`}
+              aria-expanded={expanded}
+              aria-controls={`lifecycle-task-${task.id}`}
+              onClick={onToggle}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground hover:bg-accent"
+            >
+              <ChevronRight
+                size={15}
+                className={expanded ? 'rotate-90 transition-transform' : 'transition-transform'}
+              />
+              <span className="sr-only">{hasSecondarySettings ? 'Settings' : 'More'}</span>
+            </button>
+          </div>
+        </td>
+      </tr>
+
+      {expanded && (
+        <tr>
+          <td
+            id={`lifecycle-task-${task.id}`}
+            colSpan={5}
+            className="bg-muted/30 px-4 py-4"
+          >
+            <div className="grid gap-3 md:grid-cols-3">
+              <label className="block min-w-0 text-[11px] font-medium text-muted-foreground">
+                Blocked by task
+                <div className="mt-1.5">
+                  <CompactSelect
+                    label={`Task dependency for ${task.title}`}
+                    value={dependsOn}
+                    disabled={busy || blocked}
+                    onChange={setDependsOn}
+                  >
+                    <option value="">No task dependency</option>
+                    {allTasks
+                      .filter((candidate) => candidate.id !== task.id)
+                      .map((candidate) => (
+                        <option key={candidate.id} value={candidate.id}>
+                          {candidate.title}
+                        </option>
+                      ))}
+                  </CompactSelect>
+                </div>
+              </label>
+
+              <label className="block min-w-0 text-[11px] font-medium text-muted-foreground">
+                Waiting on
+                <div className="mt-1.5">
+                  <CompactSelect
+                    label={`Waiting on for ${task.title}`}
+                    value={blockerOwner}
+                    disabled={busy || blocked}
+                    onChange={setBlockerOwner}
+                  >
+                    <option value="">No explicit blocker</option>
+                    <option value="bivi">Bivi</option>
+                    <option value="client">Client</option>
+                    <option value="external">External party</option>
+                  </CompactSelect>
+                </div>
+              </label>
+
+              <label className="block min-w-0 text-[11px] font-medium text-muted-foreground">
+                Service ID
+                <Input
+                  maxLength={100}
+                  value={serviceId}
+                  disabled={busy || blocked}
+                  onChange={(event) => setServiceId(event.target.value)}
+                  placeholder="Optional service link"
+                  className={`${fieldClass} mt-1.5`}
+                />
+              </label>
+            </div>
+
+            {control.clientNote && (
+              <div className="mt-3 rounded-lg bg-card px-3 py-2.5">
+                <p className="text-[11px] font-semibold">Client note</p>
+                <p className="mt-1 whitespace-pre-wrap break-words text-xs text-muted-foreground">
+                  {control.clientNote}
+                </p>
+              </div>
+            )}
+
+            <p className="mt-3 text-[11px] text-muted-foreground">
+              Task-control revision {control.revision}. Save changes for this task
+              before switching pages or filters.
+            </p>
+            {message && (
+              <p role="status" className="mt-2 text-xs text-red-600 dark:text-red-400">
+                {message}
+              </p>
+            )}
+            {blocked && (
+              <button
+                type="button"
+                className={`${subtleButton} mt-3`}
+                onClick={() => window.location.reload()}
+              >
+                <RotateCcw size={14} /> Reload latest task
+              </button>
+            )}
+          </td>
+        </tr>
+      )}
+
+      {!expanded && message && (
+        <tr>
+          <td colSpan={5} className="px-4 pb-2 text-xs text-red-600 dark:text-red-400">
+            {message}{' '}
+            {blocked && (
+              <button
+                type="button"
+                className="underline underline-offset-4"
+                onClick={() => window.location.reload()}
+              >
+                Reload
+              </button>
+            )}
+          </td>
+        </tr>
+      )}
+    </Fragment>
   );
 }
+
+/* =========================================================
+   MAIN LIFECYCLE WORKSPACE
+   ========================================================= */
 
 export function ProjectLifecycleControls({
   id,
@@ -139,88 +394,358 @@ export function ProjectLifecycleControls({
   id: string;
   lifecycle: Lifecycle;
   controls: ProjectTaskControl[];
-  tasks: ProjectBody['tasks'];
+  tasks: ProjectTask[];
   events: Event[];
 }) {
-  const [phase, setPhase] = useState(lifecycle.phase);
+  const [phase, setPhase] = useState<ProjectPhase>(lifecycle.phase);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
+  const [blocked, setBlocked] = useState(false);
   const [message, setMessage] = useState('');
 
-  const controlByTask = useMemo(() => new Map(controls.map((control) => [control.taskId, control])), [controls]);
-  const visibleControls = tasks.map((task) => ({ task, control: controlByTask.get(task.id) })).filter((entry): entry is { task: ProjectBody['tasks'][number]; control: ProjectTaskControl } => Boolean(entry.control));
-  const current = visibleControls.filter((entry) => entry.control.phase === lifecycle.phase && entry.task.status !== 'done');
+  const [query, setQuery] = useState('');
+  const [ownership, setOwnership] = useState<OwnershipFilter>('all');
+  const [phaseFilter, setPhaseFilter] = useState<PhaseFilter>('all');
+  const [page, setPage] = useState(1);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const controlByTask = useMemo(
+    () => new Map(controls.map((control) => [control.taskId, control])),
+    [controls]
+  );
+
+  const entries = useMemo<TaskEntry[]>(
+    () => tasks.flatMap((task) => {
+      const control = controlByTask.get(task.id);
+      return control ? [{ task, control }] : [];
+    }),
+    [tasks, controlByTask]
+  );
+
+  const current = entries.filter(
+    (entry) => entry.control.phase === lifecycle.phase && entry.task.status !== 'done'
+  );
   const waitingClient = current.filter((entry) => entry.control.ownerType === 'client').length;
   const waitingBivi = current.filter((entry) => entry.control.ownerType === 'bivi').length;
+  const blockedCount = entries.filter((entry) => entry.task.status === 'blocked').length;
+
+  const filtered = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    return entries.filter(({ task, control }) =>
+      (ownership === 'all' || control.ownerType === ownership) &&
+      (phaseFilter === 'all' || control.phase === lifecycle.phase) &&
+      (!term || [task.title, task.owner, task.status, control.serviceId ?? '']
+        .some((value) => value.toLowerCase().includes(term)))
+    );
+  }, [entries, ownership, phaseFilter, lifecycle.phase, query]);
+
+  const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pages);
+  const visible = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const phaseIndex = projectPhaseOrder.indexOf(lifecycle.phase);
+  const phaseChanged = phase !== lifecycle.phase;
 
   async function savePhase() {
-    if (!reason.trim()) {
-      setMessage('Add the reason for changing the project phase.');
+    if (!phaseChanged || !reason.trim() || busy || blocked) {
+      setMessage('Select a new phase and provide a reason.');
       return;
     }
     setBusy(true);
     setMessage('');
+
     try {
       const response = await fetch(`/api/admin/projects/${id}/lifecycle`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'set_phase', expectedRevision: lifecycle.revision, phase, reason }),
+        body: JSON.stringify({
+          action: 'set_phase',
+          expectedRevision: lifecycle.revision,
+          phase,
+          reason,
+        }),
         signal: AbortSignal.timeout(20000),
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'The project phase could not be saved.');
+      const result = await response.json().catch(() => null);
+      if (response.status === 401) {
+        window.location.assign('/admin/login');
+        return;
+      }
+      if (response.status === 409) setBlocked(true);
+      if (!response.ok || result?.saved !== true) {
+        throw new Error(result?.error || 'The project phase could not be saved.');
+      }
       window.location.reload();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'The project phase could not be saved.');
+      if (error instanceof Error &&
+          ['TimeoutError', 'TypeError', 'SyntaxError'].includes(error.name)) {
+        setBlocked(true);
+      }
+      setMessage(error instanceof Error
+        ? error.message
+        : 'The result could not be confirmed. Reload before retrying.');
     } finally {
       setBusy(false);
     }
   }
 
+  function changeFilter(fn: () => void) {
+    fn();
+    setPage(1);
+    setExpandedId(null);
+  }
+
   return (
-    <section className="mt-8 rounded-2xl border border-border bg-card p-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Project lifecycle</p>
-          <h2 className="mt-2 font-heading text-2xl font-semibold">{projectPhaseLabels[lifecycle.phase]}</h2>
-          <p className="mt-3 text-sm text-muted-foreground">{waitingClient} waiting on client · {waitingBivi} waiting on Bivi in this phase.</p>
+    <div className="space-y-4">
+      {/* CURRENT PHASE / STATUS */}
+      <section className="rounded-xl bg-card p-4 shadow-sm sm:p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+              Project lifecycle
+            </p>
+            <h2 className="mt-1 font-heading text-lg font-semibold sm:text-xl">
+              {projectPhaseLabels[lifecycle.phase]}
+            </h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Phase {phaseIndex + 1} of {projectPhaseOrder.length} · Revision {lifecycle.revision}
+            </p>
+          </div>
+          <span className="rounded-full bg-muted px-3 py-1.5 text-[11px] font-medium text-foreground">
+            {entries.length} tracked tasks
+          </span>
         </div>
-        <span className="rounded-full bg-muted px-3 py-1.5 text-xs">Phase revision {lifecycle.revision}</span>
-      </div>
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto] lg:items-end">
-        <div>
-          <label htmlFor="project-phase" className="mb-2 block text-sm">Current phase</label>
-          <select id="project-phase" className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm" value={phase} onChange={(event) => setPhase(event.target.value as ProjectPhase)}>
-            {projectPhaseOrder.map((value) => <option key={value} value={value}>{projectPhaseLabels[value]}</option>)}
-          </select>
+        <div className="mt-3 grid grid-cols-9 gap-1" aria-label="Project lifecycle progress">
+          {projectPhaseOrder.map((value, index) => (
+            <div
+              key={value}
+              title={projectPhaseLabels[value]}
+              className={`h-1.5 rounded-full ${
+                index <= phaseIndex ? 'bg-foreground' : 'bg-muted'
+              }`}
+            />
+          ))}
         </div>
-        <div>
-          <label htmlFor="phase-reason" className="mb-2 block text-sm">Reason / phase decision</label>
-          <Textarea id="phase-reason" rows={2} maxLength={2000} value={reason} onChange={(event) => setReason(event.target.value)} />
-        </div>
-        <Button type="button" disabled={busy || phase === lifecycle.phase} onClick={() => void savePhase()}>Save phase</Button>
-      </div>
-      <p className="mt-3 text-xs text-muted-foreground">Moving beyond Discovery requires an approved project brief.</p>
-      {message && <p role="status" className="mt-4 text-sm text-muted-foreground">{message}</p>}
 
-      <div className="mt-8 border-t border-border pt-6">
-        <h3 className="font-heading text-xl font-semibold">Task ownership and blockers</h3>
-        <p className="mt-2 text-sm text-muted-foreground">Task title, due date and execution status remain in the work plan below. These controls determine what the client can see and what each task is waiting on.</p>
-        <div className="mt-5 space-y-4">
-          {visibleControls.map(({ task, control }) => <TaskControlCard key={task.id} id={id} task={task} control={control} allTasks={tasks} />)}
-          {!visibleControls.length && <p className="text-sm text-muted-foreground">Save at least one project task to create its lifecycle controls.</p>}
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <div className="rounded-lg bg-muted/60 px-3 py-2.5">
+            <p className="font-mono text-[10px] text-muted-foreground">Waiting on client</p>
+            <p className="mt-1 text-lg font-semibold tabular-nums">{waitingClient}</p>
+          </div>
+          <div className="rounded-lg bg-muted/60 px-3 py-2.5">
+            <p className="font-mono text-[10px] text-muted-foreground">Waiting on Bivi</p>
+            <p className="mt-1 text-lg font-semibold tabular-nums">{waitingBivi}</p>
+          </div>
+          <div className="col-span-2 rounded-lg bg-muted/60 px-3 py-2.5 sm:col-span-1">
+            <p className="font-mono text-[10px] text-muted-foreground">Blocked tasks</p>
+            <p className="mt-1 text-lg font-semibold tabular-nums">
+              {blockedCount}
+              {blockedCount > 0 && <AlertCircle size={15} className="ml-2 inline-block text-red-600 dark:text-red-400" />}
+            </p>
+          </div>
         </div>
-      </div>
 
+        <div className="mt-4 flex flex-wrap items-end gap-3 border-t border-border/50 pt-4">
+          <div className="min-w-[220px] flex-1">
+            <label className="mb-1.5 block text-[11px] font-semibold" htmlFor="project-phase">
+              Change lifecycle phase
+            </label>
+            <CompactSelect
+              label="New project lifecycle phase"
+              value={phase}
+              disabled={busy || blocked}
+              onChange={(value) => setPhase(value as ProjectPhase)}
+            >
+              {projectPhaseOrder.map((value) => (
+                <option key={value} value={value}>
+                  {projectPhaseLabels[value]}
+                </option>
+              ))}
+            </CompactSelect>
+          </div>
+          {phaseChanged && (
+            <label className="min-w-[240px] flex-[2] text-[11px] font-semibold">
+              Reason for change
+              <Textarea
+                rows={1}
+                maxLength={2000}
+                value={reason}
+                disabled={busy || blocked}
+                onChange={(event) => setReason(event.target.value)}
+                className="mt-1.5 min-h-9 bg-background text-xs"
+                placeholder="Required for audit history"
+              />
+            </label>
+          )}
+          <Button
+            type="button"
+            disabled={!phaseChanged || !reason.trim() || busy || blocked}
+            onClick={() => void savePhase()}
+            className="h-9 gap-2 rounded-lg px-4 text-xs"
+          >
+            <Save size={14} /> {busy ? 'Saving…' : 'Save phase'}
+          </Button>
+        </div>
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          Moving beyond Discovery requires a client-approved project brief.
+        </p>
+        {message && (
+          <p role="status" className="mt-2 text-xs text-red-600 dark:text-red-400">
+            {message}
+          </p>
+        )}
+        {blocked && (
+          <button
+            type="button"
+            className={`${subtleButton} mt-2`}
+            onClick={() => window.location.reload()}
+          >
+            <RotateCcw size={14} /> Reload latest phase
+          </button>
+        )}
+      </section>
+
+      {/* COMPACT TASK CONTROLS */}
+      <section className="overflow-hidden rounded-xl bg-card shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+          <div>
+            <h3 className="text-sm font-semibold">Task ownership & blockers</h3>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Task status and due dates are edited under Tasks & milestones.
+            </p>
+          </div>
+          <span className="text-[11px] text-muted-foreground">
+            {filtered.length} of {entries.length} tasks
+          </span>
+        </div>
+
+        <div className="flex flex-wrap gap-2 border-t border-border/40 px-4 py-3">
+          <div className="relative min-w-[200px] flex-1">
+            <Search
+              size={14}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <input
+              type="search"
+              aria-label="Search lifecycle tasks"
+              placeholder="Search tasks…"
+              value={query}
+              onChange={(event) => changeFilter(() => setQuery(event.target.value))}
+              className={`${fieldClass} pl-9`}
+            />
+          </div>
+          <div className="min-w-[145px]">
+            <CompactSelect
+              label="Filter by responsibility"
+              value={ownership}
+              onChange={(value) => changeFilter(() => setOwnership(value as OwnershipFilter))}
+            >
+              <option value="all">All owners</option>
+              <option value="bivi">Bivi tasks</option>
+              <option value="client">Client tasks</option>
+            </CompactSelect>
+          </div>
+          <div className="min-w-[155px]">
+            <CompactSelect
+              label="Filter by phase"
+              value={phaseFilter}
+              onChange={(value) => changeFilter(() => setPhaseFilter(value as PhaseFilter))}
+            >
+              <option value="all">All phases</option>
+              <option value="current">Current phase</option>
+            </CompactSelect>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[850px] table-fixed text-left text-xs">
+            <colgroup>
+              <col className="w-[28%]" />
+              <col className="w-[18%]" />
+              <col className="w-[23%]" />
+              <col className="w-[15%]" />
+              <col className="w-[16%]" />
+            </colgroup>
+            <thead className="bg-muted/70 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+              <tr>
+                <th scope="col" className="px-3 py-2.5 font-medium">Task</th>
+                <th scope="col" className="px-3 py-2.5 font-medium">Responsibility</th>
+                <th scope="col" className="px-3 py-2.5 font-medium">Phase</th>
+                <th scope="col" className="px-3 py-2.5 font-medium">Waiting on</th>
+                <th scope="col" className="px-3 py-2.5 text-right font-medium">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/50">
+              {visible.map(({ task, control }) => (
+                <TaskControlRow
+                  key={task.id}
+                  id={id}
+                  task={task}
+                  control={control}
+                  allTasks={tasks}
+                  expanded={expandedId === task.id}
+                  onToggle={() => setExpandedId((current) => current === task.id ? null : task.id)}
+                />
+              ))}
+            </tbody>
+          </table>
+          {!visible.length && (
+            <p className="px-4 py-8 text-center text-xs text-muted-foreground">
+              {entries.length
+                ? 'No tasks match the current filters.'
+                : 'Save a task in the work plan to create lifecycle controls.'}
+            </p>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/40 px-4 py-3 text-xs">
+          <span className="text-muted-foreground">
+            Page {currentPage} of {pages} · {PAGE_SIZE} tasks per page
+          </span>
+          <div className="flex gap-1.5">
+            <button
+              type="button"
+              aria-label="Previous lifecycle tasks"
+              className={subtleButton}
+              disabled={currentPage <= 1}
+              onClick={() => { setPage(currentPage - 1); setExpandedId(null); }}
+            >
+              <ChevronLeft size={14} /> Previous
+            </button>
+            <button
+              type="button"
+              aria-label="Next lifecycle tasks"
+              className={subtleButton}
+              disabled={currentPage >= pages}
+              onClick={() => { setPage(currentPage + 1); setExpandedId(null); }}
+            >
+              Next <ChevronRight size={14} />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* HISTORY - COLLAPSED BY DEFAULT */}
       {events.length > 0 && (
-        <details className="mt-8 border-t border-border pt-5">
-          <summary className="cursor-pointer text-sm font-medium">Recent task-control history</summary>
-          <ol className="mt-4 space-y-3">
-            {events.slice(0, 20).map((event) => <li key={event.id} className="text-xs text-muted-foreground">{event.task_id} · {event.action} · {new Date(event.created_at).toISOString()}</li>)}
+        <details className="rounded-xl bg-card shadow-sm">
+          <summary className="flex cursor-pointer items-center gap-2 px-4 py-3 text-sm font-semibold">
+            <History size={15} /> Task-control history
+            <span className="text-[11px] font-normal text-muted-foreground">
+              {events.length} recent events
+            </span>
+          </summary>
+          <ol className="max-h-[300px] divide-y divide-border/50 overflow-y-auto border-t border-border/40 px-4">
+            {events.slice(0, 20).map((event) => (
+              <li key={event.id} className="py-2.5 text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">{event.action.replaceAll('_', ' ')}</span>
+                {' · '}{tasks.find((task) => task.id === event.task_id)?.title || event.task_id}
+                {' · '}{new Date(event.created_at).toISOString().replace('T', ' ').slice(0, 16)} UTC
+              </li>
+            ))}
           </ol>
         </details>
       )}
-    </section>
+    </div>
   );
 }

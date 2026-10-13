@@ -1,5 +1,302 @@
-import Link from 'next/link';import {requireStaff} from '@/lib/admin/auth';import {listProjects} from '@/lib/projects/data';import {projectStates,projectProgress} from '@/lib/projects/schema';import {formatDate} from '@/lib/admin/inquiries';
-export default async function ProjectsPage({searchParams}:{searchParams:{state?:string;page?:string}}){
- const {client}=await requireStaff();const state=searchParams.state&&Object.keys(projectStates).includes(searchParams.state)?searchParams.state:null;const n=Number(searchParams.page||1);const page=Number.isInteger(n)&&n>0&&n<=10000?n:1;const {projects,total}=await listProjects(client,state,page);const pages=Math.max(1,Math.ceil(total/25));const href=(p:number)=>`/admin/projects?${new URLSearchParams({...state?{state}:{},page:String(p)})}`;
- return <><h1 className="font-heading text-3xl font-semibold">Projects</h1><p className="mt-4 text-sm text-muted-foreground">Activate projects from completed onboarding, then track milestones and delivery tasks.</p><nav aria-label="Project filters" className="mt-6 flex flex-wrap gap-3">{[['','All'],...Object.entries(projectStates)].map(([id,label])=><Link key={id} href={id?`/admin/projects?state=${id}`:'/admin/projects'} aria-current={(state??'')===id?'page':undefined} className={`rounded-xl border border-border px-4 py-2 text-sm ${(state??'')===id?'bg-foreground text-background':'bg-background'}`}>{label}</Link>)}</nav><p className="mt-6 text-sm text-muted-foreground">{total} projects · newest updates first</p><div className="mt-4 space-y-4">{projects.map(p=>{const progress=projectProgress(p.body);return <article key={p.request_id} className="rounded-2xl border border-border bg-card p-5"><div className="flex flex-wrap justify-between gap-3"><Link href={`/admin/projects/${p.request_id}`} className="font-heading text-xl font-semibold underline underline-offset-4">{p.body.title}</Link><span className="text-sm">{projectStates[p.state]}</span></div><p className="mt-3 text-sm">Owner: {p.body.owner||'Unassigned'} · {progress.done}/{progress.total} tasks complete ({progress.percent}%)</p><progress aria-label={`${p.body.title} task completion`} className="mt-3 h-2 w-full" value={progress.done} max={progress.total||1}/><p className="mt-3 text-xs text-muted-foreground">Updated {formatDate(p.updated_at)}</p></article>;})}{!projects.length&&<p className="rounded-2xl border border-border bg-card p-8 text-sm">No projects on this page. Activate one from an inquiry’s completed onboarding.</p>}</div><div className="mt-6 flex flex-wrap items-center justify-between gap-4 text-sm"><p>Page {page} of {pages}</p><div className="flex gap-4">{page>1&&<Link href={href(page-1)} className="underline">Previous</Link>}{page<pages&&<Link href={href(page+1)} className="underline">Next</Link>}</div></div></>;
+
+import {
+  FolderKanban,
+} from 'lucide-react';
+
+import {
+  requireStaff,
+} from '@/lib/admin/auth';
+
+import {
+  listProjects,
+  projectStateSchema,
+  projectSortSchema,
+  projectSortDirectionSchema,
+  projectOwnerFilterSchema,
+  projectTaskFilterSchema,
+  projectMilestoneFilterSchema,
+  type ProjectState,
+  type ProjectSortKey,
+  type ProjectSortDirection,
+  type ProjectOwnerFilter,
+  type ProjectTaskFilter,
+  type ProjectMilestoneFilter,
+} from '@/lib/projects/data';
+
+import {
+  ProjectDirectory,
+  type ProjectDirectoryViewFilters,
+} from '@/components/admin/ProjectDirectory';
+
+/* =========================================================
+   SEARCH PARAMETERS
+   ========================================================= */
+
+interface ProjectsSearchParams {
+  state?: string;
+  search?: string;
+  owner?: string;
+  taskStatus?: string;
+  milestoneStatus?: string;
+  sort?: string;
+  direction?: string;
+  page?: string;
+}
+
+/* =========================================================
+   VALIDATE FILTERS
+   ========================================================= */
+
+function getFilters(
+  params: ProjectsSearchParams
+): ProjectDirectoryViewFilters {
+  /* -------------------------------------------------------
+     PROJECT STATUS
+     ------------------------------------------------------- */
+
+  const parsedState =
+    projectStateSchema.safeParse(
+      params.state
+    );
+
+  const state: ProjectState | null =
+    parsedState.success
+      ? parsedState.data
+      : null;
+
+  /* -------------------------------------------------------
+     PROJECT SEARCH
+     ------------------------------------------------------- */
+
+  const search = (params.search ?? '')
+    .replace(/[^a-zA-Z0-9 @._-]/g, '')
+    .trim()
+    .slice(0, 80);
+
+  /* -------------------------------------------------------
+     OWNER ASSIGNMENT
+     ------------------------------------------------------- */
+
+  const parsedOwner =
+    projectOwnerFilterSchema.safeParse(
+      params.owner
+    );
+
+  const owner: ProjectOwnerFilter =
+    parsedOwner.success
+      ? parsedOwner.data
+      : 'all';
+
+  /* -------------------------------------------------------
+     TASK STATUS
+     ------------------------------------------------------- */
+
+  const parsedTaskStatus =
+    projectTaskFilterSchema.safeParse(
+      params.taskStatus
+    );
+
+  const taskStatus: ProjectTaskFilter =
+    parsedTaskStatus.success
+      ? parsedTaskStatus.data
+      : 'all';
+
+  /* -------------------------------------------------------
+     MILESTONE STATUS
+     ------------------------------------------------------- */
+
+  const parsedMilestoneStatus =
+    projectMilestoneFilterSchema.safeParse(
+      params.milestoneStatus
+    );
+
+  const milestoneStatus: ProjectMilestoneFilter =
+    parsedMilestoneStatus.success
+      ? parsedMilestoneStatus.data
+      : 'all';
+
+  /* -------------------------------------------------------
+     SORT FIELD
+     ------------------------------------------------------- */
+
+  const parsedSort =
+    projectSortSchema.safeParse(
+      params.sort
+    );
+
+  const sort: ProjectSortKey =
+    parsedSort.success
+      ? parsedSort.data
+      : 'updated';
+
+  /* -------------------------------------------------------
+     SORT DIRECTION
+     ------------------------------------------------------- */
+
+  const parsedDirection =
+    projectSortDirectionSchema.safeParse(
+      params.direction
+    );
+
+  const direction: ProjectSortDirection =
+    parsedDirection.success
+      ? parsedDirection.data
+      : 'desc';
+
+  return {
+    state,
+    search,
+    owner,
+    taskStatus,
+    milestoneStatus,
+    sort,
+    direction,
+  };
+}
+
+/* =========================================================
+   PAGINATION
+   ========================================================= */
+
+function getPage(value?: string) {
+  const parsed = Number(value ?? '1');
+
+  if (
+    !Number.isInteger(parsed) ||
+    parsed < 1 ||
+    parsed > 10000
+  ) {
+    return 1;
+  }
+
+  return parsed;
+}
+
+/* =========================================================
+   PROJECTS PAGE
+   ========================================================= */
+
+export default async function ProjectsPage({
+  searchParams = {},
+}: {
+  searchParams: ProjectsSearchParams;
+}) {
+  /* -------------------------------------------------------
+     AUTHENTICATION
+     ------------------------------------------------------- */
+
+  const { client } = await requireStaff();
+
+  /* -------------------------------------------------------
+     VALIDATED DIRECTORY STATE
+     ------------------------------------------------------- */
+
+  const filters = getFilters(
+    searchParams
+  );
+
+  const page = getPage(
+    searchParams.page
+  );
+
+  /* -------------------------------------------------------
+     FILTERED AND SORTED PROJECTS
+
+     Queries are executed on the server.
+     Pagination is handled by Supabase.
+     ------------------------------------------------------- */
+
+  const {
+    projects,
+    total,
+  } = await listProjects(
+    client,
+    filters.state,
+    page,
+    {
+      search: filters.search,
+      owner: filters.owner,
+      taskStatus: filters.taskStatus,
+      milestoneStatus: filters.milestoneStatus,
+      sort: filters.sort,
+      direction: filters.direction,
+    }
+  );
+
+  /* -------------------------------------------------------
+     PAGE CONTENT
+     ------------------------------------------------------- */
+
+  return (
+    <div className="space-y-4">
+
+      {/* PAGE HEADER */}
+
+      <header
+        className="
+          flex
+          flex-wrap
+          items-center
+          justify-between
+          gap-4
+        "
+      >
+        <div>
+          <h1
+            className="
+              font-heading
+              text-2xl
+              font-semibold
+              tracking-tight
+              sm:text-3xl
+            "
+          >
+            Projects
+          </h1>
+
+          <p
+            className="
+              mt-1.5
+              text-xs
+              text-muted-foreground
+              sm:text-sm
+            "
+          >
+            Manage project work, milestones,
+            and client collaboration.
+          </p>
+        </div>
+
+        <div
+          className="
+            flex
+            h-10
+            w-10
+            items-center
+            justify-center
+            rounded-xl
+            border
+            border-border
+            bg-card
+            text-foreground
+          "
+        >
+          <FolderKanban
+            size={19}
+            strokeWidth={1.8}
+            aria-hidden="true"
+          />
+        </div>
+      </header>
+
+      {/* INTERACTIVE PROJECT DIRECTORY */}
+
+      <ProjectDirectory
+        projects={projects}
+        total={total}
+        page={page}
+        filters={filters}
+      />
+    </div>
+  );
 }

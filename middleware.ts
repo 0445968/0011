@@ -43,17 +43,40 @@ function clientInternalPath(pathname: string) {
   return null;
 }
 
+
 function staffInternalPath(pathname: string) {
-  if (pathname === '/') return '/admin';
-  if (pathname === '/login') return '/admin/login';
-  if (pathname === '/leads' || pathname.startsWith('/leads/')) {
+  if (pathname === '/') {
+    return '/admin';
+  }
+
+  if (pathname === '/login') {
+    return '/admin/login';
+  }
+
+  if (
+    pathname === '/inquiries' ||
+    pathname.startsWith('/inquiries/')
+  ) {
     return `/admin${pathname}`;
   }
-  if (pathname === '/projects' || pathname.startsWith('/projects/')) {
+
+  if (
+    pathname === '/leads' ||
+    pathname.startsWith('/leads/')
+  ) {
     return `/admin${pathname}`;
   }
+
+  if (
+    pathname === '/projects' ||
+    pathname.startsWith('/projects/')
+  ) {
+    return `/admin${pathname}`;
+  }
+
   return null;
 }
+
 
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;

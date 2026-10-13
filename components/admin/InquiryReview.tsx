@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { ChevronDown } from 'lucide-react';
 
 // Client-safe values; server data access modules are never imported into this component.
 type Status = 'new' | 'qualified' | 'declined';
@@ -34,7 +35,57 @@ export function InquiryReview({ id, initialStatus, initialNote, revision }: { id
     <p className="mt-2 text-sm leading-relaxed text-muted-foreground">Qualification records fit for a proposal. It doesn’t book the project or send a message to the client.</p>
     <fieldset disabled={busy} className="mt-5 space-y-5">
       <legend className="sr-only">Review inquiry</legend>
-      <div><label htmlFor="review-status" className="mb-2 block text-sm font-medium">Status</label><select id="review-status" value={status} onChange={(e) => { setStatus(e.target.value as Status); setMessage(''); }} className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm"><option value="new">New</option><option value="qualified">Qualified</option><option value="declined">Declined</option></select></div>
+      <div>
+  <label
+    htmlFor="review-status"
+    className="mb-2 block text-sm font-medium"
+  >
+    Status
+  </label>
+
+  <div className="relative">
+    <select
+      id="review-status"
+      value={status}
+      onChange={(e) => {
+        setStatus(e.target.value as Status);
+        setMessage('');
+      }}
+      className="
+        h-11
+        w-full
+        appearance-none
+        rounded-xl
+        border
+        border-input
+        bg-background
+        pl-4
+        pr-12
+        text-sm
+        text-foreground
+        focus-visible:outline-none
+        focus-visible:ring-2
+        focus-visible:ring-ring
+      "
+    >
+      <option value="new">New</option>
+      <option value="qualified">Qualified</option>
+      <option value="declined">Declined</option>
+    </select>
+
+    <ChevronDown
+      size={16}
+      className="
+        pointer-events-none
+        absolute
+        right-4
+        top-1/2
+        -translate-y-1/2
+        text-muted-foreground
+      "
+    />
+  </div>
+</div>
       <div><label htmlFor="review-note" className="mb-2 block text-sm font-medium">Internal decision note</label><Textarea id="review-note" maxLength={2000} value={note} onChange={(e) => { setNote(e.target.value); setMessage(''); }} rows={5} className="rounded-xl" /><p className="mt-1 text-xs text-muted-foreground">{note.length} / 2,000 characters. Visible to staff only.</p></div>
       <Button type="button" disabled={conflict} className="h-11 w-full rounded-[18px] font-mono" onClick={save}>{busy ? 'Saving…' : 'Save decision'}</Button>
     </fieldset>
