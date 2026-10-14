@@ -115,3 +115,11 @@ Run `supabase/migrations/202610140017_company_workspace.sql` once after 001–01
 - Image changes refresh the page to load updated revisions; unsaved People/company/client profile edits are guarded. Client account image is separate from an external People contact image.
 - Apply migration 020 after 019. Signed-in UI checks: upload/replace/remove for each subject, reload, verify initials fallback and ensure private images are unavailable from another client account.
 - Validation covers PNG corruption/dimension bounds, storage guards under broad policies, stale changes, removal, own-client and own-staff permissions, generated client identity and quotas.
+
+
+### People company and referral controls (migration 021)
+- Searchable company assignment/reassignment/unassignment inside the existing People editor; title and company role save with the person and use the existing assignment audit. Company address remains inherited.
+- Link referring people/companies using the phonebook and company picker; open linked records, clear selections, and retain free-text referral details. A manual/referral source becomes Referral when a referrer is selected; automatic sources and their references stay unchanged.
+- IDs, images, channel details and old editor compatibility are preserved. Profile/channel/relationship writes share a transaction; stale revisions, self-referrals and missing linked records are rejected without partial saves.
+- Apply migration 021 after 020. UI checks remain: choose both referrers, save/reload, follow links; change company and confirm address; unassign and confirm address disappears; confirm unsaved-edit prompts.
+- Validation: production build, TypeScript, changed-file lint, 27 tests including preserved import origin and ID, inherited address, company/referral clearing, self-reference rejection, FK rollback and stale saves.

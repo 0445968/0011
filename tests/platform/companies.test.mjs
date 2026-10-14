@@ -49,6 +49,22 @@ test('Company workspace CRUD, revisions, assignment audit and client access isol
  const countBefore=(await db.query('select count(*)::int n from people_contacts')).rows[0].n;
  await assert.rejects(db.query("select import_business_records('people',$1)",[[{...imports[0],email:'rollback@example.com',channels:{emails:[{email:'rollback@example.com',kind:'work',is_primary:true}],phones:[]}},{...imports[0],name:'',email:'bad@example.com',channels:{emails:[{email:'bad@example.com',kind:'work',is_primary:true}],phones:[]}}]]));
  assert.equal((await db.query('select count(*)::int n from people_contacts')).rows[0].n,countBefore);
+
+ await assert.rejects(db.query('select save_people_profile_v018(null,0,$1)',[imports[0]]),/permission denied/);
+ const referralBody={...imports[0],referral_contact_id:person.id,referral_company_id:created.id,company_id:created.id,job_title:'Brand Lead'};
+ assert.equal((await db.query('select save_people_profile($1,$2,$3) r',[importedPerson.id,importedPerson.revision,{...referralBody,lead_source:'import',source_reference:'CSV import'}])).rows[0].r.result,'saved');
+ const referred=(await db.query('select * from people_directory where id=$1',[importedPerson.id])).rows[0];assert.equal(referred.referral_contact_id,person.id);assert.equal(referred.referral_company_id,created.id);assert.equal(referred.company_id,created.id);assert.equal(referred.company_address.line1,'Main Street');assert.equal(referred.lead_source,'import');assert.equal(referred.public_id,importedPerson.public_id);
+ const personRevision=(await db.query('select revision from people_contacts where id=$1',[person.id])).rows[0].revision;
+ await assert.rejects(db.query('select save_people_profile($1,$2,$3)',[person.id,personRevision,{...personBody,referral_contact_id:person.id}]),/themselves/);
+ await assert.rejects(db.query('select save_people_profile($1,$2,$3)',[person.id,personRevision,{...personBody,referral_company_id:randomUUID()}]),/foreign key/);
+ assert.equal((await db.query('select revision from people_contacts where id=$1',[person.id])).rows[0].revision,personRevision);
+ assert.equal((await db.query('select save_people_profile($1,$2,$3) r',[importedPerson.id,importedPerson.revision,{...referralBody,lead_source:'import',source_reference:'CSV import'}])).rows[0].r.result,'conflict');
+ const manual={...imports[0],lead_source:'manual',source_reference:'',email:'manualref@example.com',channels:{emails:[{email:'manualref@example.com',kind:'work',is_primary:true}],phones:[]},referral_contact_id:person.id};
+ const manualSave=(await db.query('select save_people_profile(null,0,$1) r',[manual])).rows[0].r;
+ assert.equal((await db.query('select lead_source from people_contacts where id=$1',[manualSave.id])).rows[0].lead_source,'referral');
+ const referredBody={...referralBody,lead_source:'import',source_reference:'CSV import',company_id:null,job_title:'',company_role:'other',referral_contact_id:null,referral_company_id:null};
+ assert.equal((await db.query('select save_people_profile($1,$2,$3) r',[importedPerson.id,referred.revision,referredBody])).rows[0].r.result,'saved');
+ const unassigned=(await db.query('select * from people_directory where id=$1',[importedPerson.id])).rows[0];assert.equal(unassigned.company_id,null);assert.equal(unassigned.company_address,null);assert.equal(unassigned.referral_contact_id,null);assert.equal(unassigned.referral_company_id,null);
  const companyImport=[{name:'CSV Company',body:profile}];assert.equal((await db.query("select import_business_records('companies',$1) r",[companyImport])).rows[0].r.created,1);
  assert.equal((await db.query("select import_business_records('companies',$1) r",[[{name:'csv company',body:profile}]])).rows[0].r.skipped,1);
  assert.equal((await db.query("select lead_source from company_directory where name='CSV Company'")).rows[0].lead_source,'import');
