@@ -6,7 +6,7 @@ export async function listPeople(client: SupabaseClient, options: { search?: str
  const page=Math.max(1,Math.min(100000,options.page||1));
  let query=client.from('people_directory').select('*',{count:'exact'});
  const term=(options.search||'').trim().slice(0,100).replace(/[%_(),\\]/g,' ').trim();
- if(term){ if(/^[1-9]\d{0,8}$/.test(term)) query=query.eq('id',Number(term)); else query=query.or(`name.ilike.%${term}%,email.ilike.%${term}%,phone.ilike.%${term}%,company_name.ilike.%${term}%,company_search.ilike.%${term}%`); }
+ if(term){ if(/^[1-9]\d{0,8}$/.test(term)) query=query.eq('id',Number(term)); else query=query.or(`public_id.ilike.%${term}%,name.ilike.%${term}%,email_search.ilike.%${term}%,phone_search.ilike.%${term}%,company_name.ilike.%${term}%,company_search.ilike.%${term}%`); }
  if(['lead','client','partner','collaborator','vendor'].includes(options.label||''))query=query.contains('labels',[options.label!]);
  if(options.inquiry){const links=await client.from('people_inquiry_links').select('contact_id').eq('request_id',options.inquiry).limit(100);if(links.error)throw new Error('People relationships could not load.');query=query.in('id',(links.data||[]).map(l=>l.contact_id));}
  const sort=options.sort==='company'?'company_sort':options.sort==='updated'?'updated_at':options.sort==='id'?'id':'name_sort';
