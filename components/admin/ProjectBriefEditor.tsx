@@ -1,4 +1,5 @@
 'use client';
+import {approvalDomId} from '@/lib/approvals/links';
 import { useWorkspaceUnsavedChanges } from './workspace/WorkspaceNavigationGuard';
 
 import { useState } from 'react';
@@ -135,7 +136,7 @@ export function ProjectBriefEditor({
         <h3 className="font-heading text-xl font-semibold">Issued brief versions</h3>
         <div className="mt-4 space-y-4">
           {versions.map((version) => (
-            <details key={version.version} className="rounded-xl border border-border p-4">
+            <details id={approvalDomId('brief',String(version.version),version.version)} key={version.version} className="rounded-xl border border-border p-4">
               <summary className="cursor-pointer text-sm font-medium">Version {version.version} · {version.status.replace('_', ' ')}</summary>
               <div className="mt-4 space-y-3 text-sm">
                 <p className="whitespace-pre-wrap"><strong>Objectives:</strong> {version.body.objectives}</p>

@@ -1,3 +1,4 @@
+import {ApprovalFocus} from '@/components/admin/approvals/ApprovalFocus';
 
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -167,7 +168,7 @@ export default async function ProjectPage({
   searchParams = {},
 }: {
   params: { id: string };
-  searchParams?: { tab?: string;task?:string };
+  searchParams?: { tab?: string;task?:string;focus?:string };
 }) {
   /* =======================================================
      AUTHENTICATION
@@ -950,11 +951,11 @@ export default async function ProjectPage({
         record &&
         (
           brief ? (
-            <ProjectBriefEditor
+            <><ApprovalFocus focus={searchParams.focus}/><ProjectBriefEditor
               id={params.id}
               draft={brief.draft}
               versions={brief.versions}
-            />
+            /></>
           ) : (
             <p
               className="
@@ -980,7 +981,7 @@ export default async function ProjectPage({
         record &&
         (
           delivery ? (
-            <ProjectDeliveryControls
+            <><ApprovalFocus focus={searchParams.focus}/><ProjectDeliveryControls
               id={params.id}
               deliverables={
                 delivery.deliverables
@@ -1000,7 +1001,7 @@ export default async function ProjectPage({
               closeout={
                 delivery.closeout
               }
-            />
+            /></>
           ) : (
             <p
               className="
