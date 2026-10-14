@@ -1,4 +1,5 @@
 'use client';
+import { useWorkspaceUnsavedChanges } from './workspace/WorkspaceNavigationGuard';
 
 import {
   Fragment,
@@ -130,6 +131,8 @@ function TaskControlRow({
     dependsOn !== (control.dependsOn ?? '') ||
     blockerOwner !== (control.blockerOwner ?? '');
 
+  const markWorkspaceSaved = useWorkspaceUnsavedChanges(dirty, 'Task settings', save);
+
   const hasSecondarySettings = Boolean(
     control.dependsOn || control.blockerOwner ||
     control.serviceId || control.clientNote
@@ -169,7 +172,7 @@ function TaskControlRow({
       if (!response.ok || result?.saved !== true) {
         throw new Error(result?.error || 'Task controls could not be saved.');
       }
-      window.location.reload();
+      markWorkspaceSaved(); window.location.reload();
     } catch (error) {
       if (error instanceof Error &&
           ['TimeoutError', 'TypeError', 'SyntaxError'].includes(error.name)) {

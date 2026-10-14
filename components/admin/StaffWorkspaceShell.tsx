@@ -11,6 +11,9 @@ import {
   type ReactNode,
 } from 'react';
 
+import { staffGroups, recordDefinitions, canonicalKind, isStaffDestinationActive as isActive, type SectionId, type StaffDestination } from '@/lib/admin/workspace/navigation';
+import { WorkspaceNavigationGuard, guardWorkspaceNavigation } from './workspace/WorkspaceNavigationGuard';
+import { staffNavigationItems as navItems, recordIcons } from './workspace/navigationUi';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -86,84 +89,12 @@ import {
    NAVIGATION TYPES
    ========================================================= */
 
-type SectionId = 'overview' | 'work';
-
-interface NavItem {
-  label: string;
-  href: string;
-  icon: LucideIcon;
-  kind?: WorkspaceRecordKind;
-}
-
-interface NavSection {
-  id: SectionId;
-  title: string;
-  links: NavItem[];
-}
-
-/* =========================================================
-   STAFF NAVIGATION
-   ========================================================= */
-
-const sections: NavSection[] = [
-  {
-    id: 'overview',
-    title: 'Overview',
-    links: [
-      {
-        label: 'Dashboard',
-        href: '/',
-        icon: LayoutDashboard,
-      },
-    ],
-  },
-  {
-    id: 'work',
-    title: 'Work',
-    links: [
-      {
-        label: 'Inquiries',
-        href: '/inquiries',
-        icon: Inbox,
-        kind: 'inquiry',
-      },
-      {
-        label: 'Projects',
-        href: '/projects',
-        icon: FolderKanban,
-        kind: 'project',
-      },
-    ],
-  },
-];
-
-const navItems = sections.flatMap(
-  (section) => section.links
-);
+type NavItem = Omit<StaffDestination, 'icon'> & { icon: LucideIcon };
+const sections = staffGroups.map(group => ({ ...group, links: navItems.filter(item => item.subgroup === group.id) })).filter(group => group.links.length > 0);
 
 /* =========================================================
    RECORD CONFIGURATION
    ========================================================= */
-
-const recordIcons: Record<
-  WorkspaceRecordKind,
-  LucideIcon
-> = {
-  project: FolderKanban,
-  inquiry: Inbox,
-  lead: Inbox,
-  contact: Users,
-};
-
-const recordLabels: Record<
-  WorkspaceRecordKind,
-  string
-> = {
-  project: 'Projects',
-  inquiry: 'Inquiries',
-  lead: 'Inquiries',
-  contact: 'Contacts',
-};
 
 /* =========================================================
    PROJECT SECTIONS
@@ -304,48 +235,7 @@ export function WorkspaceRecordDetails({
    PATH HELPERS
    ========================================================= */
 
-function isActive(
-  pathname: string,
-  href: string
-): boolean {
-  const path = normalizeStaffPath(
-    pathname
-  );
-
-  const target = normalizeStaffPath(
-    href
-  );
-
-  if (target === '/') {
-    return path === '/';
-  }
-
-  if (target === '/inquiries') {
-    return (
-      path === '/inquiries' ||
-      path.startsWith('/inquiries/') ||
-      path.startsWith('/leads/')
-    );
-  }
-
-  return (
-    path === target ||
-    path.startsWith(`${target}/`)
-  );
-}
-
-function recordGroup(
-  kind: WorkspaceRecordKind
-): 'project' | 'inquiry' | 'contact' {
-  if (
-    kind === 'inquiry' ||
-    kind === 'lead'
-  ) {
-    return 'inquiry';
-  }
-
-  return kind;
-}
+const recordGroup = canonicalKind;
 
 /* =========================================================
    SIDEBAR DIRECTORY LINK
@@ -398,8 +288,8 @@ function SidebarLink({
 
         ${
           collapsed
-            ? 'h-10 w-10 justify-center'
-            : 'h-10 w-full gap-3 px-3'
+            ? 'h-11 w-11 justify-center'
+            : 'h-11 w-full gap-3 px-3'
         }
 
         ${
@@ -465,7 +355,7 @@ function SidebarRecord({
       }
       className={`
         flex
-        min-h-9
+        min-h-11
         w-full
         min-w-0
         items-center
@@ -901,7 +791,11 @@ export function StaffWorkspaceShell({
       Record<SectionId, boolean>
     >({
       overview: true,
-      work: true,
+      sales: true,
+      workspace: true,
+      resources: true,
+      business: true,
+      system: true,
     });
 
   const [density, setDensity] =
@@ -920,6 +814,12 @@ export function StaffWorkspaceShell({
 
   const [logoutError, setLogoutError] =
     useState('');
+
+  useEffect(() => {
+    const closeSearch = () => setSearchOpen(false);
+    window.addEventListener('bivi:workspace-navigation-blocked', closeSearch);
+    return () => window.removeEventListener('bivi:workspace-navigation-blocked', closeSearch);
+  }, []);
 
   /* =======================================================
      RECORD METADATA STATE
@@ -1257,9 +1157,7 @@ useEffect(() => {
 
   const breadcrumbCategory =
     routeRecord
-      ? recordLabels[
-          routeRecord.kind
-        ]
+      ? navItems.find(item => item.href === recordDefinitions[routeRecord.kind].directory)?.label ?? recordDefinitions[routeRecord.kind].label
       : 'Workspace';
 
   const breadcrumbTitle =
@@ -1275,12 +1173,7 @@ useEffect(() => {
         )
       : currentPage;
 
-  const breadcrumbHref =
-    routeRecord?.kind === 'project'
-      ? '/projects'
-      : routeRecord?.kind === 'contact'
-        ? '/'
-        : '/inquiries';
+  const breadcrumbHref = routeRecord ? recordDefinitions[routeRecord.kind].directory : '/';
 
   /* =======================================================
      SELECTED SECTION
@@ -1346,6 +1239,7 @@ useEffect(() => {
      ======================================================= */
 
   return (
+    <WorkspaceNavigationGuard>
     <RecordMetadataContext.Provider
       value={receiveMetadata}
     >
@@ -1556,10 +1450,12 @@ useEffect(() => {
                         <div className="space-y-1">
                           {section.links.map(
                             (item) => {
-                              const records =
-                                sectionRecords(
-                                  item
-                                );
+                              const openRecords = sectionRecords(item);
+                              const recordGroups = [
+                                { label: 'Pinned', records: openRecords.filter(tab => tab.pinned) },
+                                { label: 'Open', records: openRecords.filter(tab => !tab.pinned) },
+                                { label: 'Bookmarked', records: bookmarks.filter(bookmark => item.kind && recordGroup(bookmark.kind) === recordGroup(item.kind) && !tabs.some(tab => tab.key === bookmark.key)) },
+                              ].filter(group => group.records.length > 0);
 
                               return (
                                 <div
@@ -1571,7 +1467,7 @@ useEffect(() => {
                                     collapsed={false}
                                   />
 
-                                  {records.length > 0 && (
+                                  {recordGroups.length > 0 && (
                                     <div
                                       className="
                                         ml-4
@@ -1582,21 +1478,14 @@ useEffect(() => {
                                         pl-2
                                       "
                                     >
-                                      {records.map(
-                                        (tab) => (
-                                          <SidebarRecord
-                                            key={tab.key}
-                                            tab={tab}
-                                            active={
-                                              tab.key ===
-                                              activeKey
-                                            }
-                                            onOpen={() =>
-                                              openTab(tab)
-                                            }
-                                          />
-                                        )
-                                      )}
+                                      {recordGroups.map(group => (
+                                        <div key={group.label}>
+                                          <p className="px-2.5 pt-2 text-[10px] font-medium text-muted-foreground">{group.label}</p>
+                                          {group.records.map(tab => (
+                                            <SidebarRecord key={tab.key} tab={tab} active={tab.key === activeKey} onOpen={() => openTab(tab)} />
+                                          ))}
+                                        </div>
+                                      ))}
                                     </div>
                                   )}
                                 </div>
@@ -1609,83 +1498,6 @@ useEffect(() => {
                   )
                 )}
 
-                {/* SAVED RECORDS */}
-
-                <div>
-                  <div
-                    className="
-                      mb-2
-                      px-3
-                      font-mono
-                      text-[10px]
-                      font-medium
-                      uppercase
-                      tracking-[0.1em]
-                      text-muted-foreground
-                    "
-                  >
-                    Saved
-                  </div>
-
-                  <div
-                    className="
-                      flex
-                      items-center
-                      gap-3
-                      px-3
-                      py-2
-                      text-xs
-                      font-medium
-                      text-muted-foreground
-                    "
-                  >
-                    <Bookmark size={16} />
-
-                    Bookmarks
-
-                    <span
-                      className="
-                        ml-auto
-                        font-mono
-                        text-[10px]
-                      "
-                    >
-                      {bookmarks.length}
-                    </span>
-                  </div>
-
-                  {bookmarks.length > 0 && (
-                    <div
-                      className="
-                        ml-4
-                        space-y-0.5
-                        border-l
-                        border-border/60
-                        pl-2
-                      "
-                    >
-                      {bookmarks.map(
-                        (bookmark) => (
-                          <SidebarRecord
-                            key={
-                              bookmark.key
-                            }
-                            tab={bookmark}
-                            active={
-                              bookmark.key ===
-                              activeKey
-                            }
-                            onOpen={() =>
-                              openTab(
-                                bookmark
-                              )
-                            }
-                          />
-                        )
-                      )}
-                    </div>
-                  )}
-                </div>
               </>
             )}
           </nav>
@@ -1720,7 +1532,7 @@ useEffect(() => {
               }
               className={`
                 flex
-                h-10
+                h-11
                 items-center
                 rounded-xl
                 text-muted-foreground
@@ -1730,7 +1542,7 @@ useEffect(() => {
 
                 ${
                   collapsed
-                    ? 'mx-auto w-10 justify-center'
+                    ? 'mx-auto w-11 justify-center'
                     : 'w-full gap-3 px-3'
                 }
               `}
@@ -2032,7 +1844,7 @@ useEffect(() => {
                   <DropdownMenuItem
                     disabled={signingOut}
                     onSelect={() =>
-                      void signOut()
+                      guardWorkspaceNavigation(() => void signOut())
                     }
                     className="
                       cursor-pointer
@@ -2142,6 +1954,7 @@ useEffect(() => {
                     }
                     className={`
                       flex
+                      min-h-11
                       shrink-0
                       items-center
                       gap-2
@@ -2383,5 +2196,6 @@ useEffect(() => {
         )}
       </div>
     </RecordMetadataContext.Provider>
+    </WorkspaceNavigationGuard>
   );
 }

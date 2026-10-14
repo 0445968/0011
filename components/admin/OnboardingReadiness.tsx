@@ -1,4 +1,5 @@
 'use client';
+import { useWorkspaceUnsavedChanges } from './workspace/WorkspaceNavigationGuard';
 import {useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {Button} from '@/components/ui/button';
@@ -10,6 +11,8 @@ const dateLabel=(value:string)=>new Intl.DateTimeFormat('en-US',{dateStyle:'medi
 export function OnboardingReadiness({id,version,qualified,record,history}:{id:string;version:number;qualified:boolean;record:ReadinessRecord|null;history:ReadinessEvent[]}){
  const router=useRouter();const [body,setBody]=useState<ReadinessBody>(record?.body??emptyReadiness);const [reason,setReason]=useState('');const [busy,setBusy]=useState(false);const [blocked,setBlocked]=useState(false);const [message,setMessage]=useState('');
  const ready=record?.state==='ready';const dirty=JSON.stringify(body)!==JSON.stringify(record?.body??emptyReadiness);const checks=readinessChecks(record?.body??emptyReadiness);
+  const markWorkspaceSaved = useWorkspaceUnsavedChanges(dirty, 'Readiness', () => command('save'));
+
  function change<K extends keyof ReadinessBody>(key:K,value:ReadinessBody[K]){setBody(prev=>({...prev,[key]:value}));}
  async function command(action:'save'|'release'|'hold'){
   if(action==='save'&&!readinessBodySchema.safeParse(body).success){setMessage('Check the record fields, amount, currency and dates.');return;}
@@ -18,7 +21,7 @@ export function OnboardingReadiness({id,version,qualified,record,history}:{id:st
   try{
    const r=await fetch(`/api/admin/leads/${id}/readiness`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,expectedRevision:record?.revision??0,...(action==='save'?{body}:action==='hold'?{reason}:{})}),signal:AbortSignal.timeout(20000)});const data=await r.json();
    if(r.status===401){router.replace('/admin/login');router.refresh();return;}
-   if(r.status===409)setBlocked(true);if(!r.ok)throw new Error(data.error||'The record could not be saved.');window.location.reload();
+   if(r.status===409)setBlocked(true);if(!r.ok)throw new Error(data.error||'The record could not be saved.');markWorkspaceSaved(); window.location.reload();
   }catch(err){setMessage(err instanceof Error&&err.name!=='TimeoutError'?err.message:'The result could not be confirmed. Reload before retrying.');if(err instanceof Error&&(err.name==='TimeoutError'||err.name==='TypeError'))setBlocked(true);}
   finally{setBusy(false);}
  }

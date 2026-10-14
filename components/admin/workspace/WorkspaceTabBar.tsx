@@ -8,6 +8,7 @@ import {
 } from 'react';
 
 import Link from 'next/link';
+import { recordIcons, recordLabels } from './navigationUi';
 
 import {
   Bookmark,
@@ -66,93 +67,18 @@ interface WorkspaceTabBarProps {
    RECORD TYPES
    ========================================================= */
 
-const recordIcons: Record<
-  WorkspaceRecordKind,
-  LucideIcon
-> = {
-  project: FolderKanban,
-  inquiry: Inbox,
-  lead: Inbox,
-  contact: Users,
-};
-
-const recordLabels: Record<
-  WorkspaceRecordKind,
-  string
-> = {
-  project: 'Project',
-  inquiry: 'Inquiry',
-  lead: 'Inquiry',
-  contact: 'Contact',
-};
-
 /* =========================================================
    RECORD COLOR SYSTEM
    ========================================================= */
 
-/*
- * Yellow — Projects
- * Blue   — Inquiries / Leads
- * Red    — Contacts
- *
- * Active tabs use stronger tinted surfaces.
- * Inactive tabs use subtle transparent tints.
- *
- * Separate dark-mode styling is included.
- */
-
-const recordColors: Record<
-  WorkspaceRecordKind,
-  {
-    active: string;
-    inactive: string;
-    accent: string;
-    icon: string;
-  }
-> = {
-  project: {
-    active:
-      'bg-yellow-100/85 dark:bg-yellow-950/45 border-yellow-300/70 dark:border-yellow-700/50',
-    inactive:
-      'bg-yellow-50/45 dark:bg-yellow-950/15 hover:bg-yellow-100/65 dark:hover:bg-yellow-950/35',
-    accent:
-      'bg-yellow-500 dark:bg-yellow-400',
-    icon:
-      'text-yellow-600 dark:text-yellow-400',
-  },
-
-  inquiry: {
-    active:
-      'bg-blue-100/85 dark:bg-blue-950/45 border-blue-300/70 dark:border-blue-700/50',
-    inactive:
-      'bg-blue-50/45 dark:bg-blue-950/15 hover:bg-blue-100/65 dark:hover:bg-blue-950/35',
-    accent:
-      'bg-blue-500 dark:bg-blue-400',
-    icon:
-      'text-blue-600 dark:text-blue-400',
-  },
-
-  lead: {
-    active:
-      'bg-blue-100/85 dark:bg-blue-950/45 border-blue-300/70 dark:border-blue-700/50',
-    inactive:
-      'bg-blue-50/45 dark:bg-blue-950/15 hover:bg-blue-100/65 dark:hover:bg-blue-950/35',
-    accent:
-      'bg-blue-500 dark:bg-blue-400',
-    icon:
-      'text-blue-600 dark:text-blue-400',
-  },
-
-  contact: {
-    active:
-      'bg-red-100/85 dark:bg-red-950/45 border-red-300/70 dark:border-red-700/50',
-    inactive:
-      'bg-red-50/45 dark:bg-red-950/15 hover:bg-red-100/65 dark:hover:bg-red-950/35',
-    accent:
-      'bg-red-500 dark:bg-red-400',
-    icon:
-      'text-red-600 dark:text-red-400',
-  },
+const neutralColors = {
+  active: 'bg-muted border-border',
+  inactive: 'bg-card hover:bg-muted/70',
+  accent: 'bg-foreground',
+  icon: 'text-muted-foreground',
+};
+const recordColors: Record<WorkspaceRecordKind, typeof neutralColors> = {
+  project: neutralColors, inquiry: neutralColors, lead: neutralColors, contact: neutralColors,
 };
 
 function getRecordLabel(

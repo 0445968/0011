@@ -1,4 +1,5 @@
 'use client';
+import { useWorkspaceUnsavedChanges } from './workspace/WorkspaceNavigationGuard';
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -84,6 +85,8 @@ export function ProposalWorkspace({
     Boolean(draft && latest) &&
     JSON.stringify(body) !==
       JSON.stringify(latest?.body);
+
+  const markWorkspaceSaved = useWorkspaceUnsavedChanges(JSON.stringify(body) !== JSON.stringify(latestDraft?.body ?? latest?.body ?? seed), 'Proposal', () => command(draft ? 'save' : 'create'));
 
   const proposalValid = useMemo(() => {
     return proposalBodySchema.safeParse(body).success;
@@ -341,7 +344,7 @@ export function ProposalWorkspace({
         );
       }
 
-      window.location.reload();
+      markWorkspaceSaved(); window.location.reload();
     } catch (error) {
       setMessage(
         error instanceof Error &&

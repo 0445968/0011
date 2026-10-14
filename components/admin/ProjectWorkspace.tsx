@@ -1,5 +1,6 @@
 
 'use client';
+import { useWorkspaceUnsavedChanges } from './workspace/WorkspaceNavigationGuard';
 
 import {
   Fragment,
@@ -268,6 +269,8 @@ export function ProjectWorkspace({
     JSON.stringify(body) !==
       JSON.stringify(record.body)
   );
+
+  const markWorkspaceSaved = useWorkspaceUnsavedChanges(dirty, 'Project work plan', () => command('save'));
 
   const progress = body
     ? projectProgress(body)
@@ -700,7 +703,7 @@ export function ProjectWorkspace({
         );
       }
 
-      window.location.reload();
+      markWorkspaceSaved(); window.location.reload();
     } catch (error) {
       setMessage(
         error instanceof Error &&

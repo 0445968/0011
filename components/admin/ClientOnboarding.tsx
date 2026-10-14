@@ -1,4 +1,5 @@
 'use client';
+import { useWorkspaceUnsavedChanges } from './workspace/WorkspaceNavigationGuard';
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -63,6 +64,8 @@ export function ClientOnboarding({
     Boolean(record && body) &&
     JSON.stringify(body) !==
       JSON.stringify(record?.body);
+
+  const markWorkspaceSaved = useWorkspaceUnsavedChanges(dirty, 'Onboarding checklist', () => command('save'));
 
   const outstanding = body
     ? outstandingItems(body)
@@ -311,7 +314,7 @@ export function ClientOnboarding({
         );
       }
 
-      window.location.reload();
+      markWorkspaceSaved(); window.location.reload();
     } catch (error) {
       setMessage(
         error instanceof Error &&
