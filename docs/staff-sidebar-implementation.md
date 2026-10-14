@@ -143,3 +143,14 @@ Run `supabase/migrations/202610140017_company_workspace.sql` once after 001–01
 - Read-only directory/index migration 023 follows 022. Existing issue/acceptance/decline/revision gates are unchanged.
 - Validation: production build, TypeScript, changed-file lint, 30 platform tests covering all real statuses, latest/history selection, source company identity, exact version URLs, saved tab persistence and staff-only access. Signed-in focus/scroll/keyboard and mobile checks remain.
 - Next planned batch: audit task ownership and implement My Tasks using trusted staff identifiers.
+
+
+### My Tasks and verified task assignment (migration 024)
+- My Tasks at /tasks is a real, server-paginated queue whose database view requires active staff authorization and assigned_staff_id = auth.uid(). Search, task/project status, blocked/dependency state, lifecycle phase, due-date/timezone filters and sorting are supported.
+- Task data, status and dates remain in the authoritative project body; assignment is a nullable verified staff reference on the existing task control row. Existing owner/project labels are preserved and never auto-matched to accounts. New assignments must be made explicitly in Lifecycle → Task ownership.
+- The staff picker searches active account email/short ID with pagination; it provides no staff administration. Assignment RPCs honor task-control revisions, project locks, staff authorization and Bivi/client responsibility, with history snapshots. Moving responsibility to Client clears staff assignment; deactivation/deletion clears assignments safely.
+- Links open the exact work-plan or lifecycle row, expand it and select its pagination page within the same project tab. Dirty editor guards remain active. Missing tasks retain the project and show the current plan. Signed-in focus, scrolling, keyboard and responsive checks remain.
+- Migration 024 also fixes the existing manage_inquiry_project task-list save ambiguity: ON CONFLICT now names project_task_controls_pkey rather than a task_id identifier that collides with a PL/pgSQL variable. Existing body validation, revision checks, dependency checks, lifecycle logic, closeout gates and audit behavior are retained.
+- Due dates are calendar dates; the chosen IANA timezone controls today/overdue comparisons. America/Chicago is the default, and timezone is explicit in the queue UI/URL. Staff preference storage remains later work.
+- Apply migration 024 after 023. Validation: production build, TypeScript, changed-file lint and 33 tests including source-task save/removal, cross-staff/client isolation, stale/null revisions, client ownership, inactive staff, safe deep links and midnight/daylight-saving date boundaries.
+- Next planned batch: Approvals queue reusing current project/brief/delivery review gates.

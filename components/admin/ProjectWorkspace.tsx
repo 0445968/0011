@@ -1,9 +1,11 @@
 
 'use client';
+import {taskDomId} from '@/lib/tasks/links';
 import { useWorkspaceUnsavedChanges } from './workspace/WorkspaceNavigationGuard';
 
 import {
   Fragment,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -57,6 +59,7 @@ type Command =
 type TaskFilter = 'all' | Task['status'];
 
 type Props = {
+  selectedTask?:string;
   id: string;
   record: ProjectRecord | null;
   history: ProjectEvent[];
@@ -217,6 +220,7 @@ export function ProjectWorkspace({
   record,
   history,
   gateReady,
+  selectedTask,
 }: Props) {
   const router = useRouter();
 
@@ -253,6 +257,8 @@ export function ProjectWorkspace({
   const [expandedTaskId, setExpandedTaskId] =
     useState<string | null>(null);
 
+  useEffect(()=>{if(!selectedTask||!record)return;const index=record.body.tasks.findIndex(task=>task.id===selectedTask);if(index<0)return;setTaskFilter('all');setTaskQuery('');setTaskPage(Math.floor(index/TASK_PAGE_SIZE)+1);setExpandedTaskId(selectedTask);},[selectedTask,record]);
+  useEffect(()=>{if(selectedTask&&expandedTaskId===selectedTask){const row=document.getElementById(taskDomId(selectedTask));row?.focus({preventScroll:true});row?.scrollIntoView({block:'start'});}},[selectedTask,expandedTaskId,taskPage]);
   /* =======================================================
      STATUS
      ======================================================= */
@@ -1170,6 +1176,7 @@ export function ProjectWorkspace({
           }
         />
 
+        <p className="border-b border-border px-3 py-2 text-xs text-muted-foreground">Assign verified staff accounts in Lifecycle → Task ownership. Owner labels here are optional display text.</p>
         {/* SEARCH AND STATUS FILTER */}
 
         <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2.5">
@@ -1241,7 +1248,7 @@ export function ProjectWorkspace({
                   scope="col"
                   className="w-[17%] px-3 py-2 font-medium"
                 >
-                  Owner
+                  Owner label
                 </th>
 
                 <th
@@ -1292,7 +1299,7 @@ export function ProjectWorkspace({
 
                       {/* TASK ROW */}
 
-                      <tr
+                      <tr id={taskDomId(task.id)} tabIndex={-1} style={{scrollMarginTop:'6rem'}}
                         className={
                           expanded
                             ? 'bg-muted/30'

@@ -167,7 +167,7 @@ export default async function ProjectPage({
   searchParams = {},
 }: {
   params: { id: string };
-  searchParams?: { tab?: string };
+  searchParams?: { tab?: string;task?:string };
 }) {
   /* =======================================================
      AUTHENTICATION
@@ -370,6 +370,7 @@ export default async function ProjectPage({
       ? 'overview'
       : 'plan';
 
+  const requestedTask=searchParams.task;const selectedTask=requestedTask&&record?.body.tasks.some(task=>task.id===requestedTask)?requestedTask:undefined;
   const requestedTab =
     searchParams.tab;
 
@@ -884,14 +885,16 @@ export default async function ProjectPage({
             </p>
           )}
 
+          {requestedTask&&!selectedTask&&<p role="status" className="rounded border p-4 text-sm">This task is no longer in the project. The current work plan remains available below.</p>}
           <ProjectWorkspace
             key={
-              record?.revision ?? 0
+              `${record?.revision??0}:${selectedTask||''}`
             }
             id={params.id}
             record={record}
             history={data.history}
             gateReady={gateReady}
+            selectedTask={selectedTask}
           />
         </div>
       )}
@@ -905,6 +908,8 @@ export default async function ProjectPage({
         (
           lifecycle?.lifecycle ? (
             <ProjectLifecycleControls
+              key={`${record.revision}:${selectedTask||''}`}
+              selectedTask={selectedTask}
               id={params.id}
               lifecycle={
                 lifecycle.lifecycle

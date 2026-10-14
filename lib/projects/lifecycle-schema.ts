@@ -48,6 +48,7 @@ export const projectTaskControlSchema = z.object({
   task_id: z.string(),
   revision: z.number().int().positive(),
   owner_type: taskOwnerTypeSchema,
+  assigned_staff_id:z.string().uuid().nullable().optional(),
   phase: projectPhaseSchema,
   service_id: z.string().nullable(),
   depends_on: z.string().nullable(),
@@ -59,6 +60,7 @@ export const projectTaskControlSchema = z.object({
   taskId: row.task_id,
   revision: row.revision,
   ownerType: row.owner_type,
+  assignedStaffId:row.assigned_staff_id??null,
   phase: row.phase,
   serviceId: row.service_id,
   dependsOn: row.depends_on,
@@ -67,7 +69,7 @@ export const projectTaskControlSchema = z.object({
   updatedAt: row.updated_at,
 }));
 
-export type ProjectTaskControl = z.infer<typeof projectTaskControlSchema>;
+export type ProjectTaskControl = z.infer<typeof projectTaskControlSchema> & {assignedStaffLabel?:string};
 
 export const staffLifecycleCommandSchema = z.discriminatedUnion('action', [
   z.object({

@@ -1,8 +1,11 @@
 'use client';
+import {TaskAssignee} from './tasks/TaskAssignee';
+import {taskDomId} from '@/lib/tasks/links';
 import { useWorkspaceUnsavedChanges } from './workspace/WorkspaceNavigationGuard';
 
 import {
   Fragment,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -190,7 +193,7 @@ function TaskControlRow({
 
   return (
     <Fragment>
-      <tr className={expanded ? 'bg-muted/50' : 'hover:bg-muted/30'}>
+      <tr id={taskDomId(task.id,'lifecycle')} tabIndex={-1} style={{scrollMarginTop:'6rem'}} className={expanded ? 'bg-muted/50' : 'hover:bg-muted/30'}>
         <td className="max-w-[290px] px-3 py-2.5 align-middle">
           <p className="truncate text-xs font-semibold" title={task.title}>
             {task.title}
@@ -219,6 +222,7 @@ function TaskControlRow({
           </CompactSelect>
         </td>
 
+        <td className="px-3 py-2.5 align-middle"><TaskAssignee projectId={id} taskId={task.id} revision={control.revision} assignedId={control.assignedStaffId} label={control.assignedStaffLabel} disabled={control.ownerType==='client'||busy||blocked}/></td>
         <td className="px-3 py-2.5 align-middle">
           <CompactSelect
             label={`Lifecycle phase for ${task.title}`}
@@ -277,7 +281,7 @@ function TaskControlRow({
         <tr>
           <td
             id={`lifecycle-task-${task.id}`}
-            colSpan={5}
+            colSpan={6}
             className="bg-muted/30 px-4 py-4"
           >
             <div className="grid gap-3 md:grid-cols-3">
@@ -365,7 +369,7 @@ function TaskControlRow({
 
       {!expanded && message && (
         <tr>
-          <td colSpan={5} className="px-4 pb-2 text-xs text-red-600 dark:text-red-400">
+          <td colSpan={6} className="px-4 pb-2 text-xs text-red-600 dark:text-red-400">
             {message}{' '}
             {blocked && (
               <button
@@ -393,12 +397,14 @@ export function ProjectLifecycleControls({
   controls,
   tasks,
   events,
+  selectedTask,
 }: {
   id: string;
   lifecycle: Lifecycle;
   controls: ProjectTaskControl[];
   tasks: ProjectTask[];
   events: Event[];
+  selectedTask?:string;
 }) {
   const [phase, setPhase] = useState<ProjectPhase>(lifecycle.phase);
   const [reason, setReason] = useState('');
@@ -445,6 +451,8 @@ export function ProjectLifecycleControls({
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, pages);
   const visible = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  useEffect(()=>{if(!selectedTask)return;const index=entries.findIndex(entry=>entry.task.id===selectedTask);if(index<0)return;setQuery('');setOwnership('all');setPhaseFilter('all');setPage(Math.floor(index/PAGE_SIZE)+1);setExpandedId(selectedTask);},[selectedTask,entries]);
+  useEffect(()=>{if(selectedTask&&expandedId===selectedTask){const row=document.getElementById(taskDomId(selectedTask,'lifecycle'));row?.focus({preventScroll:true});row?.scrollIntoView({block:'start'});}},[selectedTask,expandedId,page]);
   const phaseIndex = projectPhaseOrder.indexOf(lifecycle.phase);
   const phaseChanged = phase !== lifecycle.phase;
 
@@ -662,19 +670,20 @@ export function ProjectLifecycleControls({
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[850px] table-fixed text-left text-xs">
+          <table className="w-full min-w-[1040px] table-fixed text-left text-xs">
             <colgroup>
-              <col className="w-[28%]" />
-              <col className="w-[18%]" />
               <col className="w-[23%]" />
-              <col className="w-[15%]" />
-              <col className="w-[16%]" />
+              <col className="w-[14%]" />
+              <col className="w-[19%]" />
+              <col className="w-[18%]" />
+              <col className="w-[12%]" />
+              <col className="w-[14%]" />
             </colgroup>
             <thead className="bg-muted/70 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th scope="col" className="px-3 py-2.5 font-medium">Task</th>
                 <th scope="col" className="px-3 py-2.5 font-medium">Responsibility</th>
-                <th scope="col" className="px-3 py-2.5 font-medium">Phase</th>
+                <th scope="col" className="px-3 py-2.5 font-medium">Assigned staff</th><th scope="col" className="px-3 py-2.5 font-medium">Phase</th>
                 <th scope="col" className="px-3 py-2.5 font-medium">Waiting on</th>
                 <th scope="col" className="px-3 py-2.5 text-right font-medium">Actions</th>
               </tr>
