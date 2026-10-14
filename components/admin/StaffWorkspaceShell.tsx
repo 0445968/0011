@@ -994,33 +994,28 @@ export function StaffWorkspaceShell({
      APPLY REGISTERED METADATA
      ======================================================= */
 
-  useEffect(() => {
-    if (
-      !hydrated ||
-      !routeRecord ||
-      !activeTab ||
-      !activeMetadata
-    ) {
-      return;
-    }
+useEffect(() => {
+  if (
+    !hydrated ||
+    !routeRecord ||
+    !activeTab ||
+    !activeMetadata
+  ) {
+    return;
+  }
 
-    if (
-      activeTab.key !==
-      routeRecord.key
-    ) {
-      return;
-    }
+  if (activeTab.key !== routeRecord.key) {
+    return;
+  }
 
-    registerRecord(
-      activeMetadata
-    );
-  }, [
-    hydrated,
-    routeRecord,
-    activeTab?.key,
-    activeMetadata,
-    registerRecord,
-  ]);
+  registerRecord(activeMetadata);
+}, [
+  hydrated,
+  routeRecord,
+  activeTab,
+  activeMetadata,
+  registerRecord,
+]);
 
   /* =======================================================
      PREFERENCES
