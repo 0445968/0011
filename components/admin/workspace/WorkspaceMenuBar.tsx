@@ -4,6 +4,7 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -24,6 +25,7 @@ import {
 
 import {
   getWorkspaceRecordHref,
+  normalizeStaffPath,
   type WorkspaceBookmark,
   type WorkspaceTab,
 } from './useStaffWorkspaceTabs';
@@ -97,14 +99,6 @@ interface WorkspaceMenuBarProps {
   closeOtherTabs: () => void;
   closeUnpinnedTabs: () => void;
 
-  /*
-   * These collections are supplied by authenticated
-   * workspace data in a later integration step.
-   *
-   * Undefined = not yet connected.
-   * Empty array = connected, no matching records.
-   */
-
   recentFiles?: WorkspaceMenuResource[];
   relatedRecords?: (
     | WorkspaceTab
@@ -128,6 +122,7 @@ interface WorkspaceMenuBarProps {
   ) => void;
 
   density?: WorkspaceDensity;
+
   onDensityChange?: (
     density: WorkspaceDensity
   ) => void;
@@ -140,14 +135,6 @@ interface WorkspaceMenuBarProps {
    CONFIGURATION
    ========================================================= */
 
-const PROJECT_SECTIONS = [
-  { label: 'Overview', value: 'overview' },
-  { label: 'Tasks & Milestones', value: 'plan' },
-  { label: 'Lifecycle', value: 'lifecycle' },
-  { label: 'Brief', value: 'brief' },
-  { label: 'Delivery', value: 'delivery' },
-] as const;
-
 const MENU_LABELS = [
   'File',
   'Edit',
@@ -158,6 +145,17 @@ const MENU_LABELS = [
   'Discussion',
   'Publishing',
   'Client access',
+] as const;
+
+type MenuName =
+  (typeof MENU_LABELS)[number];
+
+const PROJECT_SECTIONS = [
+  { label: 'Overview', value: 'overview' },
+  { label: 'Tasks & Milestones', value: 'plan' },
+  { label: 'Lifecycle', value: 'lifecycle' },
+  { label: 'Brief', value: 'brief' },
+  { label: 'Delivery', value: 'delivery' },
 ] as const;
 
 const MAX_RECENT_FILES = 10;
@@ -240,15 +238,7 @@ function MenuItem({
       </span>
 
       {shortcut && (
-        <kbd
-          className="
-            shrink-0
-            font-mono
-            text-[10px]
-            font-normal
-            text-muted-foreground
-          "
-        >
+        <kbd className="shrink-0 font-mono text-[10px] font-normal text-muted-foreground">
           {shortcut}
         </kbd>
       )}
@@ -292,19 +282,7 @@ function MenuHeading({
   children: ReactNode;
 }) {
   return (
-    <DropdownMenuLabel
-      className="
-        px-2.5
-        pb-1
-        pt-2
-        font-mono
-        text-[9px]
-        font-medium
-        uppercase
-        tracking-[0.1em]
-        text-muted-foreground
-      "
-    >
+    <DropdownMenuLabel className="px-2.5 pb-1 pt-2 font-mono text-[9px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
       {children}
     </DropdownMenuLabel>
   );
@@ -312,9 +290,7 @@ function MenuHeading({
 
 function MenuDivider() {
   return (
-    <DropdownMenuSeparator
-      className="my-1.5 bg-border/60"
-    />
+    <DropdownMenuSeparator className="my-1.5 bg-border/60" />
   );
 }
 
@@ -342,14 +318,24 @@ function safeWorkspaceHref(
   }
 
   if (
-    href === '/admin' ||
-    (
-      href.startsWith('/admin/') &&
-      !href.startsWith('//') &&
-      !href.includes('\\')
-    )
+    !href.startsWith('/') ||
+    href.startsWith('//') ||
+    href.includes('\\')
   ) {
-    return href;
+    return null;
+  }
+
+  const clean = normalizeStaffPath(href);
+
+  if (
+    clean === '/' ||
+    clean.startsWith('/projects/') ||
+    clean === '/projects' ||
+    clean.startsWith('/leads/') ||
+    clean === '/inquiries' ||
+    clean.startsWith('/inquiries/')
+  ) {
+    return clean;
   }
 
   return null;
@@ -375,7 +361,7 @@ function sortRecentFiles(
 }
 
 /* =========================================================
-   MAIN MENU BAR
+   WORKSPACE MENU BAR
    ========================================================= */
 
 export function WorkspaceMenuBar({
@@ -404,14 +390,88 @@ export function WorkspaceMenuBar({
 }: WorkspaceMenuBarProps) {
   const router = useRouter();
 
+  /* =======================================================
+     DESKTOP MENU STATE
+     ======================================================= */
+
+  const [openMenu, setOpenMenu] =
+    useState<MenuName | null>(null);
+
+  /*
+   * Tracks pointer-based transitions between
+   * top-level menus.
+   *
+   * Prevents the old menu from stealing focus
+   * when the cursor opens a different menu.
+   */
+
+  const switchingMenuRef = useRef(false);
+
+  function switchMenuOnHover(
+    label: MenuName,
+    pointerType: string
+  ) {
+    /*
+     * A menu must already be open.
+     *
+     * Hover alone does not open the first
+     * menu; the user clicks once to begin.
+     */
+
+    if (
+      openMenu === null ||
+      openMenu === label ||
+      pointerType === 'touch'
+    ) {
+      return;
+    }
+
+    switchingMenuRef.current = true;
+
+    setOpenMenu(label);
+  }
+
+  function handleMenuOpenChange(
+    label: MenuName,
+    open: boolean
+  ) {
+    setOpenMenu((current) => {
+      if (open) {
+        return label;
+      }
+
+      /*
+       * Ignore a close event from a menu
+       * that is no longer active.
+       *
+       * This prevents hover switching from
+       * accidentally closing the new menu.
+       */
+
+      return current === label
+        ? null
+        : current;
+    });
+  }
+
+  function handleMenuCloseAutoFocus(
+    event: Event
+  ) {
+    if (switchingMenuRef.current) {
+      event.preventDefault();
+      switchingMenuRef.current = false;
+    }
+  }
+
+  /* =======================================================
+     ADDITIONAL STATE
+     ======================================================= */
+
   const [fullscreen, setFullscreen] =
     useState(false);
 
   const [message, setMessage] =
     useState('');
-
-  const [openMenu, setOpenMenu] =
-    useState<string | null>(null);
 
   const isProject =
     activeTab?.kind === 'project';
@@ -443,9 +503,9 @@ export function WorkspaceMenuBar({
         bookmark.key === activeKey
     );
 
-  /* -------------------------------------------------------
+  /* =======================================================
      FULLSCREEN STATE
-     ------------------------------------------------------- */
+     ======================================================= */
 
   useEffect(() => {
     function updateFullscreen() {
@@ -469,9 +529,9 @@ export function WorkspaceMenuBar({
     };
   }, []);
 
-  /* -------------------------------------------------------
+  /* =======================================================
      RECORD-SCOPED FILES
-     ------------------------------------------------------- */
+     ======================================================= */
 
   const latestFiles = useMemo(() => {
     if (
@@ -489,9 +549,9 @@ export function WorkspaceMenuBar({
     ).slice(0, MAX_RECENT_FILES);
   }, [activeKey, recentFiles]);
 
-  /* -------------------------------------------------------
+  /* =======================================================
      COMMON ACTIONS
-     ------------------------------------------------------- */
+     ======================================================= */
 
   function navigate(href: string) {
     router.push(href);
@@ -512,7 +572,9 @@ export function WorkspaceMenuBar({
       <MenuItem
         disabled={!onAction}
         shortcut={shortcut}
-        onSelect={() => execute(command)}
+        onSelect={() =>
+          execute(command)
+        }
       >
         {label}
       </MenuItem>
@@ -695,10 +757,21 @@ export function WorkspaceMenuBar({
         return;
       }
 
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(
+        url
+      );
 
-      setMessage('Record link copied.');
-    } catch {
+      setMessage(
+        'Record link copied.'
+      );
+    } catch (error) {
+      if (
+        error instanceof DOMException &&
+        error.name === 'AbortError'
+      ) {
+        return;
+      }
+
       setMessage(
         'Could not share this record.'
       );
@@ -792,7 +865,7 @@ export function WorkspaceMenuBar({
         {isProject &&
           routeItem(
             'Original inquiry',
-            `/admin/leads/${activeTab!.id}`
+            `/leads/${activeTab!.id}`
           )}
 
         {relatedRecords.length === 0 &&
@@ -802,16 +875,18 @@ export function WorkspaceMenuBar({
             </EmptyMenuItem>
           )}
 
-        {relatedRecords.map((record) => (
-          <MenuItem
-            key={record.key}
-            onSelect={() =>
-              openTab(record)
-            }
-          >
-            {record.title}
-          </MenuItem>
-        ))}
+        {relatedRecords.map(
+          (record) => (
+            <MenuItem
+              key={record.key}
+              onSelect={() =>
+                openTab(record)
+              }
+            >
+              {record.title}
+            </MenuItem>
+          )
+        )}
       </MenuSubmenu>
 
       <MenuSubmenu
@@ -831,11 +906,12 @@ export function WorkspaceMenuBar({
             No recent files
           </EmptyMenuItem>
         ) : (
-          latestFiles.map((file) =>
-            resourceItem(
-              'file',
-              file
-            )
+          latestFiles.map(
+            (file) =>
+              resourceItem(
+                'file',
+                file
+              )
           )
         )}
 
@@ -964,25 +1040,16 @@ export function WorkspaceMenuBar({
         '⌘ F'
       )}
 
-      <MenuItem
-        onSelect={searchWeb}
-      >
+      <MenuItem onSelect={searchWeb}>
         Search the web…
       </MenuItem>
 
       <MenuDivider />
 
-      <MenuItem
-        disabled={
-          !activeTab ||
-          !onAction
-        }
-        onSelect={() =>
-          execute('edit-details')
-        }
-      >
-        Edit record details…
-      </MenuItem>
+      {commandItem(
+        'Edit record details…',
+        'edit-details'
+      )}
 
       {commandItem(
         'Save changes',
@@ -1172,7 +1239,6 @@ export function WorkspaceMenuBar({
         onSelect={() =>
           openOtherTab(1)
         }
-        shortcut="⌃ Tab"
       >
         Next tab
       </MenuItem>
@@ -1182,7 +1248,6 @@ export function WorkspaceMenuBar({
         onSelect={() =>
           openOtherTab(-1)
         }
-        shortcut="⌃ ⇧ Tab"
       >
         Previous tab
       </MenuItem>
@@ -1248,8 +1313,14 @@ export function WorkspaceMenuBar({
             return;
           }
 
+          const href =
+            getWorkspaceRecordHref(
+              activeTab.kind,
+              activeTab.id
+            );
+
           window.open(
-            activeTab.href,
+            href,
             '_blank',
             'noopener,noreferrer'
           );
@@ -1284,7 +1355,7 @@ export function WorkspaceMenuBar({
         isInquiry
           ? `${inquiryBase}/onboarding`
           : isProject
-            ? `/admin/leads/${activeTab!.id}/onboarding`
+            ? `/leads/${activeTab!.id}/onboarding`
             : null
       )}
 
@@ -1293,7 +1364,7 @@ export function WorkspaceMenuBar({
         isInquiry
           ? `${inquiryBase}/readiness`
           : isProject
-            ? `/admin/leads/${activeTab!.id}/readiness`
+            ? `/leads/${activeTab!.id}/readiness`
             : null
       )}
 
@@ -1302,7 +1373,7 @@ export function WorkspaceMenuBar({
         isInquiry
           ? `${inquiryBase}/proposals`
           : isProject
-            ? `/admin/leads/${activeTab!.id}/proposals`
+            ? `/leads/${activeTab!.id}/proposals`
             : null
       )}
 
@@ -1324,9 +1395,9 @@ export function WorkspaceMenuBar({
 
       {routeItem(
         'Client invitations and access',
-        isProject
+        projectBase
           ? `${projectBase}/access`
-          : isInquiry
+          : inquiryBase
             ? `${inquiryBase}/access`
             : null
       )}
@@ -1341,9 +1412,9 @@ export function WorkspaceMenuBar({
       )}
 
       {isProject &&
-        routeItem(
+        sectionItem(
           'Project lifecycle',
-          `${projectBase}?tab=lifecycle`
+          'lifecycle'
         )}
     </>
   );
@@ -1445,9 +1516,9 @@ export function WorkspaceMenuBar({
       )}
 
       {isProject &&
-        routeItem(
+        sectionItem(
           'Project tasks',
-          `${projectBase}?tab=plan`
+          'plan'
         )}
     </>
   );
@@ -1476,9 +1547,9 @@ export function WorkspaceMenuBar({
             `${projectBase}/publish`
           )}
 
-          {routeItem(
+          {sectionItem(
             'Delivery workspace',
-            `${projectBase}?tab=delivery`
+            'delivery'
           )}
 
           {routeItem(
@@ -1488,9 +1559,9 @@ export function WorkspaceMenuBar({
 
           <MenuDivider />
 
-          {routeItem(
+          {sectionItem(
             'Lifecycle and closeout',
-            `${projectBase}?tab=lifecycle`
+            'lifecycle'
           )}
         </>
       ) : isInquiry ? (
@@ -1582,10 +1653,10 @@ export function WorkspaceMenuBar({
   );
 
   /* =======================================================
-     RENDER MENUS
+     MENU CONTENT MAP
      ======================================================= */
 
-  const menus: Record<string, ReactNode> = {
+  const menus: Record<MenuName, ReactNode> = {
     File: fileMenu,
     Edit: editMenu,
     View: viewMenu,
@@ -1596,6 +1667,10 @@ export function WorkspaceMenuBar({
     Publishing: publishingMenu,
     'Client access': clientAccessMenu,
   };
+
+  /* =======================================================
+     RENDER
+     ======================================================= */
 
   return (
     <div
@@ -1629,16 +1704,34 @@ export function WorkspaceMenuBar({
         {MENU_LABELS.map((label) => (
           <DropdownMenu
             key={label}
+
+            /*
+             * Non-modal is important here:
+             * an open menu must not block
+             * pointer interaction with the
+             * neighboring menu triggers.
+             */
+            modal={false}
+
             open={openMenu === label}
-            onOpenChange={(open) => {
-              setOpenMenu(
-                open ? label : null
-              );
-            }}
+            onOpenChange={(open) =>
+              handleMenuOpenChange(
+                label,
+                open
+              )
+            }
           >
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
+
+                onPointerEnter={(event) =>
+                  switchMenuOnHover(
+                    label,
+                    event.pointerType
+                  )
+                }
+
                 className={`
                   flex
                   h-8
@@ -1649,6 +1742,8 @@ export function WorkspaceMenuBar({
                   text-[11px]
                   font-medium
                   transition-colors
+                  duration-100
+
                   hover:bg-muted
                   focus-visible:outline-none
                   focus-visible:ring-2
@@ -1670,6 +1765,10 @@ export function WorkspaceMenuBar({
               sideOffset={5}
               collisionPadding={12}
               className={contentClass}
+
+              onCloseAutoFocus={
+                handleMenuCloseAutoFocus
+              }
             >
               {menus[label]}
             </DropdownMenuContent>

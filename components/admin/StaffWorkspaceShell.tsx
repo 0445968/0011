@@ -17,6 +17,7 @@ import Link from 'next/link';
 import {
   usePathname,
   useRouter,
+  useSearchParams,
 } from 'next/navigation';
 
 import {
@@ -72,6 +73,8 @@ import {
 } from './workspace/WorkspaceTabBar';
 
 import {
+  getWorkspaceRecordHref,
+  normalizeStaffPath,
   useStaffWorkspaceTabs,
   type WorkspaceBookmark,
   type WorkspaceRecordKind,
@@ -80,7 +83,7 @@ import {
 } from './workspace/useStaffWorkspaceTabs';
 
 /* =========================================================
-   NAVIGATION CONFIGURATION
+   NAVIGATION TYPES
    ========================================================= */
 
 type SectionId = 'overview' | 'work';
@@ -98,6 +101,10 @@ interface NavSection {
   links: NavItem[];
 }
 
+/* =========================================================
+   STAFF NAVIGATION
+   ========================================================= */
+
 const sections: NavSection[] = [
   {
     id: 'overview',
@@ -105,7 +112,7 @@ const sections: NavSection[] = [
     links: [
       {
         label: 'Dashboard',
-        href: '/admin',
+        href: '/',
         icon: LayoutDashboard,
       },
     ],
@@ -116,13 +123,13 @@ const sections: NavSection[] = [
     links: [
       {
         label: 'Inquiries',
-        href: '/admin/inquiries',
+        href: '/inquiries',
         icon: Inbox,
         kind: 'inquiry',
       },
       {
         label: 'Projects',
-        href: '/admin/projects',
+        href: '/projects',
         icon: FolderKanban,
         kind: 'project',
       },
@@ -130,10 +137,13 @@ const sections: NavSection[] = [
   },
 ];
 
-const navItems =
-  sections.flatMap(
-    (section) => section.links
-  );
+const navItems = sections.flatMap(
+  (section) => section.links
+);
+
+/* =========================================================
+   RECORD CONFIGURATION
+   ========================================================= */
 
 const recordIcons: Record<
   WorkspaceRecordKind,
@@ -154,6 +164,10 @@ const recordLabels: Record<
   lead: 'Inquiries',
   contact: 'Contacts',
 };
+
+/* =========================================================
+   PROJECT SECTIONS
+   ========================================================= */
 
 const projectSections = [
   {
@@ -183,6 +197,10 @@ const projectSections = [
   },
 ];
 
+/* =========================================================
+   INQUIRY SECTIONS
+   ========================================================= */
+
 const inquirySections = [
   {
     label: 'Overview',
@@ -211,6 +229,10 @@ const inquirySections = [
   },
 ];
 
+/* =========================================================
+   STORAGE KEYS
+   ========================================================= */
+
 const SIDEBAR_STORAGE_KEY =
   'bivi-staff-sidebar-collapsed';
 
@@ -218,26 +240,37 @@ const DENSITY_STORAGE_KEY =
   'bivi-staff-workspace-density';
 
 /* =========================================================
-   RECORD METADATA REGISTRATION
+   RECORD METADATA CONTEXT
    ========================================================= */
 
 /*
- * Pages will use WorkspaceRecordDetails to
- * supply the real title, status, and due date.
+ * The actual project/inquiry page supplies
+ * its company name, service type, status,
+ * and optional due date.
  *
- * This avoids fetching protected record data
- * directly from the browser shell.
+ * The shared shell receives that metadata
+ * without making additional client-side
+ * requests to protected database tables.
  */
 
+type RegisterMetadata = (
+  metadata: WorkspaceRecordMetadata
+) => void;
+
 const RecordMetadataContext =
-  createContext<
-    (metadata: WorkspaceRecordMetadata) => void
-  >(() => {});
+  createContext<RegisterMetadata>(
+    () => {}
+  );
+
+/* =========================================================
+   RECORD METADATA REGISTRATION COMPONENT
+   ========================================================= */
 
 export function WorkspaceRecordDetails({
   kind,
   id,
   title,
+  recordType,
   status,
   dueDate,
 }: WorkspaceRecordMetadata) {
@@ -250,6 +283,7 @@ export function WorkspaceRecordDetails({
       kind,
       id,
       title,
+      recordType,
       status,
       dueDate,
     });
@@ -258,6 +292,7 @@ export function WorkspaceRecordDetails({
     kind,
     id,
     title,
+    recordType,
     status,
     dueDate,
   ]);
@@ -266,76 +301,54 @@ export function WorkspaceRecordDetails({
 }
 
 /* =========================================================
-   NAVIGATION HELPERS
+   PATH HELPERS
    ========================================================= */
-
-function normalizePath(
-  pathname: string
-): string {
-  if (pathname === '/') {
-    return '/admin';
-  }
-
-  if (
-    pathname === '/admin' ||
-    pathname.startsWith('/admin/')
-  ) {
-    return pathname;
-  }
-
-  return `/admin${
-    pathname.startsWith('/')
-      ? pathname
-      : `/${pathname}`
-  }`;
-}
 
 function isActive(
   pathname: string,
   href: string
 ): boolean {
-  const path = normalizePath(
+  const path = normalizeStaffPath(
     pathname
   );
 
-  if (href === '/admin') {
-    return path === '/admin';
+  const target = normalizeStaffPath(
+    href
+  );
+
+  if (target === '/') {
+    return path === '/';
   }
 
-  if (href === '/admin/inquiries') {
+  if (target === '/inquiries') {
     return (
-      path === href ||
-      path.startsWith(
-        `${href}/`
-      ) ||
-      path.startsWith(
-        '/admin/leads/'
-      )
+      path === '/inquiries' ||
+      path.startsWith('/inquiries/') ||
+      path.startsWith('/leads/')
     );
   }
 
   return (
-    path === href ||
-    path.startsWith(`${href}/`)
+    path === target ||
+    path.startsWith(`${target}/`)
   );
 }
 
-function matchesSection(
-  kind: WorkspaceRecordKind,
-  section: NavItem
-) {
+function recordGroup(
+  kind: WorkspaceRecordKind
+): 'project' | 'inquiry' | 'contact' {
   if (
-    kind === 'lead' &&
-    section.kind === 'inquiry'
+    kind === 'inquiry' ||
+    kind === 'lead'
   ) {
-    return true;
+    return 'inquiry';
   }
 
-  return kind === section.kind;
+  return kind;
 }
 
 /* =========================================================
-   SIDEBAR LINK
+   SIDEBAR DIRECTORY LINK
    ========================================================= */
 
 function SidebarLink({
@@ -415,7 +428,7 @@ function SidebarLink({
 }
 
 /* =========================================================
-   SIDEBAR RECORD
+   OPEN RECORD IN SIDEBAR
    ========================================================= */
 
 function SidebarRecord({
@@ -432,17 +445,27 @@ function SidebarRecord({
       ? Pin
       : recordIcons[tab.kind];
 
+  const typeLabel =
+    tab.recordType ||
+    (
+      tab.kind === 'project'
+        ? 'Project'
+        : tab.kind === 'contact'
+          ? 'Contact'
+          : 'Inquiry'
+    );
+
   return (
     <button
       type="button"
       onClick={onOpen}
-      title={tab.title}
+      title={`${tab.title} · ${typeLabel}`}
       aria-current={
         active ? 'page' : undefined
       }
       className={`
         flex
-        min-h-8
+        min-h-9
         w-full
         min-w-0
         items-center
@@ -451,7 +474,6 @@ function SidebarRecord({
         px-2.5
         py-1.5
         text-left
-        text-[11px]
         transition-colors
 
         ${
@@ -462,13 +484,43 @@ function SidebarRecord({
       `}
     >
       <Icon
-        size={12}
+        size={13}
         strokeWidth={1.8}
         className="shrink-0"
+        aria-hidden="true"
       />
 
-      <span className="min-w-0 flex-1 truncate">
-        {tab.title}
+      <span
+        className="
+          flex
+          min-w-0
+          flex-1
+          flex-col
+          gap-0.5
+        "
+      >
+        <span
+          className="
+            truncate
+            text-[11px]
+            font-semibold
+            leading-tight
+          "
+        >
+          {tab.title}
+        </span>
+
+        <span
+          className="
+            truncate
+            text-[10px]
+            font-normal
+            leading-tight
+            text-muted-foreground
+          "
+        >
+          {typeLabel}
+        </span>
       </span>
     </button>
   );
@@ -481,9 +533,11 @@ function SidebarRecord({
 function RecordContextNavigation({
   tab,
   pathname,
+  selectedProjectTab,
 }: {
   tab: WorkspaceTab | null;
   pathname: string;
+  selectedProjectTab: string;
 }) {
   if (!tab) {
     return null;
@@ -496,19 +550,25 @@ function RecordContextNavigation({
     tab.kind === 'inquiry' ||
     tab.kind === 'lead';
 
-  const base = isProject
-    ? `/admin/projects/${tab.id}`
-    : `/admin/leads/${tab.id}`;
+  const base = getWorkspaceRecordHref(
+    tab.kind,
+    tab.id
+  );
 
-  const search =
-    typeof window === 'undefined'
-      ? ''
-      : window.location.search;
+  const cleanPath = normalizeStaffPath(
+    pathname
+  );
 
-  const activeProjectSection =
-    new URLSearchParams(
-      search
-    ).get('tab') ?? 'overview';
+  const isOnMainProjectPage =
+    isProject &&
+    cleanPath === base;
+
+  const currentProjectSection =
+    isProject &&
+    tab.status === 'Not activated' &&
+    selectedProjectTab === 'overview'
+      ? 'plan'
+      : selectedProjectTab;
 
   return (
     <div
@@ -525,7 +585,7 @@ function RecordContextNavigation({
         sm:px-5
       "
     >
-      {/* RECORD SECTIONS */}
+      {/* SECTION NAVIGATION */}
 
       <nav
         aria-label="Record sections"
@@ -540,6 +600,8 @@ function RecordContextNavigation({
           scrollbar-hide
         "
       >
+        {/* PROJECT SECTIONS */}
+
         {isProject &&
           projectSections.map(
             (section) => {
@@ -549,12 +611,11 @@ function RecordContextNavigation({
                   : `${base}?tab=${section.id}`;
 
               const active =
-                pathname === base &&
-                activeProjectSection ===
+                isOnMainProjectPage &&
+                currentProjectSection ===
                   section.id;
 
-              const Icon =
-                section.icon;
+              const Icon = section.icon;
 
               return (
                 <Link
@@ -588,6 +649,7 @@ function RecordContextNavigation({
                   <Icon
                     size={14}
                     strokeWidth={1.8}
+                    aria-hidden="true"
                   />
 
                   {section.label}
@@ -596,6 +658,8 @@ function RecordContextNavigation({
             }
           )}
 
+        {/* INQUIRY SECTIONS */}
+
         {isInquiry &&
           inquirySections.map(
             (section) => {
@@ -603,10 +667,9 @@ function RecordContextNavigation({
                 `${base}${section.suffix}`;
 
               const active =
-                pathname === href;
+                cleanPath === href;
 
-              const Icon =
-                section.icon;
+              const Icon = section.icon;
 
               return (
                 <Link
@@ -628,6 +691,7 @@ function RecordContextNavigation({
                     px-2
                     text-[11px]
                     font-medium
+                    transition-colors
 
                     ${
                       active
@@ -639,6 +703,7 @@ function RecordContextNavigation({
                   <Icon
                     size={14}
                     strokeWidth={1.8}
+                    aria-hidden="true"
                   />
 
                   {section.label}
@@ -646,6 +711,8 @@ function RecordContextNavigation({
               );
             }
           )}
+
+        {/* CONTACT PLACEHOLDER */}
 
         {tab.kind === 'contact' && (
           <span className="flex items-center gap-2 text-xs font-semibold">
@@ -655,7 +722,7 @@ function RecordContextNavigation({
         )}
       </nav>
 
-      {/* STATUS + DUE DATE */}
+      {/* PROJECT STATUS */}
 
       <div
         className="
@@ -675,7 +742,6 @@ function RecordContextNavigation({
               py-1.5
               text-[10px]
               font-semibold
-              capitalize
               text-foreground
             "
           >
@@ -688,26 +754,26 @@ function RecordContextNavigation({
 
         {tab.dueDate && (
           <span
+            title={tab.dueDate}
             className="
               max-w-[125px]
               truncate
               text-[10px]
               text-muted-foreground
             "
-            title={tab.dueDate}
           >
             Due {tab.dueDate}
           </span>
         )}
       </div>
 
-      {/* PRIMARY ACTION */}
+      {/* PROJECT NEW TASK */}
 
       {isProject && (
         <button
           type="button"
           disabled
-          title="New task integration is coming with the project workspace update."
+          title="New task action will be connected to the project editor."
           className="
             hidden
             h-9
@@ -729,6 +795,8 @@ function RecordContextNavigation({
           New task
         </button>
       )}
+
+      {/* INQUIRY PROPOSALS */}
 
       {isInquiry && (
         <Link
@@ -757,7 +825,7 @@ function RecordContextNavigation({
 }
 
 /* =========================================================
-   STAFF WORKSPACE
+   MAIN STAFF WORKSPACE SHELL
    ========================================================= */
 
 export function StaffWorkspaceShell({
@@ -770,14 +838,15 @@ export function StaffWorkspaceShell({
   staffEmail?: string;
 }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
 
   /*
-   * Until the authenticated layout supplies
-   * staffId, use an ephemeral storage namespace.
+   * An authenticated staff ID should be
+   * supplied by the server layout.
    *
-   * This prevents one staff member's tab titles
-   * from being reused by a different account
+   * Until then, the temporary namespace
+   * avoids mixing tabs between accounts
    * on the same browser.
    */
 
@@ -792,6 +861,10 @@ export function StaffWorkspaceShell({
     staffId ||
     staffEmail ||
     temporaryId;
+
+  /* =======================================================
+     WORKSPACE TABS
+     ======================================================= */
 
   const workspace =
     useStaffWorkspaceTabs(
@@ -816,9 +889,9 @@ export function StaffWorkspaceShell({
     registerRecord,
   } = workspace;
 
-  /* -------------------------------------------------------
+  /* =======================================================
      LOCAL UI STATE
-     ------------------------------------------------------- */
+     ======================================================= */
 
   const [collapsed, setCollapsed] =
     useState(false);
@@ -848,16 +921,110 @@ export function StaffWorkspaceShell({
   const [logoutError, setLogoutError] =
     useState('');
 
-  const [
-    registeredMetadata,
-    setRegisteredMetadata,
-  ] = useState<
-    WorkspaceRecordMetadata | null
-  >(null);
+  /* =======================================================
+     RECORD METADATA STATE
+     ======================================================= */
 
-  /* -------------------------------------------------------
-     RESTORE UI PREFERENCES
-     ------------------------------------------------------- */
+  /*
+   * Keep metadata keyed by record ID, rather
+   * than storing only the last record visited.
+   *
+   * This lets metadata remain available when
+   * switching between existing open tabs.
+   */
+
+  const [
+    registeredRecords,
+    setRegisteredRecords,
+  ] = useState<
+    Record<string, WorkspaceRecordMetadata>
+  >({});
+
+  const receiveMetadata = useCallback(
+    (
+      metadata: WorkspaceRecordMetadata
+    ) => {
+      const kind =
+        metadata.kind === 'lead'
+          ? 'inquiry'
+          : metadata.kind;
+
+      const key =
+        `${kind}:${metadata.id}`;
+
+      setRegisteredRecords(
+        (current) => {
+          const existing =
+            current[key];
+
+          if (
+            existing &&
+            existing.title === metadata.title &&
+            existing.recordType ===
+              metadata.recordType &&
+            existing.status ===
+              metadata.status &&
+            existing.dueDate ===
+              metadata.dueDate
+          ) {
+            return current;
+          }
+
+          return {
+            ...current,
+            [key]: {
+              ...metadata,
+              kind,
+            },
+          };
+        }
+      );
+    },
+    []
+  );
+
+  const activeMetadata =
+    routeRecord
+      ? registeredRecords[
+          routeRecord.key
+        ]
+      : undefined;
+
+  /* =======================================================
+     APPLY REGISTERED METADATA
+     ======================================================= */
+
+  useEffect(() => {
+    if (
+      !hydrated ||
+      !routeRecord ||
+      !activeTab ||
+      !activeMetadata
+    ) {
+      return;
+    }
+
+    if (
+      activeTab.key !==
+      routeRecord.key
+    ) {
+      return;
+    }
+
+    registerRecord(
+      activeMetadata
+    );
+  }, [
+    hydrated,
+    routeRecord,
+    activeTab?.key,
+    activeMetadata,
+    registerRecord,
+  ]);
+
+  /* =======================================================
+     PREFERENCES
+     ======================================================= */
 
   useEffect(() => {
     try {
@@ -876,94 +1043,55 @@ export function StaffWorkspaceShell({
         storedDensity === 'compact' ||
         storedDensity === 'comfortable'
       ) {
-        setDensity(storedDensity);
+        setDensity(
+          storedDensity
+        );
       }
     } catch {
-      // Use default preferences.
+      // Default preferences remain active.
     }
   }, []);
 
   const toggleSidebar =
     useCallback(() => {
-      setCollapsed((previous) => {
-        const next = !previous;
+      setCollapsed(
+        (previous) => {
+          const next =
+            !previous;
 
-        try {
-          localStorage.setItem(
-            SIDEBAR_STORAGE_KEY,
-            String(next)
-          );
-        } catch {
-          // Keep the in-memory setting.
+          try {
+            localStorage.setItem(
+              SIDEBAR_STORAGE_KEY,
+              String(next)
+            );
+          } catch {
+            // Local preference still changes.
+          }
+
+          return next;
         }
-
-        return next;
-      });
+      );
     }, []);
 
-  const changeDensity =
-    useCallback(
-      (next: WorkspaceDensity) => {
-        setDensity(next);
+  const changeDensity = useCallback(
+    (next: WorkspaceDensity) => {
+      setDensity(next);
 
-        try {
-          localStorage.setItem(
-            DENSITY_STORAGE_KEY,
-            next
-          );
-        } catch {
-          // Keep the in-memory setting.
-        }
-      },
-      []
-    );
-
-  /* -------------------------------------------------------
-     RECORD REGISTRATION
-     ------------------------------------------------------- */
-
-  const receiveMetadata =
-    useCallback(
-      (
-        metadata:
-          WorkspaceRecordMetadata
-      ) => {
-        setRegisteredMetadata(
-          metadata
+      try {
+        localStorage.setItem(
+          DENSITY_STORAGE_KEY,
+          next
         );
-      },
-      []
-    );
+      } catch {
+        // Continue without persistence.
+      }
+    },
+    []
+  );
 
-  useEffect(() => {
-    if (
-      !registeredMetadata ||
-      !routeRecord ||
-      !activeTab
-    ) {
-      return;
-    }
-
-    if (
-      registeredMetadata.id !==
-      routeRecord.id
-    ) {
-      return;
-    }
-
-    registerRecord(
-      registeredMetadata
-    );
-  }, [
-    registeredMetadata,
-    routeRecord,
-    activeTab?.key,
-    registerRecord,
-  ]);
-
-  /* -------------------------------------------------------
+  /* =======================================================
      KEYBOARD SHORTCUTS
-     ------------------------------------------------------- */
+     ======================================================= */
 
   useEffect(() => {
     function onKeyDown(
@@ -977,18 +1105,22 @@ export function StaffWorkspaceShell({
         return;
       }
 
-      if (
-        event.key.toLowerCase() === 'k'
-      ) {
+      const key =
+        event.key.toLowerCase();
+
+      if (key === 'k') {
         event.preventDefault();
 
         setSearchOpen(
-          (previous) => !previous
+          (previous) =>
+            !previous
         );
+
+        return;
       }
 
       if (
-        event.key.toLowerCase() === 'd' &&
+        key === 'd' &&
         activeKey
       ) {
         event.preventDefault();
@@ -1004,33 +1136,35 @@ export function StaffWorkspaceShell({
       onKeyDown
     );
 
-    return () =>
+    return () => {
       window.removeEventListener(
         'keydown',
         onKeyDown
       );
+    };
   }, [
     activeKey,
     toggleBookmark,
   ]);
 
-  /* -------------------------------------------------------
-     SIDEBAR RECORD GROUPING
-     ------------------------------------------------------- */
+  /* =======================================================
+     OPEN RECORD GROUPS
+     ======================================================= */
 
   const recordsByKind = useMemo(() => {
     const groups: Record<
-      WorkspaceRecordKind,
+      'project' | 'inquiry' | 'contact',
       WorkspaceTab[]
     > = {
       project: [],
       inquiry: [],
-      lead: [],
       contact: [],
     };
 
     for (const tab of tabs) {
-      groups[tab.kind].push(tab);
+      groups[
+        recordGroup(tab.kind)
+      ].push(tab);
     }
 
     return groups;
@@ -1043,49 +1177,54 @@ export function StaffWorkspaceShell({
       return [];
     }
 
-    return [
-      ...recordsByKind[
-        item.kind
-      ],
-      ...(
-        item.kind === 'inquiry'
-          ? recordsByKind.lead
-          : []
-      ),
+    return recordsByKind[
+      recordGroup(item.kind)
     ];
   }
 
-  /* -------------------------------------------------------
-     PAGE SEARCH
-     ------------------------------------------------------- */
+  /* =======================================================
+     SEARCH RESULTS
+     ======================================================= */
 
   const matches = useMemo(() => {
     const pages = navItems.map(
       (item) => ({
+        key: `page:${item.href}`,
         label: item.label,
         href: item.href,
         icon: item.icon,
       })
     );
 
+    const seen = new Set<string>();
+
     const records = [
       ...tabs,
-      ...bookmarks.filter(
-        (bookmark) =>
-          !tabs.some(
-            (tab) =>
-              tab.key ===
-              bookmark.key
+      ...bookmarks,
+    ]
+      .filter((record) => {
+        if (
+          seen.has(
+            record.key
           )
-      ),
-    ].map((record) => ({
-      label: record.title,
-      href: record.href,
-      icon:
-        recordIcons[
+        ) {
+          return false;
+        }
+
+        seen.add(
+          record.key
+        );
+
+        return true;
+      })
+      .map((record) => ({
+        key: record.key,
+        label: record.title,
+        href: record.href,
+        icon: recordIcons[
           record.kind
         ],
-    }));
+      }));
 
     const term =
       search
@@ -1108,9 +1247,9 @@ export function StaffWorkspaceShell({
     bookmarks,
   ]);
 
-  /* -------------------------------------------------------
-     BREADCRUMBS
-     ------------------------------------------------------- */
+  /* =======================================================
+     BREADCRUMB DATA
+     ======================================================= */
 
   const currentPage =
     navItems.find(
@@ -1131,12 +1270,34 @@ export function StaffWorkspaceShell({
   const breadcrumbTitle =
     routeRecord
       ? activeTab?.title ??
-        `${recordLabels[routeRecord.kind].slice(0, -1)} ${routeRecord.id.slice(0, 8)}`
+        activeMetadata?.title ??
+        (
+          routeRecord.kind === 'project'
+            ? 'Project'
+            : routeRecord.kind === 'contact'
+              ? 'Contact'
+              : 'Inquiry'
+        )
       : currentPage;
 
-  /* -------------------------------------------------------
-     ACCOUNT
-     ------------------------------------------------------- */
+  const breadcrumbHref =
+    routeRecord?.kind === 'project'
+      ? '/projects'
+      : routeRecord?.kind === 'contact'
+        ? '/'
+        : '/inquiries';
+
+  /* =======================================================
+     SELECTED SECTION
+     ======================================================= */
+
+  const selectedProjectTab =
+    searchParams.get('tab') ??
+    'overview';
+
+  /* =======================================================
+     STAFF ACCOUNT
+     ======================================================= */
 
   const initial =
     staffEmail
@@ -1172,7 +1333,7 @@ export function StaffWorkspaceShell({
       }
 
       router.replace(
-        '/admin/login'
+        '/login'
       );
 
       router.refresh();
@@ -1250,7 +1411,7 @@ export function StaffWorkspaceShell({
             `}
           >
             <Link
-              href="/admin"
+              href="/"
               title="Bivi dashboard"
               aria-label="Bivi dashboard"
               className="
@@ -1302,7 +1463,7 @@ export function StaffWorkspaceShell({
             </Link>
           </div>
 
-          {/* NAVIGATION */}
+          {/* SIDEBAR NAVIGATION */}
 
           <nav
             aria-label="Staff navigation"
@@ -1332,6 +1493,8 @@ export function StaffWorkspaceShell({
               )
             ) : (
               <>
+                {/* DIRECTORY SECTIONS */}
+
                 {sections.map(
                   (section) => (
                     <div
@@ -1378,6 +1541,7 @@ export function StaffWorkspaceShell({
 
                         <ChevronDown
                           size={13}
+                          aria-hidden="true"
                           className={`
                             transition-transform
                             ${
@@ -1404,24 +1568,15 @@ export function StaffWorkspaceShell({
 
                               return (
                                 <div
-                                  key={
-                                    item.href
-                                  }
+                                  key={item.href}
                                 >
                                   <SidebarLink
-                                    item={
-                                      item
-                                    }
-                                    pathname={
-                                      pathname
-                                    }
-                                    collapsed={
-                                      false
-                                    }
+                                    item={item}
+                                    pathname={pathname}
+                                    collapsed={false}
                                   />
 
-                                  {records.length >
-                                    0 && (
+                                  {records.length > 0 && (
                                     <div
                                       className="
                                         ml-4
@@ -1433,24 +1588,16 @@ export function StaffWorkspaceShell({
                                       "
                                     >
                                       {records.map(
-                                        (
-                                          tab
-                                        ) => (
+                                        (tab) => (
                                           <SidebarRecord
-                                            key={
-                                              tab.key
-                                            }
-                                            tab={
-                                              tab
-                                            }
+                                            key={tab.key}
+                                            tab={tab}
                                             active={
                                               tab.key ===
                                               activeKey
                                             }
                                             onOpen={() =>
-                                              openTab(
-                                                tab
-                                              )
+                                              openTab(tab)
                                             }
                                           />
                                         )
@@ -1467,7 +1614,7 @@ export function StaffWorkspaceShell({
                   )
                 )}
 
-                {/* BOOKMARKED RECORDS */}
+                {/* SAVED RECORDS */}
 
                 <div>
                   <div
@@ -1485,53 +1632,80 @@ export function StaffWorkspaceShell({
                     Saved
                   </div>
 
-                  <div className="flex items-center gap-3 px-3 py-2 text-xs font-medium text-muted-foreground">
-                    <Bookmark
-                      size={16}
-                    />
+                  <div
+                    className="
+                      flex
+                      items-center
+                      gap-3
+                      px-3
+                      py-2
+                      text-xs
+                      font-medium
+                      text-muted-foreground
+                    "
+                  >
+                    <Bookmark size={16} />
 
                     Bookmarks
 
-                    <span className="ml-auto font-mono text-[10px]">
-                      {
-                        bookmarks.length
-                      }
+                    <span
+                      className="
+                        ml-auto
+                        font-mono
+                        text-[10px]
+                      "
+                    >
+                      {bookmarks.length}
                     </span>
                   </div>
 
-                  <div className="ml-4 space-y-0.5 border-l border-border/60 pl-2">
-                    {bookmarks.map(
-                      (
-                        bookmark
-                      ) => (
-                        <SidebarRecord
-                          key={
-                            bookmark.key
-                          }
-                          tab={
-                            bookmark
-                          }
-                          active={
-                            bookmark.key ===
-                            activeKey
-                          }
-                          onOpen={() =>
-                            openTab(
-                              bookmark
-                            )
-                          }
-                        />
-                      )
-                    )}
-                  </div>
+                  {bookmarks.length > 0 && (
+                    <div
+                      className="
+                        ml-4
+                        space-y-0.5
+                        border-l
+                        border-border/60
+                        pl-2
+                      "
+                    >
+                      {bookmarks.map(
+                        (bookmark) => (
+                          <SidebarRecord
+                            key={
+                              bookmark.key
+                            }
+                            tab={bookmark}
+                            active={
+                              bookmark.key ===
+                              activeKey
+                            }
+                            onOpen={() =>
+                              openTab(
+                                bookmark
+                              )
+                            }
+                          />
+                        )
+                      )}
+                    </div>
+                  )}
                 </div>
               </>
             )}
           </nav>
 
-          {/* SIDEBAR COLLAPSE */}
+          {/* COLLAPSE CONTROL */}
 
-          <div className="shrink-0 border-t border-border/40 px-3 py-3">
+          <div
+            className="
+              shrink-0
+              border-t
+              border-border/40
+              px-3
+              py-3
+            "
+          >
             <button
               type="button"
               onClick={
@@ -1543,8 +1717,11 @@ export function StaffWorkspaceShell({
                   : 'Collapse sidebar'
               }
               aria-controls="staff-sidebar"
-              aria-expanded={
-                !collapsed
+              aria-expanded={!collapsed}
+              title={
+                collapsed
+                  ? 'Expand sidebar'
+                  : 'Collapse sidebar'
               }
               className={`
                 flex
@@ -1566,10 +1743,12 @@ export function StaffWorkspaceShell({
               {collapsed ? (
                 <PanelLeftOpen
                   size={19}
+                  strokeWidth={1.8}
                 />
               ) : (
                 <PanelLeftClose
                   size={18}
+                  strokeWidth={1.8}
                 />
               )}
 
@@ -1583,7 +1762,7 @@ export function StaffWorkspaceShell({
         </aside>
 
         {/* ===============================================
-            MAIN WORKSPACE COLUMN
+            MAIN WORKSPACE
             =============================================== */}
 
         <div
@@ -1596,7 +1775,7 @@ export function StaffWorkspaceShell({
             overflow-hidden
           "
         >
-          {/* TOP BAR + BREADCRUMBS */}
+          {/* HEADER */}
 
           <header
             className="
@@ -1615,13 +1794,26 @@ export function StaffWorkspaceShell({
               sm:px-6
             "
           >
-            <div className="flex min-w-0 items-center gap-3">
+            <div
+              className="
+                flex
+                min-w-0
+                items-center
+                gap-3
+              "
+            >
               {/* MOBILE BRAND */}
 
               <Link
-                href="/admin"
+                href="/"
                 aria-label="Bivi dashboard"
-                className="flex shrink-0 items-center gap-2 md:hidden"
+                className="
+                  flex
+                  shrink-0
+                  items-center
+                  gap-2
+                  md:hidden
+                "
               >
                 <Image
                   src="/images/logo.svg"
@@ -1632,7 +1824,7 @@ export function StaffWorkspaceShell({
                 />
               </Link>
 
-              {/* DYNAMIC BREADCRUMBS */}
+              {/* BREADCRUMBS */}
 
               <nav
                 aria-label="Breadcrumb"
@@ -1647,52 +1839,48 @@ export function StaffWorkspaceShell({
                 {routeRecord ? (
                   <>
                     <Link
-                      href={
-                        routeRecord.kind ===
-                        'project'
-                          ? '/admin/projects'
-                          : routeRecord.kind ===
-                              'contact'
-                            ? '/admin'
-                            : '/admin/inquiries'
-                      }
+                      href={breadcrumbHref}
                       className="
                         shrink-0
                         text-muted-foreground
                         hover:text-foreground
                       "
                     >
-                      {
-                        breadcrumbCategory
-                      }
+                      {breadcrumbCategory}
                     </Link>
 
                     <ChevronRight
                       size={13}
-                      className="shrink-0 text-muted-foreground"
+                      aria-hidden="true"
+                      className="
+                        shrink-0
+                        text-muted-foreground
+                      "
                     />
 
                     <span
+                      title={
+                        breadcrumbTitle
+                      }
                       className="
                         min-w-0
                         truncate
                         font-semibold
                         text-foreground
                       "
-                      title={
-                        breadcrumbTitle
-                      }
                     >
-                      {
-                        breadcrumbTitle
-                      }
+                      {breadcrumbTitle}
                     </span>
                   </>
                 ) : (
-                  <span className="truncate font-semibold">
-                    {
-                      breadcrumbTitle
-                    }
+                  <span
+                    className="
+                      truncate
+                      font-semibold
+                      text-foreground
+                    "
+                  >
+                    {breadcrumbTitle}
                   </span>
                 )}
               </nav>
@@ -1700,14 +1888,22 @@ export function StaffWorkspaceShell({
 
             {/* HEADER ACTIONS */}
 
-            <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            <div
+              className="
+                flex
+                shrink-0
+                items-center
+                gap-2
+                sm:gap-3
+              "
+            >
+              {/* SEARCH */}
+
               <button
                 type="button"
                 aria-label="Search workspace"
                 onClick={() =>
-                  setSearchOpen(
-                    true
-                  )
+                  setSearchOpen(true)
                 }
                 className="
                   flex
@@ -1726,20 +1922,41 @@ export function StaffWorkspaceShell({
                   lg:w-[240px]
                 "
               >
-                <Search
-                  size={16}
-                />
+                <Search size={16} />
 
-                <span className="hidden flex-1 text-left text-xs sm:block">
+                <span
+                  className="
+                    hidden
+                    flex-1
+                    text-left
+                    text-xs
+                    sm:block
+                  "
+                >
                   Search workspace
                 </span>
 
-                <kbd className="hidden rounded bg-card px-1.5 py-0.5 font-mono text-[10px] lg:block">
+                <kbd
+                  className="
+                    hidden
+                    rounded
+                    bg-card
+                    px-1.5
+                    py-0.5
+                    font-mono
+                    text-[10px]
+                    lg:block
+                  "
+                >
                   ⌘ K
                 </kbd>
               </button>
 
+              {/* THEME */}
+
               <ThemeToggle />
+
+              {/* ACCOUNT */}
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -1760,9 +1977,7 @@ export function StaffWorkspaceShell({
                       hover:bg-accent
                     "
                   >
-                    {
-                      initial
-                    }
+                    {initial}
                   </button>
                 </DropdownMenuTrigger>
 
@@ -1779,19 +1994,40 @@ export function StaffWorkspaceShell({
                     shadow-lg
                   "
                 >
-                  <DropdownMenuLabel className="space-y-1 px-2 py-2">
-                    <span className="flex items-center gap-2 text-xs font-semibold">
-                      <UserRound
-                        size={14}
-                      />
+                  <DropdownMenuLabel
+                    className="
+                      space-y-1
+                      px-2
+                      py-2
+                    "
+                  >
+                    <span
+                      className="
+                        flex
+                        items-center
+                        gap-2
+                        text-xs
+                        font-semibold
+                      "
+                    >
+                      <UserRound size={14} />
                       Staff account
                     </span>
 
                     {staffEmail && (
-                      <span className="block truncate text-[11px] font-normal text-muted-foreground">
-                        {
+                      <span
+                        title={
                           staffEmail
                         }
+                        className="
+                          block
+                          truncate
+                          text-[11px]
+                          font-normal
+                          text-muted-foreground
+                        "
+                      >
+                        {staffEmail}
                       </span>
                     )}
                   </DropdownMenuLabel>
@@ -1799,9 +2035,7 @@ export function StaffWorkspaceShell({
                   <DropdownMenuSeparator />
 
                   <DropdownMenuItem
-                    disabled={
-                      signingOut
-                    }
+                    disabled={signingOut}
                     onSelect={() =>
                       void signOut()
                     }
@@ -1814,9 +2048,7 @@ export function StaffWorkspaceShell({
                       text-xs
                     "
                   >
-                    <LogOut
-                      size={15}
-                    />
+                    <LogOut size={15} />
 
                     {signingOut
                       ? 'Signing out…'
@@ -1827,102 +2059,53 @@ export function StaffWorkspaceShell({
             </div>
           </header>
 
-          {/* MENU BAR — TEXT ONLY */}
+          {/* TEXT-ONLY DESKTOP MENUS */}
 
           <WorkspaceMenuBar
-            activeTab={
-              activeTab
-            }
-            tabs={
-              tabs
-            }
-            bookmarks={
-              bookmarks
-            }
-            recentlyClosed={
-              recentlyClosed
-            }
-            openTab={
-              openTab
-            }
-            closeTab={
-              closeTab
-            }
-            togglePin={
-              togglePin
-            }
-            toggleBookmark={
-              toggleBookmark
-            }
-            reopenClosedTab={
-              reopenClosedTab
-            }
-            closeOtherTabs={
-              closeOtherTabs
-            }
-            closeUnpinnedTabs={
-              closeUnpinnedTabs
-            }
-            density={
-              density
-            }
-            onDensityChange={
-              changeDensity
-            }
-            sidebarCollapsed={
-              collapsed
-            }
-            onToggleSidebar={
-              toggleSidebar
-            }
+            activeTab={activeTab}
+            tabs={tabs}
+            bookmarks={bookmarks}
+            recentlyClosed={recentlyClosed}
+            openTab={openTab}
+            closeTab={closeTab}
+            togglePin={togglePin}
+            toggleBookmark={toggleBookmark}
+            reopenClosedTab={reopenClosedTab}
+            closeOtherTabs={closeOtherTabs}
+            closeUnpinnedTabs={closeUnpinnedTabs}
+            density={density}
+            onDensityChange={changeDensity}
+            sidebarCollapsed={collapsed}
+            onToggleSidebar={toggleSidebar}
           />
 
-          {/* MULTI-RECORD TAB BAR */}
+          {/* PERSISTENT RECORD TABS */}
 
           <WorkspaceTabBar
             tabs={
-              hydrated ? tabs : []
+              hydrated
+                ? tabs
+                : []
             }
-            bookmarks={
-              bookmarks
-            }
-            recentlyClosed={
-              recentlyClosed
-            }
-            activeKey={
-              activeKey
-            }
-            openTab={
-              openTab
-            }
-            closeTab={
-              closeTab
-            }
-            togglePin={
-              togglePin
-            }
-            toggleBookmark={
-              toggleBookmark
-            }
-            reopenClosedTab={
-              reopenClosedTab
-            }
-            closeOtherTabs={
-              closeOtherTabs
-            }
-            closeUnpinnedTabs={
-              closeUnpinnedTabs
-            }
+            bookmarks={bookmarks}
+            recentlyClosed={recentlyClosed}
+            activeKey={activeKey}
+            openTab={openTab}
+            closeTab={closeTab}
+            togglePin={togglePin}
+            toggleBookmark={toggleBookmark}
+            reopenClosedTab={reopenClosedTab}
+            closeOtherTabs={closeOtherTabs}
+            closeUnpinnedTabs={closeUnpinnedTabs}
           />
 
-          {/* CONTEXTUAL RECORD NAVIGATION */}
+          {/* PROJECT / INQUIRY SECTIONS */}
 
           <RecordContextNavigation
-            tab={
-              activeTab
-            }
-            pathname={
-              pathname
+            tab={activeTab}
+            pathname={pathname}
+            selectedProjectTab={
+              selectedProjectTab
             }
           />
 
@@ -1946,23 +2129,17 @@ export function StaffWorkspaceShell({
           >
             {navItems.map(
               (item) => {
-                const Icon =
-                  item.icon;
+                const Icon = item.icon;
 
-                const active =
-                  isActive(
-                    pathname,
-                    item.href
-                  );
+                const active = isActive(
+                  pathname,
+                  item.href
+                );
 
                 return (
                   <Link
-                    key={
-                      item.href
-                    }
-                    href={
-                      item.href
-                    }
+                    key={item.href}
+                    href={item.href}
                     aria-current={
                       active
                         ? 'page'
@@ -1988,18 +2165,17 @@ export function StaffWorkspaceShell({
                   >
                     <Icon
                       size={15}
+                      aria-hidden="true"
                     />
 
-                    {
-                      item.label
-                    }
+                    {item.label}
                   </Link>
                 );
               }
             )}
           </nav>
 
-          {/* SCROLLABLE PAGE CONTENT */}
+          {/* WORKSPACE CONTENT */}
 
           <main
             id="staff-workspace-content"
@@ -2030,9 +2206,7 @@ export function StaffWorkspaceShell({
                 }
               `}
             >
-              {
-                children
-              }
+              {children}
             </div>
           </main>
         </div>
@@ -2042,15 +2216,9 @@ export function StaffWorkspaceShell({
             =============================================== */}
 
         <Dialog
-          open={
-            searchOpen
-          }
-          onOpenChange={(
-            open
-          ) => {
-            setSearchOpen(
-              open
-            );
+          open={searchOpen}
+          onOpenChange={(open) => {
+            setSearchOpen(open);
 
             if (!open) {
               setSearch('');
@@ -2070,30 +2238,46 @@ export function StaffWorkspaceShell({
               shadow-xl
             "
           >
-            <DialogTitle className="text-base font-semibold">
+            <DialogTitle
+              className="
+                text-base
+                font-semibold
+              "
+            >
               Search workspace
             </DialogTitle>
 
-            <DialogDescription className="text-xs">
-              Find an open record, a bookmark, or a workspace page.
+            <DialogDescription
+              className="text-xs"
+            >
+              Find an open record, bookmark,
+              or workspace page.
             </DialogDescription>
 
-            <div className="flex items-center gap-2 rounded-xl bg-muted/70 px-3">
+            <div
+              className="
+                flex
+                items-center
+                gap-2
+                rounded-xl
+                bg-muted/70
+                px-3
+              "
+            >
               <Search
                 size={16}
-                className="shrink-0 text-muted-foreground"
+                className="
+                  shrink-0
+                  text-muted-foreground
+                "
               />
 
               <input
                 autoFocus
                 type="search"
                 aria-label="Search workspace"
-                value={
-                  search
-                }
-                onChange={(
-                  event
-                ) =>
+                value={search}
+                onChange={(event) =>
                   setSearch(
                     event.target.value
                   )
@@ -2111,25 +2295,26 @@ export function StaffWorkspaceShell({
               />
             </div>
 
-            <div className="max-h-80 space-y-1 overflow-y-auto scrollbar-transparent">
+            {/* SEARCH RESULTS */}
+
+            <div
+              className="
+                max-h-80
+                space-y-1
+                overflow-y-auto
+                scrollbar-transparent
+              "
+            >
               {matches.map(
                 (item) => {
-                  const Icon =
-                    item.icon;
+                  const Icon = item.icon;
 
                   return (
                     <Link
-                      key={
-                        item.href
-                      }
-                      href={
-                        item.href
-                      }
+                      key={item.key}
+                      href={item.href}
                       onClick={() => {
-                        setSearchOpen(
-                          false
-                        );
-
+                        setSearchOpen(false);
                         setSearch('');
                       }}
                       className="
@@ -2145,20 +2330,31 @@ export function StaffWorkspaceShell({
                     >
                       <Icon
                         size={16}
+                        aria-hidden="true"
                       />
 
-                      <span className="min-w-0 truncate">
-                        {
-                          item.label
-                        }
+                      <span
+                        className="
+                          min-w-0
+                          truncate
+                        "
+                      >
+                        {item.label}
                       </span>
                     </Link>
                   );
                 }
               )}
 
-              {!matches.length && (
-                <p className="py-5 text-center text-xs text-muted-foreground">
+              {matches.length === 0 && (
+                <p
+                  className="
+                    py-5
+                    text-center
+                    text-xs
+                    text-muted-foreground
+                  "
+                >
                   No matching pages or records.
                 </p>
               )}
@@ -2166,7 +2362,7 @@ export function StaffWorkspaceShell({
           </DialogContent>
         </Dialog>
 
-        {/* LOGOUT ERROR */}
+        {/* SIGN-OUT ERROR */}
 
         {logoutError && (
           <div
@@ -2187,9 +2383,7 @@ export function StaffWorkspaceShell({
               shadow-lg
             "
           >
-            {
-              logoutError
-            }
+            {logoutError}
           </div>
         )}
       </div>

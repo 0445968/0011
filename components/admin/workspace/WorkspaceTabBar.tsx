@@ -82,20 +82,86 @@ const recordLabels: Record<
 > = {
   project: 'Project',
   inquiry: 'Inquiry',
-  lead: 'Lead',
+  lead: 'Inquiry',
   contact: 'Contact',
+};
+
+/* =========================================================
+   RECORD COLOR SYSTEM
+   ========================================================= */
+
+/*
+ * Yellow — Projects
+ * Blue   — Inquiries / Leads
+ * Red    — Contacts
+ *
+ * Active tabs use stronger tinted surfaces.
+ * Inactive tabs use subtle transparent tints.
+ *
+ * Separate dark-mode styling is included.
+ */
+
+const recordColors: Record<
+  WorkspaceRecordKind,
+  {
+    active: string;
+    inactive: string;
+    accent: string;
+    icon: string;
+  }
+> = {
+  project: {
+    active:
+      'bg-yellow-100/85 dark:bg-yellow-950/45 border-yellow-300/70 dark:border-yellow-700/50',
+    inactive:
+      'bg-yellow-50/45 dark:bg-yellow-950/15 hover:bg-yellow-100/65 dark:hover:bg-yellow-950/35',
+    accent:
+      'bg-yellow-500 dark:bg-yellow-400',
+    icon:
+      'text-yellow-600 dark:text-yellow-400',
+  },
+
+  inquiry: {
+    active:
+      'bg-blue-100/85 dark:bg-blue-950/45 border-blue-300/70 dark:border-blue-700/50',
+    inactive:
+      'bg-blue-50/45 dark:bg-blue-950/15 hover:bg-blue-100/65 dark:hover:bg-blue-950/35',
+    accent:
+      'bg-blue-500 dark:bg-blue-400',
+    icon:
+      'text-blue-600 dark:text-blue-400',
+  },
+
+  lead: {
+    active:
+      'bg-blue-100/85 dark:bg-blue-950/45 border-blue-300/70 dark:border-blue-700/50',
+    inactive:
+      'bg-blue-50/45 dark:bg-blue-950/15 hover:bg-blue-100/65 dark:hover:bg-blue-950/35',
+    accent:
+      'bg-blue-500 dark:bg-blue-400',
+    icon:
+      'text-blue-600 dark:text-blue-400',
+  },
+
+  contact: {
+    active:
+      'bg-red-100/85 dark:bg-red-950/45 border-red-300/70 dark:border-red-700/50',
+    inactive:
+      'bg-red-50/45 dark:bg-red-950/15 hover:bg-red-100/65 dark:hover:bg-red-950/35',
+    accent:
+      'bg-red-500 dark:bg-red-400',
+    icon:
+      'text-red-600 dark:text-red-400',
+  },
 };
 
 function getRecordLabel(
   tab: WorkspaceTab
 ): string {
-  const custom = tab.recordType?.trim();
-
-  if (custom) {
-    return custom;
-  }
-
-  return recordLabels[tab.kind];
+  return (
+    tab.recordType?.trim() ||
+    recordLabels[tab.kind]
+  );
 }
 
 /* =========================================================
@@ -142,7 +208,8 @@ function TabAction({
             : 'text-muted-foreground/65 hover:text-foreground'
         }
 
-        hover:bg-muted
+        hover:bg-black/5
+        dark:hover:bg-white/10
         disabled:cursor-not-allowed
         disabled:opacity-25
       `}
@@ -153,7 +220,7 @@ function TabAction({
 }
 
 /* =========================================================
-   INDIVIDUAL TAB
+   INDIVIDUAL COLORED TAB
    ========================================================= */
 
 function WorkspaceTabItem({
@@ -174,7 +241,7 @@ function WorkspaceTabItem({
   onBookmark: () => void;
 }) {
   const Icon = recordIcons[tab.kind];
-
+  const colors = recordColors[tab.kind];
   const typeLabel = getRecordLabel(tab);
 
   return (
@@ -188,6 +255,7 @@ function WorkspaceTabItem({
         max-w-[270px]
         shrink-0
         items-center
+        overflow-hidden
         rounded-t-lg
         border
         border-b-0
@@ -198,22 +266,38 @@ function WorkspaceTabItem({
         ${
           active
             ? `
-              border-border
-              bg-card
+              ${colors.active}
               text-foreground
-              shadow-[inset_0_2px_0_0_currentColor]
             `
             : `
               border-transparent
-              bg-transparent
+              ${colors.inactive}
               text-muted-foreground
-              hover:bg-muted/70
               hover:text-foreground
             `
         }
       `}
     >
-      {/* RECORD TITLE + TYPE */}
+      {/* COLOR ACCENT */}
+
+      <span
+        aria-hidden="true"
+        className={`
+          absolute
+          inset-x-0
+          top-0
+          h-[3px]
+          ${colors.accent}
+          ${
+            active
+              ? 'opacity-100'
+              : 'opacity-45 group-hover:opacity-80'
+          }
+          transition-opacity
+        `}
+      />
+
+      {/* RECORD NAME AND TYPE */}
 
       <button
         type="button"
@@ -240,10 +324,10 @@ function WorkspaceTabItem({
         <Icon
           size={15}
           strokeWidth={1.8}
-          className="
+          className={`
             shrink-0
-            text-muted-foreground
-          "
+            ${colors.icon}
+          `}
           aria-hidden="true"
         />
 
@@ -294,14 +378,7 @@ function WorkspaceTabItem({
 
       {/* TAB ACTIONS */}
 
-      <div
-        className="
-          flex
-          shrink-0
-          items-center
-          gap-0
-        "
-      >
+      <div className="flex shrink-0 items-center gap-0">
         <TabAction
           label={
             bookmarked
@@ -464,7 +541,9 @@ export function WorkspaceTabBar({
       {tabs.length > 4 && (
         <ScrollButton
           direction="left"
-          onClick={() => scrollTabs(-1)}
+          onClick={() =>
+            scrollTabs(-1)
+          }
         />
       )}
 
@@ -491,15 +570,6 @@ export function WorkspaceTabBar({
 
             const nextTab =
               tabs[index + 1];
-
-            /*
-             * Draw a separator only when
-             * both neighboring tabs are
-             * inactive.
-             *
-             * Separators do not affect
-             * the tab ordering.
-             */
 
             const showDivider =
               !active &&
@@ -532,46 +602,29 @@ export function WorkspaceTabBar({
                   }
                 />
 
-                {showDivider && (
+                {nextTab && (
                   <span
                     aria-hidden="true"
-                    className="
+                    className={`
                       mx-1
                       mb-[15px]
                       h-[16px]
                       w-px
                       shrink-0
-                      bg-border
-                    "
+
+                      ${
+                        showDivider
+                          ? 'bg-border'
+                          : 'bg-transparent'
+                      }
+                    `}
                   />
                 )}
-
-                {!showDivider &&
-                  nextTab && (
-                    <span
-                      aria-hidden="true"
-                      className="
-                        mx-1
-                        w-px
-                        shrink-0
-                        bg-transparent
-                      "
-                    />
-                  )}
               </Fragment>
             );
           })
         ) : (
-          <span
-            className="
-              flex
-              h-full
-              items-center
-              px-3
-              text-[11px]
-              text-muted-foreground
-            "
-          >
+          <span className="flex h-full items-center px-3 text-[11px] text-muted-foreground">
             Open a project or inquiry to create a tab.
           </span>
         )}
@@ -582,7 +635,9 @@ export function WorkspaceTabBar({
       {tabs.length > 4 && (
         <ScrollButton
           direction="right"
-          onClick={() => scrollTabs(1)}
+          onClick={() =>
+            scrollTabs(1)
+          }
         />
       )}
 
@@ -627,33 +682,14 @@ export function WorkspaceTabBar({
             shadow-lg
           "
         >
-          <DropdownMenuLabel
-            className="
-              px-2.5
-              py-2
-              font-mono
-              text-[10px]
-              uppercase
-              tracking-wider
-              text-muted-foreground
-            "
-          >
+          <DropdownMenuLabel className="px-2.5 py-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
             Open workspace
           </DropdownMenuLabel>
 
           <DropdownMenuItem asChild>
             <Link
               href="/projects"
-              className="
-                flex
-                cursor-pointer
-                items-center
-                gap-2.5
-                rounded-lg
-                px-3
-                py-2
-                text-xs
-              "
+              className="flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-xs"
             >
               <FolderKanban size={15} />
               Browse projects
@@ -663,39 +699,18 @@ export function WorkspaceTabBar({
           <DropdownMenuItem asChild>
             <Link
               href="/inquiries"
-              className="
-                flex
-                cursor-pointer
-                items-center
-                gap-2.5
-                rounded-lg
-                px-3
-                py-2
-                text-xs
-              "
+              className="flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-xs"
             >
               <Inbox size={15} />
               Browse inquiries
             </Link>
           </DropdownMenuItem>
 
-          {/* SAVED RECORDS */}
-
           {bookmarks.length > 0 && (
             <>
               <DropdownMenuSeparator />
 
-              <DropdownMenuLabel
-                className="
-                  px-2.5
-                  py-2
-                  font-mono
-                  text-[10px]
-                  uppercase
-                  tracking-wider
-                  text-muted-foreground
-                "
-              >
+              <DropdownMenuLabel className="px-2.5 py-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
                 Bookmarked records
               </DropdownMenuLabel>
 
@@ -707,37 +722,28 @@ export function WorkspaceTabBar({
                       bookmark.kind
                     ];
 
+                  const colors =
+                    recordColors[
+                      bookmark.kind
+                    ];
+
                   return (
                     <DropdownMenuItem
                       key={bookmark.key}
                       onSelect={() =>
                         openTab(bookmark)
                       }
-                      className="
-                        flex
-                        cursor-pointer
-                        items-center
-                        gap-2.5
-                        rounded-lg
-                        px-3
-                        py-2
-                        text-xs
-                      "
+                      className="flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-xs"
                     >
                       <Icon
                         size={15}
-                        className="shrink-0"
+                        className={`
+                          shrink-0
+                          ${colors.icon}
+                        `}
                       />
 
-                      <span
-                        className="
-                          flex
-                          min-w-0
-                          flex-1
-                          flex-col
-                          gap-0.5
-                        "
-                      >
+                      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                         <span className="truncate font-medium">
                           {bookmark.title}
                         </span>
@@ -755,24 +761,13 @@ export function WorkspaceTabBar({
             </>
           )}
 
-          {/* RECENTLY CLOSED */}
-
           {recentlyClosed.length > 0 && (
             <>
               <DropdownMenuSeparator />
 
               <DropdownMenuItem
                 onSelect={reopenClosedTab}
-                className="
-                  flex
-                  cursor-pointer
-                  items-center
-                  gap-2.5
-                  rounded-lg
-                  px-3
-                  py-2
-                  text-xs
-                "
+                className="flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-xs"
               >
                 <RotateCcw size={15} />
                 Reopen closed tab
@@ -823,21 +818,9 @@ export function WorkspaceTabBar({
             shadow-lg
           "
         >
-          <DropdownMenuLabel
-            className="
-              px-2.5
-              py-2
-              font-mono
-              text-[10px]
-              uppercase
-              tracking-wider
-              text-muted-foreground
-            "
-          >
+          <DropdownMenuLabel className="px-2.5 py-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
             Window management
           </DropdownMenuLabel>
-
-          {/* PIN */}
 
           <DropdownMenuItem
             disabled={!activeTab}
@@ -846,14 +829,7 @@ export function WorkspaceTabBar({
                 togglePin(activeKey);
               }
             }}
-            className="
-              cursor-pointer
-              gap-2
-              rounded-lg
-              px-3
-              py-2
-              text-xs
-            "
+            className="cursor-pointer gap-2 rounded-lg px-3 py-2 text-xs"
           >
             <Pin size={14} />
 
@@ -862,8 +838,6 @@ export function WorkspaceTabBar({
               : 'Pin current tab'}
           </DropdownMenuItem>
 
-          {/* BOOKMARK */}
-
           <DropdownMenuItem
             disabled={!activeTab}
             onSelect={() => {
@@ -871,14 +845,7 @@ export function WorkspaceTabBar({
                 toggleBookmark(activeKey);
               }
             }}
-            className="
-              cursor-pointer
-              gap-2
-              rounded-lg
-              px-3
-              py-2
-              text-xs
-            "
+            className="cursor-pointer gap-2 rounded-lg px-3 py-2 text-xs"
           >
             <Bookmark size={14} />
 
@@ -895,13 +862,7 @@ export function WorkspaceTabBar({
           <DropdownMenuItem
             disabled={tabs.length < 2}
             onSelect={closeOtherTabs}
-            className="
-              cursor-pointer
-              rounded-lg
-              px-3
-              py-2
-              text-xs
-            "
+            className="cursor-pointer rounded-lg px-3 py-2 text-xs"
           >
             Close other tabs
           </DropdownMenuItem>
@@ -909,13 +870,7 @@ export function WorkspaceTabBar({
           <DropdownMenuItem
             disabled={tabs.length < 2}
             onSelect={closeUnpinnedTabs}
-            className="
-              cursor-pointer
-              rounded-lg
-              px-3
-              py-2
-              text-xs
-            "
+            className="cursor-pointer rounded-lg px-3 py-2 text-xs"
           >
             Close unpinned tabs
           </DropdownMenuItem>
@@ -927,14 +882,7 @@ export function WorkspaceTabBar({
               recentlyClosed.length === 0
             }
             onSelect={reopenClosedTab}
-            className="
-              cursor-pointer
-              gap-2
-              rounded-lg
-              px-3
-              py-2
-              text-xs
-            "
+            className="cursor-pointer gap-2 rounded-lg px-3 py-2 text-xs"
           >
             <RotateCcw size={14} />
             Reopen closed tab
