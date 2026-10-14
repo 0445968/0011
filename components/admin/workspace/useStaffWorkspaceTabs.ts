@@ -17,7 +17,7 @@ import {
 } from 'next/navigation';
 
 import {
-  canonicalKind, UUID_PATTERN, normalizeStaffPath, liveStaffDestinations, reorderWorkspaceTabs,
+  canonicalKind, isWorkspaceRecordId, normalizeStaffPath, liveStaffDestinations, reorderWorkspaceTabs,
   getWorkspaceRecordHref, getWorkspaceRecordFromPath,
   type WorkspaceRecordKind,
 } from '@/lib/admin/workspace/navigation';
@@ -175,7 +175,7 @@ function validTab(
   return (
     typeof item.key === 'string' &&
     typeof item.id === 'string' &&
-    UUID_PATTERN.test(item.id) &&
+    isWorkspaceRecordId(item.kind as WorkspaceRecordKind, item.id) &&
     isRecordKind(item.kind) &&
     liveStaffDestinations.some(destination => destination.kind === canonicalKind(item.kind!)) &&
     item.key === `${item.kind}:${item.id}` &&
@@ -205,7 +205,7 @@ function validBookmark(
   return (
     typeof item.key === 'string' &&
     typeof item.id === 'string' &&
-    UUID_PATTERN.test(item.id) &&
+    isWorkspaceRecordId(item.kind as WorkspaceRecordKind, item.id) &&
     isRecordKind(item.kind) &&
     liveStaffDestinations.some(destination => destination.kind === canonicalKind(item.kind!)) &&
     item.key === `${item.kind}:${item.id}` &&
@@ -894,9 +894,7 @@ export function useStaffWorkspaceTabs(
           WorkspaceRecordMetadata
       ) => {
         if (
-          !UUID_PATTERN.test(
-            metadata.id
-          )
+          !isWorkspaceRecordId(metadata.kind, metadata.id)
         ) {
           return;
         }

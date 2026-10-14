@@ -1,4 +1,5 @@
 'use client';
+import { ContactPhonebook } from './people/ContactPhonebook';
 import { useWorkspaceUnsavedChanges } from './workspace/WorkspaceNavigationGuard';
 
 import { useMemo, useState } from 'react';
@@ -525,7 +526,7 @@ export function ClientOnboarding({
 
           <section className="rounded-2xl border border-border bg-card p-6">
             <h2 className="font-heading text-xl font-semibold">
-              Client contacts
+              Client contacts <ContactPhonebook inquiryId={id} initialSearch={body.contactEmail} onSelect={person=>setBody(previous=>previous?{...previous,contactName:person.name,contactEmail:person.email}:previous)}/>
             </h2>
 
             <p className="mt-3 text-sm text-muted-foreground">

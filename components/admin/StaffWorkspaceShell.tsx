@@ -354,7 +354,7 @@ function SidebarRecord({
       tab.kind === 'project'
         ? 'Project'
         : tab.kind === 'contact'
-          ? 'Contact'
+          ? 'Person'
           : 'Inquiry'
     );
 
@@ -624,7 +624,7 @@ function RecordContextNavigation({
         {tab.kind === 'contact' && (
           <span className="flex items-center gap-2 text-xs font-semibold">
             <Users size={15} />
-            Contact workspace
+            Person workspace
           </span>
         )}
       </nav>
@@ -1194,7 +1194,7 @@ useEffect(() => {
           routeRecord.kind === 'project'
             ? 'Project'
             : routeRecord.kind === 'contact'
-              ? 'Contact'
+              ? 'Person'
               : 'Inquiry'
         )
       : currentPage;

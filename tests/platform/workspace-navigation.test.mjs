@@ -19,7 +19,7 @@ const state = hookModule.exports;
 const tab = (kind = 'project', extra = {}) => ({ key: `${kind}:${id}`, id, kind, title: 'Lumen', href: `/projects/${id}?tab=brief`, pinned: false, lastOpenedAt: 1, ...extra });
 
 test('only implemented destinations are live and middleware rewrites the same routes', () => {
-  assert.deepEqual(nav.liveStaffDestinations.map(item => item.id), ['dashboard', 'inquiries', 'projects']);
+  assert.deepEqual(nav.liveStaffDestinations.map(item => item.id), ['dashboard', 'inquiries', 'people', 'projects']);
   for (const item of nav.liveStaffDestinations) {
     assert.equal(nav.staffInternalPath(item.href), item.href === '/' ? '/admin' : `/admin${item.href}`);
     assert.equal(item.permission, 'staff');
@@ -90,4 +90,12 @@ test('drag order survives restoration and pinning never changes explicit order',
   const actual = [tab('inquiry', { href: `/leads/${id}` }), tab('project', { id: secondId, key: `project:${secondId}`, href: `/projects/${secondId}`, pinned: true })];
   globalThis.localStorage = { getItem: () => JSON.stringify({ tabs: actual }) };
   assert.deepEqual(state.restoreSnapshot('staff').tabs.map(item => item.key), actual.map(item => item.key));
+});
+
+test('People routes use stable numeric contact IDs with at most nine digits', () => {
+ for (const value of ['1','999999999','123456789']) {
+  assert.deepEqual(nav.getWorkspaceRecordFromPath(`/people/${value}`), {key:`contact:${value}`,id:value,kind:'contact',href:`/people/${value}`});
+  assert.equal(nav.isStaffDestinationActive(`/admin/people/${value}`, '/people'),true);
+ }
+ for (const value of ['0','012345678','1000000000','abc']) assert.equal(nav.getWorkspaceRecordFromPath(`/people/${value}`),null);
 });

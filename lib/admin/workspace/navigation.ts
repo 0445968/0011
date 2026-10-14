@@ -24,7 +24,7 @@ export const staffDestinations: StaffDestination[] = [
   { id: 'notifications', label: 'Notifications', href: '/notifications', icon: 'Bell', permission: 'staff', status: 'build', subgroup: 'overview' },
   { id: 'calendar', label: 'Calendar', href: '/calendar', icon: 'CalendarDays', permission: 'staff', status: 'build', subgroup: 'overview' },
   { id: 'inquiries', label: 'Inquiries', href: '/inquiries', icon: 'Inbox', permission: 'staff', status: 'existing', subgroup: 'sales', kind: 'inquiry' },
-  { id: 'contacts', label: 'Contacts', href: '/contacts', icon: 'ContactRound', permission: 'staff', status: 'build', subgroup: 'sales', kind: 'contact' },
+  { id: 'people', label: 'People', href: '/people', icon: 'ContactRound', permission: 'staff', status: 'existing', subgroup: 'sales', kind: 'contact' },
   { id: 'clients', label: 'Clients', href: '/clients', icon: 'Users', permission: 'staff', status: 'build', subgroup: 'sales' },
   { id: 'proposals', label: 'Proposals', href: '/proposals', icon: 'FileSignature', permission: 'staff', status: 'build', subgroup: 'sales' },
   { id: 'projects', label: 'Projects', href: '/projects', icon: 'FolderKanban', permission: 'staff', status: 'existing', subgroup: 'workspace', kind: 'project' },
@@ -52,17 +52,17 @@ export const recordDefinitions = {
   project: { label: 'Project', directory: '/projects', base: '/projects', icon: 'FolderKanban' },
   inquiry: { label: 'Inquiry', directory: '/inquiries', base: '/leads', icon: 'Inbox' },
   lead: { label: 'Inquiry', directory: '/inquiries', base: '/leads', icon: 'Inbox' },
-  contact: { label: 'Contact', directory: '/contacts', base: '/contacts', icon: 'ContactRound' },
+  contact: { label: 'Person', directory: '/people', base: '/people', icon: 'ContactRound' },
 } as const;
 export function getWorkspaceRecordHref(kind: WorkspaceRecordKind, id: string): string {
   return `${recordDefinitions[kind].base}/${id}`;
 }
 export function getWorkspaceRecordFromPath(path: string) {
   const [section, rawId] = normalizeStaffPath(path.split(/[?#]/)[0]).split('/').filter(Boolean);
-  if (!rawId || !UUID_PATTERN.test(rawId)) return null;
+  if (!rawId || (section === 'people' ? !/^[1-9]\d{0,8}$/.test(rawId) : !UUID_PATTERN.test(rawId))) return null;
   const kind: WorkspaceRecordKind | undefined = section === 'projects' ? 'project'
     : section === 'leads' || section === 'inquiries' ? 'inquiry'
-    : section === 'contacts' ? 'contact' : undefined;
+    : section === 'people' ? 'contact' : undefined;
   if (!kind) return null;
   const id = rawId.toLowerCase();
   return { key: `${kind}:${id}`, id, kind, href: getWorkspaceRecordHref(kind, id) };
@@ -90,4 +90,8 @@ export function reorderWorkspaceTabs<T extends { key: string }>(tabs: T[], activ
   const next = [...tabs];
   next.splice(to, 0, next.splice(from, 1)[0]);
   return next;
+}
+
+export function isWorkspaceRecordId(kind: WorkspaceRecordKind, id: string): boolean {
+ return canonicalKind(kind) === 'contact' ? /^[1-9]\d{0,8}$/.test(id) : UUID_PATTERN.test(id);
 }

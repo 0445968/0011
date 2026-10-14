@@ -1,4 +1,5 @@
 'use client';
+import { ContactPhonebook } from './people/ContactPhonebook';
 import { useWorkspaceUnsavedChanges } from './workspace/WorkspaceNavigationGuard';
 
 import { useMemo, useState } from 'react';
@@ -984,7 +985,7 @@ export function ProposalWorkspace({
                 htmlFor="acceptance-approver"
                 className="mb-2 block text-sm font-medium"
               >
-                Client approver{' '}
+                Client approver <ContactPhonebook inquiryId={id} onSelect={person=>setApprover(person.name)}/>{' '}
                 <span
                   aria-hidden="true"
                   className="text-destructive"

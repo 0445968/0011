@@ -1,4 +1,5 @@
 'use client';
+import { ContactPhonebook } from './people/ContactPhonebook';
 import { useWorkspaceUnsavedChanges } from './workspace/WorkspaceNavigationGuard';
 import {useState} from 'react';
 import {useRouter} from 'next/navigation';
@@ -31,7 +32,7 @@ export function OnboardingReadiness({id,version,qualified,record,history}:{id:st
   <div className="min-w-0 space-y-6"><section className="rounded-2xl border border-border bg-card p-6"><h2 className="font-heading text-xl font-semibold">Agreement and deposit records</h2><p className="mt-3 text-sm leading-relaxed text-muted-foreground">Record the agreement and deposit verified through your existing process. References stay internal. This screen records evidence; it does not sign documents or process payments.</p>
    <fieldset disabled={busy||blocked||ready} className="mt-6 space-y-5"><legend className="sr-only">Agreement and deposit evidence</legend>
     <div><label htmlFor="gate-agreement" className="mb-2 block text-sm font-medium">Agreement status</label><select id="gate-agreement" className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm" value={body.agreementStatus} onChange={e=>change('agreementStatus',e.target.value as ReadinessBody['agreementStatus'])}><option value="pending">Pending</option><option value="signed">Signed</option></select></div>
-    {input('agreementRef','Agreement reference or document location',2000)}{input('signatory','Client signatory',200)}{date('signedOn','Signed date')}
+    <ContactPhonebook inquiryId={id} onSelect={person=>change('signatory',person.name)}/>{input('agreementRef','Agreement reference or document location',2000)}{input('signatory','Client signatory',200)}{date('signedOn','Signed date')}
     <div className="border-t border-border pt-5"><label htmlFor="gate-deposit" className="mb-2 block text-sm font-medium">Deposit status</label><select id="gate-deposit" className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm" value={body.depositStatus} onChange={e=>change('depositStatus',e.target.value as ReadinessBody['depositStatus'])}><option value="pending">Pending</option><option value="received">Received</option><option value="waived">Waived by staff</option></select></div>
     {body.depositStatus!=='waived'&&<>{input('depositAmount','Amount received',12)}{input('currency','Currency code (for example USD)',3)}{input('depositRef','Receipt or transaction reference',2000)}{date('depositOn','Received date')}</>}
     {body.depositStatus==='waived'&&<div><label htmlFor="gate-waiver" className="mb-2 block text-sm font-medium">Deposit waiver reason</label><Textarea id="gate-waiver" maxLength={2000} rows={3} value={body.waiverReason} onChange={e=>change('waiverReason',e.target.value)}/><p className="mt-2 text-xs text-muted-foreground">Use only when authorized under your agreed commercial terms. The staff actor and reason are retained in history.</p></div>}
