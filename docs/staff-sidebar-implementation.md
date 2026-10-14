@@ -133,3 +133,13 @@ Run `supabase/migrations/202610140017_company_workspace.sql` once after 001–01
 - Accepted inquiries without an authoritative company link remain available in Inquiries until linked by the existing onboarding/access workflow. Company names alone do not establish identity.
 - Apply migration 022 after 021. Validation: production build, TypeScript, changed-file lint and 27 tests, extended for directory qualification, actual project-state counts, preserved portal access after reassignment, stale primary edits, active/company validation, automatic clearing and non-staff denial. Signed-in visual checks remain.
 - Next planned sales-layer batch: global Proposals directory reusing existing per-inquiry proposal records. Phase 0 browser-history and signed-in interaction checks remain open.
+
+
+### Proposals directory and version links (migration 023)
+- Global Proposals is enabled in the sidebar, search and shared workspace menus at /proposals. It uses the existing inquiry_proposals records and staff RLS.
+- Latest version per inquiry by default; All saved versions includes history. Search by title/company/contact/email/company ID; proposal/inquiry status filters; created/updated/issued/accepted/company/title/status sorting and server pagination. No new approval state or expired status is introduced.
+- Each version opens /leads/[id]/proposals?version=N#proposal-version-N, opens/focuses that saved scope and retains the inquiry's workspace identity. The current draft and mutation targets remain unchanged. Missing/invalid versions show an inline message instead of removing a valid inquiry tab.
+- Direct entry to proposal subroutes registers the inquiry title/status; each saved scope includes a stable version link. Existing unsaved-edit navigation guards apply to the links.
+- Read-only directory/index migration 023 follows 022. Existing issue/acceptance/decline/revision gates are unchanged.
+- Validation: production build, TypeScript, changed-file lint, 30 platform tests covering all real statuses, latest/history selection, source company identity, exact version URLs, saved tab persistence and staff-only access. Signed-in focus/scroll/keyboard and mobile checks remain.
+- Next planned batch: audit task ownership and implement My Tasks using trusted staff identifiers.

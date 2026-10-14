@@ -1,8 +1,10 @@
 'use client';
+import Link from 'next/link';
+import {proposalVersionHref} from '@/lib/proposals/links';
 import { ContactPhonebook } from './people/ContactPhonebook';
 import { useWorkspaceUnsavedChanges } from './workspace/WorkspaceNavigationGuard';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
@@ -38,6 +40,7 @@ type ProposalWorkspaceProps = {
   qualified: boolean;
   seed: ProposalBody;
   proposals: ProposalRecord[];
+  selectedVersion?:number;
 };
 
 export function ProposalWorkspace({
@@ -45,8 +48,10 @@ export function ProposalWorkspace({
   qualified,
   seed,
   proposals,
+  selectedVersion,
 }: ProposalWorkspaceProps) {
   const router = useRouter();
+  useEffect(()=>{if(!selectedVersion)return;const element=document.getElementById(`proposal-version-${selectedVersion}`);if(element instanceof HTMLDetailsElement){element.open=true;element.querySelector('summary')?.focus({preventScroll:true});element.scrollIntoView({block:'start',behavior:'auto'});}},[selectedVersion]);
 
   const latest = proposals[0];
 
@@ -373,9 +378,12 @@ export function ProposalWorkspace({
     return (
       <details
         key={proposal.version}
+        id={`proposal-version-${proposal.version}`}
+        open={proposal.version===selectedVersion||undefined}
+        style={{scrollMarginTop:'6rem'}}
         className="group overflow-hidden rounded-xl border border-border bg-card"
       >
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3 [&::-webkit-details-marker]:hidden">
+        <summary tabIndex={0} className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3 [&::-webkit-details-marker]:hidden">
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold">
               Version {proposal.version}
@@ -405,6 +413,8 @@ export function ProposalWorkspace({
         </summary>
 
         <div className="border-t border-border px-4 py-4">
+          {selectedVersion===proposal.version&&<p className="mb-3 text-sm font-semibold">Selected saved version {proposal.version}</p>}
+          <Link href={proposalVersionHref(id,proposal.version)} className="mb-4 inline-block text-xs underline">Link to this version</Link>
           {proposal.status ===
             'accepted' && (
             <div className="mb-5 rounded-xl border border-border bg-muted/30 p-4 text-sm">

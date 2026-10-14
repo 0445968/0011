@@ -19,7 +19,7 @@ const state = hookModule.exports;
 const tab = (kind = 'project', extra = {}) => ({ key: `${kind}:${id}`, id, kind, title: 'Lumen', href: `/projects/${id}?tab=brief`, pinned: false, lastOpenedAt: 1, ...extra });
 
 test('only implemented destinations are live and middleware rewrites the same routes', () => {
-  assert.deepEqual(nav.liveStaffDestinations.map(item => item.id), ['dashboard', 'inquiries', 'people', 'companies', 'clients', 'projects']);
+  assert.deepEqual(nav.liveStaffDestinations.map(item => item.id), ['dashboard', 'inquiries', 'people', 'companies', 'clients', 'proposals', 'projects']);
   for (const item of nav.liveStaffDestinations) {
     assert.equal(nav.staffInternalPath(item.href), item.href === '/' ? '/admin' : `/admin${item.href}`);
     assert.equal(item.permission, 'staff');
@@ -106,4 +106,11 @@ test('Company records participate in the same navigation identity and persistenc
  assert.equal(nav.isStaffDestinationActive(`/companies/${id}`,'/companies'),true);
  globalThis.localStorage={getItem:()=>JSON.stringify({tabs:[tab('company',{href:`/companies/${id}`})]})};
  assert.equal(state.restoreSnapshot('staff').tabs[0].kind,'company');
+});
+
+test('Exact proposal-version links stay within the inquiry tab and preserve their query and anchor',()=>{
+ const href=`/leads/${id}/proposals?version=2#proposal-version-2`;
+ assert.equal(nav.getWorkspaceRecordFromPath(href).key,`inquiry:${id}`);
+ globalThis.localStorage={getItem:()=>JSON.stringify({tabs:[tab('inquiry',{href})]})};
+ const restored=state.restoreSnapshot('staff');assert.equal(restored.tabs.length,1);assert.equal(restored.tabs[0].href,href);
 });

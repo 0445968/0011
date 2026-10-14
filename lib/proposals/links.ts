@@ -1,0 +1,2 @@
+export function proposalVersionHref(requestId:string,version:number){return `/leads/${requestId}/proposals?version=${version}#proposal-version-${version}`;}
+export function requestedProposalVersion(value:string|undefined,available:readonly number[]){if(!value||!/^\d{1,10}$/.test(value))return undefined;const version=Number(value);return Number.isSafeInteger(version)&&version>0&&available.includes(version)?version:undefined;}
