@@ -87,3 +87,11 @@ Run `supabase/migrations/202610140017_company_workspace.sql` once after 001–01
 - Right-click or touch-long-press the empty flexible area of the tab strip for Open workspace / Window management menus. The plus and overflow dropdowns use the same action definitions, including built directories, bookmarked records, record switching, reopening tabs, pin/bookmark actions and close operations. Individual tabs retain their own context menus.
 - Country options are generated from the local public-domain IANA `iso3166.tab` dataset. The extra company fields, import/export and avatar uploads remain separate later work.
 - Validation: production build, TypeScript, targeted lint and 23 platform tests; added full-migration company CRUD, null/stale revisions, source/notes, assignment audit, client-access isolation, company record persistence and shared menu/pinned-tab checks. Signed-in visual and touch testing remains a user-workspace check.
+
+
+### Expanded People editor (migration 018)
+- Alternate work/personal/other emails and phones, one primary per channel, company title/role, contact status, preserved automatic lead sources, manual/referral reference, and independent linked-project roles.
+- Created/modified timestamps and staff-authored dated notes; existing internal notes remain editable.
+- Atomic profile save preserves IDs/company assignment, rejects stale revisions and invalid project links, and enforces email uniqueness. Apply migration 018 after 017.
+- Verified platform database integration, typecheck, changed-file lint, and production build. Signed-in visual checks remain: change primary contact, remove alternate details, change a project role, add a note, and reload.
+- CSV import/export, saved People views, avatar controls, and structured referrer pickers remain for subsequent patches.

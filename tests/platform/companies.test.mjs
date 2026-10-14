@@ -29,7 +29,22 @@ test('Company workspace CRUD, revisions, assignment audit and client access isol
  assert.equal((await db.query('select assign_project_company($1,$2,1) r',[inquiry,created.id])).rows[0].r.result,'assigned');
  const after=(await db.query('select * from inquiry_projects where request_id=$1',[inquiry])).rows[0];assert.deepEqual(after.body,before.body);assert.equal(after.state,before.state);assert.equal(after.company_id,created.id);assert.equal(after.revision,2);
  assert.equal((await db.query('select count(*)::int n from company_assignment_history')).rows[0].n,2);
+
+ const currentPerson=(await db.query('select * from people_contacts where id=$1',[person.id])).rows[0];
+ const personBody={name:currentPerson.name,email:currentPerson.email,phone:'555-1234',company_name:currentPerson.company_name,labels:['client'],notes:'Legacy note retained',job_title:'Marketing Director',company_role:'ceo',status:'active',lead_source:currentPerson.lead_source,source_reference:currentPerson.source_reference,channels:{emails:[{email:currentPerson.email,kind:'work',is_primary:true},{email:'personal@example.com',kind:'personal',is_primary:false}],phones:[{phone:'555-1234',kind:'work',is_primary:true}]},project_roles:[{request_id:inquiry,role:'project_manager'}]};
+ assert.equal((await db.query('select save_people_profile($1,$2,$3) r',[person.id,currentPerson.revision,personBody])).rows[0].r.result,'saved');
+ assert.equal((await db.query('select project_role from people_inquiry_links where contact_id=$1',[person.id])).rows[0].project_role,'project_manager');
+ assert.equal((await db.query('select kind from people_contact_emails where email=$1',['personal@example.com'])).rows[0].kind,'personal');
+ assert.equal((await db.query('select job_title from people_contacts where id=$1',[person.id])).rows[0].job_title,'Marketing Director');
+ assert.equal((await db.query('select save_people_profile($1,$2,$3) r',[person.id,currentPerson.revision,personBody])).rows[0].r.result,'conflict');
+ const nextRevision=currentPerson.revision+1;
+ await assert.rejects(db.query('select save_people_profile($1,$2,$3)',[person.id,nextRevision,{...personBody,channels:{...personBody.channels,emails:personBody.channels.emails.map(e=>({...e,is_primary:false}))}}]),/primary/);
+ await assert.rejects(db.query('select save_people_profile($1,$2,$3)',[person.id,nextRevision,{...personBody,project_roles:[{request_id:randomUUID(),role:'approver'}]}]),/relationship/);
+ assert.equal((await db.query('select revision from people_contacts where id=$1',[person.id])).rows[0].revision,nextRevision);
+ const personNote=(await db.query('select add_person_note($1,$2) id',[person.id,'Dated person note'])).rows[0].id;
+ assert.equal((await db.query('select author_label from people_notes where id=$1',[personNote])).rows[0].author_label,'staff@example.com');
  await db.query("select set_config('request.jwt.claim.sub',$1,false)",[clientUser]);assert.equal((await db.query('select has_client_project($1) allowed',[inquiry])).rows[0].allowed,true);
- for(const table of ['company_directory','company_notes','company_assignment_history','staff_project_assignment_directory'])assert.equal((await db.query(`select * from ${table}`)).rows.length,0);
+ await assert.rejects(db.query('select save_people_profile($1,$2,$3)',[person.id,nextRevision,personBody]),/Staff authorization/);await assert.rejects(db.query('select add_person_note($1,$2)',[person.id,'Private']),/Staff authorization/);
+ for(const table of ['people_notes','company_directory','company_notes','company_assignment_history','staff_project_assignment_directory'])assert.equal((await db.query(`select * from ${table}`)).rows.length,0);
  await assert.rejects(db.query('select save_company_profile(null,0,$1,$2)',['Unauthorized',profile]),/Staff authorization/);await assert.rejects(db.query('select assign_project_company($1,$2,2)',[inquiry,created.id]),/Staff authorization/);await assert.rejects(db.query('select add_company_note($1,$2)',[created.id,'Unauthorized']),/Staff authorization/);
  }finally{await db.close();}});
