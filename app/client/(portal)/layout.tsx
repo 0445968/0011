@@ -1,3 +1,4 @@
+import {ProfileImage} from '@/components/profile-images/ProfileImage';
 import Link from 'next/link';
 
 import { ClientLogout } from '@/components/portal/ClientLogout';
@@ -6,7 +7,8 @@ import { requireClient } from '@/lib/portal/auth';
 export const dynamic = 'force-dynamic';
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
-  const { user } = await requireClient();
+  const { user,client } = await requireClient();
+  const avatar=await client.rpc("get_profile_image",{p_kind:"client",p_subject:user.id});
 
   return (
     <div className="min-h-screen bg-muted/20">
@@ -23,7 +25,7 @@ export default async function PortalLayout({ children }: { children: React.React
 
           <div className="flex min-w-0 items-center gap-3">
             <span className="hidden max-w-xs truncate text-sm text-muted-foreground sm:block">{user.email}</span>
-            <ClientLogout />
+            <ProfileImage kind="client" subject={user.id} name={user.email||"Client"} path={avatar.data||null}/><ClientLogout />
           </div>
         </div>
       </header>

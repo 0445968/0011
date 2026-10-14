@@ -1,6 +1,8 @@
 
 'use client';
 
+import {ProfileImage} from '@/components/profile-images/ProfileImage';
+import {ImageEditorDialog} from '@/components/profile-images/ImageEditor';
 import {
   createContext,
   useCallback,
@@ -733,12 +735,16 @@ export function StaffWorkspaceShell({
   staffId,
   staffEmail = '',
   initialCollapsed = false,
+  staffAvatarPath = null,
+  staffPublicId = '',
 }: {
   children: ReactNode;
   staffId?: string;
   staffEmail?: string;
   initialCollapsed?: boolean;
+  staffAvatarPath?:string|null;staffPublicId?:string;
 }) {
+  const [avatarOpen,setAvatarOpen]=useState(false);
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -1793,7 +1799,7 @@ useEffect(() => {
                       hover:bg-accent
                     "
                   >
-                    {initial}
+                    {staffId?<ProfileImage kind="staff" subject={staffId} name={staffEmail||initial} path={staffAvatarPath} size="h-9 w-9"/>:initial}
                   </button>
                 </DropdownMenuTrigger>
 
@@ -1848,6 +1854,9 @@ useEffect(() => {
                     )}
                   </DropdownMenuLabel>
 
+                  <DropdownMenuSeparator />
+                  {staffPublicId&&<DropdownMenuLabel className="font-mono text-xs">Staff ID {staffPublicId}</DropdownMenuLabel>}
+                  <DropdownMenuItem onSelect={()=>setAvatarOpen(true)}>Edit profile image</DropdownMenuItem>
                   <DropdownMenuSeparator />
 
                   <DropdownMenuItem
@@ -1979,7 +1988,7 @@ useEffect(() => {
                 }
               `}
             >
-              {children}
+              {children}{staffId&&<ImageEditorDialog open={avatarOpen} onOpenChange={setAvatarOpen} kind="staff" subject={staffId} name={staffEmail||"Staff"} path={staffAvatarPath}/>} 
             </div>
           </main>
         </div>

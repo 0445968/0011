@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import {useWorkspaceUnsavedChanges} from '@/components/admin/workspace/WorkspaceNavigationGuard';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +28,9 @@ export function ClientProfileForm({
     ...initial,
     timezone: initial.timezone || browserTimezone,
   });
+  const [baseline,setBaseline]=useState({...initial,timezone:initial.timezone||browserTimezone});
+  const editable=(p:ClientProfile)=>JSON.stringify([p.firstName,p.lastName,p.jobTitle,p.phone,p.timezone]);
+  const markSaved=useWorkspaceUnsavedChanges(editable(profile)!==editable(baseline),'Client profile');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [blocked, setBlocked] = useState(false);
@@ -59,6 +63,7 @@ export function ClientProfileForm({
       if (response.status === 409) setBlocked(true);
       if (!response.ok) throw new Error(data.error || 'Your profile could not be saved.');
       setProfile((current) => ({ ...current, revision: data.revision }));
+      markSaved();setBaseline(profile);
       setMessage('Profile saved.');
       window.dispatchEvent(new Event('bivi-account-changed'));
     } catch (error) {

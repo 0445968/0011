@@ -17,6 +17,8 @@ const profileSchema = z.object({
   timezone: z.string(),
   revision: z.number().int().positive(),
   updated_at: z.string(),
+  avatar_path:z.string().nullable().optional(),
+  public_id:z.string().optional(),
 });
 
 const organizationSchema = z.object({
@@ -25,6 +27,7 @@ const organizationSchema = z.object({
 });
 
 export type ClientProfile = {
+  publicId?:string;avatarPath?:string|null;
   firstName: string;
   lastName: string;
   jobTitle: string;
@@ -141,6 +144,7 @@ export async function getClientProfileContext(
 
   return {
     profile: {
+      publicId:saved?.public_id,avatarPath:saved?.avatar_path,
       firstName:
         saved?.first_name || fallback.firstName,
       lastName:

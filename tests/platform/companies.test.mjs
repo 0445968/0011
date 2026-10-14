@@ -41,10 +41,21 @@ test('Company workspace CRUD, revisions, assignment audit and client access isol
  await assert.rejects(db.query('select save_people_profile($1,$2,$3)',[person.id,nextRevision,{...personBody,channels:{...personBody.channels,emails:personBody.channels.emails.map(e=>({...e,is_primary:false}))}}]),/primary/);
  await assert.rejects(db.query('select save_people_profile($1,$2,$3)',[person.id,nextRevision,{...personBody,project_roles:[{request_id:randomUUID(),role:'approver'}]}]),/relationship/);
  assert.equal((await db.query('select revision from people_contacts where id=$1',[person.id])).rows[0].revision,nextRevision);
+
+ const imports=[{...personBody,name:'Imported Person',email:'import@example.com',phone:'',company_role:'other',project_roles:[],channels:{emails:[{email:'import@example.com',kind:'work',is_primary:true}],phones:[]}}];
+ const imported=(await db.query("select import_business_records('people',$1) r",[imports])).rows[0].r;assert.equal(imported.created,1);
+ assert.equal((await db.query("select import_business_records('people',$1) r",[imports])).rows[0].r.skipped,1);
+ const importedPerson=(await db.query("select * from people_contacts where email='import@example.com'")).rows[0];assert.equal(importedPerson.lead_source,'import');assert.equal(importedPerson.company_id,null);assert.match(importedPerson.public_id,/^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{7}$/);
+ const countBefore=(await db.query('select count(*)::int n from people_contacts')).rows[0].n;
+ await assert.rejects(db.query("select import_business_records('people',$1)",[[{...imports[0],email:'rollback@example.com',channels:{emails:[{email:'rollback@example.com',kind:'work',is_primary:true}],phones:[]}},{...imports[0],name:'',email:'bad@example.com',channels:{emails:[{email:'bad@example.com',kind:'work',is_primary:true}],phones:[]}}]]));
+ assert.equal((await db.query('select count(*)::int n from people_contacts')).rows[0].n,countBefore);
+ const companyImport=[{name:'CSV Company',body:profile}];assert.equal((await db.query("select import_business_records('companies',$1) r",[companyImport])).rows[0].r.created,1);
+ assert.equal((await db.query("select import_business_records('companies',$1) r",[[{name:'csv company',body:profile}]])).rows[0].r.skipped,1);
+ assert.equal((await db.query("select lead_source from company_directory where name='CSV Company'")).rows[0].lead_source,'import');
  const personNote=(await db.query('select add_person_note($1,$2) id',[person.id,'Dated person note'])).rows[0].id;
  assert.equal((await db.query('select author_label from people_notes where id=$1',[personNote])).rows[0].author_label,'staff@example.com');
  await db.query("select set_config('request.jwt.claim.sub',$1,false)",[clientUser]);assert.equal((await db.query('select has_client_project($1) allowed',[inquiry])).rows[0].allowed,true);
- await assert.rejects(db.query('select save_people_profile($1,$2,$3)',[person.id,nextRevision,personBody]),/Staff authorization/);await assert.rejects(db.query('select add_person_note($1,$2)',[person.id,'Private']),/Staff authorization/);
+ await assert.rejects(db.query("select import_business_records('people',$1)",[imports]),/Staff authorization/);await assert.rejects(db.query('select save_people_profile($1,$2,$3)',[person.id,nextRevision,personBody]),/Staff authorization/);await assert.rejects(db.query('select add_person_note($1,$2)',[person.id,'Private']),/Staff authorization/);
  for(const table of ['people_notes','company_directory','company_notes','company_assignment_history','staff_project_assignment_directory'])assert.equal((await db.query(`select * from ${table}`)).rows.length,0);
  await assert.rejects(db.query('select save_company_profile(null,0,$1,$2)',['Unauthorized',profile]),/Staff authorization/);await assert.rejects(db.query('select assign_project_company($1,$2,2)',[inquiry,created.id]),/Staff authorization/);await assert.rejects(db.query('select add_company_note($1,$2)',[created.id,'Unauthorized']),/Staff authorization/);
  }finally{await db.close();}});

@@ -95,3 +95,23 @@ Run `supabase/migrations/202610140017_company_workspace.sql` once after 001–01
 - Atomic profile save preserves IDs/company assignment, rejects stale revisions and invalid project links, and enforces email uniqueness. Apply migration 018 after 017.
 - Verified platform database integration, typecheck, changed-file lint, and production build. Signed-in visual checks remain: change primary contact, remove alternate details, change a project role, add a note, and reload.
 - CSV import/export, saved People views, avatar controls, and structured referrer pickers remain for subsequent patches.
+
+
+### Directory transfers and People views (migration 019)
+- Staff-only CSV export for People/Companies; import mapping and server-side preview, field validation, existing/in-file duplicate detection, and explicit create-only import.
+- Maximum 100 import records / 500 KB CSV per batch; export maximum 10,000 records or channel entries. Formula-like spreadsheet cells are escaped.
+- Imported records receive new IDs and import source. Existing records, company/project assignments, CEO roles, source history and portal access are not overwritten. Company name on a People import is informational; authoritative assignments use company controls.
+- Database imports are transactional, serialized across imports, and duplicate-safe on retries. Unexpected failures roll back the batch.
+- People status/source filters and created/modified sorting; Save view / Use saved view stores preferences per staff account on the current device.
+- Validation: build, TypeScript, changed-file lint and 25 tests including CSV quoting, limits, duplicate retries, import sources, atomic rollback, generated identities and non-staff denial. Signed-in import/preview/export and saved-view UI checks remain.
+- Avatars and structured referrer pickers remain for subsequent patches.
+
+
+### Profile images (migration 020)
+- Private avatars for People, each client's own profile and each staff member's own account; company logos. PNG/JPEG/WebP source images are resized to 512 pixels and converted to PNG in the browser, stripping original metadata.
+- Avatar initials/logo fallbacks in directories, phonebook and account headers. Staff account menu exposes own image editing and short staff ID; client profile shows its short ID. Staff administration remains for Team.
+- Upload reservation quota (20/hour/account), private bucket, bounded PNG validation with chunk checksums, storage metadata verification, immutable image objects, explicit authorization and expected-image conflict handling. Clients cannot edit other subjects; staff can edit external People/companies and own staff image.
+- Replacing/removing an image revokes reads of the former path. Old and abandoned objects remain private; automated storage cleanup is future maintenance work.
+- Image changes refresh the page to load updated revisions; unsaved People/company/client profile edits are guarded. Client account image is separate from an external People contact image.
+- Apply migration 020 after 019. Signed-in UI checks: upload/replace/remove for each subject, reload, verify initials fallback and ensure private images are unavailable from another client account.
+- Validation covers PNG corruption/dimension bounds, storage guards under broad policies, stale changes, removal, own-client and own-staff permissions, generated client identity and quotas.

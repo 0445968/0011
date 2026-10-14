@@ -29,7 +29,9 @@ export default async function WorkspaceLayout({
      AUTHENTICATE STAFF MEMBER
      ======================================================= */
 
-  const { user } = await requireStaff();
+  const { user,client } = await requireStaff();
+  const avatar=await client.rpc("get_profile_image",{p_kind:"staff",p_subject:user.id});
+  const staff=await client.from("inquiry_staff").select("public_id").eq("user_id",user.id).maybeSingle();
 
   /* =======================================================
      STAFF ACCOUNT INFORMATION
@@ -47,6 +49,8 @@ export default async function WorkspaceLayout({
     <StaffWorkspaceShell
       initialCollapsed={cookies().get('bivi-staff-sidebar-collapsed')?.value === 'true'}
       staffId={staffId}
+      staffAvatarPath={avatar.data||null}
+      staffPublicId={staff.data?.public_id||""}
       staffEmail={staffEmail}
     >
       {children}
