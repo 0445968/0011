@@ -123,3 +123,13 @@ Run `supabase/migrations/202610140017_company_workspace.sql` once after 001–01
 - IDs, images, channel details and old editor compatibility are preserved. Profile/channel/relationship writes share a transaction; stale revisions, self-referrals and missing linked records are rejected without partial saves.
 - Apply migration 021 after 020. UI checks remain: choose both referrers, save/reload, follow links; change company and confirm address; unassign and confirm address disappears; confirm unsaved-edit prompts.
 - Validation: production build, TypeScript, changed-file lint, 27 tests including preserved import origin and ID, inherited address, company/referral clearing, self-reference rejection, FK rollback and stale saves.
+
+
+### Clients directory and primary contacts (migration 022)
+- Clients is a data-backed sidebar and workspace-menu destination at /clients. Qualification: an existing company has an assigned project or a linked accepted inquiry. Work status is derived from real project states; company profile status remains separate.
+- Server-paginated search by company/name/primary contact/ID; work status, industry and portal-access filters; name/ID/activity/active-project sorting. Client opens the shared company record with ?view=client, retaining one company tab/ID.
+- Company pages include client counts, an explicit primary contact, accepted inquiry/proposal links and source client-access links. Accounts count active memberships and separately count actual active portal access; assigning a company or primary contact grants no login/review permission.
+- Primary contacts must be active assigned people. The staff RPC checks company revision and membership; moving/deactivating/deleting the person clears the selection and updates company revision. The CEO and project roles remain independent.
+- Accepted inquiries without an authoritative company link remain available in Inquiries until linked by the existing onboarding/access workflow. Company names alone do not establish identity.
+- Apply migration 022 after 021. Validation: production build, TypeScript, changed-file lint and 27 tests, extended for directory qualification, actual project-state counts, preserved portal access after reassignment, stale primary edits, active/company validation, automatic clearing and non-staff denial. Signed-in visual checks remain.
+- Next planned sales-layer batch: global Proposals directory reusing existing per-inquiry proposal records. Phase 0 browser-history and signed-in interaction checks remain open.

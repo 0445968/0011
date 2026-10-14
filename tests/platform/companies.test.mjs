@@ -14,6 +14,9 @@ test('Company workspace CRUD, revisions, assignment audit and client access isol
  await db.query("insert into inquiry_proposals(request_id,version,status,body) values($1,1,'accepted','{}')",[inquiry]);
  await db.query("insert into inquiry_projects(request_id,proposal_version,revision,state,body,scope_snapshot,onboarding_snapshot,readiness_snapshot,activated_readiness_revision,activated_onboarding_revision) values($1,1,1,'active','{}','{}','{}','{}',1,1)",[inquiry]);
  await db.query('insert into project_clients(request_id,user_id) values($1,$2)',[inquiry,clientUser]);
+ const originalOrganization=(await db.query("insert into client_organizations(name) values('Old Company') returning id")).rows[0].id;
+ await db.query('insert into inquiry_client_organizations(request_id,organization_id) values($1,$2)',[inquiry,originalOrganization]);
+ await db.query('insert into client_organization_members(organization_id,user_id) values($1,$2)',[originalOrganization,clientUser]);
  const person=(await db.query('select * from people_contacts')).rows[0];
  const profile={status:'active',website:'https://example.com',address:{line1:'Main Street',country:'CO'},industry_id:'professional-services',subindustry_id:'professional-services.marketing-branding',legal_name:'Company Inc',organization_type:'Agency',founding_year:2020,employee_count:5};
  await db.exec('set role authenticated');await db.query("select set_config('request.jwt.claim.sub',$1,false)",[staff]);
@@ -29,6 +32,18 @@ test('Company workspace CRUD, revisions, assignment audit and client access isol
  assert.equal((await db.query('select assign_project_company($1,$2,1) r',[inquiry,created.id])).rows[0].r.result,'assigned');
  const after=(await db.query('select * from inquiry_projects where request_id=$1',[inquiry])).rows[0];assert.deepEqual(after.body,before.body);assert.equal(after.state,before.state);assert.equal(after.company_id,created.id);assert.equal(after.revision,2);
  assert.equal((await db.query('select count(*)::int n from company_assignment_history')).rows[0].n,2);
+ const clientSummary=(await db.query('select * from clients_directory where id=$1',[created.id])).rows[0];assert.equal(clientSummary.active_projects,1);assert.equal(clientSummary.project_count,1);assert.equal(clientSummary.work_status,'active');assert.equal(clientSummary.portal_accounts,0);assert.equal(clientSummary.primary_contact_id,null);
+ const originalClient=(await db.query('select * from clients_directory where id<>$1',[created.id])).rows[0];assert.equal(originalClient.accepted_inquiries,1);assert.equal(originalClient.portal_accounts,1);assert.equal(originalClient.work_status,'onboarding');assert.equal((await db.query('select * from client_accepted_inquiries where organization_id=$1',[originalClient.id])).rows.length,1);
+ assert.equal((await db.query('select save_company_primary_contact($1,$2,$3) r',[created.id,person.id,clientSummary.revision])).rows[0].r.result,'saved');
+ const primarySaved=(await db.query('select * from clients_directory where id=$1',[created.id])).rows[0];assert.equal(primarySaved.primary_contact_id,person.id);assert.equal(primarySaved.primary_contact_name,'Client Person');assert.equal(primarySaved.revision,clientSummary.revision+1);
+ assert.equal((await db.query('select save_company_primary_contact($1,null,$2) r',[created.id,clientSummary.revision])).rows[0].r.result,'conflict');
+ await db.exec('reset role');await db.query("update inquiry_projects set state='on_hold' where request_id=$1",[inquiry]);await db.exec('set role authenticated');assert.equal((await db.query('select work_status from clients_directory where id=$1',[created.id])).rows[0].work_status,'on_hold');
+ await db.exec('reset role');await db.query("update people_contacts set status='inactive' where id=$1",[person.id]);await db.exec('set role authenticated');
+ const completedClient=(await db.query('select * from clients_directory where id=$1',[created.id])).rows[0];assert.equal(completedClient.work_status,'on_hold');assert.equal(completedClient.primary_contact_id,null);assert.equal(completedClient.active_people,0);
+ await db.exec('reset role');await db.query("update inquiry_projects set state='active' where request_id=$1",[inquiry]);await db.query("update people_contacts set status='active' where id=$1",[person.id]);await db.exec('set role authenticated');
+
+ await assert.rejects(db.query('select save_company_primary_contact($1,$2,$3)',[originalClient.id,person.id,originalClient.revision]),/assigned to this company/);
+
 
  const currentPerson=(await db.query('select * from people_contacts where id=$1',[person.id])).rows[0];
  const personBody={name:currentPerson.name,email:currentPerson.email,phone:'555-1234',company_name:currentPerson.company_name,labels:['client'],notes:'Legacy note retained',job_title:'Marketing Director',company_role:'ceo',status:'active',lead_source:currentPerson.lead_source,source_reference:currentPerson.source_reference,channels:{emails:[{email:currentPerson.email,kind:'work',is_primary:true},{email:'personal@example.com',kind:'personal',is_primary:false}],phones:[{phone:'555-1234',kind:'work',is_primary:true}]},project_roles:[{request_id:inquiry,role:'project_manager'}]};
@@ -62,9 +77,13 @@ test('Company workspace CRUD, revisions, assignment audit and client access isol
  const manual={...imports[0],lead_source:'manual',source_reference:'',email:'manualref@example.com',channels:{emails:[{email:'manualref@example.com',kind:'work',is_primary:true}],phones:[]},referral_contact_id:person.id};
  const manualSave=(await db.query('select save_people_profile(null,0,$1) r',[manual])).rows[0].r;
  assert.equal((await db.query('select lead_source from people_contacts where id=$1',[manualSave.id])).rows[0].lead_source,'referral');
+ const companyRevision=(await db.query('select revision from company_profiles where organization_id=$1',[created.id])).rows[0].revision;
+ await db.query('select save_company_primary_contact($1,$2,$3)',[created.id,importedPerson.id,companyRevision]);
  const referredBody={...referralBody,lead_source:'import',source_reference:'CSV import',company_id:null,job_title:'',company_role:'other',referral_contact_id:null,referral_company_id:null};
  assert.equal((await db.query('select save_people_profile($1,$2,$3) r',[importedPerson.id,referred.revision,referredBody])).rows[0].r.result,'saved');
  const unassigned=(await db.query('select * from people_directory where id=$1',[importedPerson.id])).rows[0];assert.equal(unassigned.company_id,null);assert.equal(unassigned.company_address,null);assert.equal(unassigned.referral_contact_id,null);assert.equal(unassigned.referral_company_id,null);
+ assert.equal((await db.query('select primary_contact_id from company_profiles where organization_id=$1',[created.id])).rows[0].primary_contact_id,null);
+
  const companyImport=[{name:'CSV Company',body:profile}];assert.equal((await db.query("select import_business_records('companies',$1) r",[companyImport])).rows[0].r.created,1);
  assert.equal((await db.query("select import_business_records('companies',$1) r",[[{name:'csv company',body:profile}]])).rows[0].r.skipped,1);
  assert.equal((await db.query("select lead_source from company_directory where name='CSV Company'")).rows[0].lead_source,'import');
@@ -72,6 +91,7 @@ test('Company workspace CRUD, revisions, assignment audit and client access isol
  assert.equal((await db.query('select author_label from people_notes where id=$1',[personNote])).rows[0].author_label,'staff@example.com');
  await db.query("select set_config('request.jwt.claim.sub',$1,false)",[clientUser]);assert.equal((await db.query('select has_client_project($1) allowed',[inquiry])).rows[0].allowed,true);
  await assert.rejects(db.query("select import_business_records('people',$1)",[imports]),/Staff authorization/);await assert.rejects(db.query('select save_people_profile($1,$2,$3)',[person.id,nextRevision,personBody]),/Staff authorization/);await assert.rejects(db.query('select add_person_note($1,$2)',[person.id,'Private']),/Staff authorization/);
- for(const table of ['people_notes','company_directory','company_notes','company_assignment_history','staff_project_assignment_directory'])assert.equal((await db.query(`select * from ${table}`)).rows.length,0);
+ await assert.rejects(db.query('select save_company_primary_contact($1,null,1)',[created.id]),/Staff authorization/);
+ for(const table of ['clients_directory','client_accepted_inquiries','people_notes','company_directory','company_notes','company_assignment_history','staff_project_assignment_directory'])assert.equal((await db.query(`select * from ${table}`)).rows.length,0);
  await assert.rejects(db.query('select save_company_profile(null,0,$1,$2)',['Unauthorized',profile]),/Staff authorization/);await assert.rejects(db.query('select assign_project_company($1,$2,2)',[inquiry,created.id]),/Staff authorization/);await assert.rejects(db.query('select add_company_note($1,$2)',[created.id,'Unauthorized']),/Staff authorization/);
  }finally{await db.close();}});

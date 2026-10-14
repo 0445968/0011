@@ -26,7 +26,7 @@ export const staffDestinations: StaffDestination[] = [
   { id: 'inquiries', label: 'Inquiries', href: '/inquiries', icon: 'Inbox', permission: 'staff', status: 'existing', subgroup: 'sales', kind: 'inquiry' },
   { id: 'people', label: 'People', href: '/people', icon: 'ContactRound', permission: 'staff', status: 'existing', subgroup: 'sales', kind: 'contact' },
   { id: 'companies', label: 'Companies', href: '/companies', icon: 'Building2', permission: 'staff', status: 'existing', subgroup: 'sales', kind: 'company' },
-  { id: 'clients', label: 'Clients', href: '/clients', icon: 'Users', permission: 'staff', status: 'build', subgroup: 'sales' },
+  { id: 'clients', label: 'Clients', href: '/clients', icon: 'Users', permission: 'staff', status: 'existing', subgroup: 'sales' },
   { id: 'proposals', label: 'Proposals', href: '/proposals', icon: 'FileSignature', permission: 'staff', status: 'build', subgroup: 'sales' },
   { id: 'projects', label: 'Projects', href: '/projects', icon: 'FolderKanban', permission: 'staff', status: 'existing', subgroup: 'workspace', kind: 'project' },
   { id: 'tasks', label: 'My Tasks', href: '/tasks', icon: 'ListChecks', permission: 'staff', status: 'build', subgroup: 'workspace' },
