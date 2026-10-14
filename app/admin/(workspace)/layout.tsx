@@ -1,3 +1,4 @@
+import { cookies } from 'next/headers';
 
 import type { ReactNode } from 'react';
 
@@ -44,6 +45,7 @@ export default async function WorkspaceLayout({
 
   return (
     <StaffWorkspaceShell
+      initialCollapsed={cookies().get('bivi-staff-sidebar-collapsed')?.value === 'true'}
       staffId={staffId}
       staffEmail={staffEmail}
     >

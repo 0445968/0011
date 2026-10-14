@@ -81,3 +81,13 @@ export function staffInternalPath(path: string): string | null {
   return liveStaffDestinations.some(item => isStaffDestinationActive(path, item.href))
     ? path === '/' ? '/admin' : `/admin${path}` : null;
 }
+
+/** Preserve explicit order, including pin/bookmark state, without mutating callers. */
+export function reorderWorkspaceTabs<T extends { key: string }>(tabs: T[], active: string, over: string): T[] {
+  const from = tabs.findIndex(tab => tab.key === active);
+  const to = tabs.findIndex(tab => tab.key === over);
+  if (from < 0 || to < 0 || from === to) return tabs;
+  const next = [...tabs];
+  next.splice(to, 0, next.splice(from, 1)[0]);
+  return next;
+}

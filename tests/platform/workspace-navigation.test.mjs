@@ -77,3 +77,17 @@ test('tab limit preserves pinned records and keeps a newly visited active record
   assert.deepEqual(state.limitTabs([...pinned, active]), [...pinned, active]);
   assert.deepEqual(state.limitTabs([tab('project', { key: 'old' }), ...pinned.slice(0, 29), active]).map(item => item.key), [...pinned.slice(0, 29), active].map(item => item.key));
 });
+
+test('drag order survives restoration and pinning never changes explicit order', () => {
+  const items = [tab('project', { key: 'one', pinned: true }), tab('inquiry', { key: 'two' }), tab('project', { key: 'three' })];
+  const reordered = nav.reorderWorkspaceTabs(items, 'three', 'one');
+  assert.deepEqual(reordered.map(item => item.key), ['three', 'one', 'two']);
+  assert.deepEqual(items.map(item => item.key), ['one', 'two', 'three']);
+  assert.equal(reordered[1].pinned, true);
+  assert.equal(nav.reorderWorkspaceTabs(items, 'missing', 'one'), items);
+  assert.equal(nav.reorderWorkspaceTabs(items, 'one', 'one'), items);
+  const secondId = 'a0000000-0000-4000-8000-000000000002';
+  const actual = [tab('inquiry', { href: `/leads/${id}` }), tab('project', { id: secondId, key: `project:${secondId}`, href: `/projects/${secondId}`, pinned: true })];
+  globalThis.localStorage = { getItem: () => JSON.stringify({ tabs: actual }) };
+  assert.deepEqual(state.restoreSnapshot('staff').tabs.map(item => item.key), actual.map(item => item.key));
+});

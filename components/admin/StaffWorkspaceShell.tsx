@@ -12,6 +12,7 @@ import {
 } from 'react';
 
 import { staffGroups, recordDefinitions, canonicalKind, isStaffDestinationActive as isActive, type SectionId, type StaffDestination } from '@/lib/admin/workspace/navigation';
+import { WorkspaceItemMenu } from './workspace/WorkspaceItemMenu';
 import { WorkspaceNavigationGuard, guardWorkspaceNavigation } from './workspace/WorkspaceNavigationGuard';
 import { staffNavigationItems as navItems, recordIcons } from './workspace/navigationUi';
 import Image from 'next/image';
@@ -258,6 +259,7 @@ function SidebarLink({
   );
 
   return (
+    <WorkspaceItemMenu href={item.href}>
     <Link
       href={item.href}
       title={
@@ -314,6 +316,7 @@ function SidebarLink({
         </span>
       )}
     </Link>
+    </WorkspaceItemMenu>
   );
 }
 
@@ -325,7 +328,17 @@ function SidebarRecord({
   tab,
   active,
   onOpen,
+  onPin,
+  onBookmark,
+  bookmarked,
+  onClose,
+  onPrefetch,
 }: {
+  onPin: () => void;
+  onBookmark: () => void;
+  bookmarked: boolean;
+  onClose?: () => void;
+  onPrefetch: () => void;
   tab: WorkspaceTab | WorkspaceBookmark;
   active: boolean;
   onOpen: () => void;
@@ -346,7 +359,10 @@ function SidebarRecord({
     );
 
   return (
+    <WorkspaceItemMenu href={tab.href} pinned={'pinned' in tab && tab.pinned} bookmarked={bookmarked} onOpen={onOpen} onPin={onPin} onBookmark={onBookmark} onClose={onClose}>
     <button
+      onMouseEnter={onPrefetch}
+      onFocus={onPrefetch}
       type="button"
       onClick={onOpen}
       title={`${tab.title} · ${typeLabel}`}
@@ -413,6 +429,7 @@ function SidebarRecord({
         </span>
       </span>
     </button>
+    </WorkspaceItemMenu>
   );
 }
 
@@ -722,10 +739,12 @@ export function StaffWorkspaceShell({
   children,
   staffId,
   staffEmail = '',
+  initialCollapsed = false,
 }: {
   children: ReactNode;
   staffId?: string;
   staffEmail?: string;
+  initialCollapsed?: boolean;
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -773,6 +792,10 @@ export function StaffWorkspaceShell({
     closeTab,
     togglePin,
     toggleBookmark,
+    reorderTabs,
+    prefetchTab,
+    pinRecord,
+    navigating,
     reopenClosedTab,
     closeOtherTabs,
     closeUnpinnedTabs,
@@ -784,7 +807,9 @@ export function StaffWorkspaceShell({
      ======================================================= */
 
   const [collapsed, setCollapsed] =
-    useState(false);
+    useState(initialCollapsed);
+  const [preferencesReady, setPreferencesReady] = useState(false);
+  const [sidebarAnimated, setSidebarAnimated] = useState(false);
 
   const [openSections, setOpenSections] =
     useState<
@@ -923,11 +948,10 @@ useEffect(() => {
 
   useEffect(() => {
     try {
-      setCollapsed(
-        localStorage.getItem(
-          SIDEBAR_STORAGE_KEY
-        ) === 'true'
-      );
+      const storedCollapsed = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+      const restored = storedCollapsed === null ? initialCollapsed : storedCollapsed === 'true';
+      setCollapsed(restored);
+      document.cookie = `${SIDEBAR_STORAGE_KEY}=${restored}; Path=/; Max-Age=31536000; SameSite=Lax`;
 
       const storedDensity =
         localStorage.getItem(
@@ -944,15 +968,17 @@ useEffect(() => {
       }
     } catch {
       // Default preferences remain active.
-    }
-  }, []);
+    } finally { setPreferencesReady(true); }
+  }, [initialCollapsed]);
 
   const toggleSidebar =
     useCallback(() => {
+      setSidebarAnimated(true);
       setCollapsed(
         (previous) => {
           const next =
             !previous;
+          document.cookie = `${SIDEBAR_STORAGE_KEY}=${next}; Path=/; Max-Age=31536000; SameSite=Lax`;
 
           try {
             localStorage.setItem(
@@ -1245,6 +1271,7 @@ useEffect(() => {
     >
       <div
         data-workspace-density={density}
+        style={{ visibility: preferencesReady ? 'visible' : 'hidden' }}
         className="
           bivi-staff-theme
           flex
@@ -1271,9 +1298,7 @@ useEffect(() => {
             border-r
             border-border/50
             bg-card
-            transition-[width]
-            duration-200
-            ease-out
+            ${sidebarAnimated ? 'transition-[width] duration-200 ease-out motion-reduce:transition-none' : ''}
             md:flex
 
             ${
@@ -1482,7 +1507,7 @@ useEffect(() => {
                                         <div key={group.label}>
                                           <p className="px-2.5 pt-2 text-[10px] font-medium text-muted-foreground">{group.label}</p>
                                           {group.records.map(tab => (
-                                            <SidebarRecord key={tab.key} tab={tab} active={tab.key === activeKey} onOpen={() => openTab(tab)} />
+                                            <SidebarRecord key={tab.key} tab={tab} active={tab.key === activeKey} onOpen={() => openTab(tab)} onPrefetch={() => prefetchTab(tab.href)} onPin={() => pinRecord(tab)} onBookmark={() => toggleBookmark(tab.key)} bookmarked={bookmarks.some(bookmark => bookmark.key === tab.key)} onClose={'pinned' in tab ? () => closeTab(tab.key) : undefined} />
                                           ))}
                                         </div>
                                       ))}
@@ -1704,6 +1729,7 @@ useEffect(() => {
                 sm:gap-3
               "
             >
+              {navigating && <span role="status" className="text-xs text-muted-foreground">Opening…</span>}
               {/* SEARCH */}
 
               <button
@@ -1866,6 +1892,27 @@ useEffect(() => {
             </div>
           </header>
 
+          {/* MOBILE DIRECTORY NAVIGATION */}
+
+          <nav
+            aria-label="Mobile staff navigation"
+            className="
+              flex
+              shrink-0
+              gap-1.5
+              overflow-x-auto
+              border-b
+              border-border/40
+              bg-card
+              px-3
+              py-2
+              scrollbar-hide
+              md:hidden
+            "
+          >
+            {navItems.map(item => <div key={item.id} className="shrink-0"><SidebarLink item={item} pathname={pathname} collapsed={false} /></div>)}
+          </nav>
+
           {/* TEXT-ONLY DESKTOP MENUS */}
 
           <WorkspaceMenuBar
@@ -1889,6 +1936,8 @@ useEffect(() => {
           {/* PERSISTENT RECORD TABS */}
 
           <WorkspaceTabBar
+            reorderTabs={reorderTabs}
+            prefetchTab={prefetchTab}
             tabs={
               hydrated
                 ? tabs
@@ -1915,73 +1964,6 @@ useEffect(() => {
               selectedProjectTab
             }
           />
-
-          {/* MOBILE DIRECTORY NAVIGATION */}
-
-          <nav
-            aria-label="Mobile staff navigation"
-            className="
-              flex
-              shrink-0
-              gap-1.5
-              overflow-x-auto
-              border-b
-              border-border/40
-              bg-card
-              px-3
-              py-2
-              scrollbar-hide
-              md:hidden
-            "
-          >
-            {navItems.map(
-              (item) => {
-                const Icon = item.icon;
-
-                const active = isActive(
-                  pathname,
-                  item.href
-                );
-
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    aria-current={
-                      active
-                        ? 'page'
-                        : undefined
-                    }
-                    className={`
-                      flex
-                      min-h-11
-                      shrink-0
-                      items-center
-                      gap-2
-                      rounded-lg
-                      px-3
-                      py-2
-                      text-xs
-                      font-medium
-
-                      ${
-                        active
-                          ? 'bg-muted text-foreground'
-                          : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground'
-                      }
-                    `}
-                  >
-                    <Icon
-                      size={15}
-                      aria-hidden="true"
-                    />
-
-                    {item.label}
-                  </Link>
-                );
-              }
-            )}
-          </nav>
 
           {/* WORKSPACE CONTENT */}
 

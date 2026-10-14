@@ -6,6 +6,8 @@ import {
   useEffect,
   useMemo,
   useState,
+  useTransition,
+  useRef,
 } from 'react';
 
 import {
@@ -15,7 +17,7 @@ import {
 } from 'next/navigation';
 
 import {
-  canonicalKind, UUID_PATTERN, normalizeStaffPath, liveStaffDestinations,
+  canonicalKind, UUID_PATTERN, normalizeStaffPath, liveStaffDestinations, reorderWorkspaceTabs,
   getWorkspaceRecordHref, getWorkspaceRecordFromPath,
   type WorkspaceRecordKind,
 } from '@/lib/admin/workspace/navigation';
@@ -353,6 +355,7 @@ export function useStaffWorkspaceTabs(
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const [navigating, startNavigation] = useTransition();
 
   const [snapshot, setSnapshot] =
     useState<WorkspaceSnapshot>(
@@ -637,7 +640,7 @@ export function useStaffWorkspaceTabs(
           };
         });
 
-        router.push(href);
+        startNavigation(() => router.push(href));
       });
     },
     [
@@ -721,6 +724,14 @@ export function useStaffWorkspaceTabs(
     },
     []
   );
+
+  const pinRecord = useCallback((record: WorkspaceTab | WorkspaceBookmark) => {
+    setSnapshot(current => {
+      const found = current.tabs.find(tab => tab.key === record.key);
+      if (found) return { ...current, tabs: current.tabs.map(tab => tab.key === record.key ? { ...tab, pinned: !tab.pinned } : tab) };
+      return { ...current, tabs: limitTabs([...current.tabs, { ...record, pinned: true, lastOpenedAt: Date.now() }]), recentlyClosed: current.recentlyClosed.filter(tab => tab.key !== record.key) };
+    });
+  }, []);
 
   /* =======================================================
      BOOKMARKS
@@ -998,29 +1009,26 @@ export function useStaffWorkspaceTabs(
      DERIVED DATA
      ======================================================= */
 
-  /*
-   * Pinned tabs group first.
-   *
-   * Relative order within each group is
-   * preserved. Clicking a tab never moves it.
-   */
-
-  const tabs = useMemo(() => {
-    const pinned =
-      snapshot.tabs.filter(
-        (tab) => tab.pinned
-      );
-
-    const unpinned =
-      snapshot.tabs.filter(
-        (tab) => !tab.pinned
-      );
-
-    return [
-      ...pinned,
-      ...unpinned,
-    ];
-  }, [snapshot.tabs]);
+  const tabs = snapshot.tabs;
+  const reorderTabs = useCallback((active: string, over: string) => {
+    setSnapshot(current => {
+      const next = reorderWorkspaceTabs(current.tabs, active, over);
+      return next === current.tabs ? current : { ...current, tabs: next };
+    });
+  }, []);
+  const prefetched = useRef(new Set<string>());
+  const prefetchTab = useCallback((href: string) => {
+    if (prefetched.current.has(href)) return;
+    prefetched.current.add(href);
+    router.prefetch(href);
+  }, [router]);
+  useEffect(() => {
+    if (!hydrated) return;
+    const timer = window.setTimeout(() => {
+      tabs.filter(tab => tab.key !== activeKey).slice(0, 3).forEach(tab => prefetchTab(tab.href));
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [hydrated, tabs, activeKey, prefetchTab]);
 
   const activeTab = useMemo(
     () =>
@@ -1051,6 +1059,10 @@ export function useStaffWorkspaceTabs(
     closeTab,
     togglePin,
     toggleBookmark,
+    reorderTabs,
+    prefetchTab,
+    pinRecord,
+    navigating,
     reopenClosedTab,
     closeOtherTabs,
     closeUnpinnedTabs,
