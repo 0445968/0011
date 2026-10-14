@@ -8,7 +8,7 @@ test('Business foundation preserves identity, channels and permissions through c
  const db=new PGlite();try{
  await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create table auth.users(id uuid primary key,email text);create function auth.uid() returns uuid language sql as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;grant usage on schema public,auth to anon,authenticated,service_role;grant execute on function auth.uid() to authenticated;create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);create table storage.objects(id bigint generated always as identity,bucket_id text,name text,metadata jsonb,unique(bucket_id,name));alter table storage.objects enable row level security;grant usage on schema storage to authenticated,anon;grant select,insert,update,delete on storage.objects to authenticated,anon;grant usage on sequence storage.objects_id_seq to authenticated,anon;`);
  const files=fs.readdirSync(migrations).filter(name=>name.endsWith('.sql')).sort();
- for(const file of files.filter(name=>!name.includes('016_')))await db.exec(fs.readFileSync(new URL(file,migrations),'utf8'));
+ for(const file of files.filter(name=>name<'202610140016_business_identity_foundation.sql'))await db.exec(fs.readFileSync(new URL(file,migrations),'utf8'));
  const staff=randomUUID(),outside=randomUUID(),request=randomUUID(),org=randomUUID();
  await db.query('insert into auth.users(id,email) values($1,$2),($3,$4)',[staff,'staff@example.com',outside,'outside@example.com']);
  await db.query('insert into inquiry_staff(user_id) values($1)',[staff]);

@@ -10,39 +10,12 @@ import {
 import { DndContext, closestCenter, MouseSensor, TouchSensor, KeyboardSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, horizontalListSortingStrategy, sortableKeyboardCoordinates, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { WorkspaceBarDropdowns, WorkspaceEmptySpaceMenu } from './WorkspaceBarMenus';
 import { WorkspaceItemMenu } from './WorkspaceItemMenu';
-import Link from 'next/link';
 import { recordIcons, recordLabels } from './navigationUi';
 
-import {
-  Bookmark,
-  ChevronLeft,
-  ChevronRight,
-  FolderKanban,
-  Inbox,
-  MoreHorizontal,
-  Pin,
-  Plus,
-  RotateCcw,
-  Users,
-  X,
-  type LucideIcon,
-} from 'lucide-react';
-
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-
-import type {
-  WorkspaceBookmark,
-  WorkspaceRecordKind,
-  WorkspaceTab,
-} from './useStaffWorkspaceTabs';
+import { Bookmark, ChevronLeft, ChevronRight, Pin, X } from 'lucide-react';
+import type { WorkspaceBookmark, WorkspaceRecordKind, WorkspaceTab } from './useStaffWorkspaceTabs';
 
 /* =========================================================
    TYPES
@@ -86,6 +59,7 @@ const recordColors: Record<
     icon: string;
   }
 > = {
+  company: { active: 'bg-teal-100 dark:bg-teal-950 border-teal-300', inactive: 'bg-teal-50/45 dark:bg-teal-950/15 hover:bg-teal-100/65 dark:hover:bg-teal-950/35', accent: 'bg-teal-500 dark:bg-teal-400', icon: 'text-teal-600 dark:text-teal-400' },
   project: {
     active:
       'bg-yellow-100/85 dark:bg-yellow-950/45 border-yellow-300/70 dark:border-yellow-700/50',
@@ -455,16 +429,13 @@ export function WorkspaceTabBar({
   const scrollRef =
     useRef<HTMLDivElement>(null);
 
+  const menuProps = { tabs, bookmarks, recentlyClosed, activeKey, openTab, closeTab, togglePin, toggleBookmark, reopenClosedTab, closeOtherTabs, closeUnpinnedTabs };
+
   const bookmarkedKeys = new Set(
     bookmarks.map(
       (bookmark) => bookmark.key
     )
   );
-
-  const activeTab =
-    tabs.find(
-      (tab) => tab.key === activeKey
-    ) ?? null;
 
   function scrollTabs(
     direction: -1 | 1
@@ -520,7 +491,7 @@ export function WorkspaceTabBar({
           scrollbar-hide
         "
       >
-        {tabs.length > 0 ? (
+        {tabs.length > 0 && (
           tabs.map((tab, index) => {
             const active =
               tab.key === activeKey;
@@ -581,11 +552,8 @@ export function WorkspaceTabBar({
               </Fragment>
             );
           })
-        ) : (
-          <span className="flex h-full items-center px-3 text-[11px] text-muted-foreground">
-            Open a project or inquiry.
-          </span>
         )}
+        <WorkspaceEmptySpaceMenu {...menuProps}>{tabs.length===0&&<span className="px-3 text-[11px] text-muted-foreground">Open a workspace record to create a tab.</span>}</WorkspaceEmptySpaceMenu>
       </nav>
       </SortableContext>
       </DndContext>
@@ -601,254 +569,7 @@ export function WorkspaceTabBar({
         />
       )}
 
-      {/* OPEN RECORD */}
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            title="Open a workspace record"
-            aria-label="Open a workspace record"
-            className="
-              mb-1.5
-              flex
-              h-8
-              w-8
-              shrink-0
-              items-center
-              justify-center
-              rounded-md
-              text-muted-foreground
-              transition-colors
-              hover:bg-muted
-              hover:text-foreground
-            "
-          >
-            <Plus size={17} />
-          </button>
-        </DropdownMenuTrigger>
-
-        <DropdownMenuContent
-          align="end"
-          sideOffset={8}
-          className="
-            bivi-staff-surface
-            w-64
-            rounded-xl
-            border-border/60
-            bg-popover
-            p-1.5
-            text-popover-foreground
-            shadow-lg
-          "
-        >
-          <DropdownMenuLabel className="px-2.5 py-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-            Open workspace
-          </DropdownMenuLabel>
-
-          <DropdownMenuItem asChild>
-            <Link
-              href="/projects"
-              className="flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-xs"
-            >
-              <FolderKanban size={15} />
-              Browse projects
-            </Link>
-          </DropdownMenuItem>
-
-          <DropdownMenuItem asChild>
-            <Link
-              href="/inquiries"
-              className="flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-xs"
-            >
-              <Inbox size={15} />
-              Browse inquiries
-            </Link>
-          </DropdownMenuItem>
-
-          {bookmarks.length > 0 && (
-            <>
-              <DropdownMenuSeparator />
-
-              <DropdownMenuLabel className="px-2.5 py-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                Bookmarked records
-              </DropdownMenuLabel>
-
-              {bookmarks
-                .slice(0, 10)
-                .map((bookmark) => {
-                  const Icon =
-                    recordIcons[
-                      bookmark.kind
-                    ];
-
-                  const colors =
-                    recordColors[
-                      bookmark.kind
-                    ];
-
-                  return (
-                    <DropdownMenuItem
-                      key={bookmark.key}
-                      onSelect={() =>
-                        openTab(bookmark)
-                      }
-                      className="flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-xs"
-                    >
-                      <Icon
-                        size={15}
-                        className={`
-                          shrink-0
-                          ${colors.icon}
-                        `}
-                      />
-
-                      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                        <span className="truncate font-medium">
-                          {bookmark.title}
-                        </span>
-
-                        <span className="truncate text-[10px] text-muted-foreground">
-                          {bookmark.recordType ||
-                            recordLabels[
-                              bookmark.kind
-                            ]}
-                        </span>
-                      </span>
-                    </DropdownMenuItem>
-                  );
-                })}
-            </>
-          )}
-
-          {recentlyClosed.length > 0 && (
-            <>
-              <DropdownMenuSeparator />
-
-              <DropdownMenuItem
-                onSelect={reopenClosedTab}
-                className="flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-xs"
-              >
-                <RotateCcw size={15} />
-                Reopen closed tab
-              </DropdownMenuItem>
-            </>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      {/* TAB MANAGEMENT */}
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            title="Tab management"
-            aria-label="Tab management"
-            className="
-              mb-1.5
-              flex
-              h-8
-              w-8
-              shrink-0
-              items-center
-              justify-center
-              rounded-md
-              text-muted-foreground
-              transition-colors
-              hover:bg-muted
-              hover:text-foreground
-            "
-          >
-            <MoreHorizontal size={17} />
-          </button>
-        </DropdownMenuTrigger>
-
-        <DropdownMenuContent
-          align="end"
-          sideOffset={8}
-          className="
-            bivi-staff-surface
-            w-56
-            rounded-xl
-            border-border/60
-            bg-popover
-            p-1.5
-            text-popover-foreground
-            shadow-lg
-          "
-        >
-          <DropdownMenuLabel className="px-2.5 py-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-            Window management
-          </DropdownMenuLabel>
-
-          <DropdownMenuItem
-            disabled={!activeTab}
-            onSelect={() => {
-              if (activeKey) {
-                togglePin(activeKey);
-              }
-            }}
-            className="cursor-pointer gap-2 rounded-lg px-3 py-2 text-xs"
-          >
-            <Pin size={14} />
-
-            {activeTab?.pinned
-              ? 'Unpin current tab'
-              : 'Pin current tab'}
-          </DropdownMenuItem>
-
-          <DropdownMenuItem
-            disabled={!activeTab}
-            onSelect={() => {
-              if (activeKey) {
-                toggleBookmark(activeKey);
-              }
-            }}
-            className="cursor-pointer gap-2 rounded-lg px-3 py-2 text-xs"
-          >
-            <Bookmark size={14} />
-
-            {activeKey &&
-            bookmarkedKeys.has(
-              activeKey
-            )
-              ? 'Remove bookmark'
-              : 'Bookmark current tab'}
-          </DropdownMenuItem>
-
-          <DropdownMenuSeparator />
-
-          <DropdownMenuItem
-            disabled={tabs.length < 2}
-            onSelect={closeOtherTabs}
-            className="cursor-pointer rounded-lg px-3 py-2 text-xs"
-          >
-            Close other tabs
-          </DropdownMenuItem>
-
-          <DropdownMenuItem
-            disabled={tabs.length < 2}
-            onSelect={closeUnpinnedTabs}
-            className="cursor-pointer rounded-lg px-3 py-2 text-xs"
-          >
-            Close unpinned tabs
-          </DropdownMenuItem>
-
-          <DropdownMenuSeparator />
-
-          <DropdownMenuItem
-            disabled={
-              recentlyClosed.length === 0
-            }
-            onSelect={reopenClosedTab}
-            className="cursor-pointer gap-2 rounded-lg px-3 py-2 text-xs"
-          >
-            <RotateCcw size={14} />
-            Reopen closed tab
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <WorkspaceBarDropdowns {...menuProps}/>
     </div>
   );
 }

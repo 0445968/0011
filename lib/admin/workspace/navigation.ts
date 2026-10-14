@@ -1,5 +1,5 @@
 /** Staff URLs are clean paths on staff.bivi.pro; middleware maps them to /admin. */
-export type WorkspaceRecordKind = 'project' | 'inquiry' | 'lead' | 'contact';
+export type WorkspaceRecordKind = 'project' | 'inquiry' | 'lead' | 'contact' | 'company';
 export type SectionId = 'overview' | 'sales' | 'workspace' | 'resources' | 'business' | 'system';
 export interface StaffDestination {
   id: string;
@@ -25,6 +25,7 @@ export const staffDestinations: StaffDestination[] = [
   { id: 'calendar', label: 'Calendar', href: '/calendar', icon: 'CalendarDays', permission: 'staff', status: 'build', subgroup: 'overview' },
   { id: 'inquiries', label: 'Inquiries', href: '/inquiries', icon: 'Inbox', permission: 'staff', status: 'existing', subgroup: 'sales', kind: 'inquiry' },
   { id: 'people', label: 'People', href: '/people', icon: 'ContactRound', permission: 'staff', status: 'existing', subgroup: 'sales', kind: 'contact' },
+  { id: 'companies', label: 'Companies', href: '/companies', icon: 'Building2', permission: 'staff', status: 'existing', subgroup: 'sales', kind: 'company' },
   { id: 'clients', label: 'Clients', href: '/clients', icon: 'Users', permission: 'staff', status: 'build', subgroup: 'sales' },
   { id: 'proposals', label: 'Proposals', href: '/proposals', icon: 'FileSignature', permission: 'staff', status: 'build', subgroup: 'sales' },
   { id: 'projects', label: 'Projects', href: '/projects', icon: 'FolderKanban', permission: 'staff', status: 'existing', subgroup: 'workspace', kind: 'project' },
@@ -52,6 +53,7 @@ export const recordDefinitions = {
   project: { label: 'Project', directory: '/projects', base: '/projects', icon: 'FolderKanban' },
   inquiry: { label: 'Inquiry', directory: '/inquiries', base: '/leads', icon: 'Inbox' },
   lead: { label: 'Inquiry', directory: '/inquiries', base: '/leads', icon: 'Inbox' },
+  company: { label: 'Company', directory: '/companies', base: '/companies', icon: 'Building2' },
   contact: { label: 'Person', directory: '/people', base: '/people', icon: 'ContactRound' },
 } as const;
 export function getWorkspaceRecordHref(kind: WorkspaceRecordKind, id: string): string {
@@ -62,7 +64,7 @@ export function getWorkspaceRecordFromPath(path: string) {
   if (!rawId || (section === 'people' ? !/^[1-9]\d{0,8}$/.test(rawId) : !UUID_PATTERN.test(rawId))) return null;
   const kind: WorkspaceRecordKind | undefined = section === 'projects' ? 'project'
     : section === 'leads' || section === 'inquiries' ? 'inquiry'
-    : section === 'people' ? 'contact' : undefined;
+    : section === 'people' ? 'contact' : section === 'companies' ? 'company' : undefined;
   if (!kind) return null;
   const id = rawId.toLowerCase();
   return { key: `${kind}:${id}`, id, kind, href: getWorkspaceRecordHref(kind, id) };

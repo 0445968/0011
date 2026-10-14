@@ -348,15 +348,7 @@ function SidebarRecord({
       ? Pin
       : recordIcons[tab.kind];
 
-  const typeLabel =
-    tab.recordType ||
-    (
-      tab.kind === 'project'
-        ? 'Project'
-        : tab.kind === 'contact'
-          ? 'Person'
-          : 'Inquiry'
-    );
+  const typeLabel = tab.recordType || recordDefinitions[tab.kind].label;
 
   return (
     <WorkspaceItemMenu href={tab.href} pinned={'pinned' in tab && tab.pinned} bookmarked={bookmarked} onOpen={onOpen} onPin={onPin} onBookmark={onBookmark} onClose={onClose}>
@@ -477,6 +469,7 @@ function RecordContextNavigation({
       ? 'plan'
       : selectedProjectTab;
 
+  const RecordIcon = recordIcons[tab.kind];
   return (
     <div
       className="
@@ -621,10 +614,10 @@ function RecordContextNavigation({
 
         {/* CONTACT PLACEHOLDER */}
 
-        {tab.kind === 'contact' && (
+        {(tab.kind === 'contact' || tab.kind === 'company') && (
           <span className="flex items-center gap-2 text-xs font-semibold">
-            <Users size={15} />
-            Person workspace
+            <RecordIcon size={15} />
+            {recordDefinitions[tab.kind].label} workspace
           </span>
         )}
       </nav>
@@ -1074,12 +1067,13 @@ useEffect(() => {
 
   const recordsByKind = useMemo(() => {
     const groups: Record<
-      'project' | 'inquiry' | 'contact',
+      'project' | 'inquiry' | 'contact' | 'company',
       WorkspaceTab[]
     > = {
       project: [],
       inquiry: [],
       contact: [],
+      company: [],
     };
 
     for (const tab of tabs) {
@@ -1186,18 +1180,7 @@ useEffect(() => {
       ? navItems.find(item => item.href === recordDefinitions[routeRecord.kind].directory)?.label ?? recordDefinitions[routeRecord.kind].label
       : 'Workspace';
 
-  const breadcrumbTitle =
-    routeRecord
-      ? activeTab?.title ??
-        activeMetadata?.title ??
-        (
-          routeRecord.kind === 'project'
-            ? 'Project'
-            : routeRecord.kind === 'contact'
-              ? 'Person'
-              : 'Inquiry'
-        )
-      : currentPage;
+  const breadcrumbTitle = routeRecord ? activeMetadata?.title ?? activeTab?.title ?? recordDefinitions[routeRecord.kind].label : currentPage;
 
   const breadcrumbHref = routeRecord ? recordDefinitions[routeRecord.kind].directory : '/';
 

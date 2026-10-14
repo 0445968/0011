@@ -19,7 +19,7 @@ const state = hookModule.exports;
 const tab = (kind = 'project', extra = {}) => ({ key: `${kind}:${id}`, id, kind, title: 'Lumen', href: `/projects/${id}?tab=brief`, pinned: false, lastOpenedAt: 1, ...extra });
 
 test('only implemented destinations are live and middleware rewrites the same routes', () => {
-  assert.deepEqual(nav.liveStaffDestinations.map(item => item.id), ['dashboard', 'inquiries', 'people', 'projects']);
+  assert.deepEqual(nav.liveStaffDestinations.map(item => item.id), ['dashboard', 'inquiries', 'people', 'companies', 'projects']);
   for (const item of nav.liveStaffDestinations) {
     assert.equal(nav.staffInternalPath(item.href), item.href === '/' ? '/admin' : `/admin${item.href}`);
     assert.equal(item.permission, 'staff');
@@ -98,4 +98,12 @@ test('People routes use stable numeric contact IDs with at most nine digits', ()
   assert.equal(nav.isStaffDestinationActive(`/admin/people/${value}`, '/people'),true);
  }
  for (const value of ['0','012345678','1000000000','abc']) assert.equal(nav.getWorkspaceRecordFromPath(`/people/${value}`),null);
+});
+
+test('Company records participate in the same navigation identity and persistence contract',()=>{
+ const record=nav.getWorkspaceRecordFromPath(`/admin/companies/${id}`);
+ assert.deepEqual(record,{key:`company:${id}`,id,kind:'company',href:`/companies/${id}`});
+ assert.equal(nav.isStaffDestinationActive(`/companies/${id}`,'/companies'),true);
+ globalThis.localStorage={getItem:()=>JSON.stringify({tabs:[tab('company',{href:`/companies/${id}`})]})};
+ assert.equal(state.restoreSnapshot('staff').tabs[0].kind,'company');
 });

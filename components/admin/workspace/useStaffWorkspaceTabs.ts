@@ -17,7 +17,7 @@ import {
 } from 'next/navigation';
 
 import {
-  canonicalKind, isWorkspaceRecordId, normalizeStaffPath, liveStaffDestinations, reorderWorkspaceTabs,
+  canonicalKind, recordDefinitions, isWorkspaceRecordId, normalizeStaffPath, liveStaffDestinations, reorderWorkspaceTabs,
   getWorkspaceRecordHref, getWorkspaceRecordFromPath,
   type WorkspaceRecordKind,
 } from '@/lib/admin/workspace/navigation';
@@ -74,6 +74,7 @@ const RECORD_KINDS: WorkspaceRecordKind[] = [
   'inquiry',
   'lead',
   'contact',
+  'company',
 ];
 
 function emptySnapshot(): WorkspaceSnapshot {
@@ -102,7 +103,9 @@ function fallbackTitle(
     case 'lead':
       return 'Inquiry';
     case 'contact':
-      return 'Contact';
+      return 'Person';
+    case 'company':
+      return 'Company';
   }
 }
 
@@ -690,7 +693,7 @@ export function useStaffWorkspaceTabs(
               remaining.length - 1
             ];
 
-          router.push(next?.href ?? (closing.kind === 'project' ? '/projects' : '/inquiries'));
+          router.push(next?.href ?? recordDefinitions[closing.kind].directory);
         }
       };
       if (activeKey === key) guardWorkspaceNavigation(performClose);

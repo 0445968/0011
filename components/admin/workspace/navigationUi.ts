@@ -1,12 +1,12 @@
 import {
-  Bell, CalendarDays, ContactRound, Users, FileSignature, FolderKanban, Inbox,
+  Building2, Bell, CalendarDays, ContactRound, Users, FileSignature, FolderKanban, Inbox,
   LayoutDashboard, ListChecks, CheckCheck, Files, ClipboardList, FileStack,
   Layers, Receipt, ChartNoAxesCombined, UsersRound, Settings, type LucideIcon,
 } from 'lucide-react';
 import { liveStaffDestinations, recordDefinitions, type WorkspaceRecordKind } from '@/lib/admin/workspace/navigation';
 
 const icons: Record<string, LucideIcon> = {
-  Bell, CalendarDays, ContactRound, Users, FileSignature, FolderKanban, Inbox,
+  Building2, Bell, CalendarDays, ContactRound, Users, FileSignature, FolderKanban, Inbox,
   LayoutDashboard, ListChecks, CheckCheck, Files, ClipboardList, FileStack,
   Layers, Receipt, ChartNoAxesCombined, UsersRound, Settings,
 };
