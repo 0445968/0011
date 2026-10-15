@@ -168,7 +168,7 @@ export default async function ProjectPage({
   searchParams = {},
 }: {
   params: { id: string };
-  searchParams?: { tab?: string;task?:string;focus?:string };
+  searchParams?: { tab?: string;task?:string;focus?:string;milestone?:string };
 }) {
   /* =======================================================
      AUTHENTICATION
@@ -372,6 +372,8 @@ export default async function ProjectPage({
       : 'plan';
 
   const requestedTask=searchParams.task;const selectedTask=requestedTask&&record?.body.tasks.some(task=>task.id===requestedTask)?requestedTask:undefined;
+  const requestedMilestone = searchParams.milestone;
+  const selectedMilestone = requestedMilestone && record?.body.milestones.some(item => item.id === requestedMilestone) ? requestedMilestone : undefined;
   const requestedTab =
     searchParams.tab;
 
@@ -887,15 +889,17 @@ export default async function ProjectPage({
           )}
 
           {requestedTask&&!selectedTask&&<p role="status" className="rounded border p-4 text-sm">This task is no longer in the project. The current work plan remains available below.</p>}
+          {requestedMilestone && !selectedMilestone && <p role="status" className="rounded border p-4 text-sm">This milestone is no longer in the project. The current work plan remains available below.</p>}
           <ProjectWorkspace
             key={
-              `${record?.revision??0}:${selectedTask||''}`
+              `${record?.revision??0}:${selectedTask||''}:${selectedMilestone||''}`
             }
             id={params.id}
             record={record}
             history={data.history}
             gateReady={gateReady}
             selectedTask={selectedTask}
+            selectedMilestone={selectedMilestone}
           />
         </div>
       )}

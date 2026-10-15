@@ -23,7 +23,7 @@ export const staffGroups: { id: SectionId; title: string }[] = [
 export const staffDestinations: StaffDestination[] = [
   { id: 'dashboard', label: 'Dashboard', href: '/', icon: 'LayoutDashboard', permission: 'staff', status: 'existing', subgroup: 'overview' },
   { id: 'notifications', label: 'Notifications', href: '/notifications', icon: 'Bell', permission: 'staff', status: 'existing', subgroup: 'overview', placement: 'topbar' },
-  { id: 'calendar', label: 'Calendar', href: '/calendar', icon: 'CalendarDays', permission: 'staff', status: 'build', subgroup: 'overview' },
+  { id: 'calendar', label: 'Calendar', href: '/calendar', icon: 'CalendarDays', permission: 'staff', status: 'existing', subgroup: 'overview' },
   { id: 'inquiries', label: 'Inquiries', href: '/inquiries', icon: 'Inbox', permission: 'staff', status: 'existing', subgroup: 'sales', kind: 'inquiry' },
   { id: 'people', label: 'People', href: '/people', icon: 'ContactRound', permission: 'staff', status: 'existing', subgroup: 'sales', kind: 'contact' },
   { id: 'companies', label: 'Companies', href: '/companies', icon: 'Building2', permission: 'staff', status: 'existing', subgroup: 'sales', kind: 'company' },

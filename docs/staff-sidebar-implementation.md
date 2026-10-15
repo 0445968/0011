@@ -208,3 +208,40 @@ Based on `bivi-sidebar-phase0` at `08115f364111edd362fade55733d75d039eff15b` (Ad
 - Browser visual/interaction verification remains pending: the available browser download returned a truncated archive. No preview-only route or authorization bypass is included in this patch.
 
 Calendar is still marked unbuilt in this GitHub baseline. If it was added locally in the previous chat, retain that work; this patch does not implement Calendar.
+
+## Calendar agenda — October 15, 2026
+
+Based on `bivi-sidebar-phase0` at `6ff72ad` (the full notifications implementation). This patch adds the real `/calendar` staff destination and leaves the top-bar notifications placement intact.
+
+### Apply locally
+
+1. Download `bivi-calendar.patch` into Downloads. From the local `bivi-git` directory, run:
+
+   ```sh
+   git apply --check "$HOME/Downloads/bivi-calendar.patch" && git apply "$HOME/Downloads/bivi-calendar.patch"
+   ```
+
+   A failed check leaves files untouched. Share the error to adapt the patch to local edits; do not discard existing work.
+
+2. Run the complete `supabase/migrations/202610150027_staff_calendar.sql` in the intended project's Supabase SQL editor, after migrations through 026. On macOS, copy it using:
+
+   ```sh
+   pbcopy < supabase/migrations/202610150027_staff_calendar.sql
+   ```
+
+3. Run `npm run build`, then open Calendar in the local staff workspace. Verify next/previous month, date range, search, type/status/project/scope filters, and source links. Include a milestone beyond the first six to check pagination and focus. The patch itself does not run a migration, modify source records, or publish a deployment.
+
+### Behavior and scope
+
+- The initial version is a server-rendered agenda of saved project task and milestone due dates. A month selector provides previous/next/this-month navigation. Date range filters can span up to 366 days apart; invalid/reversed ranges show a notice and fall back to the selected month.
+- All workspace dates is the default. My assigned tasks uses the verified staff assignment ID, not owner text, and excludes milestones. Outstanding items from active/on-hold projects are the default; completed items/projects are available through filters.
+- Source data comes from a read-only `security_invoker` view over the existing project JSON and task-control tables. Existing source RLS remains authoritative. Clients, inactive staff, and anonymous users cannot read the staff agenda. No new write permissions or parallel task/milestone tables are introduced.
+- Every row has a stable type/project/source identity. Date grouping and server pagination use stable ordering, at 25 results per page. A date with many items can continue onto another page.
+- Initial month/today/overdue labels use the saved notification timezone unless a URL timezone is chosen. The calendar selection does not overwrite the saved preference. Due dates remain calendar dates; they have no invented meeting time and do not move across days when displayed in another timezone.
+- Undated tasks/milestones remain in their projects. The agenda does not introduce meeting creation, external-calendar sync, or timed-event storage.
+- Task links reuse existing task selection. Milestone links now select the correct milestone page, focus the source row, and retain project tab identity. Removed milestones show a friendly notice and the current plan. Existing authoritative save/revision checks and unsaved-change navigation guards remain in place.
+
+### Verification
+
+- All 40 platform tests pass, including calendar source projection, staff/client/inactive/anonymous access, read-only permissions, assignments, source updates/removal, month boundaries, leap dates, invalid ranges, timezone midnight behavior, and encoded task/milestone links.
+- Production build passes. Browser visual and live-project checks remain pending local application of migration 027.

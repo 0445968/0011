@@ -1,0 +1,80 @@
+import Link from 'next/link';
+import {ChevronLeft, ChevronRight} from 'lucide-react';
+import {requireStaff} from '@/lib/admin/auth';
+import {listCalendar} from '@/lib/calendar/data';
+import {calendarDateLabel, calendarHref, calendarMonth} from '@/lib/calendar/links';
+
+export const dynamic = 'force-dynamic';
+const field = 'h-11 min-w-0 rounded-lg border border-border bg-background px-3 text-sm';
+const button = 'inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-border px-3 text-sm hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
+const statuses: Record<string, string> = {todo:'To do', doing:'In progress', blocked:'Blocked', planned:'Planned', in_progress:'In progress', done:'Done'};
+
+export default async function CalendarPage({searchParams:p}: {searchParams:Record<string, string | undefined>}) {
+  const {client, user} = await requireStaff();
+  const result = await listCalendar(client, user.id, p);
+  const zones = Array.from(new Set(['America/Chicago', 'America/Bogota', 'America/New_York', 'America/Los_Angeles', 'Europe/London', 'UTC', result.timezone]));
+  function href(changes:Record<string, string | undefined>) {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries({...p, tz:result.timezone, ...changes})) if (value) params.set(key, value);
+    return `/calendar?${params}`;
+  }
+  const groups = Array.from(new Set(result.rows.map(row => row.due_on)));
+  const pages = Math.max(1, Math.ceil(result.total / 25));
+  const monthLabel = new Intl.DateTimeFormat('en-US', {month:'long', year:'numeric', timeZone:'UTC'}).format(new Date(`${result.month}-01T12:00:00Z`));
+
+  return <div className="space-y-6">
+    <header>
+      <p className="text-xs uppercase tracking-wider text-muted-foreground">Overview</p>
+      <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
+        <div><h1 className="text-3xl font-semibold">Calendar</h1><p className="mt-2 text-sm text-muted-foreground">Project task and milestone due dates. Open an item to update its source.</p></div>
+        <p className="text-xs text-muted-foreground">Today: {result.today} · {result.timezone}</p>
+      </div>
+    </header>
+
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <h2 className="text-xl font-semibold">{monthLabel}</h2>
+      <nav aria-label="Calendar months" className="flex flex-wrap gap-2">
+        <Link aria-label="Previous month" className={button} href={href({month:calendarMonth(result.month, -1), from:undefined, to:undefined, page:undefined})}><ChevronLeft size={16}/><span className="sr-only">Previous month</span></Link>
+        <Link className={button} href={href({month:result.today.slice(0, 7), from:undefined, to:undefined, page:undefined})}>This month</Link>
+        <Link aria-label="Next month" className={button} href={href({month:calendarMonth(result.month, 1), from:undefined, to:undefined, page:undefined})}><ChevronRight size={16}/><span className="sr-only">Next month</span></Link>
+      </nav>
+    </div>
+
+    <form className="grid gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-2 lg:grid-cols-4">
+      <input type="hidden" name="month" value={result.month}/>
+      <label className="space-y-1 text-xs sm:col-span-2"><span>Search</span><input className={`${field} w-full`} name="q" defaultValue={p.q} maxLength={100} placeholder="Task, milestone, project or project ID"/></label>
+      <label className="space-y-1 text-xs"><span>From</span><input type="date" required name="from" defaultValue={result.from} className={`${field} w-full`}/></label>
+      <label className="space-y-1 text-xs"><span>Through</span><input type="date" required name="to" defaultValue={result.to} className={`${field} w-full`}/></label>
+      <label className="space-y-1 text-xs"><span>Type</span><select name="kind" defaultValue={p.kind || 'all'} className={`${field} w-full`}><option value="all">Tasks and milestones</option><option value="task">Tasks</option><option value="milestone">Milestones</option></select></label>
+      <label className="space-y-1 text-xs"><span>Scope</span><select name="scope" defaultValue={p.scope || 'all'} className={`${field} w-full`}><option value="all">All workspace dates</option><option value="mine">My assigned tasks</option></select></label>
+      <label className="space-y-1 text-xs"><span>Status</span><select name="status" defaultValue={p.status || 'open'} className={`${field} w-full`}><option value="open">Outstanding</option><option value="done">Done</option><option value="all">All statuses</option></select></label>
+      <label className="space-y-1 text-xs"><span>Projects</span><select name="project" defaultValue={p.project || ''} className={`${field} w-full`}><option value="">Active and on hold</option><option value="active">Active</option><option value="on_hold">On hold</option><option value="completed">Completed</option><option value="all">All project states</option></select></label>
+      <label className="space-y-1 text-xs sm:col-span-2"><span>Timezone for today and overdue labels</span><select name="tz" defaultValue={result.timezone} className={`${field} w-full`}>{zones.map(zone => <option key={zone}>{zone}</option>)}</select></label>
+      <div className="flex items-end gap-2 sm:col-span-2"><button className="min-h-11 rounded-lg bg-foreground px-4 text-sm text-background">Apply filters</button><Link className={button} href="/calendar">Reset</Link></div>
+    </form>
+
+    {result.warning && <p role="status" className="rounded-lg border border-border p-3 text-sm">{result.warning}</p>}
+    <div className="flex flex-wrap justify-between gap-2 text-xs text-muted-foreground">
+      <p>{result.total} dates · {result.from} through {result.to}</p>
+      <p>Due dates have no scheduled time. Items without a due date appear in their project.</p>
+    </div>
+    {p.scope === 'mine' && <p className="text-xs text-muted-foreground">My assigned tasks uses your verified staff assignment. Milestones remain available under All workspace dates.</p>}
+
+    {groups.length ? <div className="space-y-6">{groups.map(date => <section key={date} aria-labelledby={`calendar-${date}`}>
+      <div className="mb-3 flex flex-wrap items-center gap-3"><h3 id={`calendar-${date}`} className="text-sm font-semibold"><time dateTime={date}>{calendarDateLabel(date)}</time></h3>{date === result.today && <span className="rounded-full bg-muted px-2 py-1 text-xs">Today</span>}</div>
+      <ul className="divide-y divide-border/60 rounded-xl border border-border bg-card">{result.rows.filter(row => row.due_on === date).map(item => {
+        const overdue = !item.is_done && item.due_on < result.today;
+        return <li key={item.event_key} className="flex flex-col justify-between gap-3 p-4 sm:flex-row sm:items-center">
+          <div className="min-w-0"><p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{item.event_type === 'task' ? 'Task due' : 'Milestone due'}</p><Link href={calendarHref(item)} className="break-words text-sm font-semibold hover:underline">{item.title}</Link><p className="mt-1 break-words text-xs text-muted-foreground"><Link href={`/projects/${item.request_id}`} className="hover:underline">{item.project_title}</Link> · {item.project_public_id}{item.project_state === 'on_hold' ? ' · Project on hold' : item.project_state === 'completed' ? ' · Project completed' : ''}</p></div>
+          <div className="flex shrink-0 flex-wrap items-center gap-2 text-xs"><span className="rounded-full bg-muted px-2.5 py-1">{statuses[item.status] || item.status}</span>{overdue && <span className="rounded-full bg-red-500/10 px-2.5 py-1 text-red-700 dark:text-red-300">Overdue</span>}</div>
+        </li>;
+      })}</ul>
+    </section>)}</div> : <div className="rounded-xl border border-border bg-card p-8 text-center"><p className="text-sm font-medium">No dates match these filters.</p><p className="mt-2 text-xs text-muted-foreground">Choose a different range, or add a task or milestone due date in a project.</p></div>}
+
+    <nav aria-label="Agenda pages" className="flex flex-wrap items-center justify-between gap-3 text-sm">
+      {result.page > 1 ? <Link className={button} href={href({page:String(result.page - 1)})}>Previous</Link> : <span/>}
+      <p className="text-xs text-muted-foreground">Page {result.page} of {pages}</p>
+      {result.page < pages ? <Link className={button} href={href({page:String(result.page + 1)})}>Next</Link> : <span/>}
+    </nav>
+  </div>;
+}
