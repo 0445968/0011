@@ -14,6 +14,7 @@ import {
 } from 'react';
 
 import { staffGroups, recordDefinitions, canonicalKind, isStaffDestinationActive as isActive, type SectionId, type StaffDestination } from '@/lib/admin/workspace/navigation';
+import { WorkspacePreferencesContext } from './workspace/WorkspacePreferences';
 import { NotificationsBell } from './notifications/NotificationsBell';
 import { WorkspaceItemMenu } from './workspace/WorkspaceItemMenu';
 import { WorkspaceNavigationGuard, guardWorkspaceNavigation } from './workspace/WorkspaceNavigationGuard';
@@ -810,6 +811,8 @@ export function StaffWorkspaceShell({
   const [collapsed, setCollapsed] =
     useState(initialCollapsed);
   const [preferencesReady, setPreferencesReady] = useState(false);
+  const [showTabs, setShowTabs] = useState(true);
+  const tabBarStorageKey = `bivi-staff-tab-bar:${workspaceId}`;
   const [sidebarAnimated, setSidebarAnimated] = useState(false);
 
   const [openSections, setOpenSections] =
@@ -951,6 +954,7 @@ useEffect(() => {
 
   useEffect(() => {
     try {
+      setShowTabs(localStorage.getItem(tabBarStorageKey) !== 'false');
       const storedCollapsed = localStorage.getItem(SIDEBAR_STORAGE_KEY);
       const restored = storedCollapsed === null ? initialCollapsed : storedCollapsed === 'true';
       setCollapsed(restored);
@@ -972,7 +976,7 @@ useEffect(() => {
     } catch {
       // Default preferences remain active.
     } finally { setPreferencesReady(true); }
-  }, [initialCollapsed]);
+  }, [initialCollapsed, tabBarStorageKey]);
 
   const toggleSidebar =
     useCallback(() => {
@@ -1012,6 +1016,12 @@ useEffect(() => {
     },
     []
   );
+
+  const changeShowTabs = useCallback((next: boolean) => {
+    setShowTabs(next);
+    try { localStorage.setItem(tabBarStorageKey, String(next)); }
+    catch { /* Continue for this session. */ }
+  }, [tabBarStorageKey]);
 
   /* =======================================================
      KEYBOARD SHORTCUTS
@@ -1259,6 +1269,7 @@ useEffect(() => {
 
   return (
     <WorkspaceNavigationGuard>
+    <WorkspacePreferencesContext.Provider value={{density, changeDensity, collapsed, toggleSidebar, showTabs, changeShowTabs}}>
     <RecordMetadataContext.Provider
       value={receiveMetadata}
     >
@@ -1905,7 +1916,7 @@ useEffect(() => {
 
           {/* PERSISTENT RECORD TABS */}
 
-          <WorkspaceTabBar
+          {showTabs && <WorkspaceTabBar
             reorderTabs={reorderTabs}
             prefetchTab={prefetchTab}
             tabs={
@@ -1923,7 +1934,7 @@ useEffect(() => {
             reopenClosedTab={reopenClosedTab}
             closeOtherTabs={closeOtherTabs}
             closeUnpinnedTabs={closeUnpinnedTabs}
-          />
+          />}
 
           {/* PROJECT / INQUIRY SECTIONS */}
 
@@ -2148,6 +2159,7 @@ useEffect(() => {
         )}
       </div>
     </RecordMetadataContext.Provider>
+    </WorkspacePreferencesContext.Provider>
     </WorkspaceNavigationGuard>
   );
 }

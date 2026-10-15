@@ -39,7 +39,7 @@ export const staffDestinations: StaffDestination[] = [
   { id: 'billing', label: 'Billing', href: '/billing', icon: 'Receipt', permission: 'staff', status: 'later', subgroup: 'business' },
   { id: 'reports', label: 'Reports', href: '/reports', icon: 'ChartNoAxesCombined', permission: 'staff', status: 'later', subgroup: 'business' },
   { id: 'team', label: 'Team', href: '/team', icon: 'UsersRound', permission: 'staff', status: 'later', subgroup: 'system' },
-  { id: 'settings', label: 'Settings', href: '/settings', icon: 'Settings', permission: 'staff', status: 'build', subgroup: 'system' },
+  { id: 'settings', label: 'Settings', href: '/settings', icon: 'Settings', permission: 'staff', status: 'existing', subgroup: 'system' },
 ];
 export const liveStaffDestinations = staffDestinations.filter(item => item.status === 'existing').sort((a, b) => staffGroups.findIndex(group => group.id === a.subgroup) - staffGroups.findIndex(group => group.id === b.subgroup));
 export const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

@@ -418,3 +418,49 @@ git push origin bivi-sidebar-phase0
 - No public service content, selection alias/clarification behavior, accepted proposal/project snapshots, price, or lifecycle mutation logic is modified. All new pages require verified staff authorization.
 
 Typecheck, targeted ESLint, production build, and all 49 platform tests pass. New tests verify canonical source integrity, filter/pagination behavior, requirement/add-on references, valid personal proposal-template seeds, correct commercial labels, and source immutability. Browser visual testing remains for the local checks above. No live migration, GitHub push, deployment, or external message was performed while preparing this patch.
+
+
+## Personal Settings — October 15, 2026
+
+Based on `bivi-sidebar-phase0` at `a9761b0` (Services catalog). Adds the authenticated `/settings` destination under System.
+
+### Apply locally — all terminal steps
+
+Download `bivi-settings.patch` into Downloads. From `bivi-git`:
+
+```sh
+git apply --check "$HOME/Downloads/bivi-settings.patch" &&
+git apply "$HOME/Downloads/bivi-settings.patch" &&
+npm run build
+```
+
+No new Supabase migration is required. Notification preferences reuse migration 026 and its authenticated preferences API.
+
+Open Settings in the local staff workspace. Change light/dark theme, density, and sidebar collapse; confirm the existing topbar/menu controls reflect the same state. Hide/show the record tab bar and reload; confirm records, pins, bookmarks, and order survive. Change notification categories/timezone, save, and verify Notifications uses those values. Try navigating away with unsaved notification edits and verify Stay, Discard and leave, and Save and stay. Organization settings are intentionally separate from these personal controls.
+
+After the local checks, commit and push:
+
+```sh
+git add -- \
+  'app/admin/(workspace)/settings' \
+  components/admin/StaffWorkspaceShell.tsx \
+  components/admin/workspace/WorkspacePreferences.tsx \
+  components/admin/settings/PersonalSettings.tsx \
+  components/admin/notifications/NotificationPreferencesForm.tsx \
+  components/admin/notifications/NotificationsInbox.tsx \
+  lib/admin/workspace/navigation.ts \
+  tests/platform/workspace-navigation.test.mjs \
+  docs/staff-sidebar-implementation.md &&
+git commit -m "Add personal staff workspace settings" &&
+git push origin bivi-sidebar-phase0
+```
+
+### Behavior and scope
+
+- Light/dark theme uses the existing next-themes provider and topbar control. Density and sidebar collapse use the shell's existing state and storage keys through a shared context; Settings does not create competing preferences.
+- The new tab-bar visibility preference is stored per staff account in this browser. It changes presentation only: the tabs hook continues preserving open records, pins, bookmarks, recently closed records, and explicit order. Sidebar and Workspace menu navigation remain available.
+- Theme, density, collapse, and tab-bar visibility apply immediately and are browser preferences; they are not account-synced. Notification categories and IANA timezone remain account-backed through the existing authenticated API and own-account RLS/RPCs.
+- Settings and the Notifications inbox share a preferences form. Edits require explicit saving, failures preserve the draft, and saved changes notify the existing bell/inbox subscribers. Dirty preferences register with the workspace navigation guard; closing the inbox editor also respects that guard.
+- The page requires verified active staff access. It does not add organization, staff-role, billing, or account administration permissions, database tables, or migrations.
+
+Verification: Typecheck, targeted ESLint, production build, and all 49 platform tests pass. The navigation test includes the new live Settings route and its middleware mapping. Browser visual checks and live-account preference persistence remain for the local checks above. No migration, push, deployment, or external message was performed while preparing this patch.

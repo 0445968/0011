@@ -1,7 +1,9 @@
 'use client';
 import Link from 'next/link';
 import {useEffect, useState} from 'react';
-import {notificationHref, type NotificationPreferences} from '@/lib/notifications/types';
+import {notificationHref} from '@/lib/notifications/types';
+import {guardWorkspaceNavigation} from '../workspace/WorkspaceNavigationGuard';
+import {NotificationPreferencesForm} from './NotificationPreferencesForm';
 import {useNotifications} from './useNotifications';
 const control='rounded-lg border border-border bg-background px-3 py-2 text-xs disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 export function NotificationsInbox({compact=false,onNavigate}:{compact?:boolean;onNavigate?:()=>void}) {
@@ -9,30 +11,20 @@ export function NotificationsInbox({compact=false,onNavigate}:{compact?:boolean;
  const [unread,setUnread]=useState(false);
  const [category,setCategory]=useState('all');
  const [editing,setEditing]=useState(false);
- const [preferences,setPreferences]=useState<NotificationPreferences|null>(null);
- const [saved,setSaved]=useState(false);
  const {feed,error,busy,refresh,mutate}=useNotifications(new URLSearchParams({page:String(page),unread:String(unread),category,limit:compact?'6':'25'}).toString());
- useEffect(()=>{if(feed&&!editing)setPreferences(feed.preferences);},[feed,editing]);
  useEffect(()=>{if(feed&&page>1&&feed.total<=(page-1)*feed.limit)setPage(Math.max(1,Math.ceil(feed.total/feed.limit)));},[feed,page]);
  return <div className="space-y-4">
   <div className="flex flex-wrap items-center gap-2">
    <button className={control} disabled={!feed?.unread||busy} onClick={()=>void mutate({action:'read_all'})}>Mark all read</button>
    <button className={control} disabled={busy} onClick={()=>void refresh()}>Refresh</button>
-   {!compact&&<button className={control} disabled={!feed||busy} aria-expanded={editing} onClick={()=>{setEditing(!editing);setSaved(false);}}>Preferences</button>}
+   {!compact&&<button className={control} disabled={!feed||busy} aria-expanded={editing} onClick={()=>{if(editing)guardWorkspaceNavigation(()=>setEditing(false));else setEditing(true);}}>Preferences</button>}
    <span className="ml-auto text-xs text-muted-foreground" role="status">{feed?`${feed.unread} unread`:error?'Unavailable':'Loading…'}</span>
   </div>
   {!compact&&<div className="flex flex-wrap items-center gap-3">
    <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={unread} onChange={e=>{setUnread(e.target.checked);setPage(1);}}/>Unread only</label>
    <label className="text-sm">Type <select className={control} value={category} onChange={e=>{setCategory(e.target.value);setPage(1);}}><option value="all">All</option><option value="tasks">Assigned tasks</option><option value="deadlines">Deadlines</option><option value="approvals">Approvals</option></select></label>
   </div>}
-  {editing&&preferences&&<form className="space-y-3 rounded-xl border border-border p-4" onSubmit={async e=>{e.preventDefault();setSaved(false);if(await mutate({action:'preferences',...preferences})){setEditing(false);setSaved(true);setPage(1);}}}>
-   <p className="text-sm font-medium">Your in-app notifications</p>
-   {(['tasks','deadlines','approvals'] as const).map(key=><label className="flex items-center gap-2 text-sm" key={key}><input type="checkbox" checked={preferences[key]} disabled={busy} onChange={e=>setPreferences({...preferences,[key]:e.target.checked})}/>{({tasks:'Assigned tasks',deadlines:'Deadlines within 7 days and overdue tasks',approvals:'Approvals needing staff action'})[key]}</label>)}
-   <label className="block text-sm">Timezone<input required maxLength={100} className={`${control} mt-1 block w-full`} value={preferences.timezone} disabled={busy} onChange={e=>setPreferences({...preferences,timezone:e.target.value})}/></label>
-   <p className="text-xs text-muted-foreground">Use an IANA timezone such as America/Chicago. Read state is saved to your staff account.</p>
-   <button className={control} disabled={busy} type="submit">{busy?'Saving…':'Save preferences'}</button>
-  </form>}
-  {saved&&<p role="status" className="text-sm">Preferences saved.</p>}
+  {editing&&<div className="rounded-xl border border-border p-4"><NotificationPreferencesForm /></div>}
   {error&&<p role="alert" className="text-sm text-destructive">{error}</p>}
   {feed&&feed.rows.length===0&&<p className="py-8 text-center text-sm text-muted-foreground">{unread?'You’re all caught up.':'No notifications with these preferences and filters.'}</p>}
   {feed&&<ul className="divide-y divide-border/60">{feed.rows.map(item=><li key={item.event_key} className="flex items-start gap-3 py-4">
