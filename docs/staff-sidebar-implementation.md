@@ -165,3 +165,46 @@ Run `supabase/migrations/202610140017_company_workspace.sql` once after 001–01
 - Delivery, change, QA, handoff, publication and client-access drafts now register the existing unsaved-navigation guard. Saving one form keeps protection for unrelated drafts. Publishing, issuing, inviting, releasing and closing remain explicit source actions. Browser Back/Forward protection is still an open Phase 0 item.
 - Apply migration 025 after 024. Validation: production build, TypeScript, changed-file lint and 36 platform tests, including all source kinds, current versions, active reviewer changes, source lifecycle gates, completion exclusion, staff/client/anonymous isolation, read-only privileges and safe exact source URLs. Signed-in focus, keyboard, mobile and multi-form navigation checks remain.
 - Next planned batch: Calendar agenda using authoritative project dates, followed by Notifications.
+
+## Notifications patch — October 15, 2026
+
+Based on `bivi-sidebar-phase0` at `08115f364111edd362fade55733d75d039eff15b` (Add staff approvals queue). Apply this patch to the local checkout; it does not change the deployed database or push a branch.
+
+### Apply
+
+1. Download `bivi-notifications.patch` and run, from your `bivi-git` directory:
+
+   ```sh
+   git apply --check "$HOME/Downloads/bivi-notifications.patch" && git apply "$HOME/Downloads/bivi-notifications.patch"
+   ```
+
+   The check must pass before anything is applied. If it fails, keep your existing files and share the error so the patch can be adapted to your local changes. Do not reset or discard local work. No branch switch is required.
+
+2. Open `supabase/migrations/202610150026_staff_notifications.sql` and run its complete contents in the intended Supabase project's SQL editor. This requires migrations through `202610140025_approvals_queue.sql`. Migration 026 creates two per-user tables, two read-only views plus a source view, and three invoker-rights RPCs. It makes no changes to task, project, or approval state. On macOS you can copy it with:
+
+   ```sh
+   pbcopy < supabase/migrations/202610150026_staff_notifications.sql
+   ```
+
+3. Run `npm run build`. In your local staff workspace, check the bell beside search, View all, Preferences, Mark read/unread, and Mark all read. Assign a task to your staff account to exercise task notifications. Test a due date within seven days and an approval waiting on staff. Open a project and confirm its record stays hidden in the sidebar until Projects is explicitly expanded.
+
+### Behavior
+
+- The bell is in the top bar on desktop and mobile, with a blue unread dot. Notifications remain searchable but have no sidebar entry, including the collapsed/mobile navigation.
+- Workspace appears before Clients & Sales in all sidebar layouts. Overview is always visible. Group headings have lighter text. Record types start collapsed; opening a tab never expands one. Expander arrows appear on hover or keyboard focus and remain visible on touch devices.
+- Notifications are an actionable inbox based on `staff_my_tasks` and `staff_approvals`: assigned unfinished tasks, deadlines within seven days/overdue, and approvals waiting on staff. Approval alerts are workspace-wide for authorized staff, while task alerts use verified assignment to the current account.
+- Existing actionable work is included on first use. Resolved, removed, reassigned, or completed-source items leave the inbox. This version is not a historical event stream, email service, or push delivery service. A task's assignment alert keeps its stable identity when revisited or reassigned back to the same account.
+- Deadline keys distinguish upcoming, today, and overdue and include the due date. Approval keys include source identity, version, status, and reviewer eligibility. Repeated fetches and unrelated project saves do not generate duplicate unread items.
+- Read state and category/timezone preferences are account-scoped in Supabase under RLS. Disabling a category hides its items and unread count without clearing prior read state. Mark all read covers every enabled category, including items beyond the current page.
+- The full inbox has category/unread filters and server pagination (25 rows). Visible tabs refresh every 60 seconds and on returning to the tab; opening the bell refreshes its count. Reads/settings refresh open inboxes immediately.
+- Resolved read markers older than 90 days are pruned during read mutations; currently actionable markers are retained. Timezone defaults to America/Chicago and can be changed to a valid IANA name.
+- Source links reuse existing task/approval deep-link helpers; all workflow changes remain in their authoritative editors. All API reads require verified staff access, mutations require same-origin requests, and all responses are uncached.
+
+### Validation
+
+- `npm run typecheck`: passed.
+- Production `npm run build`: passed (178 pages generated; existing Tailwind/help-page warnings remain).
+- All 37 platform tests: passed, including the migration/RLS tests for staff isolation, deduplication, preferences, pagination, read-all, invalid timezone, resolved work, and unauthorized access.
+- Browser visual/interaction verification remains pending: the available browser download returned a truncated archive. No preview-only route or authorization bypass is included in this patch.
+
+Calendar is still marked unbuilt in this GitHub baseline. If it was added locally in the previous chat, retain that work; this patch does not implement Calendar.

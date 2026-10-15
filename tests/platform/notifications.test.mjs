@@ -1,0 +1,46 @@
+import {PGlite} from '@electric-sql/pglite';
+import fs from 'node:fs';
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {randomUUID} from 'node:crypto';
+const migrations=new URL('../../supabase/migrations/',import.meta.url);
+test('Notification inbox isolates staff read state and preferences, deduplicates current sources and removes resolved work',async()=>{
+ const db=new PGlite();
+ try {
+ await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create table auth.users(id uuid primary key,email text);create function auth.uid() returns uuid language sql as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;grant usage on schema public,auth to anon,authenticated,service_role;grant execute on function auth.uid() to authenticated;create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);create table storage.objects(id bigint generated always as identity,bucket_id text,name text,metadata jsonb,unique(bucket_id,name));alter table storage.objects enable row level security;grant usage on schema storage to authenticated,anon;grant select,insert,update,delete on storage.objects to authenticated,anon;grant usage on sequence storage.objects_id_seq to authenticated,anon;`);
+ for(const file of fs.readdirSync(migrations).filter(name=>name.endsWith('.sql')).sort())await db.exec(fs.readFileSync(new URL(file,migrations),'utf8'));
+ const staff=randomUUID(),second=randomUUID(),client=randomUUID(),project=randomUUID();
+ await db.query('insert into auth.users(id,email) values($1,$2),($3,$4),($5,$6)',[staff,'staff@example.com',second,'second@example.com',client,'client@example.com']);
+ await db.query('insert into inquiry_staff(user_id) values($1),($2)',[staff,second]);
+ await db.query('insert into project_inquiries(request_id,payload,payload_hash) values($1,$2,$3)',[project,{name:'Client',email:'client@example.com'},'a'.repeat(64)]);
+ await db.query("insert into inquiry_proposals(request_id,version,status,body) values($1,1,'accepted','{}')",[project]);
+ const today=(await db.query("select (now() at time zone 'America/Chicago')::date::text as today")).rows[0].today;
+ const body={title:'Notification Project',owner:'',notes:'',milestones:[],tasks:Array.from({length:30},(_,i)=>({id:`task-${i}`,title:`Task ${i}`,owner:'',dueOn:i===0?today:null,status:'todo',milestoneId:null,notes:''}))};
+ await db.query("insert into inquiry_projects(request_id,proposal_version,revision,state,body,scope_snapshot,onboarding_snapshot,readiness_snapshot,activated_readiness_revision,activated_onboarding_revision) values($1,1,1,'active',$2,'{}','{}','{}',1,1)",[project,body]);
+ for(const task of body.tasks)await db.query("insert into project_task_controls(request_id,task_id,owner_type,phase,assigned_staff_id) values($1,$2,'bivi','discovery',$3)",[project,task.id,staff]);
+ await db.query("insert into project_change_requests(id,request_id,title,description,requester_type,state) values($1,$2,'New scope','Details','client','requested')",[randomUUID(),project]);
+ const actor=async id=>{await db.exec('set role authenticated');await db.query("select set_config('request.jwt.claim.sub',$1,false)",[id]);};
+ const feed=async(page=1,unread=false,category='all',limit=25)=>(await db.query('select staff_notifications_feed($1,$2,$3,$4) as result',[page,unread,category,limit])).rows[0].result;
+ await actor(staff);
+ let data=await feed();assert.equal(data.total,32);assert.equal(data.unread,32);assert.equal(data.rows.length,25);assert.equal((await feed(2)).rows.length,7);
+ const keys=[...data.rows,...(await feed(2)).rows].map(row=>row.event_key);assert.equal(new Set(keys).size,32);assert.deepEqual((await feed()).rows,data.rows);
+ const task=(await feed(1,false,'tasks')).rows[0];await db.query('select set_staff_notification_read($1,true)',[task.event_key]);assert.equal((await feed()).unread,31);
+ await db.exec('reset role');await db.query('update inquiry_projects set revision=revision+1,updated_at=now() where request_id=$1',[project]);await actor(staff);assert.equal((await feed()).unread,31);
+ await db.query('select set_staff_notification_read($1,true)',[task.event_key]);assert.equal((await feed()).unread,31);
+ await db.query("select save_staff_notification_preferences(false,true,true,'America/Chicago')");assert.equal((await feed()).total,2);assert.equal((await feed()).preferences.tasks,false);
+ await assert.rejects(db.query("select save_staff_notification_preferences(true,true,true,'Bogus/Timezone')"),/Invalid preferences/);
+ await db.query('select set_staff_notification_read(null,true)');assert.equal((await feed()).unread,0);
+ await db.query("select save_staff_notification_preferences(true,true,true,'America/Chicago')");assert.equal((await feed()).unread,29);
+ await db.query('select set_staff_notification_read($1,false)',[task.event_key]);assert.equal((await feed()).unread,30);
+ await assert.rejects(db.query("insert into staff_notification_reads(user_id,event_key) values($1,'forged')",[second]),/row-level security/);
+ await assert.rejects(db.query("select set_staff_notification_read('unknown',true)"),/no longer available/);
+ await actor(second);assert.equal((await feed()).total,1);assert.equal((await feed()).unread,1);assert.equal((await feed()).preferences.tasks,true);assert.equal((await db.query('select * from staff_notification_reads')).rows.length,0);
+ await db.query('select set_staff_notification_read(null,true)');assert.equal((await feed()).unread,0);
+ await db.exec('reset role');body.tasks[0].status='done';await db.query('update inquiry_projects set body=$2 where request_id=$1',[project,body]);await actor(staff);assert.equal((await feed()).total,30);assert.equal((await feed(1,false,'deadlines')).total,0);
+ await db.exec('reset role');body.tasks[0].status='todo';body.tasks[0].dueOn='2000-01-01';await db.query('update inquiry_projects set body=$2 where request_id=$1',[project,body]);await actor(staff);const overdue=await feed(1,false,'deadlines');assert.equal(overdue.total,1);assert.equal(overdue.rows[0].title,'Task overdue');assert.equal(overdue.unread,31);
+ await db.exec('reset role');await db.query("update project_change_requests set state='applied' where request_id=$1",[project]);await actor(staff);assert.equal((await feed()).total,31);await actor(second);assert.equal((await feed()).total,0);
+ await actor(client);assert.equal((await db.query('select * from staff_notification_inbox')).rows.length,0);await assert.rejects(feed(),/Staff authorization/);await assert.rejects(db.query('select set_staff_notification_read(null,true)'),/Staff authorization/);
+ await db.exec('reset role');await db.query('update inquiry_staff set active=false where user_id=$1',[staff]);await actor(staff);await assert.rejects(feed(),/Staff authorization/);
+ await db.exec('set role anon');await assert.rejects(feed(),/permission denied/);
+ }finally{await db.close();}
+});

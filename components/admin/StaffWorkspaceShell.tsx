@@ -14,6 +14,7 @@ import {
 } from 'react';
 
 import { staffGroups, recordDefinitions, canonicalKind, isStaffDestinationActive as isActive, type SectionId, type StaffDestination } from '@/lib/admin/workspace/navigation';
+import { NotificationsBell } from './notifications/NotificationsBell';
 import { WorkspaceItemMenu } from './workspace/WorkspaceItemMenu';
 import { WorkspaceNavigationGuard, guardWorkspaceNavigation } from './workspace/WorkspaceNavigationGuard';
 import { staffNavigationItems as navItems, recordIcons } from './workspace/navigationUi';
@@ -93,7 +94,8 @@ import {
    ========================================================= */
 
 type NavItem = Omit<StaffDestination, 'icon'> & { icon: LucideIcon };
-const sections = staffGroups.map(group => ({ ...group, links: navItems.filter(item => item.subgroup === group.id) })).filter(group => group.links.length > 0);
+const sidebarItems = navItems.filter(item => item.placement !== 'topbar');
+const sections = staffGroups.map(group => ({ ...group, links: sidebarItems.filter(item => item.subgroup === group.id) })).filter(group => group.links.length > 0);
 
 /* =========================================================
    RECORD CONFIGURATION
@@ -822,6 +824,8 @@ export function StaffWorkspaceShell({
       system: true,
     });
 
+  const [expandedTypes, setExpandedTypes] = useState<Record<string, boolean>>({});
+
   const [density, setDensity] =
     useState<WorkspaceDensity>(
       'comfortable'
@@ -1384,7 +1388,7 @@ useEffect(() => {
             `}
           >
             {collapsed ? (
-              navItems.map(
+              sidebarItems.map(
                 (item) => (
                   <SidebarLink
                     key={item.href}
@@ -1403,65 +1407,23 @@ useEffect(() => {
                     <div
                       key={section.id}
                     >
-                      <button
-                        type="button"
-                        aria-expanded={
-                          openSections[
-                            section.id
-                          ]
-                        }
-                        onClick={() =>
-                          setOpenSections(
-                            (current) => ({
-                              ...current,
-                              [section.id]:
-                                !current[
-                                  section.id
-                                ],
-                            })
-                          )
-                        }
-                        className="
-                          mb-2
-                          flex
-                          w-full
-                          items-center
-                          justify-between
-                          rounded-lg
-                          px-3
-                          py-1.5
-                          text-left
-                          font-mono
-                          text-[10px]
-                          font-medium
-                          uppercase
-                          tracking-[0.1em]
-                          text-muted-foreground
-                          hover:bg-muted/50
-                        "
-                      >
-                        {section.title}
+                      {section.id === 'overview' ? (
+                        <p className="mb-2 px-3 py-1.5 font-mono text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground/70">{section.title}</p>
+                      ) : (
+                        <button
+                          type="button"
+                          aria-expanded={openSections[section.id]}
+                          aria-controls={`sidebar-section-${section.id}`}
+                          onClick={() => setOpenSections(current => ({...current, [section.id]: !current[section.id]}))}
+                          className="group mb-2 flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-left font-mono text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground/70 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          {section.title}
+                          <ChevronDown size={13} aria-hidden="true" className={`opacity-0 transition-all group-hover:opacity-100 group-focus-visible:opacity-100 [@media(hover:none)]:opacity-100 ${openSections[section.id] ? '' : '-rotate-90'}`} />
+                        </button>
+                      )}
 
-                        <ChevronDown
-                          size={13}
-                          aria-hidden="true"
-                          className={`
-                            transition-transform
-                            ${
-                              openSections[
-                                section.id
-                              ]
-                                ? ''
-                                : '-rotate-90'
-                            }
-                          `}
-                        />
-                      </button>
-
-                      {openSections[
-                        section.id
-                      ] && (
-                        <div className="space-y-1">
+                      {(section.id === 'overview' || openSections[section.id]) && (
+                        <div id={`sidebar-section-${section.id}`} className="space-y-1">
                           {section.links.map(
                             (item) => {
                               const openRecords = sectionRecords(item);
@@ -1475,13 +1437,26 @@ useEffect(() => {
                                 <div
                                   key={item.href}
                                 >
-                                  <SidebarLink
-                                    item={item}
-                                    pathname={pathname}
-                                    collapsed={false}
-                                  />
+                                  <div className="group relative flex items-center">
+                                    <div className="min-w-0 flex-1">
+                                      <SidebarLink item={item} pathname={pathname} collapsed={false} />
+                                    </div>
+                                    {!!item.kind && (
+                                      <button
+                                        type="button"
+                                        aria-label={`${expandedTypes[item.id] ? 'Hide' : 'Show'} ${item.label.toLowerCase()} records`}
+                                        aria-expanded={!!expandedTypes[item.id]}
+                                        aria-controls={`sidebar-records-${item.id}`}
+                                        onClick={() => setExpandedTypes(current => ({...current, [item.id]: !current[item.id]}))}
+                                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [@media(hover:none)]:opacity-100"
+                                      >
+                                        <ChevronRight size={14} aria-hidden="true" className={`transition-transform ${expandedTypes[item.id] ? 'rotate-90' : ''}`} />
+                                      </button>
+                                    )}
+                                  </div>
 
-                                  {recordGroups.length > 0 && (
+                                  {!!item.kind && <div id={`sidebar-records-${item.id}`} hidden={!expandedTypes[item.id]}>
+                                  {recordGroups.length > 0 ? (
                                     <div
                                       className="
                                         ml-4
@@ -1501,7 +1476,8 @@ useEffect(() => {
                                         </div>
                                       ))}
                                     </div>
-                                  )}
+                                  ) : <p className="px-5 py-2 text-xs text-muted-foreground">No open or saved records.</p>}
+                                  </div>}
                                 </div>
                               );
                             }
@@ -1774,6 +1750,8 @@ useEffect(() => {
                 </kbd>
               </button>
 
+              <NotificationsBell />
+
               {/* THEME */}
 
               <ThemeToggle />
@@ -1902,7 +1880,7 @@ useEffect(() => {
               md:hidden
             "
           >
-            {navItems.map(item => <div key={item.id} className="shrink-0"><SidebarLink item={item} pathname={pathname} collapsed={false} /></div>)}
+            {sidebarItems.map(item => <div key={item.id} className="shrink-0"><SidebarLink item={item} pathname={pathname} collapsed={false} /></div>)}
           </nav>
 
           {/* TEXT-ONLY DESKTOP MENUS */}

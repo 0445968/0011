@@ -10,18 +10,19 @@ export interface StaffDestination {
   status: 'existing' | 'build' | 'later';
   subgroup: SectionId;
   kind?: WorkspaceRecordKind;
+  placement?: 'sidebar' | 'topbar';
 }
 export const staffGroups: { id: SectionId; title: string }[] = [
   { id: 'overview', title: 'Overview' },
-  { id: 'sales', title: 'Clients & Sales' },
   { id: 'workspace', title: 'Workspace' },
+  { id: 'sales', title: 'Clients & Sales' },
   { id: 'resources', title: 'Resources' },
   { id: 'business', title: 'Business' },
   { id: 'system', title: 'System' },
 ];
 export const staffDestinations: StaffDestination[] = [
   { id: 'dashboard', label: 'Dashboard', href: '/', icon: 'LayoutDashboard', permission: 'staff', status: 'existing', subgroup: 'overview' },
-  { id: 'notifications', label: 'Notifications', href: '/notifications', icon: 'Bell', permission: 'staff', status: 'build', subgroup: 'overview' },
+  { id: 'notifications', label: 'Notifications', href: '/notifications', icon: 'Bell', permission: 'staff', status: 'existing', subgroup: 'overview', placement: 'topbar' },
   { id: 'calendar', label: 'Calendar', href: '/calendar', icon: 'CalendarDays', permission: 'staff', status: 'build', subgroup: 'overview' },
   { id: 'inquiries', label: 'Inquiries', href: '/inquiries', icon: 'Inbox', permission: 'staff', status: 'existing', subgroup: 'sales', kind: 'inquiry' },
   { id: 'people', label: 'People', href: '/people', icon: 'ContactRound', permission: 'staff', status: 'existing', subgroup: 'sales', kind: 'contact' },
@@ -40,7 +41,7 @@ export const staffDestinations: StaffDestination[] = [
   { id: 'team', label: 'Team', href: '/team', icon: 'UsersRound', permission: 'staff', status: 'later', subgroup: 'system' },
   { id: 'settings', label: 'Settings', href: '/settings', icon: 'Settings', permission: 'staff', status: 'build', subgroup: 'system' },
 ];
-export const liveStaffDestinations = staffDestinations.filter(item => item.status === 'existing');
+export const liveStaffDestinations = staffDestinations.filter(item => item.status === 'existing').sort((a, b) => staffGroups.findIndex(group => group.id === a.subgroup) - staffGroups.findIndex(group => group.id === b.subgroup));
 export const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function canonicalKind(kind: WorkspaceRecordKind): Exclude<WorkspaceRecordKind, 'lead'> {
   return kind === 'lead' ? 'inquiry' : kind;
