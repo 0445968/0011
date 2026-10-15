@@ -464,3 +464,39 @@ git push origin bivi-sidebar-phase0
 - The page requires verified active staff access. It does not add organization, staff-role, billing, or account administration permissions, database tables, or migrations.
 
 Verification: Typecheck, targeted ESLint, production build, and all 49 platform tests pass. The navigation test includes the new live Settings route and its middleware mapping. Browser visual checks and live-account preference persistence remain for the local checks above. No migration, push, deployment, or external message was performed while preparing this patch.
+
+## Phase 5 scope and launch verification — October 15, 2026
+
+Based on `bivi-sidebar-phase0` at `6e3e570` (Personal Settings). See `docs/staff-sidebar-phase5.md` for the audited Billing/Reports/Team scope, source-of-truth decisions, release evidence matrix and `restore` comparison. This patch does not activate those three destinations or merge/deploy production.
+
+### Apply locally — all terminal steps
+
+Download `bivi-phase5-readiness.patch` into Downloads. From `bivi-git`:
+
+```sh
+git apply --check "$HOME/Downloads/bivi-phase5-readiness.patch" &&
+git apply "$HOME/Downloads/bivi-phase5-readiness.patch" &&
+npm run verify:platform &&
+npm run build
+```
+
+No migration is needed. Read the Phase 5 document; live-account, real Storage and browser checks remain explicit release gates. The three-domain launch command belongs against a preview with matching configured surface origins, not an older production deployment.
+
+Commit and push:
+
+```sh
+git add -- \
+  scripts/verify-launch.mjs \
+  tests/platform/launch-surfaces.test.mjs \
+  docs/staff-sidebar-phase5.md \
+  docs/staff-sidebar-implementation.md &&
+git commit -m "Scope staff business tools and expand launch verification" &&
+git push origin bivi-sidebar-phase0
+```
+
+### Verification and limitations
+
+- Expanded launch verification covers every implemented staff directory; anonymous reads and newer mutations; foreign origins; and public/client hiding of staff APIs. Login checks require a password form and noindex metadata. JSON failures must contain only an error string and must not be cached.
+- Four new verifier tests cover route coverage, cookie-free invalid probes, correct surface/redirect checks, missing authorization, payload leakage, cache behavior, missing login form and network failures. All 53 platform tests pass; script syntax and diff checks pass.
+- All 56 HTTP probes pass against the existing successful production build at this same application baseline, routed locally through public/client/staff host and HTTPS forwarding headers. No remote deployment or authenticated-account test was performed. Only verification scripts, tests and documentation change, so this patch does not alter application bundles.
+- Compared development with fetched `restore` and confirmed the shared client-login verification fix. No production merge, push, migration, account mutation or external message was performed while preparing this patch.
