@@ -245,3 +245,44 @@ Based on `bivi-sidebar-phase0` at `6ff72ad` (the full notifications implementati
 
 - All 40 platform tests pass, including calendar source projection, staff/client/inactive/anonymous access, read-only permissions, assignments, source updates/removal, month boundaries, leap dates, invalid ranges, timezone midnight behavior, and encoded task/milestone links.
 - Production build passes. Browser visual and live-project checks remain pending local application of migration 027.
+
+## Shared Files directory — October 15, 2026
+
+Based on `bivi-sidebar-phase0` at `de497fa` (Calendar agenda). Adds the real `/files` destination under Workspace.
+
+### Apply locally
+
+1. Download `bivi-shared-files.patch` into Downloads and run from `bivi-git`:
+
+   ```sh
+   git apply --check "$HOME/Downloads/bivi-shared-files.patch" && git apply "$HOME/Downloads/bivi-shared-files.patch"
+   ```
+
+   A failed check leaves local files unchanged. Share the error instead of discarding local work.
+
+2. Run the complete `supabase/migrations/202610150028_staff_files.sql` in the intended project's Supabase SQL editor after migrations through 027. On macOS:
+
+   ```sh
+   pbcopy < supabase/migrations/202610150028_staff_files.sql
+   ```
+
+   Apply this migration before using Files or staff downloads: staff download authorization now writes its access record through the new RPC, including from existing project file pages. Client downloads retain their previous authorization path.
+
+3. Run `npm run build`. In the local staff workspace, test Files, search, uploader/type/sharing/state/date filters, project/company/uploader scope links, a raster-image preview, a small TXT preview, and a PDF/ZIP download. Open the source project's File history to verify preview/download authorization entries. Also test a withdrawn file, which should have only its project link available.
+
+### Functionality
+
+- Staff can discover files across all projects using real source metadata. Ready files are the default; pending verification and withdrawn records are available via state filters, with no preview/download controls for those states.
+- Search covers filename, project/company names and public IDs, and uploader labels. Filters include type, sharing, uploader (me/staff/client/former or a selected account), and inclusive UTC upload dates. Each result provides exact project/company/uploader scope links. Server pagination is 25 rows, with stable ordering by upload date, filename, size, or project.
+- Company relationships use the current company assigned to the source project. Uploader labels use staff public IDs or client profile names/public IDs. The staff-only label helper avoids granting direct reads of staff account tables; it exposes no authentication email or credentials and returns no data to clients/inactive staff.
+- Image previews support PNG/JPG/WebP. TXT previews support files up to 256 KiB, displayed as escaped React text. PDFs, ZIPs, and larger TXT files use downloads. HTML, SVG, and arbitrary MIME types cannot request inline preview URLs.
+- Both preview and download routes use the existing verified staff access, same-origin checks, file/project binding, ready-state checks, and private Storage authorization. URLs expire after 60 seconds and are created only on demand; the directory view contains no object path or signed URL. API responses remain uncached.
+- Staff preview/download authorizations are logged in `project_file_history` with actor and the current revision. These entries record URL authorization, not proof that a browser completed the byte transfer. An audit failure withholds the URL. File state, sharing, and revision remain unchanged by access logging.
+- A signed URL already issued retains the existing short validity window. Refresh preview requests a new authorization and rechecks the current source state.
+- Upload, finalize, share/private, and withdrawal actions remain in the project's existing file exchange, with its existing quotas, storage restrictions, revisions, and audit trail. Global file discovery introduces no second mutation workflow.
+
+### Database and verification
+
+Migration 028 adds a security-invoker directory view, a staff-checked uploader-label helper, a staff-checked access-log RPC, and directory indexes. It preserves the private bucket, source RLS, client isolation, and existing file limits. No live migration, push, or deployment was performed while preparing the patch.
+
+Production build and targeted ESLint pass. All 43 platform tests pass, including private/shared access isolation, staff/client/inactive/anonymous access, preview allowlists, date boundaries, source-bound signing, authorization logging, and audit-failure behavior. Browser visual and live-Storage verification remain for local testing after migration 028.

@@ -1,4 +1,5 @@
 import 'server-only';
+import {previewKind} from './directory-links';
 import {z} from 'zod';import {getStaffAccess} from '@/lib/admin/auth';import {getClientAccess} from '@/lib/portal/auth';import {adminReply,isSameOrigin,readAdminJson} from '@/lib/admin/http';import {FILE_BUCKET,fileCommandSchema} from './schema';
 export async function fileCommand(request:Request,id:string,staff:boolean){
  if(!isSameOrigin(request))return adminReply({error:'Use the project file workspace.'},403);
@@ -20,16 +21,20 @@ export async function fileCommand(request:Request,id:string,staff:boolean){
   return adminReply({error:messages[data?.result]||'The result could not be confirmed. Reload before retrying.'},data?.result==='not_found'?404:data?.result==='limit'?429:data?.result in messages?409:503);
  }catch{return adminReply({error:'The result could not be confirmed. Reload before retrying.'},503);}
 }
-export async function fileDownload(request:Request,projectId:string,fileId:string,staff:boolean){
+export function fileDownload(request:Request,projectId:string,fileId:string,staff:boolean){return fileAccessUrl(request,projectId,fileId,staff,false);}
+export function filePreview(request:Request,projectId:string,fileId:string){return fileAccessUrl(request,projectId,fileId,true,true);}
+async function fileAccessUrl(request:Request,projectId:string,fileId:string,staff:boolean,preview:boolean){
  if(!isSameOrigin(request))return adminReply({error:'Download from the project workspace.'},403);
  const access=await (staff?getStaffAccess():getClientAccess());if(!access.allowed)return adminReply({error:'Sign-in is required.'},access.status);
  if(!z.string().uuid().safeParse(projectId).success||!z.string().uuid().safeParse(fileId).success)return adminReply({error:'File not found.'},404);
  try{
-  const {data,error}=await access.client.from('project_files').select('object_path,filename,state').eq('request_id',projectId).eq('id',fileId).maybeSingle();
+  const {data,error}=await access.client.from('project_files').select('object_path,filename,state,mime_type,size_bytes').eq('request_id',projectId).eq('id',fileId).maybeSingle();
   if(error)return adminReply({error:'File access could not be checked.'},503);
   if(!data||data.state!=='ready')return adminReply({error:'File not found.'},404);
-  const signed=await access.client.storage.from(FILE_BUCKET).createSignedUrl(data.object_path,60,{download:data.filename});
+  if(preview&&!previewKind(data.mime_type,data.size_bytes))return adminReply({error:'Preview is available for PNG, JPG, WebP and text files up to 256 KB. Download this file to view it.'},415);
+  const signed=await access.client.storage.from(FILE_BUCKET).createSignedUrl(data.object_path,60,preview?{}:{download:data.filename});
   if(signed.error||!signed.data)return adminReply({error:'The download could not be authorized.'},503);
+  if(staff){const audit=await access.client.rpc('record_staff_file_access',{p_request:projectId,p_file:fileId,p_action:preview?'preview':'download'});if(audit.error)return adminReply({error:'File access could not be recorded. Refresh and retry.'},audit.error.code==='22023'?404:503);}
   return adminReply({url:signed.data.signedUrl});
  }catch{return adminReply({error:'The download could not be authorized.'},503);}
 }
