@@ -6,9 +6,9 @@ import {templateFields,templateKinds,type StaffTemplate,type TemplateVersion,typ
 import {useWorkspaceUnsavedChanges} from '@/components/admin/workspace/WorkspaceNavigationGuard';
 const field='w-full rounded-lg border border-border bg-background px-3 py-2 text-sm';
 const button='inline-flex min-h-11 items-center justify-center rounded-lg border border-border px-4 text-sm hover:bg-muted disabled:opacity-50';
-export function TemplateEditor({template,version,userId,initialKind='project'}:{template?:StaffTemplate;version?:TemplateVersion;userId:string;initialKind?:keyof typeof templateKinds}) {
+export function TemplateEditor({template,version,userId,initialKind='project',initialFields}:{template?:StaffTemplate;version?:TemplateVersion;userId:string;initialKind?:keyof typeof templateKinds;initialFields?:TemplateFields}) {
  const router=useRouter();
- const initial:TemplateFields={title:version?.title||'',kind:version?.kind||initialKind,description:version?.description||'',visibility:version?.visibility||'personal',content:version?.content||'',changeNote:template?'':'Created template'};
+ const initial:TemplateFields=initialFields||{title:version?.title||'',kind:version?.kind||initialKind,description:version?.description||'',visibility:version?.visibility||'personal',content:version?.content||'',changeNote:template?'':'Created template'};
  const [draft,setDraft]=useState(initial);
  const [busy,setBusy]=useState(false),[blocked,setBlocked]=useState(false),[error,setError]=useState(''),[copied,setCopied]=useState(false);
  const inFlight=useRef(false),newId=useRef<string|null>(null);

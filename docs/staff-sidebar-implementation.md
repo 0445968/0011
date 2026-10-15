@@ -374,3 +374,47 @@ Based on `bivi-sidebar-phase0` at `4d6cc61` (Forms directory). Adds `/templates`
 Migration 030 adds template metadata/snapshot tables, RLS, directory indexes, and one staff-checked mutation function. Only the mutation function writes tables; client/anonymous/inactive staff cannot access the library. No existing workflow table or public marketing template is changed.
 
 Typecheck, targeted ESLint, production build, and all 47 platform tests pass. New tests cover ownership injection, immutable snapshot permissions, old personal-history protection after sharing, stale saves, owner-only edits, independent copies, archive/restore, validation bounds, and client/inactive/anonymous access. Browser visual checks and live account testing remain after local migration 030. No live migration, push, deployment, or external message was performed while preparing the patch.
+
+## Staff Services catalog and scope reuse — October 15, 2026
+
+Based on `bivi-sidebar-phase0` at `04e0cae` (Templates library). Adds `/services` and `/services/[id]` under Resources.
+
+### Apply locally — all terminal steps
+
+Download `bivi-services.patch` into Downloads. From `bivi-git`, apply and build:
+
+```sh
+git apply --check "$HOME/Downloads/bivi-services.patch" &&
+git apply "$HOME/Downloads/bivi-services.patch" &&
+npm run build
+```
+
+No new Supabase migration is required. Scope-template saving uses the existing Templates migration 030. Open Services in the local staff workspace, check search/category/pagination, inspect a service, and choose Create scope template. Confirm the proposal-template draft is personal, includes its source blueprint version, and is saved only after Create template.
+
+Then commit and push:
+
+```sh
+git add -- \
+  'app/admin/(workspace)/services' \
+  'app/admin/(workspace)/templates/new/page.tsx' \
+  components/admin/templates/TemplateEditor.tsx \
+  lib/admin/workspace/navigation.ts \
+  lib/services/staff-catalog.ts \
+  tests/platform/staff-services.test.mjs \
+  tests/platform/workspace-navigation.test.mjs \
+  docs/staff-sidebar-implementation.md &&
+git commit -m "Add staff services catalog and scope templates" &&
+git push origin bivi-sidebar-phase0
+```
+
+### Functionality and protections
+
+- Services reads the actual eight draft operating blueprints from `data/serviceCatalog.ts`, separately from public marketing components. Search and category filtering run on the server, with stable alphabetical pagination at six results per page.
+- Detail pages expose quantity/configuration, commercial assumptions, prerequisites, deliverables, exclusions, client inputs, delivery tasks and owners/phases, approval gates, handoff, and optional related services. Public service links use the existing blueprint marketing path on the configured public origin.
+- Existing draft status and quote-required pricing remain explicit. Null price, effort, turnaround, support, and included revision allowances are shown as unset, not invented numbers or approved terms. Proposed revisions stay labeled proposed. Prerequisites and related services are not silently treated as extra purchases.
+- Create scope template opens a personal proposal-template draft generated from the selected service. Wording includes source ID/version/status, scope, required inputs, approvals, handoff, and commercial assumptions. It makes no database write on GET.
+- A staff member reviews the generated draft and explicitly saves through the existing versioned Templates endpoint. Template ownership, sharing, version checks/history, and unsaved-edit protection remain in force. Existing blank template creation and historical templates are unchanged.
+- Canonical catalog definitions remain read-only in the staff UI. Editing the source catalog still requires its existing code-review/deployment workflow; this patch introduces no writable service override table, approval role, or parallel source of proposal defaults. Canonical CRUD and catalog publishing controls would be separate administration work.
+- No public service content, selection alias/clarification behavior, accepted proposal/project snapshots, price, or lifecycle mutation logic is modified. All new pages require verified staff authorization.
+
+Typecheck, targeted ESLint, production build, and all 49 platform tests pass. New tests verify canonical source integrity, filter/pagination behavior, requirement/add-on references, valid personal proposal-template seeds, correct commercial labels, and source immutability. Browser visual testing remains for the local checks above. No live migration, GitHub push, deployment, or external message was performed while preparing this patch.
