@@ -286,3 +286,49 @@ Based on `bivi-sidebar-phase0` at `de497fa` (Calendar agenda). Adds the real `/f
 Migration 028 adds a security-invoker directory view, a staff-checked uploader-label helper, a staff-checked access-log RPC, and directory indexes. It preserves the private bucket, source RLS, client isolation, and existing file limits. No live migration, push, or deployment was performed while preparing the patch.
 
 Production build and targeted ESLint pass. All 43 platform tests pass, including private/shared access isolation, staff/client/inactive/anonymous access, preview allowlists, date boundaries, source-bound signing, authorization logging, and audit-failure behavior. Browser visual and live-Storage verification remain for local testing after migration 028.
+
+## Forms directory and record attachment — October 15, 2026
+
+Based on `bivi-sidebar-phase0` at `9210ddd` (Shared Files). Adds the real `/forms` destination under Resources.
+
+### Apply locally
+
+1. Download `bivi-forms.patch` into Downloads and run from `bivi-git`:
+
+   ```sh
+   git apply --check "$HOME/Downloads/bivi-forms.patch" && git apply "$HOME/Downloads/bivi-forms.patch"
+   ```
+
+   A failed check leaves files unchanged; share the error to adapt the patch rather than discarding local work.
+
+2. Run the complete `supabase/migrations/202610150029_staff_forms.sql` in the intended project's Supabase SQL editor after migrations through 028. On macOS:
+
+   ```sh
+   pbcopy < supabase/migrations/202610150029_staff_forms.sql
+   ```
+
+3. Run `npm run build`. In the local staff workspace, open Forms and test search, type/status/owner/response filters, pagination, and the source links. Choose Attach a form, find an editable onboarding record, choose Questionnaire or Information request, enter a title and questions, and save in the existing onboarding editor. Confirm the new form appears in Forms and the client portal, and that submitted responses retain the existing staff acceptance flow. Verify unsaved new-form edits prompt before leaving.
+
+### Audit findings and scope
+
+- The public Get Started flow persists project inquiry submissions through `/api/inquiries`. Those records appear as submitted intakes; inquiry qualification remains a separate source-record status.
+- Personalized onboarding already persists questionnaires, information requests, and assessment requirements, including responses, revisions, owner, due date, service/phase association, staff review, and history. These are the reusable working form sources for this phase.
+- Help contact forms with simulated client-side submission behavior are excluded from the working catalog. This patch does not make them production submission endpoints.
+- Project briefs remain in the existing drafting/review workflow and Approvals queue. They are not duplicated as general client questionnaires.
+- This is a source-backed directory and attachment path. A standalone multi-field builder, schema editing, standalone form URLs, and a versioned form-template library remain separate work.
+
+### Functionality
+
+- The catalog links to actual inquiry submissions, questionnaires, information requests, and existing assessments. The public intake opens in a new tab on the configured public origin.
+- Staff can search by form title, contact, company, project name/public ID, then filter by type, source status, owner, required/optional, response presence, or one inquiry. Queries paginate on the server at 25 rows with stable sorting.
+- The directory exposes status metadata, not copied answer bodies, intake payloads, prompts, staff notes, or a second review state. Open a record to read its actual response and take existing review actions.
+- Attach a form lists editable onboarding records using server-side search and pagination. Choosing one only opens its existing editor with the selected type; it does not create or send anything on GET. Saving uses the existing same-origin, staff-authorized onboarding item endpoint and mutation function, with existing completion locks, validation, audit history, and communication behavior.
+- New custom requirements can now explicitly be Questionnaire or Information request. Other existing requirement types remain editable through their existing controls. The new form defaults to client ownership, required, and discovery phase; staff can edit its source requirement afterward.
+- Unsaved new-form title, prompt, and type changes register with the existing workspace navigation guard. Saving another requirement no longer clears an unsaved new-form draft. Successful creation clears only the new-form draft and refreshes the source.
+- Source links select and focus the exact requirement. Removed requirements show a notice with the current onboarding list. Completed onboarding remains visible in the directory and must be reopened through its existing workflow before attachment/editing.
+
+### Database and verification
+
+Migration 029 adds two read-only `security_invoker` views and a directory index. It adds no form/answer tables, assignment state, or mutation privileges. Source RLS remains authoritative; client, inactive-staff, and anonymous access to the global staff directory is excluded.
+
+Typecheck, targeted ESLint, and production build pass. All 45 platform tests pass, including source projection, client submission, revision conflicts, staff acceptance/history, completion locks, unauthorized visibility, and encoded source/attachment links. Browser visual and live-project checks remain for local testing after migration 029. No live migration, push, deployment, or external message was performed while preparing this patch.
