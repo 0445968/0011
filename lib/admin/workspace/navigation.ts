@@ -34,7 +34,7 @@ export const staffDestinations: StaffDestination[] = [
   { id: 'approvals', label: 'Approvals', href: '/approvals', icon: 'CheckCheck', permission: 'staff', status: 'existing', subgroup: 'workspace' },
   { id: 'files', label: 'Files', href: '/files', icon: 'Files', permission: 'staff', status: 'existing', subgroup: 'workspace' },
   { id: 'forms', label: 'Forms', href: '/forms', icon: 'ClipboardList', permission: 'staff', status: 'existing', subgroup: 'resources' },
-  { id: 'templates', label: 'Templates', href: '/templates', icon: 'FileStack', permission: 'staff', status: 'build', subgroup: 'resources' },
+  { id: 'templates', label: 'Templates', href: '/templates', icon: 'FileStack', permission: 'staff', status: 'existing', subgroup: 'resources' },
   { id: 'services', label: 'Services', href: '/services', icon: 'Layers', permission: 'staff', status: 'build', subgroup: 'resources' },
   { id: 'billing', label: 'Billing', href: '/billing', icon: 'Receipt', permission: 'staff', status: 'later', subgroup: 'business' },
   { id: 'reports', label: 'Reports', href: '/reports', icon: 'ChartNoAxesCombined', permission: 'staff', status: 'later', subgroup: 'business' },

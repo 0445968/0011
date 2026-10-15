@@ -1,0 +1,42 @@
+import {PGlite} from '@electric-sql/pglite';
+import fs from 'node:fs';
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {randomUUID} from 'node:crypto';
+const migrations=new URL('../../supabase/migrations/',import.meta.url);
+test('Templates enforce ownership, immutable versions, personal-history privacy, stale-save rejection and independent copies',async()=>{
+ const db=new PGlite();try{
+ await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create table auth.users(id uuid primary key,email text);create function auth.uid() returns uuid language sql as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;grant usage on schema public,auth to anon,authenticated,service_role;grant execute on function auth.uid() to authenticated;create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);create table storage.objects(id bigint generated always as identity,bucket_id text,name text,metadata jsonb,unique(bucket_id,name));alter table storage.objects enable row level security;grant usage on schema storage to authenticated,anon;grant select,insert,update,delete on storage.objects to authenticated,anon;grant usage on sequence storage.objects_id_seq to authenticated,anon;`);
+ for(const file of fs.readdirSync(migrations).filter(name=>name.endsWith('.sql')).sort())await db.exec(fs.readFileSync(new URL(file,migrations),'utf8'));
+ const owner=randomUUID(),second=randomUUID(),client=randomUUID(),id=randomUUID();
+ await db.query('insert into auth.users(id,email) values($1,$2),($3,$4),($5,$6)',[owner,'owner@example.com',second,'second@example.com',client,'client@example.com']);await db.query('insert into inquiry_staff(user_id) values($1),($2)',[owner,second]);
+ const actor=async user=>{await db.exec('set role authenticated');await db.query("select set_config('request.jwt.claim.sub',$1,false)",[user]);};
+ const command=async body=>(await db.query('select manage_staff_template($1) r',[body])).rows[0].r;
+ const fields={title:'Discovery brief',kind:'brief',description:'Reusable starting points',visibility:'personal',content:'Private draft wording',changeNote:'Created template'};
+ await actor(owner);assert.equal((await command({action:'create',id,...fields,owner_id:second})).version,1);
+ let rows=(await db.query('select * from staff_templates')).rows;assert.equal(rows.length,1);assert.equal(rows[0].owner_id,owner);
+ await assert.rejects(db.query("update staff_template_versions set content='Overwrite'"),/permission denied/);
+ await assert.rejects(db.query("update staff_templates set owner_id=$1",[second]),/permission denied/);
+ await actor(second);assert.equal((await db.query('select * from staff_templates')).rows.length,0);assert.equal((await command({action:'duplicate',id,expectedVersion:1})).result,'not_found');
+ await actor(owner);assert.equal((await command({action:'save',id,expectedVersion:1,...fields,visibility:'workspace',content:'Shared wording',changeNote:'Share approved wording'})).version,2);
+ assert.equal((await command({action:'save',id,expectedVersion:1,...fields})).result,'conflict');
+ assert.equal((await db.query('select content from staff_template_versions where template_id=$1 and version=1',[id])).rows[0].content,'Private draft wording');
+ await actor(second);rows=(await db.query('select * from staff_template_versions')).rows;assert.equal(rows.length,1);assert.equal(rows[0].version,2);assert.equal(rows[0].content,'Shared wording');
+ await assert.rejects(command({action:'save',id,expectedVersion:2,...fields}),/Only the owner/);await assert.rejects(command({action:'archive',id,expectedVersion:2}),/Only the owner/);
+ const copied=await command({action:'duplicate',id,expectedVersion:2});assert.equal(copied.result,'saved');assert.notEqual(copied.id,id);
+ const copy=(await db.query('select * from staff_templates where id=$1',[copied.id])).rows[0];assert.equal(copy.visibility,'personal');assert.equal(copy.owner_id,second);assert.equal(copy.current_version,1);
+ assert.equal((await db.query('select content from staff_template_versions where template_id=$1',[copied.id])).rows[0].content,'Shared wording');
+ await actor(owner);assert.equal((await db.query('select * from staff_templates where id=$1',[copied.id])).rows.length,0);
+ assert.equal((await command({action:'archive',id,expectedVersion:2})).version,3);assert.equal((await command({action:'save',id,expectedVersion:3,...fields})).result,'locked');
+ assert.equal((await command({action:'restore',id,expectedVersion:3})).version,4);
+ assert.equal((await command({action:'save',id,expectedVersion:4,...fields,content:'Personal again',changeNote:'Make personal'})).version,5);
+ assert.equal((await db.query('select * from staff_template_versions where template_id=$1',[id])).rows.length,5);
+ await actor(second);assert.equal((await db.query('select * from staff_templates where id=$1',[id])).rows.length,0);assert.equal((await db.query('select * from staff_template_versions where template_id=$1',[id])).rows.length,0);
+ assert.equal((await db.query('select content from staff_template_versions where template_id=$1',[copied.id])).rows[0].content,'Shared wording');
+ await actor(owner);await assert.rejects(command({action:'create',id:randomUUID(),...fields,content:' '}),/Invalid template fields/);
+ await assert.rejects(command({action:'create',id:randomUUID(),...fields,kind:'invalid'}),/Invalid template fields/);
+ await actor(client);assert.equal((await db.query('select * from staff_templates')).rows.length,0);assert.equal((await db.query('select * from staff_template_versions')).rows.length,0);await assert.rejects(command({action:'create',id:randomUUID(),...fields}),/Staff authorization/);
+ await db.exec('reset role');await db.query('update inquiry_staff set active=false where user_id=$1',[owner]);await actor(owner);assert.equal((await db.query('select * from staff_templates')).rows.length,0);await assert.rejects(command({action:'restore',id,expectedVersion:5}),/Staff authorization/);
+ await db.exec('set role anon');await assert.rejects(db.query('select * from staff_templates'),/permission denied/);await assert.rejects(command({action:'duplicate',id,expectedVersion:5}),/permission denied/);
+ }finally{await db.close();}
+});

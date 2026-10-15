@@ -332,3 +332,45 @@ Based on `bivi-sidebar-phase0` at `9210ddd` (Shared Files). Adds the real `/form
 Migration 029 adds two read-only `security_invoker` views and a directory index. It adds no form/answer tables, assignment state, or mutation privileges. Source RLS remains authoritative; client, inactive-staff, and anonymous access to the global staff directory is excluded.
 
 Typecheck, targeted ESLint, and production build pass. All 45 platform tests pass, including source projection, client submission, revision conflicts, staff acceptance/history, completion locks, unauthorized visibility, and encoded source/attachment links. Browser visual and live-project checks remain for local testing after migration 029. No live migration, push, deployment, or external message was performed while preparing this patch.
+
+## Versioned Templates library — October 15, 2026
+
+Based on `bivi-sidebar-phase0` at `4d6cc61` (Forms directory). Adds `/templates`, `/templates/new`, and `/templates/[id]` under Resources.
+
+### Apply locally
+
+1. Download `bivi-templates.patch` into Downloads and run from `bivi-git`:
+
+   ```sh
+   git apply --check "$HOME/Downloads/bivi-templates.patch" && git apply "$HOME/Downloads/bivi-templates.patch"
+   ```
+
+   A failed check leaves files unchanged. Share its error to adapt the patch without discarding existing work.
+
+2. Run the complete `supabase/migrations/202610150030_staff_templates.sql` in the intended project's Supabase SQL editor after migrations through 029. On macOS:
+
+   ```sh
+   pbcopy < supabase/migrations/202610150030_staff_templates.sql
+   ```
+
+3. Run `npm run build`. In the local staff workspace, open Templates, create a personal template, save a new version with a change note, copy its content, and open its history. Test sharing a later version, duplicate it from a second staff account, and verify earlier personal versions stay private. Check archive/restore and two-browser stale-save rejection.
+
+### Functionality and boundaries
+
+- Templates store reusable wording and checklists, categorized as Project, Proposal, Brief, or Message. Content is plain text; it is not a raw project/proposal JSON body, rich-text renderer, automatic project seed, or publishing operation.
+- Copy content places the displayed version's text on the user's clipboard for manual use in a draft. An owner editing the current version can copy their draft text. Clipboard failure offers manual text selection instead of pretending copying succeeded.
+- Personal is the default visibility. Workspace staff can read/copy shared templates; only the current owner can edit, archive, restore, or change visibility. Other staff can duplicate an accessible saved version into their own independent personal template.
+- Every create/save/archive/restore appends an immutable numbered snapshot, including title, category, description, content, visibility, archive state, change note, and author/time. There is no direct client-side update/delete permission on snapshot rows.
+- Historical content is read-only and copyable. To reuse old wording, copy it into a current draft and save a new version; no historical snapshot is overwritten. Duplicate saved version explicitly copies the current saved version and is not offered on a historical view.
+- Sharing a later version does not expose earlier personal versions: history RLS checks both the current template visibility and each snapshot's visibility. Making the current template personal again hides its history from other accounts. Previously made independent copies remain separate records.
+- Each mutation of an existing record requires the expected current version, locks the template row, and rejects stale writes. Unknown/unavailable personal templates are masked as not found to other staff.
+- Title/description search, category/scope/state filters, and directory/history pagination run on the server at 25 rows with stable ordering. Archived templates are hidden from the default directory, remain readable when accessible, and can be restored by their owner or duplicated as an active personal copy.
+- Unsaved edits register with the existing workspace navigation guard. Duplicate/archive actions are disabled until current edits are saved. Archive and restore ask for confirmation. Ambiguous write failures block additional mutations until the user reloads or reviews the directory.
+- Template ownership cannot be assigned through an API payload; creation always uses the verified staff account. If an auth account is removed, nullable owner/author references preserve snapshots. Shared orphaned templates remain readable/copyable, without granting other users ownership.
+- Templates are separate from live inquiry/project/brief records. Saving, copying, sharing, and archiving templates do not change client records or send messages.
+
+### Database and verification
+
+Migration 030 adds template metadata/snapshot tables, RLS, directory indexes, and one staff-checked mutation function. Only the mutation function writes tables; client/anonymous/inactive staff cannot access the library. No existing workflow table or public marketing template is changed.
+
+Typecheck, targeted ESLint, production build, and all 47 platform tests pass. New tests cover ownership injection, immutable snapshot permissions, old personal-history protection after sharing, stale saves, owner-only edits, independent copies, archive/restore, validation bounds, and client/inactive/anonymous access. Browser visual checks and live account testing remain after local migration 030. No live migration, push, deployment, or external message was performed while preparing the patch.

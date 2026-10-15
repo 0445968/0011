@@ -19,7 +19,7 @@ const state = hookModule.exports;
 const tab = (kind = 'project', extra = {}) => ({ key: `${kind}:${id}`, id, kind, title: 'Lumen', href: `/projects/${id}?tab=brief`, pinned: false, lastOpenedAt: 1, ...extra });
 
 test('only implemented destinations are live and middleware rewrites the same routes', () => {
-  assert.deepEqual(nav.liveStaffDestinations.map(item => item.id), ['dashboard', 'notifications', 'calendar', 'projects', 'tasks', 'approvals', 'files', 'inquiries', 'people', 'companies', 'clients', 'proposals', 'forms']);
+  assert.deepEqual(nav.liveStaffDestinations.map(item => item.id), ['dashboard', 'notifications', 'calendar', 'projects', 'tasks', 'approvals', 'files', 'inquiries', 'people', 'companies', 'clients', 'proposals', 'forms', 'templates']);
   assert.equal(nav.liveStaffDestinations.find(item => item.id === 'notifications').placement, 'topbar');
   assert.ok(nav.staffGroups.findIndex(group => group.id === 'workspace') < nav.staffGroups.findIndex(group => group.id === 'sales'));
   for (const item of nav.liveStaffDestinations) {
