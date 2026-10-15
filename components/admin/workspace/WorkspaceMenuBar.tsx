@@ -1,5 +1,6 @@
 
 'use client';
+import { guardWorkspaceNavigation } from './WorkspaceNavigationGuard';
 
 import {
   useEffect,
@@ -554,7 +555,7 @@ export function WorkspaceMenuBar({
      ======================================================= */
 
   function navigate(href: string) {
-    router.push(href);
+    guardWorkspaceNavigation(() => router.push(href));
   }
 
   function execute(

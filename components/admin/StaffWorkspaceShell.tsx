@@ -1,6 +1,8 @@
 
 'use client';
 
+import {ProfileImage} from '@/components/profile-images/ProfileImage';
+import {ImageEditorDialog} from '@/components/profile-images/ImageEditor';
 import {
   createContext,
   useCallback,
@@ -11,6 +13,12 @@ import {
   type ReactNode,
 } from 'react';
 
+import { staffGroups, recordDefinitions, canonicalKind, isStaffDestinationActive as isActive, type SectionId, type StaffDestination } from '@/lib/admin/workspace/navigation';
+import { WorkspacePreferencesContext } from './workspace/WorkspacePreferences';
+import { NotificationsBell } from './notifications/NotificationsBell';
+import { WorkspaceItemMenu } from './workspace/WorkspaceItemMenu';
+import { WorkspaceNavigationGuard, guardWorkspaceNavigation } from './workspace/WorkspaceNavigationGuard';
+import { staffNavigationItems as navItems, recordIcons } from './workspace/navigationUi';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -86,84 +94,13 @@ import {
    NAVIGATION TYPES
    ========================================================= */
 
-type SectionId = 'overview' | 'work';
-
-interface NavItem {
-  label: string;
-  href: string;
-  icon: LucideIcon;
-  kind?: WorkspaceRecordKind;
-}
-
-interface NavSection {
-  id: SectionId;
-  title: string;
-  links: NavItem[];
-}
-
-/* =========================================================
-   STAFF NAVIGATION
-   ========================================================= */
-
-const sections: NavSection[] = [
-  {
-    id: 'overview',
-    title: 'Overview',
-    links: [
-      {
-        label: 'Dashboard',
-        href: '/',
-        icon: LayoutDashboard,
-      },
-    ],
-  },
-  {
-    id: 'work',
-    title: 'Work',
-    links: [
-      {
-        label: 'Inquiries',
-        href: '/inquiries',
-        icon: Inbox,
-        kind: 'inquiry',
-      },
-      {
-        label: 'Projects',
-        href: '/projects',
-        icon: FolderKanban,
-        kind: 'project',
-      },
-    ],
-  },
-];
-
-const navItems = sections.flatMap(
-  (section) => section.links
-);
+type NavItem = Omit<StaffDestination, 'icon'> & { icon: LucideIcon };
+const sidebarItems = navItems.filter(item => item.placement !== 'topbar');
+const sections = staffGroups.map(group => ({ ...group, links: sidebarItems.filter(item => item.subgroup === group.id) })).filter(group => group.links.length > 0);
 
 /* =========================================================
    RECORD CONFIGURATION
    ========================================================= */
-
-const recordIcons: Record<
-  WorkspaceRecordKind,
-  LucideIcon
-> = {
-  project: FolderKanban,
-  inquiry: Inbox,
-  lead: Inbox,
-  contact: Users,
-};
-
-const recordLabels: Record<
-  WorkspaceRecordKind,
-  string
-> = {
-  project: 'Projects',
-  inquiry: 'Inquiries',
-  lead: 'Inquiries',
-  contact: 'Contacts',
-};
 
 /* =========================================================
    PROJECT SECTIONS
@@ -304,48 +241,7 @@ export function WorkspaceRecordDetails({
    PATH HELPERS
    ========================================================= */
 
-function isActive(
-  pathname: string,
-  href: string
-): boolean {
-  const path = normalizeStaffPath(
-    pathname
-  );
-
-  const target = normalizeStaffPath(
-    href
-  );
-
-  if (target === '/') {
-    return path === '/';
-  }
-
-  if (target === '/inquiries') {
-    return (
-      path === '/inquiries' ||
-      path.startsWith('/inquiries/') ||
-      path.startsWith('/leads/')
-    );
-  }
-
-  return (
-    path === target ||
-    path.startsWith(`${target}/`)
-  );
-}
-
-function recordGroup(
-  kind: WorkspaceRecordKind
-): 'project' | 'inquiry' | 'contact' {
-  if (
-    kind === 'inquiry' ||
-    kind === 'lead'
-  ) {
-    return 'inquiry';
-  }
-
-  return kind;
-}
+const recordGroup = canonicalKind;
 
 /* =========================================================
    SIDEBAR DIRECTORY LINK
@@ -368,6 +264,7 @@ function SidebarLink({
   );
 
   return (
+    <WorkspaceItemMenu href={item.href}>
     <Link
       href={item.href}
       title={
@@ -398,8 +295,8 @@ function SidebarLink({
 
         ${
           collapsed
-            ? 'h-10 w-10 justify-center'
-            : 'h-10 w-full gap-3 px-3'
+            ? 'h-11 w-11 justify-center'
+            : 'h-11 w-full gap-3 px-3'
         }
 
         ${
@@ -424,6 +321,7 @@ function SidebarLink({
         </span>
       )}
     </Link>
+    </WorkspaceItemMenu>
   );
 }
 
@@ -435,7 +333,17 @@ function SidebarRecord({
   tab,
   active,
   onOpen,
+  onPin,
+  onBookmark,
+  bookmarked,
+  onClose,
+  onPrefetch,
 }: {
+  onPin: () => void;
+  onBookmark: () => void;
+  bookmarked: boolean;
+  onClose?: () => void;
+  onPrefetch: () => void;
   tab: WorkspaceTab | WorkspaceBookmark;
   active: boolean;
   onOpen: () => void;
@@ -445,18 +353,13 @@ function SidebarRecord({
       ? Pin
       : recordIcons[tab.kind];
 
-  const typeLabel =
-    tab.recordType ||
-    (
-      tab.kind === 'project'
-        ? 'Project'
-        : tab.kind === 'contact'
-          ? 'Contact'
-          : 'Inquiry'
-    );
+  const typeLabel = tab.recordType || recordDefinitions[tab.kind].label;
 
   return (
+    <WorkspaceItemMenu href={tab.href} pinned={'pinned' in tab && tab.pinned} bookmarked={bookmarked} onOpen={onOpen} onPin={onPin} onBookmark={onBookmark} onClose={onClose}>
     <button
+      onMouseEnter={onPrefetch}
+      onFocus={onPrefetch}
       type="button"
       onClick={onOpen}
       title={`${tab.title} · ${typeLabel}`}
@@ -465,7 +368,7 @@ function SidebarRecord({
       }
       className={`
         flex
-        min-h-9
+        min-h-11
         w-full
         min-w-0
         items-center
@@ -523,6 +426,7 @@ function SidebarRecord({
         </span>
       </span>
     </button>
+    </WorkspaceItemMenu>
   );
 }
 
@@ -570,6 +474,7 @@ function RecordContextNavigation({
       ? 'plan'
       : selectedProjectTab;
 
+  const RecordIcon = recordIcons[tab.kind];
   return (
     <div
       className="
@@ -714,10 +619,10 @@ function RecordContextNavigation({
 
         {/* CONTACT PLACEHOLDER */}
 
-        {tab.kind === 'contact' && (
+        {(tab.kind === 'contact' || tab.kind === 'company') && (
           <span className="flex items-center gap-2 text-xs font-semibold">
-            <Users size={15} />
-            Contact workspace
+            <RecordIcon size={15} />
+            {recordDefinitions[tab.kind].label} workspace
           </span>
         )}
       </nav>
@@ -832,11 +737,17 @@ export function StaffWorkspaceShell({
   children,
   staffId,
   staffEmail = '',
+  initialCollapsed = false,
+  staffAvatarPath = null,
+  staffPublicId = '',
 }: {
   children: ReactNode;
   staffId?: string;
   staffEmail?: string;
+  initialCollapsed?: boolean;
+  staffAvatarPath?:string|null;staffPublicId?:string;
 }) {
+  const [avatarOpen,setAvatarOpen]=useState(false);
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -883,6 +794,10 @@ export function StaffWorkspaceShell({
     closeTab,
     togglePin,
     toggleBookmark,
+    reorderTabs,
+    prefetchTab,
+    pinRecord,
+    navigating,
     reopenClosedTab,
     closeOtherTabs,
     closeUnpinnedTabs,
@@ -894,15 +809,25 @@ export function StaffWorkspaceShell({
      ======================================================= */
 
   const [collapsed, setCollapsed] =
-    useState(false);
+    useState(initialCollapsed);
+  const [preferencesReady, setPreferencesReady] = useState(false);
+  const [showTabs, setShowTabs] = useState(true);
+  const tabBarStorageKey = `bivi-staff-tab-bar:${workspaceId}`;
+  const [sidebarAnimated, setSidebarAnimated] = useState(false);
 
   const [openSections, setOpenSections] =
     useState<
       Record<SectionId, boolean>
     >({
       overview: true,
-      work: true,
+      sales: true,
+      workspace: true,
+      resources: true,
+      business: true,
+      system: true,
     });
+
+  const [expandedTypes, setExpandedTypes] = useState<Record<string, boolean>>({});
 
   const [density, setDensity] =
     useState<WorkspaceDensity>(
@@ -920,6 +845,12 @@ export function StaffWorkspaceShell({
 
   const [logoutError, setLogoutError] =
     useState('');
+
+  useEffect(() => {
+    const closeSearch = () => setSearchOpen(false);
+    window.addEventListener('bivi:workspace-navigation-blocked', closeSearch);
+    return () => window.removeEventListener('bivi:workspace-navigation-blocked', closeSearch);
+  }, []);
 
   /* =======================================================
      RECORD METADATA STATE
@@ -1023,11 +954,11 @@ useEffect(() => {
 
   useEffect(() => {
     try {
-      setCollapsed(
-        localStorage.getItem(
-          SIDEBAR_STORAGE_KEY
-        ) === 'true'
-      );
+      setShowTabs(localStorage.getItem(tabBarStorageKey) !== 'false');
+      const storedCollapsed = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+      const restored = storedCollapsed === null ? initialCollapsed : storedCollapsed === 'true';
+      setCollapsed(restored);
+      document.cookie = `${SIDEBAR_STORAGE_KEY}=${restored}; Path=/; Max-Age=31536000; SameSite=Lax`;
 
       const storedDensity =
         localStorage.getItem(
@@ -1044,15 +975,17 @@ useEffect(() => {
       }
     } catch {
       // Default preferences remain active.
-    }
-  }, []);
+    } finally { setPreferencesReady(true); }
+  }, [initialCollapsed, tabBarStorageKey]);
 
   const toggleSidebar =
     useCallback(() => {
+      setSidebarAnimated(true);
       setCollapsed(
         (previous) => {
           const next =
             !previous;
+          document.cookie = `${SIDEBAR_STORAGE_KEY}=${next}; Path=/; Max-Age=31536000; SameSite=Lax`;
 
           try {
             localStorage.setItem(
@@ -1083,6 +1016,12 @@ useEffect(() => {
     },
     []
   );
+
+  const changeShowTabs = useCallback((next: boolean) => {
+    setShowTabs(next);
+    try { localStorage.setItem(tabBarStorageKey, String(next)); }
+    catch { /* Continue for this session. */ }
+  }, [tabBarStorageKey]);
 
   /* =======================================================
      KEYBOARD SHORTCUTS
@@ -1148,12 +1087,13 @@ useEffect(() => {
 
   const recordsByKind = useMemo(() => {
     const groups: Record<
-      'project' | 'inquiry' | 'contact',
+      'project' | 'inquiry' | 'contact' | 'company',
       WorkspaceTab[]
     > = {
       project: [],
       inquiry: [],
       contact: [],
+      company: [],
     };
 
     for (const tab of tabs) {
@@ -1257,30 +1197,12 @@ useEffect(() => {
 
   const breadcrumbCategory =
     routeRecord
-      ? recordLabels[
-          routeRecord.kind
-        ]
+      ? navItems.find(item => item.href === recordDefinitions[routeRecord.kind].directory)?.label ?? recordDefinitions[routeRecord.kind].label
       : 'Workspace';
 
-  const breadcrumbTitle =
-    routeRecord
-      ? activeTab?.title ??
-        activeMetadata?.title ??
-        (
-          routeRecord.kind === 'project'
-            ? 'Project'
-            : routeRecord.kind === 'contact'
-              ? 'Contact'
-              : 'Inquiry'
-        )
-      : currentPage;
+  const breadcrumbTitle = routeRecord ? activeMetadata?.title ?? activeTab?.title ?? recordDefinitions[routeRecord.kind].label : currentPage;
 
-  const breadcrumbHref =
-    routeRecord?.kind === 'project'
-      ? '/projects'
-      : routeRecord?.kind === 'contact'
-        ? '/'
-        : '/inquiries';
+  const breadcrumbHref = routeRecord ? recordDefinitions[routeRecord.kind].directory : '/';
 
   /* =======================================================
      SELECTED SECTION
@@ -1346,11 +1268,14 @@ useEffect(() => {
      ======================================================= */
 
   return (
+    <WorkspaceNavigationGuard>
+    <WorkspacePreferencesContext.Provider value={{density, changeDensity, collapsed, toggleSidebar, showTabs, changeShowTabs}}>
     <RecordMetadataContext.Provider
       value={receiveMetadata}
     >
       <div
         data-workspace-density={density}
+        style={{ visibility: preferencesReady ? 'visible' : 'hidden' }}
         className="
           bivi-staff-theme
           flex
@@ -1377,9 +1302,7 @@ useEffect(() => {
             border-r
             border-border/50
             bg-card
-            transition-[width]
-            duration-200
-            ease-out
+            ${sidebarAnimated ? 'transition-[width] duration-200 ease-out motion-reduce:transition-none' : ''}
             md:flex
 
             ${
@@ -1476,7 +1399,7 @@ useEffect(() => {
             `}
           >
             {collapsed ? (
-              navItems.map(
+              sidebarItems.map(
                 (item) => (
                   <SidebarLink
                     key={item.href}
@@ -1495,83 +1418,56 @@ useEffect(() => {
                     <div
                       key={section.id}
                     >
-                      <button
-                        type="button"
-                        aria-expanded={
-                          openSections[
-                            section.id
-                          ]
-                        }
-                        onClick={() =>
-                          setOpenSections(
-                            (current) => ({
-                              ...current,
-                              [section.id]:
-                                !current[
-                                  section.id
-                                ],
-                            })
-                          )
-                        }
-                        className="
-                          mb-2
-                          flex
-                          w-full
-                          items-center
-                          justify-between
-                          rounded-lg
-                          px-3
-                          py-1.5
-                          text-left
-                          font-mono
-                          text-[10px]
-                          font-medium
-                          uppercase
-                          tracking-[0.1em]
-                          text-muted-foreground
-                          hover:bg-muted/50
-                        "
-                      >
-                        {section.title}
+                      {section.id === 'overview' ? (
+                        <p className="mb-2 px-3 py-1.5 font-mono text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground/70">{section.title}</p>
+                      ) : (
+                        <button
+                          type="button"
+                          aria-expanded={openSections[section.id]}
+                          aria-controls={`sidebar-section-${section.id}`}
+                          onClick={() => setOpenSections(current => ({...current, [section.id]: !current[section.id]}))}
+                          className="group mb-2 flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-left font-mono text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground/70 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          {section.title}
+                          <ChevronDown size={13} aria-hidden="true" className={`opacity-0 transition-all group-hover:opacity-100 group-focus-visible:opacity-100 [@media(hover:none)]:opacity-100 ${openSections[section.id] ? '' : '-rotate-90'}`} />
+                        </button>
+                      )}
 
-                        <ChevronDown
-                          size={13}
-                          aria-hidden="true"
-                          className={`
-                            transition-transform
-                            ${
-                              openSections[
-                                section.id
-                              ]
-                                ? ''
-                                : '-rotate-90'
-                            }
-                          `}
-                        />
-                      </button>
-
-                      {openSections[
-                        section.id
-                      ] && (
-                        <div className="space-y-1">
+                      {(section.id === 'overview' || openSections[section.id]) && (
+                        <div id={`sidebar-section-${section.id}`} className="space-y-1">
                           {section.links.map(
                             (item) => {
-                              const records =
-                                sectionRecords(
-                                  item
-                                );
+                              const openRecords = sectionRecords(item);
+                              const recordGroups = [
+                                { label: 'Pinned', records: openRecords.filter(tab => tab.pinned) },
+                                { label: 'Open', records: openRecords.filter(tab => !tab.pinned) },
+                                { label: 'Bookmarked', records: bookmarks.filter(bookmark => item.kind && recordGroup(bookmark.kind) === recordGroup(item.kind) && !tabs.some(tab => tab.key === bookmark.key)) },
+                              ].filter(group => group.records.length > 0);
 
                               return (
                                 <div
                                   key={item.href}
                                 >
-                                  <SidebarLink
-                                    item={item}
-                                    pathname={pathname}
-                                    collapsed={false}
-                                  />
+                                  <div className="group relative flex items-center">
+                                    <div className="min-w-0 flex-1">
+                                      <SidebarLink item={item} pathname={pathname} collapsed={false} />
+                                    </div>
+                                    {!!item.kind && (
+                                      <button
+                                        type="button"
+                                        aria-label={`${expandedTypes[item.id] ? 'Hide' : 'Show'} ${item.label.toLowerCase()} records`}
+                                        aria-expanded={!!expandedTypes[item.id]}
+                                        aria-controls={`sidebar-records-${item.id}`}
+                                        onClick={() => setExpandedTypes(current => ({...current, [item.id]: !current[item.id]}))}
+                                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [@media(hover:none)]:opacity-100"
+                                      >
+                                        <ChevronRight size={14} aria-hidden="true" className={`transition-transform ${expandedTypes[item.id] ? 'rotate-90' : ''}`} />
+                                      </button>
+                                    )}
+                                  </div>
 
-                                  {records.length > 0 && (
+                                  {!!item.kind && <div id={`sidebar-records-${item.id}`} hidden={!expandedTypes[item.id]}>
+                                  {recordGroups.length > 0 ? (
                                     <div
                                       className="
                                         ml-4
@@ -1582,23 +1478,17 @@ useEffect(() => {
                                         pl-2
                                       "
                                     >
-                                      {records.map(
-                                        (tab) => (
-                                          <SidebarRecord
-                                            key={tab.key}
-                                            tab={tab}
-                                            active={
-                                              tab.key ===
-                                              activeKey
-                                            }
-                                            onOpen={() =>
-                                              openTab(tab)
-                                            }
-                                          />
-                                        )
-                                      )}
+                                      {recordGroups.map(group => (
+                                        <div key={group.label}>
+                                          <p className="px-2.5 pt-2 text-[10px] font-medium text-muted-foreground">{group.label}</p>
+                                          {group.records.map(tab => (
+                                            <SidebarRecord key={tab.key} tab={tab} active={tab.key === activeKey} onOpen={() => openTab(tab)} onPrefetch={() => prefetchTab(tab.href)} onPin={() => pinRecord(tab)} onBookmark={() => toggleBookmark(tab.key)} bookmarked={bookmarks.some(bookmark => bookmark.key === tab.key)} onClose={'pinned' in tab ? () => closeTab(tab.key) : undefined} />
+                                          ))}
+                                        </div>
+                                      ))}
                                     </div>
-                                  )}
+                                  ) : <p className="px-5 py-2 text-xs text-muted-foreground">No open or saved records.</p>}
+                                  </div>}
                                 </div>
                               );
                             }
@@ -1609,83 +1499,6 @@ useEffect(() => {
                   )
                 )}
 
-                {/* SAVED RECORDS */}
-
-                <div>
-                  <div
-                    className="
-                      mb-2
-                      px-3
-                      font-mono
-                      text-[10px]
-                      font-medium
-                      uppercase
-                      tracking-[0.1em]
-                      text-muted-foreground
-                    "
-                  >
-                    Saved
-                  </div>
-
-                  <div
-                    className="
-                      flex
-                      items-center
-                      gap-3
-                      px-3
-                      py-2
-                      text-xs
-                      font-medium
-                      text-muted-foreground
-                    "
-                  >
-                    <Bookmark size={16} />
-
-                    Bookmarks
-
-                    <span
-                      className="
-                        ml-auto
-                        font-mono
-                        text-[10px]
-                      "
-                    >
-                      {bookmarks.length}
-                    </span>
-                  </div>
-
-                  {bookmarks.length > 0 && (
-                    <div
-                      className="
-                        ml-4
-                        space-y-0.5
-                        border-l
-                        border-border/60
-                        pl-2
-                      "
-                    >
-                      {bookmarks.map(
-                        (bookmark) => (
-                          <SidebarRecord
-                            key={
-                              bookmark.key
-                            }
-                            tab={bookmark}
-                            active={
-                              bookmark.key ===
-                              activeKey
-                            }
-                            onOpen={() =>
-                              openTab(
-                                bookmark
-                              )
-                            }
-                          />
-                        )
-                      )}
-                    </div>
-                  )}
-                </div>
               </>
             )}
           </nav>
@@ -1720,7 +1533,7 @@ useEffect(() => {
               }
               className={`
                 flex
-                h-10
+                h-11
                 items-center
                 rounded-xl
                 text-muted-foreground
@@ -1730,7 +1543,7 @@ useEffect(() => {
 
                 ${
                   collapsed
-                    ? 'mx-auto w-10 justify-center'
+                    ? 'mx-auto w-11 justify-center'
                     : 'w-full gap-3 px-3'
                 }
               `}
@@ -1892,6 +1705,7 @@ useEffect(() => {
                 sm:gap-3
               "
             >
+              {navigating && <span role="status" className="text-xs text-muted-foreground">Opening…</span>}
               {/* SEARCH */}
 
               <button
@@ -1947,6 +1761,8 @@ useEffect(() => {
                 </kbd>
               </button>
 
+              <NotificationsBell />
+
               {/* THEME */}
 
               <ThemeToggle />
@@ -1972,7 +1788,7 @@ useEffect(() => {
                       hover:bg-accent
                     "
                   >
-                    {initial}
+                    {staffId?<ProfileImage kind="staff" subject={staffId} name={staffEmail||initial} path={staffAvatarPath} size="h-9 w-9"/>:initial}
                   </button>
                 </DropdownMenuTrigger>
 
@@ -2028,11 +1844,14 @@ useEffect(() => {
                   </DropdownMenuLabel>
 
                   <DropdownMenuSeparator />
+                  {staffPublicId&&<DropdownMenuLabel className="font-mono text-xs">Staff ID {staffPublicId}</DropdownMenuLabel>}
+                  <DropdownMenuItem onSelect={()=>setAvatarOpen(true)}>Edit profile image</DropdownMenuItem>
+                  <DropdownMenuSeparator />
 
                   <DropdownMenuItem
                     disabled={signingOut}
                     onSelect={() =>
-                      void signOut()
+                      guardWorkspaceNavigation(() => void signOut())
                     }
                     className="
                       cursor-pointer
@@ -2053,6 +1872,27 @@ useEffect(() => {
               </DropdownMenu>
             </div>
           </header>
+
+          {/* MOBILE DIRECTORY NAVIGATION */}
+
+          <nav
+            aria-label="Mobile staff navigation"
+            className="
+              flex
+              shrink-0
+              gap-1.5
+              overflow-x-auto
+              border-b
+              border-border/40
+              bg-card
+              px-3
+              py-2
+              scrollbar-hide
+              md:hidden
+            "
+          >
+            {sidebarItems.map(item => <div key={item.id} className="shrink-0"><SidebarLink item={item} pathname={pathname} collapsed={false} /></div>)}
+          </nav>
 
           {/* TEXT-ONLY DESKTOP MENUS */}
 
@@ -2076,7 +1916,9 @@ useEffect(() => {
 
           {/* PERSISTENT RECORD TABS */}
 
-          <WorkspaceTabBar
+          {showTabs && <WorkspaceTabBar
+            reorderTabs={reorderTabs}
+            prefetchTab={prefetchTab}
             tabs={
               hydrated
                 ? tabs
@@ -2092,7 +1934,7 @@ useEffect(() => {
             reopenClosedTab={reopenClosedTab}
             closeOtherTabs={closeOtherTabs}
             closeUnpinnedTabs={closeUnpinnedTabs}
-          />
+          />}
 
           {/* PROJECT / INQUIRY SECTIONS */}
 
@@ -2103,72 +1945,6 @@ useEffect(() => {
               selectedProjectTab
             }
           />
-
-          {/* MOBILE DIRECTORY NAVIGATION */}
-
-          <nav
-            aria-label="Mobile staff navigation"
-            className="
-              flex
-              shrink-0
-              gap-1.5
-              overflow-x-auto
-              border-b
-              border-border/40
-              bg-card
-              px-3
-              py-2
-              scrollbar-hide
-              md:hidden
-            "
-          >
-            {navItems.map(
-              (item) => {
-                const Icon = item.icon;
-
-                const active = isActive(
-                  pathname,
-                  item.href
-                );
-
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    aria-current={
-                      active
-                        ? 'page'
-                        : undefined
-                    }
-                    className={`
-                      flex
-                      shrink-0
-                      items-center
-                      gap-2
-                      rounded-lg
-                      px-3
-                      py-2
-                      text-xs
-                      font-medium
-
-                      ${
-                        active
-                          ? 'bg-muted text-foreground'
-                          : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground'
-                      }
-                    `}
-                  >
-                    <Icon
-                      size={15}
-                      aria-hidden="true"
-                    />
-
-                    {item.label}
-                  </Link>
-                );
-              }
-            )}
-          </nav>
 
           {/* WORKSPACE CONTENT */}
 
@@ -2201,7 +1977,7 @@ useEffect(() => {
                 }
               `}
             >
-              {children}
+              {children}{staffId&&<ImageEditorDialog open={avatarOpen} onOpenChange={setAvatarOpen} kind="staff" subject={staffId} name={staffEmail||"Staff"} path={staffAvatarPath}/>} 
             </div>
           </main>
         </div>
@@ -2383,5 +2159,7 @@ useEffect(() => {
         )}
       </div>
     </RecordMetadataContext.Provider>
+    </WorkspacePreferencesContext.Provider>
+    </WorkspaceNavigationGuard>
   );
 }

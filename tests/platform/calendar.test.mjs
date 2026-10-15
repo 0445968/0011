@@ -1,0 +1,32 @@
+import {PGlite} from '@electric-sql/pglite';
+import fs from 'node:fs';
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {randomUUID} from 'node:crypto';
+const migrations=new URL('../../supabase/migrations/',import.meta.url);
+test('Calendar projects date-only current tasks and milestones under staff RLS without granting source mutations',async()=>{
+ const db=new PGlite();try{
+ await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create table auth.users(id uuid primary key,email text);create function auth.uid() returns uuid language sql as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;grant usage on schema public,auth to anon,authenticated,service_role;grant execute on function auth.uid() to authenticated;create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);create table storage.objects(id bigint generated always as identity,bucket_id text,name text,metadata jsonb,unique(bucket_id,name));alter table storage.objects enable row level security;grant usage on schema storage to authenticated,anon;grant select,insert,update,delete on storage.objects to authenticated,anon;grant usage on sequence storage.objects_id_seq to authenticated,anon;`);
+ for(const file of fs.readdirSync(migrations).filter(name=>name.endsWith('.sql')).sort())await db.exec(fs.readFileSync(new URL(file,migrations),'utf8'));
+ const staff=randomUUID(),client=randomUUID(),project=randomUUID();
+ await db.query('insert into auth.users(id,email) values($1,$2),($3,$4)',[staff,'staff@example.com',client,'client@example.com']);await db.query('insert into inquiry_staff(user_id) values($1)',[staff]);
+ await db.query('insert into project_inquiries(request_id,payload,payload_hash) values($1,$2,$3)',[project,{name:'Client',email:'client@example.com'},'a'.repeat(64)]);await db.query("insert into inquiry_proposals(request_id,version,status,body) values($1,1,'accepted','{}')",[project]);
+ const body={title:'Calendar Project',owner:'',notes:'',milestones:[{id:'same/id',title:'Launch milestone',dueOn:'2026-10-31',status:'planned'},{id:'undated',title:'Undated',dueOn:null,status:'planned'}],tasks:[{id:'same/id',title:'Launch task',owner:'Staff label',dueOn:'2026-10-31',status:'todo',milestoneId:'same/id',notes:''},{id:'client',title:'Client action',owner:'Client',dueOn:'2026-11-01',status:'done',milestoneId:null,notes:''},{id:'none',title:'No deadline',owner:'',dueOn:null,status:'todo',milestoneId:null,notes:''}]};
+ await db.query("insert into inquiry_projects(request_id,proposal_version,revision,state,body,scope_snapshot,onboarding_snapshot,readiness_snapshot,activated_readiness_revision,activated_onboarding_revision) values($1,1,1,'active',$2,'{}','{}','{}',1,1)",[project,body]);
+ await db.query("insert into project_task_controls(request_id,task_id,owner_type,phase,assigned_staff_id) values($1,'same/id','bivi','discovery',$2),($1,'client','client','discovery',null)",[project,staff]);
+ const actor=async id=>{await db.exec('set role authenticated');await db.query("select set_config('request.jwt.claim.sub',$1,false)",[id]);};
+ await actor(staff);
+ let rows=(await db.query('select * from staff_calendar order by due_on,event_type')).rows;
+ assert.equal(rows.length,3);assert.equal(new Set(rows.map(row=>row.event_key)).size,3);assert.deepEqual(rows.map(row=>row.due_on.toISOString().slice(0,10)),['2026-10-31','2026-10-31','2026-11-01']);
+ assert.equal(rows.find(row=>row.event_type==='milestone').assigned_staff_id,null);
+ assert.equal((await db.query('select * from staff_calendar where assigned_staff_id=auth.uid()')).rows.length,1);
+ assert.equal(rows.find(row=>row.source_id==='client').is_done,true);
+ assert.equal((await db.query("select * from staff_calendar where due_on between '2026-10-01' and '2026-10-31'")).rows.length,2);
+ await assert.rejects(db.query("update staff_calendar set title='Changed'"),/permission denied|cannot update view/);
+ await db.exec('reset role');body.tasks[0].dueOn='2026-12-15';body.milestones=body.milestones.filter(m=>m.id!=='same/id');body.tasks[0].milestoneId=null;await db.query('update inquiry_projects set body=$2,state=$3 where request_id=$1',[project,body,'on_hold']);await actor(staff);
+ rows=(await db.query('select * from staff_calendar')).rows;assert.equal(rows.length,2);assert.ok(rows.every(row=>row.project_state==='on_hold'));assert.equal(rows.find(row=>row.source_id==='same/id').due_on.toISOString().slice(0,10),'2026-12-15');
+ await actor(client);assert.equal((await db.query('select * from staff_calendar')).rows.length,0);
+ await db.exec('reset role');await db.query('update inquiry_staff set active=false where user_id=$1',[staff]);await actor(staff);assert.equal((await db.query('select * from staff_calendar')).rows.length,0);
+ await db.exec('set role anon');await assert.rejects(db.query('select * from staff_calendar'),/permission denied/);
+ }finally{await db.close();}
+});

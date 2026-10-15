@@ -8,6 +8,7 @@ import {
   projectPhaseSchema,
   projectTaskControlSchema,
   type ClientProjectWork,
+  type ProjectTaskControl,
 } from './lifecycle-schema';
 
 const lifecycleSchema = z.object({
@@ -26,7 +27,7 @@ const taskEventSchema = z.object({
 });
 
 export async function getProjectLifecycle(client: SupabaseClient, requestId: string) {
-  const [lifecycleResult, controlsResult, eventsResult] = await Promise.all([
+  const [lifecycleResult, controlsResult, eventsResult, labelsResult] = await Promise.all([
     client
       .from('project_lifecycle')
       .select('request_id,phase,revision,updated_at')
@@ -34,7 +35,7 @@ export async function getProjectLifecycle(client: SupabaseClient, requestId: str
       .maybeSingle(),
     client
       .from('project_task_controls')
-      .select('request_id,task_id,revision,owner_type,phase,service_id,depends_on,blocker_owner,client_note,updated_at')
+      .select('request_id,task_id,revision,owner_type,phase,service_id,depends_on,blocker_owner,client_note,updated_at,assigned_staff_id')
       .eq('request_id', requestId)
       .order('task_id', { ascending: true }),
     client
@@ -43,14 +44,16 @@ export async function getProjectLifecycle(client: SupabaseClient, requestId: str
       .eq('request_id', requestId)
       .order('id', { ascending: false })
       .limit(50),
+    client.rpc('project_task_assignee_labels',{p_request:requestId}),
   ]);
 
-  if (lifecycleResult.error || controlsResult.error || eventsResult.error) {
-    throw new Error('Project lifecycle could not be loaded. Apply migration 012.');
+  if (lifecycleResult.error || controlsResult.error || eventsResult.error || labelsResult.error) {
+    throw new Error('Project lifecycle could not be loaded. Check migrations 012 and 024.');
   }
 
   const lifecycle = lifecycleResult.data ? lifecycleSchema.parse(lifecycleResult.data) : null;
 
+  const labels=z.array(z.object({id:z.string().uuid(),label:z.string()})).parse(labelsResult.data||[]);
   return {
     lifecycle: lifecycle
       ? {
@@ -60,7 +63,7 @@ export async function getProjectLifecycle(client: SupabaseClient, requestId: str
           updatedAt: lifecycle.updated_at,
         }
       : null,
-    controls: z.array(projectTaskControlSchema).parse(controlsResult.data ?? []),
+    controls: z.array(projectTaskControlSchema).parse(controlsResult.data ?? []).map(control=>({...control,assignedStaffLabel:labels.find(label=>label.id===control.assignedStaffId)?.label})) as ProjectTaskControl[],
     events: z.array(taskEventSchema).parse(eventsResult.data ?? []),
   };
 }
@@ -73,7 +76,7 @@ export async function clientProjectWork(
     p_request_id: requestId,
   });
 
-  if (error) throw new Error('Client tasks could not be loaded. Apply migration 012.');
+  if (error) throw new Error('Client tasks could not be loaded. Check migrations 012 and 024.');
   if (data === null) return null;
   return clientProjectWorkSchema.parse(data);
 }

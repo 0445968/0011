@@ -6,6 +6,8 @@ import {
   useEffect,
   useMemo,
   useState,
+  useTransition,
+  useRef,
 } from 'react';
 
 import {
@@ -14,11 +16,14 @@ import {
   useSearchParams,
 } from 'next/navigation';
 
-export type WorkspaceRecordKind =
-  | 'project'
-  | 'inquiry'
-  | 'lead'
-  | 'contact';
+import {
+  canonicalKind, recordDefinitions, isWorkspaceRecordId, normalizeStaffPath, liveStaffDestinations, reorderWorkspaceTabs,
+  getWorkspaceRecordHref, getWorkspaceRecordFromPath,
+  type WorkspaceRecordKind,
+} from '@/lib/admin/workspace/navigation';
+export { normalizeStaffPath, getWorkspaceRecordHref, getWorkspaceRecordFromPath } from '@/lib/admin/workspace/navigation';
+import { guardWorkspaceNavigation } from './WorkspaceNavigationGuard';
+export type { WorkspaceRecordKind } from '@/lib/admin/workspace/navigation';
 
 export interface WorkspaceTab {
   key: string;
@@ -64,14 +69,12 @@ const MAX_OPEN_TABS = 30;
 const MAX_BOOKMARKS = 100;
 const MAX_RECENTLY_CLOSED = 10;
 
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 const RECORD_KINDS: WorkspaceRecordKind[] = [
   'project',
   'inquiry',
   'lead',
   'contact',
+  'company',
 ];
 
 function emptySnapshot(): WorkspaceSnapshot {
@@ -80,14 +83,6 @@ function emptySnapshot(): WorkspaceSnapshot {
     bookmarks: [],
     recentlyClosed: [],
   };
-}
-
-function canonicalKind(
-  kind: WorkspaceRecordKind
-): WorkspaceRecordKind {
-  return kind === 'lead'
-    ? 'inquiry'
-    : kind;
 }
 
 function isRecordKind(
@@ -108,7 +103,9 @@ function fallbackTitle(
     case 'lead':
       return 'Inquiry';
     case 'contact':
-      return 'Contact';
+      return 'Person';
+    case 'company':
+      return 'Company';
   }
 }
 
@@ -134,83 +131,6 @@ function normalizeTitle(
    STAFF SUBDOMAIN ROUTING
    ========================================================= */
 
-export function normalizeStaffPath(
-  pathname: string
-): string {
-  if (pathname === '/admin') {
-    return '/';
-  }
-
-  if (pathname.startsWith('/admin/')) {
-    return pathname.slice('/admin'.length);
-  }
-
-  return pathname;
-}
-
-export function getWorkspaceRecordHref(
-  kind: WorkspaceRecordKind,
-  id: string
-): string {
-  switch (kind) {
-    case 'project':
-      return `/projects/${id}`;
-    case 'inquiry':
-    case 'lead':
-      return `/leads/${id}`;
-    case 'contact':
-      return `/contacts/${id}`;
-  }
-}
-
-export function getWorkspaceRecordFromPath(
-  pathname: string
-): {
-  key: string;
-  id: string;
-  kind: WorkspaceRecordKind;
-  href: string;
-} | null {
-  const clean = normalizeStaffPath(
-    pathname.split(/[?#]/)[0]
-  );
-
-  const segments = clean
-    .split('/')
-    .filter(Boolean);
-
-  const section = segments[0];
-  const id = segments[1];
-
-  if (!id || !UUID_PATTERN.test(id)) {
-    return null;
-  }
-
-  let kind: WorkspaceRecordKind;
-
-  switch (section) {
-    case 'projects':
-      kind = 'project';
-      break;
-    case 'inquiries':
-    case 'leads':
-      kind = 'inquiry';
-      break;
-    case 'contacts':
-      kind = 'contact';
-      break;
-    default:
-      return null;
-  }
-
-  return {
-    key: `${kind}:${id}`,
-    id,
-    kind,
-    href: getWorkspaceRecordHref(kind, id),
-  };
-}
-
 function safeTabHref(
   href: string,
   kind: WorkspaceRecordKind,
@@ -233,13 +153,13 @@ function safeTabHref(
 
   if (
     !record ||
-    record.id !== id ||
+    record.id !== id.toLowerCase() ||
     record.kind !== canonicalKind(kind)
   ) {
     return fallback;
   }
 
-  return clean;
+  return clean.replace(`/inquiries/${id}`, `/leads/${id}`);
 }
 
 /* =========================================================
@@ -258,13 +178,17 @@ function validTab(
   return (
     typeof item.key === 'string' &&
     typeof item.id === 'string' &&
-    UUID_PATTERN.test(item.id) &&
+    isWorkspaceRecordId(item.kind as WorkspaceRecordKind, item.id) &&
     isRecordKind(item.kind) &&
+    liveStaffDestinations.some(destination => destination.kind === canonicalKind(item.kind!)) &&
     item.key === `${item.kind}:${item.id}` &&
     typeof item.title === 'string' &&
     item.title.length > 0 &&
     item.title.length <= 180 &&
     typeof item.href === 'string' &&
+    (item.recordType === undefined || typeof item.recordType === 'string') &&
+    (item.status === undefined || typeof item.status === 'string') &&
+    (item.dueDate === undefined || typeof item.dueDate === 'string') &&
     typeof item.pinned === 'boolean' &&
     typeof item.lastOpenedAt === 'number' &&
     Number.isFinite(item.lastOpenedAt)
@@ -284,13 +208,15 @@ function validBookmark(
   return (
     typeof item.key === 'string' &&
     typeof item.id === 'string' &&
-    UUID_PATTERN.test(item.id) &&
+    isWorkspaceRecordId(item.kind as WorkspaceRecordKind, item.id) &&
     isRecordKind(item.kind) &&
+    liveStaffDestinations.some(destination => destination.kind === canonicalKind(item.kind!)) &&
     item.key === `${item.kind}:${item.id}` &&
     typeof item.title === 'string' &&
     item.title.length > 0 &&
     item.title.length <= 180 &&
-    typeof item.href === 'string'
+    typeof item.href === 'string' &&
+    (item.recordType === undefined || typeof item.recordType === 'string')
   );
 }
 
@@ -298,7 +224,7 @@ function validBookmark(
    STORAGE
    ========================================================= */
 
-function restoreSnapshot(
+export function restoreSnapshot(
   storageKey: string
 ): WorkspaceSnapshot {
   try {
@@ -317,7 +243,8 @@ function restoreSnapshot(
     const tabs = Array.isArray(parsed.tabs)
       ? parsed.tabs
           .filter(validTab)
-          .slice(0, MAX_OPEN_TABS)
+          .map((item) => ({ ...item, kind: canonicalKind(item.kind), id: item.id.toLowerCase(), key: `${canonicalKind(item.kind)}:${item.id.toLowerCase()}` }))
+          .filter((item, index, all) => all.findIndex(other => other.key === item.key) === index)
           .map((tab) => ({
             ...tab,
             title: normalizeTitle(
@@ -337,6 +264,8 @@ function restoreSnapshot(
     )
       ? parsed.bookmarks
           .filter(validBookmark)
+          .map((item) => ({ ...item, kind: canonicalKind(item.kind), id: item.id.toLowerCase(), key: `${canonicalKind(item.kind)}:${item.id.toLowerCase()}` }))
+          .filter((item, index, all) => all.findIndex(other => other.key === item.key) === index)
           .slice(0, MAX_BOOKMARKS)
           .map((bookmark) => ({
             ...bookmark,
@@ -356,6 +285,8 @@ function restoreSnapshot(
     )
       ? parsed.recentlyClosed
           .filter(validTab)
+          .map((item) => ({ ...item, kind: canonicalKind(item.kind), id: item.id.toLowerCase(), key: `${canonicalKind(item.kind)}:${item.id.toLowerCase()}` }))
+          .filter((item, index, all) => all.findIndex(other => other.key === item.key) === index)
           .slice(0, MAX_RECENTLY_CLOSED)
           .map((tab) => ({
             ...tab,
@@ -397,7 +328,7 @@ function rememberClosed(
  * Preserve the order of existing tabs.
  * Only a new record may be appended.
  */
-function limitTabs(
+export function limitTabs(
   tabs: WorkspaceTab[]
 ): WorkspaceTab[] {
   if (tabs.length <= MAX_OPEN_TABS) {
@@ -405,11 +336,11 @@ function limitTabs(
   }
 
   const removable = tabs.findIndex(
-    (tab) => !tab.pinned
+    (tab, index) => !tab.pinned && index !== tabs.length - 1
   );
 
   if (removable === -1) {
-    return tabs.slice(0, MAX_OPEN_TABS);
+    return tabs; // Never evict a pinned record; a newly visited active record stays visible.
   }
 
   return tabs.filter(
@@ -427,6 +358,7 @@ export function useStaffWorkspaceTabs(
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const [navigating, startNavigation] = useTransition();
 
   const [snapshot, setSnapshot] =
     useState<WorkspaceSnapshot>(
@@ -612,6 +544,20 @@ export function useStaffWorkspaceTabs(
     };
   }, [storageKey]);
 
+  useEffect(() => {
+    function forgetUnavailable(event: Event) {
+      const key = (event as CustomEvent<unknown>).detail;
+      if (typeof key !== 'string') return;
+      setSnapshot(current => ({
+        tabs: current.tabs.filter(tab => tab.key !== key),
+        bookmarks: current.bookmarks.filter(tab => tab.key !== key),
+        recentlyClosed: current.recentlyClosed.filter(tab => tab.key !== key),
+      }));
+    }
+    window.addEventListener('bivi:workspace-record-unavailable', forgetUnavailable);
+    return () => window.removeEventListener('bivi:workspace-record-unavailable', forgetUnavailable);
+  }, []);
+
   /* =======================================================
      OPEN OR SWITCH TABS
      ======================================================= */
@@ -638,65 +584,67 @@ export function useStaffWorkspaceTabs(
         tab.id
       );
 
-      setSnapshot((current) => {
-        const existing =
-          current.tabs.find(
-            (item) =>
-              item.key === tab.key
-          );
+      guardWorkspaceNavigation(() => {
+        setSnapshot((current) => {
+          const existing =
+            current.tabs.find(
+              (item) =>
+                item.key === tab.key
+            );
 
-        if (existing) {
-          /*
-           * Update the existing tab at its
-           * current index. Do not sort by
-           * lastOpenedAt.
-           */
+          if (existing) {
+            /*
+             * Update the existing tab at its
+             * current index. Do not sort by
+             * lastOpenedAt.
+             */
+
+            return {
+              ...current,
+              tabs: current.tabs.map(
+                (item) =>
+                  item.key === tab.key
+                    ? {
+                        ...item,
+                        href,
+                        lastOpenedAt: Date.now(),
+                      }
+                    : item
+              ),
+              recentlyClosed:
+                current.recentlyClosed.filter(
+                  (item) =>
+                    item.key !== tab.key
+                ),
+            };
+          }
+
+          const newTab: WorkspaceTab = {
+            ...tab,
+            href,
+            pinned:
+              'pinned' in tab
+                ? tab.pinned
+                : false,
+            lastOpenedAt: Date.now(),
+          };
 
           return {
             ...current,
-            tabs: current.tabs.map(
-              (item) =>
-                item.key === tab.key
-                  ? {
-                      ...item,
-                      href,
-                      lastOpenedAt: Date.now(),
-                    }
-                  : item
-            ),
+            tabs: limitTabs([
+              ...current.tabs,
+              newTab,
+            ]),
             recentlyClosed:
               current.recentlyClosed.filter(
                 (item) =>
                   item.key !== tab.key
               ),
           };
-        }
+        });
 
-        const newTab: WorkspaceTab = {
-          ...tab,
-          href,
-          pinned:
-            'pinned' in tab
-              ? tab.pinned
-              : false,
-          lastOpenedAt: Date.now(),
-        };
-
-        return {
-          ...current,
-          tabs: limitTabs([
-            ...current.tabs,
-            newTab,
-          ]),
-          recentlyClosed:
-            current.recentlyClosed.filter(
-              (item) =>
-                item.key !== tab.key
-            ),
-        };
+        startNavigation(() => router.push(href));
       });
-
-      router.push(href);
     },
     [
       router,
@@ -720,34 +668,36 @@ export function useStaffWorkspaceTabs(
         return;
       }
 
-      const remaining =
-        snapshot.tabs.filter(
-          (tab) =>
-            tab.key !== key
-        );
+      const performClose = () => {
+        const remaining =
+          snapshot.tabs.filter(
+            (tab) =>
+              tab.key !== key
+          );
 
-      setSnapshot((current) => ({
-        ...current,
-        tabs: current.tabs.filter(
-          (tab) =>
-            tab.key !== key
-        ),
-        recentlyClosed: rememberClosed(
-          current.recentlyClosed,
-          closing
-        ),
-      }));
+        setSnapshot((current) => ({
+          ...current,
+          tabs: current.tabs.filter(
+            (tab) =>
+              tab.key !== key
+          ),
+          recentlyClosed: rememberClosed(
+            current.recentlyClosed,
+            closing
+          ),
+        }));
 
-      if (activeKey === key) {
-        const next =
-          remaining[
-            remaining.length - 1
-          ];
+        if (activeKey === key) {
+          const next =
+            remaining[
+              remaining.length - 1
+            ];
 
-        router.push(
-          next?.href ?? '/projects'
-        );
-      }
+          router.push(next?.href ?? recordDefinitions[closing.kind].directory);
+        }
+      };
+      if (activeKey === key) guardWorkspaceNavigation(performClose);
+      else performClose();
     },
     [
       snapshot.tabs,
@@ -777,6 +727,14 @@ export function useStaffWorkspaceTabs(
     },
     []
   );
+
+  const pinRecord = useCallback((record: WorkspaceTab | WorkspaceBookmark) => {
+    setSnapshot(current => {
+      const found = current.tabs.find(tab => tab.key === record.key);
+      if (found) return { ...current, tabs: current.tabs.map(tab => tab.key === record.key ? { ...tab, pinned: !tab.pinned } : tab) };
+      return { ...current, tabs: limitTabs([...current.tabs, { ...record, pinned: true, lastOpenedAt: Date.now() }]), recentlyClosed: current.recentlyClosed.filter(tab => tab.key !== record.key) };
+    });
+  }, []);
 
   /* =======================================================
      BOOKMARKS
@@ -939,9 +897,7 @@ export function useStaffWorkspaceTabs(
           WorkspaceRecordMetadata
       ) => {
         if (
-          !UUID_PATTERN.test(
-            metadata.id
-          )
+          !isWorkspaceRecordId(metadata.kind, metadata.id)
         ) {
           return;
         }
@@ -1054,29 +1010,26 @@ export function useStaffWorkspaceTabs(
      DERIVED DATA
      ======================================================= */
 
-  /*
-   * Pinned tabs group first.
-   *
-   * Relative order within each group is
-   * preserved. Clicking a tab never moves it.
-   */
-
-  const tabs = useMemo(() => {
-    const pinned =
-      snapshot.tabs.filter(
-        (tab) => tab.pinned
-      );
-
-    const unpinned =
-      snapshot.tabs.filter(
-        (tab) => !tab.pinned
-      );
-
-    return [
-      ...pinned,
-      ...unpinned,
-    ];
-  }, [snapshot.tabs]);
+  const tabs = snapshot.tabs;
+  const reorderTabs = useCallback((active: string, over: string) => {
+    setSnapshot(current => {
+      const next = reorderWorkspaceTabs(current.tabs, active, over);
+      return next === current.tabs ? current : { ...current, tabs: next };
+    });
+  }, []);
+  const prefetched = useRef(new Set<string>());
+  const prefetchTab = useCallback((href: string) => {
+    if (prefetched.current.has(href)) return;
+    prefetched.current.add(href);
+    router.prefetch(href);
+  }, [router]);
+  useEffect(() => {
+    if (!hydrated) return;
+    const timer = window.setTimeout(() => {
+      tabs.filter(tab => tab.key !== activeKey).slice(0, 3).forEach(tab => prefetchTab(tab.href));
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [hydrated, tabs, activeKey, prefetchTab]);
 
   const activeTab = useMemo(
     () =>
@@ -1107,6 +1060,10 @@ export function useStaffWorkspaceTabs(
     closeTab,
     togglePin,
     toggleBookmark,
+    reorderTabs,
+    prefetchTab,
+    pinRecord,
+    navigating,
     reopenClosedTab,
     closeOtherTabs,
     closeUnpinnedTabs,

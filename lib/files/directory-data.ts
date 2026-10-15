@@ -1,0 +1,30 @@
+import 'server-only';
+import type {SupabaseClient} from '@supabase/supabase-js';
+import {z} from 'zod';
+import {cleanCompanySearch} from '@/lib/companies/data';
+import {filesDateRange,type DirectoryFile} from './directory-links';
+const mimeGroups:Record<string,string[]>={images:['image/png','image/jpeg','image/webp'],pdf:['application/pdf'],text:['text/plain'],zip:['application/zip']};
+export async function listSharedFiles(client:SupabaseClient,userId:string,p:Record<string,string|undefined>) {
+  let query=client.from('staff_file_directory').select('*',{count:'exact'});
+  const q=cleanCompanySearch(p.q||'');
+  if(q)query=query.or(`filename.ilike.%${q}%,project_title.ilike.%${q}%,project_public_id.ilike.%${q}%,company_name.ilike.%${q}%,company_public_id.ilike.%${q}%,uploader_label.ilike.%${q}%`);
+  const state=['pending','withdrawn'].includes(p.state||'')?p.state:p.state==='all'?null:'ready';
+  if(state)query=query.eq('state',state);
+  if(mimeGroups[p.type||''])query=query.in('mime_type',mimeGroups[p.type!]);
+  if(p.shared==='yes')query=query.eq('shared',true);else if(p.shared==='no')query=query.eq('shared',false);
+  if(p.uploader==='mine')query=query.eq('uploader_id',userId);
+  else if(['staff','client','former'].includes(p.uploader||''))query=query.eq('uploader_type',p.uploader!);
+  else if(z.string().uuid().safeParse(p.uploader).success)query=query.eq('uploader_id',p.uploader!);
+  if(z.string().uuid().safeParse(p.project).success)query=query.eq('request_id',p.project!);
+  if(z.string().uuid().safeParse(p.company).success)query=query.eq('company_id',p.company!);
+  else if(p.company==='none')query=query.is('company_id',null);
+  const dates=filesDateRange(p.from,p.to);
+  if(dates.from)query=query.gte('created_at',dates.from);
+  if(dates.before)query=query.lt('created_at',dates.before);
+  const page=Math.max(1,Math.min(100000,Math.floor(Number(p.page)||1)));
+  const sort=({uploaded:'created_at',name:'filename',size:'size_bytes',project:'project_title'} as Record<string,string>)[p.sort||'']||'created_at';
+  const ascending=p.direction==='asc';
+  const result=await query.order(sort,{ascending}).order('id').range((page-1)*25,page*25-1);
+  if(result.error)throw new Error('Shared Files could not load. Check migration 028.');
+  return {rows:(result.data||[]) as DirectoryFile[],total:result.count||0,page,dates};
+}

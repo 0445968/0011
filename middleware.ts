@@ -1,3 +1,4 @@
+import { staffInternalPath } from '@/lib/admin/workspace/navigation';
 import { NextRequest, NextResponse } from 'next/server';
 
 import {
@@ -40,40 +41,6 @@ function clientInternalPath(pathname: string) {
   if (pathname === '/projects' || pathname.startsWith('/projects/')) {
     return `/client${pathname}`;
   }
-  return null;
-}
-
-
-function staffInternalPath(pathname: string) {
-  if (pathname === '/') {
-    return '/admin';
-  }
-
-  if (pathname === '/login') {
-    return '/admin/login';
-  }
-
-  if (
-    pathname === '/inquiries' ||
-    pathname.startsWith('/inquiries/')
-  ) {
-    return `/admin${pathname}`;
-  }
-
-  if (
-    pathname === '/leads' ||
-    pathname.startsWith('/leads/')
-  ) {
-    return `/admin${pathname}`;
-  }
-
-  if (
-    pathname === '/projects' ||
-    pathname.startsWith('/projects/')
-  ) {
-    return `/admin${pathname}`;
-  }
-
   return null;
 }
 

@@ -8,12 +8,13 @@ import { ProjectFiles } from '@/components/files/ProjectFiles';
 import { requireStaff } from '@/lib/admin/auth';
 import { getInquiry } from '@/lib/admin/inquiries';
 import { fileHistory, projectFiles } from '@/lib/files/data';
+import { attachFormType } from '@/lib/forms/links';
 import { getChecklist } from '@/lib/onboarding/checklist-data';
 import { getOnboardingItems } from '@/lib/onboarding/item-data';
 import { getReadiness } from '@/lib/onboarding/data';
 import { listProposals } from '@/lib/proposals/data';
 
-export default async function OnboardingPage({ params }: { params: { id: string } }) {
+export default async function OnboardingPage({ params, searchParams = {} }: { params: { id: string }; searchParams?:{add?:string;item?:string} }) {
   if (!z.string().uuid().safeParse(params.id).success) notFound();
   const { client, user } = await requireStaff();
   const inquiry = await getInquiry(client, params.id);
@@ -27,6 +28,8 @@ export default async function OnboardingPage({ params }: { params: { id: string 
     projectFiles(client, params.id),
     fileHistory(client, params.id),
   ]);
+  const initialType = attachFormType(searchParams.add);
+  const selectedItem = searchParams.item && items.some(item=>item.itemKey===searchParams.item) ? searchParams.item : undefined;
   const accepted = proposals.find((proposal) => proposal.status === 'accepted');
   const gateReady = inquiry.status === 'qualified' && gate.record?.state === 'ready' && Boolean(accepted) && gate.record?.proposal_version === accepted?.version;
 
@@ -52,7 +55,8 @@ export default async function OnboardingPage({ params }: { params: { id: string 
       </div>
 
       <ClientOnboarding key={data.record?.revision ?? 0} id={params.id} record={data.record} history={data.history} gateReady={gateReady} gateRevision={gate.record?.revision ?? null} />
-      <PersonalizedOnboarding id={params.id} items={items} locked={data.record?.state === 'complete'} />
+      {searchParams.item && !selectedItem && <p role="status" className="mt-6 rounded border p-4 text-sm">This form is no longer attached to the record. The current onboarding requirements remain available below.</p>}
+      <PersonalizedOnboarding key={`${params.id}:${initialType || ''}`} id={params.id} items={items} locked={data.record?.state === 'complete'} initialType={initialType} selectedItem={selectedItem} />
 
       {data.record && (
         <section className="mt-8">

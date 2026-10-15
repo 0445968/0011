@@ -1,4 +1,6 @@
 'use client';
+import {approvalDomId} from '@/lib/approvals/links';
+import { useWorkspaceUnsavedChanges } from './workspace/WorkspaceNavigationGuard';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -41,6 +43,9 @@ export function ProjectBriefEditor({
   const [blocked, setBlocked] = useState(false);
   const [message, setMessage] = useState('');
 
+  const dirty = Boolean(draft && body && JSON.stringify(body) !== JSON.stringify(draft.body));
+  const markWorkspaceSaved = useWorkspaceUnsavedChanges(dirty, 'Project brief', () => command('save'));
+
   if (!draft || !body) {
     return (
       <section className="mt-8 rounded-2xl border border-border bg-card p-6">
@@ -50,7 +55,6 @@ export function ProjectBriefEditor({
     );
   }
 
-  const dirty = JSON.stringify(body) !== JSON.stringify(draft.body);
   const valid = projectBriefBodySchema.safeParse(body).success;
   const reviewReady = Boolean(body.title.trim() && body.objectives.trim() && body.scope.trim());
 
@@ -87,7 +91,7 @@ export function ProjectBriefEditor({
       const data = await response.json();
       if (response.status === 409) setBlocked(true);
       if (!response.ok) throw new Error(data.error || 'The project brief could not be saved.');
-      window.location.reload();
+      markWorkspaceSaved(); window.location.reload();
     } catch (error) {
       setMessage(error instanceof Error && error.name !== 'TimeoutError' ? error.message : 'The result could not be confirmed. Reload before retrying.');
       if (error instanceof Error && ['TypeError', 'TimeoutError'].includes(error.name)) setBlocked(true);
@@ -132,7 +136,7 @@ export function ProjectBriefEditor({
         <h3 className="font-heading text-xl font-semibold">Issued brief versions</h3>
         <div className="mt-4 space-y-4">
           {versions.map((version) => (
-            <details key={version.version} className="rounded-xl border border-border p-4">
+            <details id={approvalDomId('brief',String(version.version),version.version)} key={version.version} className="rounded-xl border border-border p-4">
               <summary className="cursor-pointer text-sm font-medium">Version {version.version} · {version.status.replace('_', ' ')}</summary>
               <div className="mt-4 space-y-3 text-sm">
                 <p className="whitespace-pre-wrap"><strong>Objectives:</strong> {version.body.objectives}</p>

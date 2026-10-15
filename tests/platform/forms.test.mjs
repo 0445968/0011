@@ -1,0 +1,41 @@
+import {PGlite} from '@electric-sql/pglite';
+import fs from 'node:fs';
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {randomUUID} from 'node:crypto';
+const migrations=new URL('../../supabase/migrations/',import.meta.url);
+test('Forms directory reads real submissions and requirements; attaching preserves existing revision, review and completion gates',async()=>{
+ const db=new PGlite();try{
+ await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create table auth.users(id uuid primary key,email text);create function auth.uid() returns uuid language sql as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;grant usage on schema public,auth to anon,authenticated,service_role;grant execute on function auth.uid() to authenticated;create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);create table storage.objects(id bigint generated always as identity,bucket_id text,name text,metadata jsonb,unique(bucket_id,name));alter table storage.objects enable row level security;grant usage on schema storage to authenticated,anon;grant select,insert,update,delete on storage.objects to authenticated,anon;grant usage on sequence storage.objects_id_seq to authenticated,anon;`);
+ for(const file of fs.readdirSync(migrations).filter(name=>name.endsWith('.sql')).sort())await db.exec(fs.readFileSync(new URL(file,migrations),'utf8'));
+ const staff=randomUUID(),client=randomUUID(),other=randomUUID(),request=randomUUID(),fresh=randomUUID();
+ await db.query('insert into auth.users(id,email) values($1,$2),($3,$4),($5,$6)',[staff,'staff@example.com',client,'client@example.com',other,'other@example.com']);await db.query('insert into inquiry_staff(user_id) values($1)',[staff]);
+ for(const id of [request,fresh])await db.query('insert into project_inquiries(request_id,payload,payload_hash) values($1,$2,$3)',[id,{name:'Client Person',company:'Sample Company',email:'client@example.com',goals:'Private intake answers'},'a'.repeat(64)]);
+ await db.query("insert into inquiry_proposals(request_id,version,status,body) values($1,1,'accepted','{}')",[request]);
+ await db.query("insert into inquiry_onboarding(request_id,proposal_version,revision,state,body) values($1,1,1,'in_progress','{}')",[request]);
+ await db.query('insert into project_clients(request_id,user_id) values($1,$2)',[request,client]);
+ const actor=async id=>{await db.exec('set role authenticated');await db.query("select set_config('request.jwt.claim.sub',$1,false)",[id]);};
+ const item={itemKey:'custom-form',title:'Discovery questions',owner:'client',itemType:'questionnaire',required:true,dueOn:'2026-11-01',serviceIds:[],phase:'discovery',dependsOn:null,prompt:'Describe your audience.',assessmentSlug:null};
+ await actor(staff);
+ assert.equal((await db.query('select * from staff_forms')).rows.length,2);assert.equal((await db.query('select * from staff_form_targets')).rows.length,1);
+ assert.equal((await db.query('select manage_onboarding_item($1,$2) result',[request,{action:'add',item}])).rows[0].result.result,'saved');
+ await db.query('select manage_onboarding_item($1,$2)',[request,{action:'add',item:{...item,itemKey:'input',title:'Requested details',itemType:'information_request'}}]);
+ await db.query('select manage_onboarding_item($1,$2)',[request,{action:'add',item:{...item,itemKey:'assessment',title:'Brand assessment',itemType:'assessment'}}]);
+ await db.query('select manage_onboarding_item($1,$2)',[request,{action:'add',item:{...item,itemKey:'upload',title:'Upload assets',itemType:'file_upload'}}]);
+ let rows=(await db.query('select * from staff_forms')).rows;assert.equal(rows.length,5);assert.equal(new Set(rows.map(row=>row.form_key)).size,5);assert.ok(!rows.some(row=>row.item_key==='upload'));
+ const record=rows.find(row=>row.item_key===item.itemKey);assert.equal(record.status,'pending');assert.equal(record.has_response,false);assert.ok(!('response' in record));assert.ok(!('payload' in record));assert.equal(record.company_name,'Sample Company');
+ await actor(client);assert.equal((await db.query('select * from staff_forms')).rows.length,0);assert.equal((await db.query('select * from staff_form_targets')).rows.length,0);
+ await assert.rejects(db.query('select manage_onboarding_item($1,$2)',[request,{action:'add',item:{...item,itemKey:'forged'}}]),/Staff authorization/);
+ assert.equal((await db.query('select manage_onboarding_item($1,$2) r',[request,{action:'submit',itemKey:item.itemKey,expectedRevision:1,response:'Our audience is local businesses.'}])).rows[0].r.result,'saved');
+ await actor(staff);rows=(await db.query('select * from staff_forms')).rows;assert.equal(rows.find(row=>row.item_key===item.itemKey).status,'submitted');assert.equal(rows.find(row=>row.item_key===item.itemKey).has_response,true);
+ assert.equal((await db.query('select manage_onboarding_item($1,$2) r',[request,{action:'accept',itemKey:item.itemKey,expectedRevision:1,note:''}])).rows[0].r.result,'conflict');
+ assert.equal((await db.query('select manage_onboarding_item($1,$2) r',[request,{action:'accept',itemKey:item.itemKey,expectedRevision:2,note:'Reviewed'}])).rows[0].r.result,'saved');
+ assert.equal((await db.query('select status from staff_forms where item_key=$1',[item.itemKey])).rows[0].status,'accepted');
+ assert.deepEqual((await db.query('select action from inquiry_onboarding_item_history where item_key=$1 order by id',[item.itemKey])).rows.map(row=>row.action),['add','submit','accept']);
+ await assert.rejects(db.query("update staff_forms set status='accepted'"),/permission denied|cannot update/);
+ await db.exec('reset role');await db.query("update inquiry_onboarding set state='complete' where request_id=$1",[request]);await actor(staff);assert.equal((await db.query('select * from staff_form_targets')).rows.length,0);assert.equal((await db.query('select manage_onboarding_item($1,$2) r',[request,{action:'add',item:{...item,itemKey:'locked'}}])).rows[0].r.result,'locked');
+ await actor(other);assert.equal((await db.query('select * from staff_forms')).rows.length,0);
+ await db.exec('reset role');await db.query('update inquiry_staff set active=false where user_id=$1',[staff]);await actor(staff);assert.equal((await db.query('select * from staff_forms')).rows.length,0);assert.equal((await db.query('select * from staff_form_targets')).rows.length,0);
+ await db.exec('set role anon');await assert.rejects(db.query('select * from staff_forms'),/permission denied/);
+ }finally{await db.close();}
+});

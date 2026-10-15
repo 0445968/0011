@@ -1,8 +1,12 @@
 
 'use client';
+import {milestoneDomId} from '@/lib/calendar/links';
+import {taskDomId} from '@/lib/tasks/links';
+import { useWorkspaceUnsavedChanges } from './workspace/WorkspaceNavigationGuard';
 
 import {
   Fragment,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -56,6 +60,8 @@ type Command =
 type TaskFilter = 'all' | Task['status'];
 
 type Props = {
+  selectedTask?:string;
+  selectedMilestone?:string;
   id: string;
   record: ProjectRecord | null;
   history: ProjectEvent[];
@@ -216,6 +222,8 @@ export function ProjectWorkspace({
   record,
   history,
   gateReady,
+  selectedTask,
+  selectedMilestone,
 }: Props) {
   const router = useRouter();
 
@@ -252,6 +260,20 @@ export function ProjectWorkspace({
   const [expandedTaskId, setExpandedTaskId] =
     useState<string | null>(null);
 
+  useEffect(()=>{if(!selectedTask||!record)return;const index=record.body.tasks.findIndex(task=>task.id===selectedTask);if(index<0)return;setTaskFilter('all');setTaskQuery('');setTaskPage(Math.floor(index/TASK_PAGE_SIZE)+1);setExpandedTaskId(selectedTask);},[selectedTask,record]);
+  useEffect(()=>{if(selectedTask&&expandedTaskId===selectedTask){const row=document.getElementById(taskDomId(selectedTask));row?.focus({preventScroll:true});row?.scrollIntoView({block:'start'});}},[selectedTask,expandedTaskId,taskPage]);
+  useEffect(() => {
+    if (!selectedMilestone || !record) return;
+    const index = record.body.milestones.findIndex(item => item.id === selectedMilestone);
+    if (index >= 0) setMilestonePage(Math.floor(index / MILESTONE_PAGE_SIZE) + 1);
+  }, [selectedMilestone, record]);
+  useEffect(() => {
+    if (!selectedMilestone) return;
+    const row = document.getElementById(milestoneDomId(selectedMilestone));
+    row?.focus({preventScroll:true});
+    row?.scrollIntoView({block:'start'});
+  }, [selectedMilestone, milestonePage]);
+
   /* =======================================================
      STATUS
      ======================================================= */
@@ -268,6 +290,8 @@ export function ProjectWorkspace({
     JSON.stringify(body) !==
       JSON.stringify(record.body)
   );
+
+  const markWorkspaceSaved = useWorkspaceUnsavedChanges(dirty, 'Project work plan', () => command('save'));
 
   const progress = body
     ? projectProgress(body)
@@ -700,7 +724,7 @@ export function ProjectWorkspace({
         );
       }
 
-      window.location.reload();
+      markWorkspaceSaved(); window.location.reload();
     } catch (error) {
       setMessage(
         error instanceof Error &&
@@ -979,7 +1003,10 @@ export function ProjectWorkspace({
                   return (
                     <tr
                       key={milestone.id}
-                      className="hover:bg-muted/20"
+                      id={milestoneDomId(milestone.id)}
+                      tabIndex={-1}
+                      style={{scrollMarginTop:'6rem'}}
+                      className="hover:bg-muted/20 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-ring"
                     >
                       {/* MILESTONE TITLE */}
 
@@ -1167,6 +1194,7 @@ export function ProjectWorkspace({
           }
         />
 
+        <p className="border-b border-border px-3 py-2 text-xs text-muted-foreground">Assign verified staff accounts in Lifecycle → Task ownership. Owner labels here are optional display text.</p>
         {/* SEARCH AND STATUS FILTER */}
 
         <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2.5">
@@ -1238,7 +1266,7 @@ export function ProjectWorkspace({
                   scope="col"
                   className="w-[17%] px-3 py-2 font-medium"
                 >
-                  Owner
+                  Owner label
                 </th>
 
                 <th
@@ -1289,7 +1317,7 @@ export function ProjectWorkspace({
 
                       {/* TASK ROW */}
 
-                      <tr
+                      <tr id={taskDomId(task.id)} tabIndex={-1} style={{scrollMarginTop:'6rem'}}
                         className={
                           expanded
                             ? 'bg-muted/30'

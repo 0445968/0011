@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { onboardingFormDomId, type AttachFormType } from '@/lib/forms/links';
+import { useWorkspaceUnsavedChanges } from './workspace/WorkspaceNavigationGuard';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -69,7 +71,7 @@ function ItemEditor({
   }
 
   return (
-    <article className="rounded-2xl border border-border bg-card p-5">
+    <article id={onboardingFormDomId(item.itemKey)} tabIndex={-1} style={{scrollMarginTop:'6rem'}} className="rounded-2xl border border-border bg-card p-5 focus:outline-none focus:ring-2 focus:ring-ring">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">{item.itemKey}</p>
@@ -170,13 +172,21 @@ function ItemEditor({
   );
 }
 
-export function PersonalizedOnboarding({ id, items, locked }: { id: string; items: OnboardingItem[]; locked: boolean }) {
+export function PersonalizedOnboarding({ id, items, locked, initialType, selectedItem }: { id: string; items: OnboardingItem[]; locked: boolean; initialType?:AttachFormType; selectedItem?:string }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [blocked, setBlocked] = useState(false);
   const [message, setMessage] = useState('');
   const [newTitle, setNewTitle] = useState('');
   const [newPrompt, setNewPrompt] = useState('');
+  const [newType, setNewType] = useState<AttachFormType>(initialType || 'information_request');
+  const markNewFormSaved = useWorkspaceUnsavedChanges(Boolean(newTitle || newPrompt || newType !== (initialType || 'information_request')), 'New onboarding form');
+  useEffect(() => {
+    if (!selectedItem) return;
+    const row = document.getElementById(onboardingFormDomId(selectedItem));
+    row?.focus({preventScroll:true});
+    row?.scrollIntoView({block:'start'});
+  }, [selectedItem]);
 
   async function command(body: Command) {
     if (busy || blocked) return;
@@ -193,8 +203,12 @@ export function PersonalizedOnboarding({ id, items, locked }: { id: string; item
       if (response.status === 409 || response.status >= 500) setBlocked(true);
       if (!response.ok) throw new Error(data.error || 'The onboarding item could not be saved.');
       setMessage('Onboarding requirement saved.');
-      setNewTitle('');
-      setNewPrompt('');
+      if (body.action === 'add') {
+        setNewTitle('');
+        setNewPrompt('');
+        setNewType(initialType || 'information_request');
+        markNewFormSaved();
+      }
       router.refresh();
     } catch (error) {
       setMessage(error instanceof Error && error.name !== 'TimeoutError' ? error.message : 'The result could not be confirmed. Reload before retrying.');
@@ -217,19 +231,23 @@ export function PersonalizedOnboarding({ id, items, locked }: { id: string; item
           <span className="rounded-full bg-muted px-3 py-1.5 text-xs font-medium">{requiredOutstanding} required outstanding</span>
         </div>
 
-        <details className="mt-6 rounded-xl border border-border p-4">
+        <details id="onboarding-add-requirement" open={Boolean(initialType)} className="mt-6 rounded-xl border border-border p-4" style={{scrollMarginTop:'6rem'}}>
           <summary className="cursor-pointer text-sm font-medium">Add a custom requirement</summary>
           <fieldset disabled={locked || busy} className="mt-4 space-y-4">
             <legend className="sr-only">Add custom onboarding requirement</legend>
-            <Input value={newTitle} maxLength={300} onChange={(e) => setNewTitle(e.target.value)} placeholder="Requirement title" />
-            <Textarea value={newPrompt} maxLength={4000} rows={3} onChange={(e) => setNewPrompt(e.target.value)} placeholder="Instructions for the client" />
+            <label htmlFor="new-onboarding-form-type" className="block text-sm">Form type</label>
+            <select id="new-onboarding-form-type" className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm" value={newType} onChange={e=>setNewType(e.target.value as AttachFormType)}><option value="information_request">Information request</option><option value="questionnaire">Questionnaire</option></select>
+            <label htmlFor="new-onboarding-form-title" className="block text-sm">Title</label>
+            <Input id="new-onboarding-form-title" value={newTitle} maxLength={300} onChange={(e) => setNewTitle(e.target.value)} placeholder="Requirement title" />
+            <label htmlFor="new-onboarding-form-prompt" className="block text-sm">Instructions or questions</label>
+            <Textarea id="new-onboarding-form-prompt" value={newPrompt} maxLength={4000} rows={3} onChange={(e) => setNewPrompt(e.target.value)} placeholder="Instructions for the client" />
             <Button type="button" disabled={!newTitle.trim()} onClick={() => command({
               action: 'add',
               item: {
                 itemKey: `custom-${crypto.randomUUID()}`,
                 title: newTitle.trim(),
                 owner: 'client',
-                itemType: 'information_request',
+                itemType: newType,
                 required: true,
                 dueOn: null,
                 serviceIds: [],

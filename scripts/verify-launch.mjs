@@ -51,7 +51,17 @@ function redirectCase(label, fromOrigin, path, toOrigin, toPath, search = '') {
 
 export function launchCases(origins) {
   const { publicOrigin, clientOrigin, staffOrigin } = origins;
+  const staffDirectories = ['/inquiries', '/people', '/companies', '/clients', '/proposals', '/tasks', '/approvals', '/files', '/calendar', '/notifications', '/forms', '/templates', '/services', '/settings'];
+  const staffMutations = ['/api/admin/people', '/api/admin/companies', '/api/admin/templates', '/api/admin/notifications', `/api/admin/projects/${fixtureId}/task-assignment`, `/api/admin/projects/${fixtureId}/files/${fixtureId}/preview`];
+  const staffReads = ['/api/admin/people', '/api/admin/companies', '/api/admin/notifications'];
   return [
+    ...staffDirectories.map(path => ({label: `Staff directory requires authentication ${path}`, origin: staffOrigin, path, status: 307, redirectOrigin: staffOrigin, redirectPath: '/admin/login'})),
+    ...staffReads.map(path => ({label: `Staff read API requires authentication ${path}`, origin: staffOrigin, path, status: 401, jsonError: true, noStore: true})),
+    ...staffMutations.flatMap(path => [
+      {label: `Staff mutation requires authentication ${path}`, origin: staffOrigin, path, method: 'POST', status: 401, jsonError: true, noStore: true},
+      {label: `Staff mutation rejects foreign origin ${path}`, origin: staffOrigin, path, method: 'POST', requestOrigin: foreignOrigin, status: 403, jsonError: true, noStore: true},
+    ]),
+    ...[publicOrigin, clientOrigin].flatMap(origin => staffReads.map(path => ({label: `Staff API hidden from ${origin} ${path}`, origin, path, status: 404, jsonError: true, noStore: true}))),
     { label: 'Public homepage', origin: publicOrigin, path: '/', status: 200, html: true },
     { label: 'Public intake', origin: publicOrigin, path: '/get-started', status: 200, html: true },
     redirectCase('Public login enters client app', publicOrigin, '/login', clientOrigin, '/login', '?source=launch-check'),
@@ -119,8 +129,8 @@ export async function verifyLaunch(origins, { fetchImpl = fetch, log = console.l
       } else if (entry.html) {
         if (!response.headers.get('content-type')?.includes('text/html')) {
           reason = 'expected HTML response';
-        } else if (entry.login && !/<meta\b[^>]*name="robots"[^>]*content="[^"]*noindex/i.test(body)) {
-          reason = 'expected login page to be noindex';
+        } else if (entry.login && (!/<meta\b[^>]*name="robots"[^>]*content="[^"]*noindex/i.test(body) || !/<input\b[^>]*\btype="password"/i.test(body))) {
+          reason = 'expected password sign-in form and noindex metadata';
         }
       } else if (entry.jsonError) {
         if (!response.headers.get('content-type')?.includes('application/json')) {
@@ -128,7 +138,7 @@ export async function verifyLaunch(origins, { fetchImpl = fetch, log = console.l
         } else {
           let payload;
           try { payload = JSON.parse(body); } catch { reason = 'invalid JSON response'; }
-          if (!reason && (!payload || typeof payload.error !== 'string')) reason = 'expected JSON error payload';
+          if (!reason && (!payload || typeof payload.error !== 'string' || Object.keys(payload).some(key => key !== 'error'))) reason = 'expected an error-only response';
         }
       }
 
