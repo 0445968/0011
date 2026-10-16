@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { ArrowUpRight, CalendarDays, Clock3, FileText, MessageSquare, Users } from 'lucide-react';
 import { ProfileImage } from '@/components/profile-images/ProfileImage';
-import { DirectoryPhases, DirectoryProgress, DirectoryStatus } from './DirectoryIndicators';
+import { DirectoryPhases, DirectoryProgress, DirectoryStatus, ProjectTaskStateIcon } from './DirectoryIndicators';
 import type { ProjectEvent, ProjectRecord } from '@/lib/projects/data';
 import type { ProjectDirectoryContext } from '@/lib/projects/directory-types';
 import { projectOverviewSummary } from '@/lib/projects/overview-summary';
@@ -16,14 +16,14 @@ const linkClass = 'inline-flex min-h-[32px] items-center gap-1 text-xs font-medi
 const statusStyles = {
   todo: 'bg-muted text-muted-foreground',
   planned: 'bg-muted text-muted-foreground',
-  doing: 'bg-blue-50 text-blue-800 dark:bg-blue-950 dark:text-blue-200',
-  in_progress: 'bg-blue-50 text-blue-800 dark:bg-blue-950 dark:text-blue-200',
+  doing: 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200',
+  in_progress: 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200',
   blocked: 'bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-200',
   done: 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200',
 };
 const statusLabels = {todo:'To do',planned:'Planned',doing:'In progress',in_progress:'In progress',blocked:'Blocked',done:'Completed'};
 function WorkStatus({status}: {status: keyof typeof statusStyles}) {
-  return <span className={`inline-flex shrink-0 rounded-md px-2 py-1 text-[11px] font-medium ${statusStyles[status]}`}>{statusLabels[status]}</span>;
+  return <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium ${statusStyles[status]}`}><ProjectTaskStateIcon status={status} />{statusLabels[status]}</span>;
 }
 function Panel({title, action, children}: {title:string; action?:ReactNode; children:ReactNode}) {
   return <section className="min-w-0 overflow-hidden rounded-xl border border-border bg-card">
@@ -48,7 +48,7 @@ export function ProjectOverview({record, history, context, today, timezone}: {
   const stamp = (value:string) => {
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? 'Not recorded' : new Intl.DateTimeFormat('en-US', {
-      month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit', timeZone:timezone, timeZoneName:'short',
+      month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit', timeZone:'America/Chicago', timeZoneName:'short',
     }).format(date);
   };
   return <div className="space-y-3">
@@ -74,6 +74,21 @@ export function ProjectOverview({record, history, context, today, timezone}: {
       <Metric label="Milestones completed" value={`${summary.milestoneDone}/${record.body.milestones.length}`} detail="Saved milestone states" />
     </section>
 
+    <Panel title="Project areas">
+      <nav aria-label="Project pages" className="flex flex-wrap gap-2 p-3">
+        {[
+          { label: 'Tasks & milestones', href: `${base}?tab=plan` },
+          { label: 'Lifecycle', href: `${base}?tab=lifecycle` },
+          { label: 'Brief', href: `${base}?tab=brief` },
+          { label: 'Delivery', href: `${base}?tab=delivery` },
+          { label: 'Files', href: `${base}/files` },
+          { label: 'Discussion', href: `${base}/discussion` },
+          { label: 'Access', href: `${base}/access` },
+          { label: 'Publishing', href: `${base}/publish` },
+        ].map(area => <Link key={area.href} href={area.href} className={actionClass}>{area.label}<ArrowUpRight size={12} aria-hidden="true" /></Link>)}
+      </nav>
+    </Panel>
+
     <div className="grid items-start gap-3 xl:grid-cols-[minmax(0,2fr)_minmax(260px,1fr)]">
       <div className="min-w-0 space-y-3">
         <Panel title="Open tasks" action={<Link href={`${base}?tab=plan`} className={linkClass}>All tasks & milestones<ArrowUpRight size={13} aria-hidden /></Link>}>
@@ -85,7 +100,7 @@ export function ProjectOverview({record, history, context, today, timezone}: {
           </div>
           <ul className="divide-y divide-border">{summary.openTasks.slice(0,6).map(task => <li key={task.id} className="flex flex-wrap items-start justify-between gap-2 px-4 py-3">
             <div className="min-w-0 flex-1 basis-40"><Link href={taskHref(record.request_id,task.id)} className="break-words text-xs font-medium hover:underline">{task.title}</Link><p className="mt-1 break-words text-[11px] text-muted-foreground">{task.owner || 'Unassigned'}</p></div>
-            <div className="text-right"><WorkStatus status={task.status} /><p className={`mt-1 text-[11px] ${task.dueOn && task.dueOn < today ? 'font-medium text-amber-800 dark:text-amber-200' : 'text-muted-foreground'}`}>{task.dueOn ? `${task.dueOn}${task.dueOn < today ? ' · Past due' : task.dueOn === today ? ' · Today' : ''}` : 'No due date'}</p></div>
+            <div className="text-right"><WorkStatus status={task.status} /><p className={`mt-1 text-[11px] ${task.dueOn && task.dueOn < today ? 'font-medium text-red-700 dark:text-red-400' : 'text-muted-foreground'}`}>{task.dueOn ? `${task.dueOn}${task.dueOn < today ? ' · Past due' : task.dueOn === today ? ' · Today' : ''}` : 'No due date'}</p></div>
           </li>)}</ul>
           {!summary.openTasks.length && <p className="px-4 py-5 text-xs text-muted-foreground">No open tasks. Add or review work in Tasks & Milestones.</p>}
           {summary.openTasks.length > 6 && <p className="border-t border-border px-4 py-2 text-[11px] text-muted-foreground">Showing 6 of {summary.openTasks.length} open tasks, earliest due dates first.</p>}
@@ -104,20 +119,17 @@ export function ProjectOverview({record, history, context, today, timezone}: {
         <Panel title="Phase & task progress" action={<Link href={`${base}?tab=lifecycle`} className={linkClass}>Lifecycle<ArrowUpRight size={13} aria-hidden /></Link>}>
           <div className="space-y-4 p-4"><DirectoryPhases project={record} context={context} /><div className="border-t border-border pt-3"><p className="mb-2 text-[11px] text-muted-foreground">Task completion</p><DirectoryProgress project={record} /><p className="mt-2 text-[11px] text-muted-foreground">Completed tasks ÷ all tasks. Approval and delivery readiness are managed separately.</p></div></div>
         </Panel>
-        <Panel title="Project record">
-          <dl className="grid grid-cols-2 gap-3 p-4 text-xs">{[
-            ['Owner',record.body.owner || 'Unassigned'],['Activated',stamp(record.activated_at)],['Last updated',stamp(record.updated_at)],['Project revision',String(record.revision)],['Accepted proposal',`Version ${record.proposal_version}`],['Deadline timezone',timezone],
-          ].map(([label,value]) => <div key={label}><dt className="text-[11px] text-muted-foreground">{label}</dt><dd className="mt-0.5 break-words font-medium">{value}</dd></div>)}</dl>
-          <div className="border-t border-border px-4 py-2"><Link className={linkClass} href={`/leads/${record.request_id}`}>Source inquiry<ArrowUpRight size={13} aria-hidden /></Link></div>
-        </Panel>
-      <Panel title="Project notes" action={<Link href={`${base}?tab=plan`} className={linkClass}>Edit notes<ArrowUpRight size={13} aria-hidden /></Link>}>
-        <div tabIndex={0} aria-label="Project notes" className="max-h-40 overflow-auto p-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"><p className="whitespace-pre-wrap break-words text-xs leading-relaxed text-muted-foreground">{record.body.notes || 'No internal project notes yet.'}</p></div>
-      </Panel>
-      <Panel title="Recent project history" action={<Link href={`${base}?tab=plan`} className={linkClass}>Project history<ArrowUpRight size={13} aria-hidden /></Link>}>
+        <Panel title="Recent project history" action={<Link href={`${base}?tab=plan`} className={linkClass}>Project history<ArrowUpRight size={13} aria-hidden /></Link>}>
         <ol tabIndex={0} aria-label="Recent project events" className="max-h-72 divide-y divide-border overflow-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring">{history.slice(0,5).map(event => <li key={event.id} className="flex items-start gap-2.5 px-4 py-3"><Clock3 size={14} aria-hidden className="mt-0.5 shrink-0 text-muted-foreground" /><div className="min-w-0"><p className="break-words text-xs font-medium capitalize">{event.action.replaceAll('_',' ')}</p><time dateTime={event.created_at} className="mt-1 block text-[11px] text-muted-foreground">{stamp(event.created_at)}</time>{event.reason && <p className="mt-1 break-words text-xs text-muted-foreground">{event.reason}</p>}</div></li>)}</ol>
         {!history.length && <p className="px-4 py-5 text-xs text-muted-foreground">No recorded project history.</p>}
         {history.length > 5 && <p className="border-t border-border px-4 py-2 text-[11px] text-muted-foreground">Showing the 5 latest project events.</p>}
       </Panel>
+        <Panel title="Project record">
+          <dl className="grid grid-cols-2 gap-3 p-4 text-xs">{[
+            ['Owner',record.body.owner || 'Unassigned'],['Activated',stamp(record.activated_at)],['Last updated (Central)',stamp(record.updated_at)],['Project revision',String(record.revision)],['Accepted proposal',`Version ${record.proposal_version}`],['Deadline timezone',timezone],
+          ].map(([label,value]) => <div key={label}><dt className="text-[11px] text-muted-foreground">{label}</dt><dd className="mt-0.5 break-words font-medium">{value}</dd></div>)}</dl>
+          <div className="border-t border-border px-4 py-2"><Link className={linkClass} href={`/leads/${record.request_id}`}>Source inquiry<ArrowUpRight size={13} aria-hidden /></Link></div>
+        </Panel>
       </div>
     </div>
   </div>;

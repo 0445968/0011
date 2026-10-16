@@ -2,7 +2,7 @@
 'use client';
 import {milestoneDomId} from '@/lib/calendar/links';
 import {taskDomId} from '@/lib/tasks/links';
-import { DirectoryProgress, DirectoryStatus } from './projects/DirectoryIndicators';
+import { DirectoryProgress, DirectoryStatus, ProjectTaskStateIcon } from './projects/DirectoryIndicators';
 import { useWorkspaceUnsavedChanges } from './workspace/WorkspaceNavigationGuard';
 
 import {
@@ -159,7 +159,7 @@ function CompactSelect({
         }
         className={`
           ${inputClass}
-          ${status ? value === 'done' ? '!border-emerald-200 !bg-emerald-50 !text-emerald-800 dark:!border-emerald-800 dark:!bg-emerald-950 dark:!text-emerald-200' : value === 'blocked' ? '!border-amber-200 !bg-amber-50 !text-amber-900 dark:!border-amber-800 dark:!bg-amber-950 dark:!text-amber-200' : value === 'doing' || value === 'in_progress' ? '!border-blue-200 !bg-blue-50 !text-blue-800 dark:!border-blue-800 dark:!bg-blue-950 dark:!text-blue-200' : '' : ''}
+          ${status ? value === 'done' ? '!border-emerald-200 !bg-emerald-50 !text-emerald-800 dark:!border-emerald-800 dark:!bg-emerald-950 dark:!text-emerald-200' : value === 'blocked' ? '!border-amber-200 !bg-amber-50 !text-amber-900 dark:!border-amber-800 dark:!bg-amber-950 dark:!text-amber-200' : value === 'doing' || value === 'in_progress' ? '!border-amber-300 !bg-amber-50 !text-amber-800 dark:!border-amber-700 dark:!bg-amber-950 dark:!text-amber-200' : '' : ''}
           appearance-none
           pl-2.5
           pr-9
@@ -238,6 +238,9 @@ export function ProjectWorkspace({
     ProjectBody | undefined
   >(record?.body);
 
+  const [savedBody, setSavedBody] = useState<ProjectBody | undefined>(record?.body);
+  const [savedRevision, setSavedRevision] = useState(record?.revision ?? 0);
+
   const [reason, setReason] = useState('');
 
   const [busy, setBusy] = useState(false);
@@ -291,7 +294,7 @@ export function ProjectWorkspace({
     record &&
     body &&
     JSON.stringify(body) !==
-      JSON.stringify(record.body)
+      JSON.stringify(savedBody)
   );
 
   const markWorkspaceSaved = useWorkspaceUnsavedChanges(dirty, 'Project work plan', () => command('save'));
@@ -686,7 +689,7 @@ export function ProjectWorkspace({
           body: JSON.stringify({
             action,
             expectedRevision:
-              record?.revision ?? 0,
+              savedRevision,
 
             ...(action === 'save'
               ? { body }
@@ -723,7 +726,20 @@ export function ProjectWorkspace({
         );
       }
 
-      markWorkspaceSaved(); window.location.reload();
+      if (action === 'save') {
+        if (!body || !Number.isInteger(result.revision) || result.revision <= savedRevision) {
+          setBlocked(true);
+          throw new Error('The save result could not be verified. Your edits are retained; reload before retrying.');
+        }
+        setSavedBody(body);
+        setSavedRevision(result.revision);
+        markWorkspaceSaved();
+        setMessage('All work-plan changes saved.');
+        router.refresh();
+      } else {
+        markWorkspaceSaved();
+        window.location.reload();
+      }
     } catch (error) {
       setMessage(
         error instanceof Error &&
@@ -995,6 +1011,8 @@ export function ProjectWorkspace({
                         {/* STATUS */}
 
                         <td className="px-3 py-2">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <ProjectTaskStateIcon status={task.status} />
                           <CompactSelect
                             status
                             label={`Status for ${task.title}`}
@@ -1023,6 +1041,7 @@ export function ProjectWorkspace({
                               Done
                             </option>
                           </CompactSelect>
+                          </div>
                         </td>
 
                         {/* DUE DATE */}
@@ -1033,7 +1052,7 @@ export function ProjectWorkspace({
                             aria-label={`Due date for ${task.title}`}
                             className={
                               overdue
-                                ? `${inputClass} border-red-500/60`
+                                ? `${inputClass} !border-red-500/60 !text-red-700 dark:!text-red-300`
                                 : inputClass
                             }
                             value={
