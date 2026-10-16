@@ -3,7 +3,7 @@
 import {milestoneDomId} from '@/lib/calendar/links';
 import {taskDomId} from '@/lib/tasks/links';
 import { DirectoryProgress, DirectoryStatus, ProjectTaskStateIcon } from './projects/DirectoryIndicators';
-import { ProjectMilestoneBoard } from './projects/ProjectMilestoneBoard';
+import { ProjectMilestoneBoard } from './projects/ProjectMilestoneBoardV2';
 import { useProjectWorkDraft } from './projects/useProjectWorkDraft';
 import { useWorkspaceUnsavedChanges } from './workspace/WorkspaceNavigationGuard';
 

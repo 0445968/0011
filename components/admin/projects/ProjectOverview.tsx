@@ -7,7 +7,7 @@ import type { ProjectEvent, ProjectRecord } from '@/lib/projects/data';
 import type { ProjectDirectoryContext } from '@/lib/projects/directory-types';
 import { projectOverviewSummary } from '@/lib/projects/overview-summary';
 import { taskHref } from '@/lib/tasks/links';
-import { calendarHref } from '@/lib/calendar/links';
+import { ProjectMilestonePreviews } from './ProjectMilestonePreviews';
 
 export type OverviewRecord = Pick<ProjectRecord, 'request_id' | 'state' | 'body' | 'updated_at' | 'activated_at' | 'revision' | 'proposal_version'>;
 
@@ -74,6 +74,8 @@ export function ProjectOverview({record, history, context, today, timezone}: {
       <Metric label="Milestones completed" value={`${summary.milestoneDone}/${record.body.milestones.length}`} detail="Saved milestone states" />
     </section>
 
+    <ProjectMilestonePreviews id={record.request_id} body={record.body} />
+
     <Panel title="Project areas">
       <nav aria-label="Project pages" className="flex flex-wrap gap-2 p-3">
         {[
@@ -104,14 +106,6 @@ export function ProjectOverview({record, history, context, today, timezone}: {
           </li>)}</ul>
           {!summary.openTasks.length && <p className="px-4 py-5 text-xs text-muted-foreground">No open tasks. Add or review work in Tasks & Milestones.</p>}
           {summary.openTasks.length > 6 && <p className="border-t border-border px-4 py-2 text-[11px] text-muted-foreground">Showing 6 of {summary.openTasks.length} open tasks, earliest due dates first.</p>}
-        </Panel>
-
-        <Panel title="Milestones" action={<Link href={`${base}?tab=plan`} className={linkClass}>Manage<ArrowUpRight size={13} aria-hidden /></Link>}>
-          <ul className="divide-y divide-border">{summary.milestones.slice(0,5).map(milestone => <li key={milestone.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
-            <div className="min-w-0 flex-1 basis-40"><Link className="break-words text-xs font-medium hover:underline" href={calendarHref({event_type:'milestone',request_id:record.request_id,source_id:milestone.id})}>{milestone.title}</Link><p className="mt-1 text-[11px] text-muted-foreground">{milestone.dueOn || 'No due date'}</p></div><WorkStatus status={milestone.status} />
-          </li>)}</ul>
-          {!summary.milestones.length && <p className="px-4 py-5 text-xs text-muted-foreground">No milestones yet.</p>}
-          {summary.milestones.length > 5 && <p className="border-t border-border px-4 py-2 text-[11px] text-muted-foreground">Showing 5 of {summary.milestones.length}; incomplete milestones first.</p>}
         </Panel>
       </div>
 
