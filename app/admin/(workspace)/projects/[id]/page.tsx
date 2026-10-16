@@ -1,13 +1,8 @@
 import {ApprovalFocus} from '@/components/admin/approvals/ApprovalFocus';
 
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { z } from 'zod';
 
-import {
-  ArrowUpRight,
-  CheckCircle2,
-} from 'lucide-react';
 
 import {
   WorkspaceRecordDetails,
@@ -34,7 +29,6 @@ import {
 } from '@/lib/admin/auth';
 
 import {
-  formatDate,
   getInquiry,
 } from '@/lib/admin/inquiries';
 
@@ -66,9 +60,9 @@ import {
   getProjectLifecycle,
 } from '@/lib/projects/lifecycle-data';
 
-import {
-  projectProgress,
-} from '@/lib/projects/schema';
+import { ProjectOverview } from '@/components/admin/projects/ProjectOverview';
+import { getProjectDirectoryContext } from '@/lib/projects/directory-context';
+import { taskToday } from '@/lib/tasks/links';
 
 import {
   getServiceBlueprint,
@@ -94,72 +88,6 @@ const ALL_TABS: Tab[] = [
 ];
 
 /* =========================================================
-   SUMMARY CARD
-   ========================================================= */
-
-function Stat({
-  label,
-  value,
-  detail,
-}: {
-  label: string;
-  value: string;
-  detail: string;
-}) {
-  return (
-    <div
-      className="
-        min-w-0
-        rounded-xl
-        border
-        border-border
-        bg-card
-        p-3
-        sm:p-4
-      "
-    >
-      <p
-        className="
-          font-mono
-          text-[10px]
-          uppercase
-          tracking-wider
-          text-muted-foreground
-        "
-      >
-        {label}
-      </p>
-
-      <p
-        className="
-          mt-1
-          truncate
-          text-xl
-          font-semibold
-          tabular-nums
-          text-foreground
-        "
-        title={value}
-      >
-        {value}
-      </p>
-
-      <p
-        className="
-          mt-1
-          truncate
-          text-[11px]
-          text-muted-foreground
-        "
-        title={detail}
-      >
-        {detail}
-      </p>
-    </div>
-  );
-}
-
-/* =========================================================
    PROJECT DETAIL PAGE
    ========================================================= */
 
@@ -174,7 +102,7 @@ export default async function ProjectPage({
      AUTHENTICATION
      ======================================================= */
 
-  const { client } = await requireStaff();
+  const { client, user } = await requireStaff();
 
   if (
     !z.string().uuid().safeParse(
@@ -257,16 +185,6 @@ export default async function ProjectPage({
 
   const record = data.record;
 
-  const base = `/projects/${params.id}`;
-
-  const owner =
-    record?.body.owner ||
-    'Unassigned';
-
-  const progress = record
-    ? projectProgress(record.body)
-    : null;
-
   /* =======================================================
      COMPANY NAME
      ======================================================= */
@@ -320,39 +238,6 @@ export default async function ProjectPage({
       : primaryServiceName
         ? `${primaryServiceName} Project`
         : 'Custom Project';
-
-  /* =======================================================
-     TASKS AND MILESTONES
-     ======================================================= */
-
-  const openTasks =
-    record?.body.tasks
-      .filter(
-        (task) =>
-          task.status !== 'done'
-      )
-      .sort(
-        (a, b) =>
-          (
-            a.dueOn ??
-            '9999-12-31'
-          ).localeCompare(
-            b.dueOn ??
-            '9999-12-31'
-          )
-      ) ?? [];
-
-  const blocked =
-    openTasks.filter(
-      (task) =>
-        task.status === 'blocked'
-    ).length;
-
-  const milestoneDone =
-    record?.body.milestones.filter(
-      (milestone) =>
-        milestone.status === 'done'
-    ).length ?? 0;
 
   /* =======================================================
      SELECTED PROJECT SECTION
@@ -424,6 +309,19 @@ export default async function ProjectPage({
         )
       : null;
 
+  // Read-only enrichment is loaded for Overview only. Editors keep their existing
+  // source data, keys, revision checks and action handlers.
+  let overview = null;
+  if (record && tab === 'overview') {
+    const [contexts, preferences] = await Promise.all([
+      getProjectDirectoryContext(client, [params.id]),
+      client.from('staff_notification_preferences').select('timezone').eq('user_id', user.id).maybeSingle(),
+    ]);
+    if (preferences.error) throw new Error('Project timezone preferences could not load.');
+    const day = taskToday(preferences.data?.timezone || 'America/Chicago');
+    overview = { context: contexts[params.id], ...day };
+  }
+
   /* =======================================================
      RENDER
      ======================================================= */
@@ -450,430 +348,15 @@ export default async function ProjectPage({
           OVERVIEW
           =================================================== */}
 
-      {tab === 'overview' &&
-        record &&
-        progress && (
-          <div className="space-y-4">
-
-            {/* PROJECT METADATA */}
-
-            <div
-              className="
-                flex
-                flex-wrap
-                items-center
-                gap-x-5
-                gap-y-1.5
-                text-[11px]
-                text-muted-foreground
-              "
-            >
-              <span>
-                Project owner:{' '}
-                <strong className="font-semibold text-foreground">
-                  {owner}
-                </strong>
-              </span>
-
-              <span>
-                Last updated:{' '}
-                {formatDate(
-                  record.updated_at
-                )}
-              </span>
-            </div>
-
-            {/* SUMMARY METRICS */}
-
-            <div
-              className="
-                grid
-                gap-3
-                sm:grid-cols-2
-                lg:grid-cols-4
-              "
-            >
-              <Stat
-                label="Tasks completed"
-                value={`${progress.done}/${progress.total}`}
-                detail={`${progress.percent}% complete`}
-              />
-
-              <Stat
-                label="Open tasks"
-                value={String(
-                  openTasks.length
-                )}
-                detail={`${blocked} blocked`}
-              />
-
-              <Stat
-                label="Milestones"
-                value={`${milestoneDone}/${record.body.milestones.length}`}
-                detail="Completed milestones"
-              />
-
-              <Stat
-                label="Next action"
-                value={
-                  openTasks[0]?.dueOn ||
-                  '—'
-                }
-                detail={
-                  openTasks[0]?.title ||
-                  'No pending tasks'
-                }
-              />
-            </div>
-
-            {/* TASKS + MILESTONES GRID */}
-
-            <div
-              className="
-                grid
-                items-start
-                gap-4
-                lg:grid-cols-2
-              "
-            >
-              {/* OPEN TASKS */}
-
-              <section
-                className="
-                  min-w-0
-                  overflow-hidden
-                  rounded-xl
-                  border
-                  border-border
-                  bg-card
-                "
-              >
-                <div
-                  className="
-                    flex
-                    items-center
-                    justify-between
-                    gap-3
-                    border-b
-                    border-border
-                    px-4
-                    py-3
-                  "
-                >
-                  <h2 className="text-sm font-semibold">
-                    Open tasks
-                  </h2>
-
-                  <Link
-                    href={`${base}?tab=plan`}
-                    className="
-                      inline-flex
-                      shrink-0
-                      items-center
-                      gap-1
-                      text-xs
-                      font-medium
-                      text-muted-foreground
-                      hover:text-foreground
-                    "
-                  >
-                    Edit tasks
-
-                    <ArrowUpRight
-                      size={13}
-                    />
-                  </Link>
-                </div>
-
-                {openTasks.length ? (
-                  <ul className="divide-y divide-border">
-                    {openTasks
-                      .slice(0, 6)
-                      .map(
-                        (task) => (
-                          <li
-                            key={task.id}
-                            className="
-                              flex
-                              items-center
-                              justify-between
-                              gap-3
-                              px-4
-                              py-3
-                              text-xs
-                            "
-                          >
-                            <span
-                              title={
-                                task.title
-                              }
-                              className="
-                                min-w-0
-                                truncate
-                                font-medium
-                              "
-                            >
-                              {
-                                task.title
-                              }
-                            </span>
-
-                            <span
-                              className="
-                                shrink-0
-                                text-muted-foreground
-                              "
-                            >
-                              {task.dueOn ||
-                                'No due date'}
-                            </span>
-                          </li>
-                        )
-                      )}
-                  </ul>
-                ) : (
-                  <p
-                    className="
-                      px-4
-                      py-5
-                      text-xs
-                      text-muted-foreground
-                    "
-                  >
-                    No open tasks.
-                  </p>
-                )}
-              </section>
-
-              {/* MILESTONES */}
-
-              <section
-                className="
-                  min-w-0
-                  overflow-hidden
-                  rounded-xl
-                  border
-                  border-border
-                  bg-card
-                "
-              >
-                <div
-                  className="
-                    flex
-                    items-center
-                    justify-between
-                    gap-3
-                    border-b
-                    border-border
-                    px-4
-                    py-3
-                  "
-                >
-                  <h2 className="text-sm font-semibold">
-                    Milestones
-                  </h2>
-
-                  <Link
-                    href={`${base}?tab=plan`}
-                    className="
-                      inline-flex
-                      shrink-0
-                      items-center
-                      gap-1
-                      text-xs
-                      font-medium
-                      text-muted-foreground
-                      hover:text-foreground
-                    "
-                  >
-                    Edit milestones
-
-                    <ArrowUpRight
-                      size={13}
-                    />
-                  </Link>
-                </div>
-
-                {record.body.milestones.length ? (
-                  <ul className="divide-y divide-border">
-                    {record.body.milestones
-                      .slice(0, 6)
-                      .map(
-                        (milestone) => (
-                          <li
-                            key={
-                              milestone.id
-                            }
-                            className="
-                              flex
-                              items-center
-                              justify-between
-                              gap-3
-                              px-4
-                              py-3
-                              text-xs
-                            "
-                          >
-                            <span
-                              title={
-                                milestone.title
-                              }
-                              className="
-                                min-w-0
-                                truncate
-                                font-medium
-                              "
-                            >
-                              {
-                                milestone.title
-                              }
-                            </span>
-
-                            <span
-                              className="
-                                flex
-                                shrink-0
-                                items-center
-                                gap-1
-                                text-muted-foreground
-                              "
-                            >
-                              {milestone.status ===
-                                'done' && (
-                                <CheckCircle2
-                                  size={13}
-                                />
-                              )}
-
-                              {milestone.status.replaceAll(
-                                '_',
-                                ' '
-                              )}
-                            </span>
-                          </li>
-                        )
-                      )}
-                  </ul>
-                ) : (
-                  <p className="px-4 py-5 text-xs text-muted-foreground">
-                    No milestones yet.
-                  </p>
-                )}
-              </section>
-            </div>
-
-            {/* PROJECT NOTES AND HISTORY */}
-
-            {(
-              record.body.notes ||
-              data.history.length > 0
-            ) && (
-              <div
-                className="
-                  grid
-                  items-start
-                  gap-3
-                  lg:grid-cols-2
-                "
-              >
-                {record.body.notes && (
-                  <details
-                    className="
-                      rounded-xl
-                      border
-                      border-border
-                      bg-card
-                      p-4
-                    "
-                  >
-                    <summary
-                      className="
-                        cursor-pointer
-                        text-xs
-                        font-semibold
-                      "
-                    >
-                      Project notes
-                    </summary>
-
-                    <p
-                      className="
-                        mt-3
-                        whitespace-pre-wrap
-                        break-words
-                        text-xs
-                        text-muted-foreground
-                      "
-                    >
-                      {
-                        record.body.notes
-                      }
-                    </p>
-                  </details>
-                )}
-
-                {data.history.length > 0 && (
-                  <details
-                    className="
-                      rounded-xl
-                      border
-                      border-border
-                      bg-card
-                      p-4
-                    "
-                  >
-                    <summary
-                      className="
-                        cursor-pointer
-                        text-xs
-                        font-semibold
-                      "
-                    >
-                      Recent project history
-                    </summary>
-
-                    <ul
-                      className="
-                        mt-3
-                        divide-y
-                        divide-border
-                      "
-                    >
-                      {data.history
-                        .slice(0, 5)
-                        .map(
-                          (event) => (
-                            <li
-                              key={
-                                event.id
-                              }
-                              className="
-                                py-2
-                                text-xs
-                              "
-                            >
-                              <span className="font-medium capitalize">
-                                {event.action.replaceAll(
-                                  '_',
-                                  ' '
-                                )}
-                              </span>
-
-                              <span className="ml-2 text-muted-foreground">
-                                {formatDate(
-                                  event.created_at
-                                )}
-                              </span>
-                            </li>
-                          )
-                        )}
-                    </ul>
-                  </details>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+      {tab === 'overview' && record && overview && (
+        <ProjectOverview
+          record={record}
+          history={data.history}
+          context={overview.context}
+          today={overview.today}
+          timezone={overview.timezone}
+        />
+      )}
 
       {/* ===================================================
           TASKS & MILESTONES
