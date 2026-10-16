@@ -3,6 +3,7 @@
 import {milestoneDomId} from '@/lib/calendar/links';
 import {taskDomId} from '@/lib/tasks/links';
 import { DirectoryProgress, DirectoryStatus, ProjectTaskStateIcon } from './projects/DirectoryIndicators';
+import { ProjectMilestoneBoard } from './projects/ProjectMilestoneBoard';
 import { useProjectWorkDraft } from './projects/useProjectWorkDraft';
 import { useWorkspaceUnsavedChanges } from './workspace/WorkspaceNavigationGuard';
 
@@ -476,7 +477,7 @@ export function ProjectWorkspace({
      ADD TASK
      ======================================================= */
 
-  function addTask() {
+  function addTask(milestoneId: string | null = null) {
     if (
       !body ||
       body.tasks.length >= 100
@@ -490,7 +491,7 @@ export function ProjectWorkspace({
       owner: '',
       dueOn: null,
       status: 'todo',
-      milestoneId: null,
+      milestoneId,
       notes: '',
     };
 
@@ -510,6 +511,13 @@ export function ProjectWorkspace({
     );
 
     setExpandedTaskId(task.id);
+  }
+
+  function bulkMilestoneTasks(milestoneId: string, status: 'done' | 'todo') {
+    setBody(previous => previous ? {
+      ...previous,
+      tasks: previous.tasks.map(task => task.milestoneId === milestoneId ? { ...task, status } : task),
+    } : previous);
   }
 
   /* =======================================================
@@ -880,6 +888,21 @@ export function ProjectWorkspace({
         ].map(([label,value]) => <div key={label} className="rounded-xl border border-border bg-card p-3"><p className="text-[11px] text-muted-foreground">{label}</p><p className="mt-1 text-xl font-semibold tabular-nums">{value}</p></div>)}
       </section>
 
+      <ProjectMilestoneBoard
+        id={id}
+        revision={savedRevision}
+        body={body}
+        disabled={locked}
+        dirty={dirty}
+        sidecarReady={drafts.ready && !drafts.recoverable && !drafts.conflict}
+        onTaskChange={editTask}
+        onMilestoneChange={editMilestone}
+        onAddTask={addTask}
+        onBulkTasks={bulkMilestoneTasks}
+      />
+
+      <details className="rounded-xl border border-border bg-card" open={Boolean(selectedTask || selectedMilestone)}>
+        <summary className="cursor-pointer p-3 text-sm font-semibold">Advanced work-plan editor · notes, owners, removal, and detailed controls</summary>
       <div className="grid items-start gap-3 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-w-0">
       <section className="min-w-0 rounded-xl border border-border bg-card">
@@ -895,7 +918,7 @@ export function ProjectWorkspace({
                 locked ||
                 body.tasks.length >= 100
               }
-              onClick={addTask}
+              onClick={() => addTask()}
             >
               <Plus size={14} />
               Add task
@@ -1466,6 +1489,7 @@ export function ProjectWorkspace({
 
         </div>
       </div>
+      </details>
 
       {/* ===============================================
           PROJECT DECISIONS
