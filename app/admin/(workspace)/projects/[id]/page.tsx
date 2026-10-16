@@ -62,6 +62,7 @@ import {
 
 import { ProjectOverview } from '@/components/admin/projects/ProjectOverview';
 import { getProjectDirectoryContext } from '@/lib/projects/directory-context';
+import { getProjectOverviewExtras } from '@/lib/projects/overview-data';
 import { taskToday } from '@/lib/tasks/links';
 
 import {
@@ -313,13 +314,14 @@ export default async function ProjectPage({
   // source data, keys, revision checks and action handlers.
   let overview = null;
   if (record && tab === 'overview') {
-    const [contexts, preferences] = await Promise.all([
+    const [contexts, preferences, extras] = await Promise.all([
       getProjectDirectoryContext(client, [params.id]),
       client.from('staff_notification_preferences').select('timezone').eq('user_id', user.id).maybeSingle(),
+      getProjectOverviewExtras(client, params.id),
     ]);
     if (preferences.error) throw new Error('Project timezone preferences could not load.');
     const day = taskToday(preferences.data?.timezone || 'America/Chicago');
-    overview = { context: contexts[params.id], ...day };
+    overview = { context: contexts[params.id], ...day, ...extras };
   }
 
   /* =======================================================
@@ -337,7 +339,7 @@ export default async function ProjectPage({
         kind="project"
         id={params.id}
         title={companyName}
-        recordType={projectType}
+        recordType={record?.body.title || projectType}
         status={
           record?.state ??
           'Not activated'
@@ -355,6 +357,8 @@ export default async function ProjectPage({
           context={overview.context}
           today={overview.today}
           timezone={overview.timezone}
+          members={overview.members}
+          milestonePhases={overview.milestonePhases}
         />
       )}
 

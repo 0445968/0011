@@ -7,6 +7,9 @@ import type { ProjectEvent, ProjectRecord } from '@/lib/projects/data';
 import type { ProjectDirectoryContext } from '@/lib/projects/directory-types';
 import { projectOverviewSummary } from '@/lib/projects/overview-summary';
 import { taskHref } from '@/lib/tasks/links';
+import { directoryProgress } from '@/lib/projects/directory-progress';
+import type { MilestonePhaseLink, ProjectRosterMember } from '@/lib/projects/overview-data';
+import { ProjectMemberStack } from './ProjectMemberStack';
 import { ProjectMilestonePreviews } from './ProjectMilestonePreviews';
 
 export type OverviewRecord = Pick<ProjectRecord, 'request_id' | 'state' | 'body' | 'updated_at' | 'activated_at' | 'revision' | 'proposal_version'>;
@@ -35,15 +38,20 @@ function Metric({label, value, detail}: {label:string; value:string; detail:stri
   return <div className="min-w-0 rounded-xl border border-border bg-card px-4 py-3"><p className="text-[11px] text-muted-foreground">{label}</p><p className="mt-1 text-xl font-semibold tabular-nums">{value}</p><p className="mt-1 text-[11px] text-muted-foreground">{detail}</p></div>;
 }
 
-export function ProjectOverview({record, history, context, today, timezone}: {
+export function ProjectOverview({record, history, context, today, timezone, members, milestonePhases}: {
   record: OverviewRecord;
   history: ProjectEvent[];
   context?: ProjectDirectoryContext;
   today: string;
   timezone: string;
+  members: ProjectRosterMember[];
+  milestonePhases: MilestonePhaseLink[];
 }) {
   const base = `/projects/${record.request_id}`;
   const summary = projectOverviewSummary(record.body, today);
+  const progress = directoryProgress(record.body, context?.taskPhases ?? []);
+  const activePhases = progress.activePhases.map(item => item.phase);
+  if (context?.selectedPhase && !activePhases.includes(context.selectedPhase)) activePhases.unshift(context.selectedPhase);
   const name = context?.company?.name || record.body.title;
   const stamp = (value:string) => {
     const date = new Date(value);
@@ -57,14 +65,12 @@ export function ProjectOverview({record, history, context, today, timezone}: {
         <ProfileImage kind="company" subject={context?.company?.id || record.request_id} name={name} path={context?.company?.logoPath} size="h-12 w-12" />
         <div className="min-w-0"><h1 className="break-words text-lg font-semibold tracking-tight sm:text-xl">{name}</h1>
           <p className="mt-1 break-words text-xs text-muted-foreground">{context?.company ? record.body.title : 'Company not assigned'}</p>
-          <div className="mt-2"><DirectoryStatus state={record.state} /></div>
         </div>
       </div>
-      <nav aria-label="Project resources" className="flex flex-wrap items-start gap-2 self-start">
-        <Link href={`${base}/files`} className={actionClass}><FileText size={14} aria-hidden />Files</Link>
-        <Link href={`${base}/discussion`} className={actionClass}><MessageSquare size={14} aria-hidden />Discussion</Link>
-        <Link href={`${base}/access`} className={actionClass}><Users size={14} aria-hidden />Access</Link>
-      </nav>
+      <div className="flex flex-col items-start gap-2 self-start lg:items-end">
+        <DirectoryStatus state={record.state} />
+        <ProjectMemberStack members={members} />
+      </div>
     </header>
 
     <section aria-label="Project work summary" className="grid grid-cols-2 gap-2 xl:grid-cols-4">
@@ -74,7 +80,8 @@ export function ProjectOverview({record, history, context, today, timezone}: {
       <Metric label="Milestones completed" value={`${summary.milestoneDone}/${record.body.milestones.length}`} detail="Saved milestone states" />
     </section>
 
-    <ProjectMilestonePreviews id={record.request_id} body={record.body} />
+    <ProjectMilestonePreviews id={record.request_id} body={record.body} members={members}
+      activePhases={activePhases} milestonePhases={milestonePhases} />
 
     <Panel title="Project areas">
       <nav aria-label="Project pages" className="flex flex-wrap gap-2 p-3">
