@@ -12,6 +12,7 @@ import { activePhaseMilestones } from '@/lib/projects/overview-milestones';
 import { calendarHref } from '@/lib/calendar/links';
 import { ProjectTaskStateIcon } from './DirectoryIndicators';
 import { ProjectMemberStack } from './ProjectMemberStack';
+import { useProjectPhaseStatuses } from './useProjectPhaseStatuses';
 
 export function ProjectMilestonePreviews({ id, body, activePhases, milestonePhases, members }: {
   id: string;
@@ -21,8 +22,9 @@ export function ProjectMilestonePreviews({ id, body, activePhases, milestonePhas
   members: ProjectRosterMember[];
 }) {
   const carousel = useRef<HTMLDivElement>(null);
+  const phases = useProjectPhaseStatuses(id);
   // Preserve milestone order within each status; finished milestones always move right.
-  const visible = activePhaseMilestones(body, milestonePhases, activePhases);
+  const visible = phases.states ? activePhaseMilestones(body, milestonePhases, activePhases, phases.states) : [];
 
   const move = (direction: -1 | 1) => {
     carousel.current?.scrollBy({ left: 320 * direction, behavior: 'smooth' });
@@ -42,6 +44,8 @@ export function ProjectMilestonePreviews({ id, body, activePhases, milestonePhas
         </Link>
       </div>
     </div>
+    {phases.error && <p role="alert" className="text-xs text-red-600">{phases.error} The saved phase statuses could not be loaded.</p>}
+    {!phases.states && !phases.error && <p role="status" className="text-xs text-muted-foreground">Loading saved phase milestones…</p>}
     {visible.length ? <div ref={carousel} className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3" role="list">
       {visible.map(milestone => {
         const progress = milestoneStats(body, milestone.id);
@@ -82,8 +86,8 @@ export function ProjectMilestonePreviews({ id, body, activePhases, milestonePhas
           </div>
         </article>;
       })}
-    </div> : <div className="rounded-xl border border-dashed border-border px-4 py-5 text-xs text-muted-foreground">
-      No milestones are linked to the current or actively worked phases. Assign phases in Tasks & Milestones to display them here.
+    </div> : phases.states && <div className="rounded-xl border border-dashed border-border px-4 py-5 text-xs text-muted-foreground">
+      No milestones are linked to active phases or approved historical phase milestones. Assign phases in Tasks & Milestones to display them here.
     </div>}
   </section>;
 }

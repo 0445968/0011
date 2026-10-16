@@ -10,6 +10,9 @@ import { milestoneStats, nextStatus, workStatusOrder, milestoneStatusOrder, days
 import { taskToday } from '@/lib/tasks/links';
 import type { ProjectHierarchyResponse } from '@/lib/projects/hierarchy-schema';
 import { useProjectHierarchy } from './useProjectHierarchy';
+import { ProjectManagersButton, TaskMemberPicker, useProjectAssignments } from './ProjectAssignments';
+import { ProjectPhaseCards } from './ProjectPhaseCards';
+import { expectedMilestoneStatus } from '@/lib/projects/phase-status';
 import { ProjectTaskStateIcon } from './DirectoryIndicators';
 import { useWorkspaceUnsavedChanges } from '../workspace/WorkspaceNavigationGuard';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from '@/components/ui/dialog';
@@ -78,6 +81,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   onBulkTasks:(milestoneId:string,status:'done'|'todo')=>void;
 }) {
   const hierarchy=useProjectHierarchy(id,revision,true);
+  const assignments=useProjectAssignments(id);
   const [view,setView]=useState<WorkplanView>('milestones');
   const [prompt,setPrompt]=useState<Prompt|null>(null);
   const [newSubtaskFor,setNewSubtaskFor]=useState<string|null>(null);
@@ -92,10 +96,19 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const updateTask=(task:Task,changes:Partial<Task>)=>{
     const index=body.tasks.findIndex(item=>item.id===task.id);if(index<0)return;
     onTaskChange(index,changes);
-    const milestone=body.milestones.find(item=>item.id===task.milestoneId);
-    if(milestone&&(changes.status==='doing'||changes.status==='blocked')&&milestone.status==='planned')updateMilestone(milestone,{status:'in_progress'});
-    if(milestone&&changes.status==='done'&&task.status!=='done'&&body.tasks.filter(item=>item.milestoneId===milestone.id&&item.id!==task.id).every(item=>item.status==='done')) {
-      setPrompt({title:'All milestone tasks are complete',description:`Mark “${milestone.title}” completed? Milestone completion is a separate, reviewable decision.`,confirm:()=>updateMilestone(milestone,{status:'done'})});
+    // Synchronize both old and newly assigned milestones in the draft.
+    const nextBody={...body,tasks:body.tasks.map(item=>item.id===task.id?{...item,...changes}:item)};
+    const impacted=new Set([task.milestoneId,changes.milestoneId??task.milestoneId]);
+    for(const milestoneId of impacted){
+      if(!milestoneId)continue;
+      const milestone=body.milestones.find(item=>item.id===milestoneId);
+      if(!milestone||milestone.status==='done')continue;
+      const next=expectedMilestoneStatus(nextBody,milestoneId);
+      if(next&&next!==milestone.status)updateMilestone(milestone,{status:next});
+      const tasks=nextBody.tasks.filter(item=>item.milestoneId===milestoneId);
+      if(tasks.length&&tasks.every(item=>item.status==='done')&&task.status!=='done'){
+        setPrompt({title:'Milestone ready for review',description:`All tasks in “${milestone.title}” are done. Completion still requires explicit review.`,confirm:()=>updateMilestone(milestone,{status:'done'})});
+      }
     }
   };
   const setPhases=(milestone:Milestone,phase:ProjectPhase,checked:boolean)=>{
@@ -115,6 +128,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
         <div className="min-w-[160px] flex-[2] basis-48"><NameField title={task.title} completed={task.status==='done'} disabled={disabled} onChange={title=>updateTask(task,{title})}/></div>
         <StatusButton status={task.status} disabled={disabled} onChange={()=>updateTask(task,{status:nextStatus(task.status,workStatusOrder)})} label={`task ${task.title}`}/>
         <div className="shrink-0">{assignment(task)}</div>
+        <TaskMemberPicker taskId={task.id} controls={assignments} disabled={disabled||dirty||!sidecarReady} />
         <Remaining dueOn={task.dueOn} today={today} completed={task.status==='done'}/>
         <input type="date" className={dateClass} aria-label={`Due date for ${task.title}`} disabled={disabled} value={task.dueOn??''} onChange={event=>updateTask(task,{dueOn:event.target.value||null})}/>
       </div>
@@ -142,18 +156,18 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     </article>;
   };
   return <section aria-label="Project tasks, milestones and phases" className="space-y-3">
-    <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-base font-semibold">Work plan</h2><p className="mt-1 text-xs text-muted-foreground">Task and milestone edits use the private draft and Save All. Phase links and subtasks save through the hierarchy API.</p></div>{btn('Refresh hierarchy',<RefreshCcw size={15}/>,()=>{void hierarchy.load();},hierarchy.busy)}</div>
+    <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-base font-semibold">Work plan</h2><p className="mt-1 text-xs text-muted-foreground">Task and milestone edits use the private draft and Save All. Phase links and subtasks save through the hierarchy API.</p></div><div className="flex flex-wrap gap-2"><ProjectManagersButton controls={assignments} disabled={disabled||dirty||!sidecarReady} />{btn('Refresh hierarchy',<RefreshCcw size={15}/>,()=>{void hierarchy.load();},hierarchy.busy)}</div></div>
     <div role="tablist" aria-label="Work-plan view" className="inline-flex gap-1 rounded-xl border border-border bg-muted/40 p-1">{(['tasks','milestones','phases'] as const).map(item=><button role="tab" aria-selected={view===item} key={item} type="button" onClick={()=>setView(item)} className={`rounded-lg px-4 py-2 text-xs font-medium capitalize focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring ${view===item?'bg-card shadow-sm':'text-muted-foreground hover:bg-muted'}`}>{item}</button>)}</div>
+    {assignments.error&&<p role="alert" className="rounded-lg border border-red-200 p-3 text-xs text-red-700">{assignments.error}</p>}
     {hierarchy.error&&<p role="alert" className="rounded-lg border border-red-200 p-3 text-xs text-red-700">{hierarchy.error}</p>}
     {hierarchy.conflict&&<p role="alert" className="text-xs text-red-600">Project changes detected. Refresh hierarchy before continuing.</p>}
     {dirty&&<p className="rounded-lg bg-amber-50 p-3 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">Save All your task and milestone edits before editing phase links and subtasks.</p>}
     {view==='milestones'&&<div className="space-y-3">{body.milestones.map(milestoneCard)}{!body.milestones.length&&<p className="rounded-xl border border-dashed border-border p-5 text-xs text-muted-foreground">Create your first milestone in the Advanced work-plan editor.</p>}{body.tasks.some(task=>!task.milestoneId)&&<div className="rounded-xl border border-border bg-card p-3"><h3 className="text-sm font-semibold">Unassigned tasks</h3><ul>{body.tasks.filter(task=>!task.milestoneId).map(taskRow)}</ul></div>}</div>}
     {view==='tasks'&&<section className="rounded-xl border border-border bg-card"><div className="flex items-center justify-between gap-2 p-3"><h3 className="text-sm font-semibold">All tasks ({body.tasks.length})</h3>{btn('Add unassigned task',<Plus size={16}/>,()=>onAddTask(null),disabled||body.tasks.length>=100)}</div><ul>{body.tasks.map(taskRow)}</ul>{!body.tasks.length&&<p className="px-4 py-5 text-xs text-muted-foreground">No tasks yet.</p>}</section>}
-    {view==='phases'&&<div className="space-y-3">{projectPhaseOrder.map(phase=>{
-      const items=body.milestones.filter(m=>phaseLinks.some(link=>link.phase===phase&&link.milestoneId===m.id));
-      return <section key={phase} className="rounded-xl border border-border bg-card p-3"><div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-sm font-semibold text-violet-700 dark:text-violet-300">{projectPhaseLabels[phase]} <span className="ml-1 text-xs font-normal text-muted-foreground">{items.length} milestones</span></h3><Popover><PopoverTrigger asChild><button type="button" disabled={!canEditSidecar} className="rounded-lg border border-border px-2.5 py-1.5 text-xs hover:bg-muted">Assign milestones <Plus size={13} className="inline" aria-hidden/></button></PopoverTrigger><PopoverContent align="end" className="max-h-64 overflow-auto p-2"><p className="px-2 py-1 text-xs font-medium">Milestones in {projectPhaseLabels[phase]}</p>{body.milestones.map(m=>{const has=items.some(item=>item.id===m.id);return <label key={m.id} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-xs hover:bg-muted"><input type="checkbox" disabled={!canEditSidecar} checked={has} onChange={e=>setPhases(m,phase,e.target.checked)}/><span className="min-w-0 break-words">{m.title}</span></label>})}</PopoverContent></Popover></div><div className="mt-3 space-y-1">{items.map(m=><div key={m.id} className="flex items-center justify-between gap-2 rounded-lg bg-muted/30 px-3 py-2"><span className="text-xs font-medium">{m.title}</span><span className="text-[11px] text-muted-foreground">{milestoneStats(body,m.id).done}/{milestoneStats(body,m.id).total} tasks done</span></div>)}{!items.length&&<p className="text-xs text-muted-foreground">No milestones assigned to this phase.</p>}</div></section>;
-    })}</div>}
-    <p className="text-[11px] text-muted-foreground">Phase assignments support multiple phases. Formal phase approval remains in Lifecycle. Staff/client assignees and permissions will be implemented in R4.</p>
+    {view==='phases'&&<ProjectPhaseCards id={id} body={body} links={phaseLinks}
+      disabled={disabled||dirty||!sidecarReady||!hierarchy.data||hierarchy.busy||hierarchy.conflict}
+      onAssignMilestone={setPhases} />}
+    <p className="text-[11px] text-muted-foreground">Phase assignments support multiple phases. Phase completion is explicitly reviewed in the Phases view; legacy Lifecycle gates remain separate. Staff-only responsibility and verified multi-assignees are now supported; client-side assignment delegation and response actions are upcoming.</p>
     <Dialog open={prompt!==null} onOpenChange={open=>{if(!open)setPrompt(null);}}><DialogContent className="bivi-staff-surface"><DialogTitle>{prompt?.title}</DialogTitle><DialogDescription>{prompt?.description}</DialogDescription><DialogFooter><button type="button" className="rounded-lg border border-border px-4 py-2 text-xs font-medium hover:bg-muted" onClick={()=>setPrompt(null)}>Cancel</button><button type="button" className="rounded-lg bg-foreground px-4 py-2 text-xs font-medium text-background" onClick={()=>{const action=prompt?.confirm;setPrompt(null);action?.();}}>Confirm</button></DialogFooter></DialogContent></Dialog>
   </section>;
 }

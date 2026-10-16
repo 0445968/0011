@@ -1,0 +1,187 @@
+'use client';
+
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import Image from 'next/image';
+import { Check, ChevronDown, Users, UserRoundPlus } from 'lucide-react';
+import { ProfileImage } from '@/components/profile-images/ProfileImage';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from '@/components/ui/dialog';
+import type { ProjectAssignmentWorkspace } from '@/lib/projects/assignment-schema';
+
+type Person = ProjectAssignmentWorkspace['staff'][number];
+type Side = 'bivi' | 'client';
+const buttonClass = 'inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50';
+
+/** One RLS-authorized request for the work plan, not one request per task. */
+export function useProjectAssignments(projectId: string) {
+  const [data, setData] = useState<ProjectAssignmentWorkspace | null>(null);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const load = useCallback(async (signal?: AbortSignal) => {
+    try {
+      const result = await fetch(`/api/admin/projects/${projectId}/assignees`, { cache: 'no-store', signal });
+      const json = await result.json();
+      if (!result.ok) throw new Error(json.error || 'Could not load project members.');
+      if (signal?.aborted) return;
+      setData(json as ProjectAssignmentWorkspace);
+      setError('');
+    } catch (cause) {
+      if (!signal?.aborted) setError(cause instanceof Error ? cause.message : 'Could not load project members.');
+    }
+  }, [projectId]);
+  useEffect(() => {
+    const controller = new AbortController();
+    void load(controller.signal);
+    return () => controller.abort();
+  }, [load]);
+  const save = useCallback(async (body: object) => {
+    if (busy) return false;
+    setBusy(true);
+    setError('');
+    try {
+      const result = await fetch(`/api/admin/projects/${projectId}/assignees`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body), signal: AbortSignal.timeout(20000),
+      });
+      const json = await result.json();
+      if (!result.ok || !json.saved) throw new Error(json.error || 'Assignment could not save.');
+      await load();
+      return true;
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Assignment could not save.');
+      return false;
+    } finally { setBusy(false); }
+  }, [busy, load, projectId]);
+  return { data, error, busy, save };
+}
+
+type AssignmentControls = ReturnType<typeof useProjectAssignments>;
+
+function SideLogo({ side, data }: {side: Side; data: ProjectAssignmentWorkspace}) {
+  if (side === 'bivi') return <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-lg border border-border bg-background" title="Bivi responsible">
+    <Image src="/images/bivi-icon.svg" width={23} height={23} alt="Bivi" />
+  </span>;
+  const company = data.clientCompany;
+  if (company) return <span title={`${company.name} responsible`}><ProfileImage kind="company" subject={company.id} name={company.name} path={company.logo_path} size="h-7 w-7" /></span>;
+  return <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-muted text-xs font-bold" title="Client responsible">C</span>;
+}
+
+function Faces({ ids, options, side, max = 4 }: { ids: string[]; options: Person[]; side: Side; max?: number }) {
+  const people = ids.flatMap(id => { const found = options.find(person => person.id === id); return found ? [found] : []; });
+  if (!people.length) return <span className="text-[11px] text-muted-foreground">Unassigned</span>;
+  return <div className="flex items-center" aria-label={`${side === 'bivi' ? 'Bivi' : 'Client'} assignees`}>
+    {people.slice(0, max).map(person => <span key={person.id} title={person.label} className="-ml-1.5 first:ml-0 rounded-full border-2 border-card">
+      <ProfileImage kind={side === 'bivi' ? 'staff' : 'client'} subject={person.id} name={person.label} path={person.avatar_path} size="h-7 w-7" />
+    </span>)}
+    {people.length > max && <span title={people.slice(max).map(p => p.label).join(', ')} className="ml-1 text-[11px]">+{people.length - max}</span>}
+  </div>;
+}
+
+function MemberChoices({ options, values, change, side, search }: {
+  options: Person[]; values: string[]; change: (next: string[]) => void; side: Side; search: string;
+}) {
+  const filtered = options.filter(p => p.label.toLowerCase().includes(search.trim().toLowerCase()));
+  return <div className="max-h-60 space-y-1 overflow-y-auto rounded-xl border border-border p-2">
+    {filtered.map(person => {
+      const selected = values.includes(person.id);
+      return <button key={person.id} type="button" aria-pressed={selected} className={`flex w-full items-center gap-3 rounded-lg p-2 text-left hover:bg-muted ${selected ? 'bg-muted/60' : ''}`}
+        onClick={() => change(selected ? values.filter(id => id !== person.id) : [...values, person.id])}>
+        <ProfileImage kind={side === 'bivi' ? 'staff' : 'client'} subject={person.id} name={person.label} path={person.avatar_path} size="h-8 w-8" />
+        <span className="min-w-0 flex-1 truncate text-sm">{person.label}</span>
+        {selected && <Check size={16} aria-label="Selected" />}
+      </button>;
+    })}
+    {!filtered.length && <p className="p-3 text-xs text-muted-foreground">No eligible members match. Invite project members in Access first.</p>}
+  </div>;
+}
+
+export function TaskMemberPicker({ taskId, disabled, controls }: { taskId: string; disabled: boolean; controls: AssignmentControls }) {
+  const { data, busy, save } = controls;
+  const task = data?.tasks.find(t => t.task_id === taskId);
+  const [open, setOpen] = useState(false);
+  const [side, setSide] = useState<Side>('bivi');
+  const [ids, setIds] = useState<string[]>([]);
+  const [search, setSearch] = useState('');
+  const options = side === 'bivi' ? data?.staff ?? [] : data?.clients ?? [];
+  const chosen = task?.side === 'bivi' ? data?.staff ?? [] : data?.clients ?? [];
+  const available = Boolean(task && data);
+  const changed = Boolean(task && (task.side !== side || JSON.stringify(task.assignees) !== JSON.stringify(ids)));
+  function show() {
+    if (!task || !data) return;
+    setSide(task.side);
+    setIds(task.assignees);
+    setSearch('');
+    setOpen(true);
+  }
+  function pickSide(next: Side) {
+    if (!data) return;
+    setSide(next);
+    setIds(next === 'bivi' ? [data.currentStaffId] : data.managers);
+    setSearch('');
+  }
+  async function commit() {
+    if (!task || !data || busy || ids.length > 12) return;
+    const okay = await save({ action: 'task', taskId, side, userIds: ids, expectedRevision: task.revision });
+    if (okay) setOpen(false);
+  }
+  return <>
+    <button type="button" className="flex max-w-full shrink-0 items-center gap-1.5 rounded-lg p-1 hover:bg-muted disabled:opacity-50" disabled={disabled || busy || !available} onClick={show}
+      title="Choose responsible side and task assignees" aria-label="Responsible side and assignees">
+      {data && task ? <><SideLogo side={task.side} data={data} /><Faces ids={task.assignees} options={chosen} side={task.side} /><ChevronDown size={13} aria-hidden /></> : <span className="text-[11px] text-muted-foreground">Members…</span>}
+    </button>
+    <Dialog open={open} onOpenChange={value => { if (!busy) setOpen(value); }}>
+      <DialogContent className="bivi-staff-surface max-h-[90dvh] overflow-y-auto">
+        <DialogTitle>Responsible side & assignees</DialogTitle>
+        <DialogDescription>Only Bivi staff can change responsibility. Choose verified members associated with the project. Other team members are not shown.</DialogDescription>
+        <div className="flex flex-wrap gap-2">
+          {(['bivi','client'] as const).map(value => <button type="button" key={value} aria-pressed={value === side} className={`${buttonClass} ${side === value ? 'border-foreground bg-muted' : ''}`} onClick={() => pickSide(value)}>
+            {data && <SideLogo side={value} data={data} />}{value === 'bivi' ? 'Bivi' : 'Client'}
+          </button>)}
+        </div>
+        {side === 'client' && <p className="text-xs text-muted-foreground">Switching to Client selects the designated client project managers by default. You can select other verified client members below.</p>}
+        <label className="text-xs font-medium">Select assignees (up to 12)
+          <input className="mt-2 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" type="search" placeholder="Search eligible members" value={search} onChange={event => setSearch(event.target.value)} />
+        </label>
+        <MemberChoices side={side} options={options} values={ids} change={setIds} search={search} />
+        <p className="text-xs text-muted-foreground">{ids.length} selected · The first Bivi assignee remains primary in the existing My Tasks view until it is updated for multi-assignees.</p>
+        <DialogFooter>
+          <button type="button" className={buttonClass} disabled={busy} onClick={() => setOpen(false)}>Cancel</button>
+          <button type="button" className="rounded-lg bg-foreground px-4 py-2 text-xs font-semibold text-background disabled:opacity-40" disabled={busy || !changed || ids.length > 12} onClick={() => void commit()}>{busy ? 'Saving…' : 'Save responsibility'}</button>
+        </DialogFooter>
+        {controls.error && <p role="alert" className="text-xs text-red-600">{controls.error}</p>}
+      </DialogContent>
+    </Dialog>
+  </>;
+}
+
+export function ProjectManagersButton({ controls, disabled }: { controls: AssignmentControls; disabled: boolean }) {
+  const { data, save, busy } = controls;
+  const [open, setOpen] = useState(false);
+  const [ids, setIds] = useState<string[]>([]);
+  const [search, setSearch] = useState('');
+  const selected = useMemo(() => [...ids].sort().join(','), [ids]);
+  const original = useMemo(() => [...(data?.managers ?? [])].sort().join(','), [data]);
+  async function commit() {
+    if (await save({ action: 'managers', userIds: ids, expectedRevision: data?.assignmentRevision })) setOpen(false);
+  }
+  return <>
+    <button type="button" className={buttonClass} disabled={disabled || busy || !data} onClick={() => { setIds(data?.managers ?? []); setSearch(''); setOpen(true); }}>
+      <Users size={15} aria-hidden /> Client managers ({data?.managers.length ?? 0})
+    </button>
+    <Dialog open={open} onOpenChange={value => { if (!busy) setOpen(value); }}>
+      <DialogContent className="bivi-staff-surface max-h-[90dvh] overflow-y-auto">
+        <DialogTitle>Designate client project managers</DialogTitle>
+        <DialogDescription>Choose up to five client members who already have active access to this project and belong to its client organization. They will be the default assignees when responsibility changes to Client.</DialogDescription>
+        <label className="text-xs font-medium">Find client members
+          <input type="search" className="mt-2 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" value={search} placeholder="Search project members" onChange={e => setSearch(e.target.value)} />
+        </label>
+        <MemberChoices options={data?.clients ?? []} values={ids} change={setIds} search={search} side="client" />
+        <p className="text-xs text-muted-foreground">{ids.length} of 5 maximum</p>
+        <DialogFooter>
+          <button type="button" className={buttonClass} disabled={busy} onClick={() => setOpen(false)}>Cancel</button>
+          <button type="button" disabled={busy || selected === original || ids.length > 5} onClick={() => void commit()} className="rounded-lg bg-foreground px-4 py-2 text-xs font-semibold text-background disabled:opacity-40">{busy ? 'Saving…' : 'Save managers'}</button>
+        </DialogFooter>
+        {controls.error && <p role="alert" className="text-xs text-red-600">{controls.error}</p>}
+      </DialogContent>
+    </Dialog>
+  </>;
+}
