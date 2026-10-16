@@ -3,6 +3,7 @@
 import {milestoneDomId} from '@/lib/calendar/links';
 import {taskDomId} from '@/lib/tasks/links';
 import { DirectoryProgress, DirectoryStatus, ProjectTaskStateIcon } from './projects/DirectoryIndicators';
+import { useProjectWorkDraft } from './projects/useProjectWorkDraft';
 import { useWorkspaceUnsavedChanges } from './workspace/WorkspaceNavigationGuard';
 
 import {
@@ -297,7 +298,21 @@ export function ProjectWorkspace({
       JSON.stringify(savedBody)
   );
 
-  const markWorkspaceSaved = useWorkspaceUnsavedChanges(dirty, 'Project work plan', () => command('save'));
+  const drafts = useProjectWorkDraft({
+    id,
+    initialRevision: record?.revision ?? 0,
+    revision: savedRevision,
+    body,
+    savedBody,
+    enabled: Boolean(record && !completed),
+    busy,
+    setBody,
+  });
+
+  const markWorkspaceSaved = useWorkspaceUnsavedChanges(dirty, 'Project work plan', async () => {
+    const saved = await command('save');
+    if (saved !== true) throw new Error('Project changes were not saved. Review the editor message.');
+  });
 
   const today = new Date()
     .toISOString()
@@ -597,11 +612,15 @@ export function ProjectWorkspace({
      ======================================================= */
 
   async function command(action: Command) {
-    if (busy || blocked) return;
+    if (busy || blocked) return false;
 
     /* VALIDATE SAVE */
 
     if (action === 'save') {
+      if (!drafts.ready || drafts.recoverable || drafts.conflict) {
+        setMessage('Resolve the saved draft or revision conflict before saving the live project.');
+        return false;
+      }
       if (
         !record ||
         completed ||
@@ -678,6 +697,7 @@ export function ProjectWorkspace({
     setMessage('');
 
     try {
+      if (action === 'save') await drafts.waitForDraft();
       const response = await fetch(
         `/api/admin/projects/${id}`,
         {
@@ -717,6 +737,7 @@ export function ProjectWorkspace({
         response.status === 409
       ) {
         setBlocked(true);
+        if (action === 'save') drafts.flagConflict();
       }
 
       if (!response.ok) {
@@ -734,12 +755,16 @@ export function ProjectWorkspace({
         setSavedBody(body);
         setSavedRevision(result.revision);
         markWorkspaceSaved();
-        setMessage('All work-plan changes saved.');
+        const draftCleared = await drafts.removeDraft();
+        setMessage(draftCleared
+          ? 'All work-plan changes saved.'
+          : 'Project changes are saved, but the draft could not be cleared.');
         router.refresh();
       } else {
         markWorkspaceSaved();
         window.location.reload();
       }
+      return true;
     } catch (error) {
       setMessage(
         error instanceof Error &&
@@ -757,6 +782,7 @@ export function ProjectWorkspace({
       ) {
         setBlocked(true);
       }
+      return false;
     } finally {
       setBusy(false);
     }
@@ -837,6 +863,14 @@ export function ProjectWorkspace({
         <div className="flex flex-wrap items-center gap-2"><DirectoryStatus state={record.state} />{dirty && <span className="rounded-md bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200">Unsaved changes</span>}</div>
       </header>
       {!gateReady && <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">Prerequisites need review before resuming or completing this project.</p>}
+      {drafts.recoverable && (
+        <section role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-violet-300 bg-violet-50 p-3 text-xs text-violet-900 dark:border-violet-800 dark:bg-violet-950 dark:text-violet-100">
+          <div><p className="font-semibold">A private work-plan draft is available.</p><p className="mt-1">Last saved: {new Date(drafts.recoverable.updatedAt).toLocaleString('en-US', {timeZone:'America/Chicago'})}. {drafts.recoverable.baseRevision !== savedRevision ? 'It is based on an older project revision. Restoring it will NOT overwrite the newer project.' : 'Restore it to continue editing.'}</p></div>
+          <div className="flex flex-wrap gap-2"><button type="button" className={controlClass} disabled={drafts.recoverable.baseRevision !== savedRevision} onClick={drafts.restore}>Restore draft</button><button type="button" className={controlClass} onClick={() => { const blob = new Blob([JSON.stringify(drafts.recoverable?.body,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=`bivi-project-${id}-draft.json`;link.click();URL.revokeObjectURL(url); }}>Export draft</button><button type="button" className={controlClass} onClick={() => { if (window.confirm('Permanently delete your saved draft?')) void drafts.removeDraft(); }}>Discard saved draft</button></div>
+        </section>
+      )}
+      {drafts.conflict && <p role="alert" className="rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-100">The project has a newer revision than this draft. Your edits remain recoverable, but Save all is blocked to prevent overwriting someone else's changes. Review the latest project in another tab before discarding or reconciling this draft.</p>}
+      {drafts.error && <p role="alert" className="rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-100">Draft autosave unavailable: {drafts.error}. Your edits are still protected by the unsaved-changes warning.</p>}
       <section aria-label="Work plan summary" className="grid grid-cols-2 gap-2 lg:grid-cols-4">
         <div className="rounded-xl border border-border bg-card p-3"><p className="mb-2 text-[11px] text-muted-foreground">{dirty ? 'Draft task completion' : 'Task completion'}</p><DirectoryProgress project={{...record,body}} /></div>
         {[
@@ -1818,9 +1852,10 @@ export function ProjectWorkspace({
 
           <span className="font-semibold">
             {dirty
-              ? 'Unsaved changes'
-              : 'All changes saved'}
+              ? 'Unpublished changes'
+              : 'All project changes saved'}
           </span>
+          {!completed && <p className="mt-1 text-[11px] text-muted-foreground" role="status">Draft: {drafts.state === 'saving' ? 'Saving…' : drafts.state === 'saved' ? 'Autosaved privately' : drafts.state === 'pending' ? 'Pending autosave' : drafts.state === 'loading' ? 'Checking saved drafts…' : drafts.state === 'conflict' ? 'Conflict — review required' : drafts.state === 'error' ? 'Save unavailable' : 'Ready to autosave'}</p>}
 
           {completed && (
             <span className="ml-2 text-muted-foreground">
@@ -1871,31 +1906,33 @@ export function ProjectWorkspace({
                         'Discard all unsaved project edits?'
                       )
                     ) {
-                      setBody(record.body);
+                      setBody(savedBody);
+                      void drafts.removeDraft();
                     }
                   }}
                 >
                   <RotateCcw size={14} />
-                  Discard
+                  Discard changes
                 </button>
               )}
 
               <Button
                 type="button"
-                disabled={
-                  !dirty ||
-                  locked
-                }
-                onClick={() =>
-                  void command('save')
-                }
+                variant="outline"
+                disabled={!dirty || busy || !drafts.ready || Boolean(drafts.recoverable) || drafts.conflict}
+                onClick={() => void drafts.saveDraft()}
+                className="gap-2"
+              >
+                Save draft
+              </Button>
+              <Button
+                type="button"
+                disabled={!dirty || locked || !drafts.ready || Boolean(drafts.recoverable) || drafts.conflict}
+                onClick={() => void command('save')}
                 className="gap-2"
               >
                 <Save size={15} />
-
-                {busy
-                  ? 'Saving…'
-                  : 'Save project'}
+                {busy ? 'Saving…' : 'Save all'}
               </Button>
             </>
           )}

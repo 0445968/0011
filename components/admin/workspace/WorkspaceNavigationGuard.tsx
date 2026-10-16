@@ -35,6 +35,7 @@ export function WorkspaceNavigationGuard({ children }: { children: ReactNode }) 
   const router = useRouter();
   const [pending, setPending] = useState<(() => void) | null>(null);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const pendingRef = useRef<(() => void) | null>(null);
   pendingRef.current = pending;
   const dirtyEditors = [...editors.values()];
@@ -76,6 +77,7 @@ export function WorkspaceNavigationGuard({ children }: { children: ReactNode }) 
         <DialogDescription>
           You have unsaved edits in {dirtyEditors.map(editor => editor.label).join(', ') || 'this record'}. Stay to continue editing or discard the edits before leaving.
         </DialogDescription>
+        {saveError && <p role="alert" className="text-xs text-destructive">{saveError}</p>}
         <div className="flex flex-wrap justify-end gap-2">
           <Button variant="outline" disabled={saving} onClick={() => setPending(null)}>Stay</Button>
           <Button variant="outline" disabled={saving} onClick={() => {
@@ -86,8 +88,10 @@ export function WorkspaceNavigationGuard({ children }: { children: ReactNode }) 
           }}>Discard and leave</Button>
           {dirtyEditors.length === 1 && dirtyEditors[0].save && <Button disabled={saving} onClick={async () => {
             setSaving(true);
-            try { await dirtyEditors[0].save!(); }
-            finally { setSaving(false); setPending(null); }
+            setSaveError('');
+            try { await dirtyEditors[0].save!(); setPending(null); }
+            catch (error) { setSaveError(error instanceof Error ? error.message : 'Unable to save changes.'); }
+            finally { setSaving(false); }
           }}>{saving ? 'Saving…' : 'Save and stay'}</Button>}
         </div>
       </DialogContent>
