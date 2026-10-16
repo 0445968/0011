@@ -2,6 +2,7 @@
 'use client';
 import {milestoneDomId} from '@/lib/calendar/links';
 import {taskDomId} from '@/lib/tasks/links';
+import { DirectoryProgress, DirectoryStatus } from './projects/DirectoryIndicators';
 import { useWorkspaceUnsavedChanges } from './workspace/WorkspaceNavigationGuard';
 
 import {
@@ -32,7 +33,6 @@ import { Textarea } from '@/components/ui/textarea';
 
 import {
   projectBodySchema,
-  projectProgress,
   projectStates,
   type ProjectBody,
 } from '@/lib/projects/schema';
@@ -138,12 +138,14 @@ function CompactSelect({
   value,
   onChange,
   disabled,
+  status = false,
   children,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
+  status?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -157,6 +159,7 @@ function CompactSelect({
         }
         className={`
           ${inputClass}
+          ${status ? value === 'done' ? '!border-emerald-200 !bg-emerald-50 !text-emerald-800 dark:!border-emerald-800 dark:!bg-emerald-950 dark:!text-emerald-200' : value === 'blocked' ? '!border-amber-200 !bg-amber-50 !text-amber-900 dark:!border-amber-800 dark:!bg-amber-950 dark:!text-amber-200' : value === 'doing' || value === 'in_progress' ? '!border-blue-200 !bg-blue-50 !text-blue-800 dark:!border-blue-800 dark:!bg-blue-950 dark:!text-blue-200' : '' : ''}
           appearance-none
           pl-2.5
           pr-9
@@ -292,10 +295,6 @@ export function ProjectWorkspace({
   );
 
   const markWorkspaceSaved = useWorkspaceUnsavedChanges(dirty, 'Project work plan', () => command('save'));
-
-  const progress = body
-    ? projectProgress(body)
-    : null;
 
   const today = new Date()
     .toISOString()
@@ -817,367 +816,27 @@ export function ProjectWorkspace({
           COMPACT SUMMARY
           =============================================== */}
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-          <span className="font-semibold">
-            {projectStates[record.state]} project
-          </span>
-
-          <span className="text-muted-foreground">
-            {progress?.done ?? 0}/
-            {progress?.total ?? 0} tasks ·{' '}
-            {progress?.percent ?? 0}%
-            complete
-          </span>
-
-          {!gateReady && (
-            <span className="text-amber-700 dark:text-amber-400">
-              Prerequisites need review
-            </span>
-          )}
-
-          {dirty && (
-            <span className="font-semibold text-foreground">
-              Unsaved changes
-            </span>
-          )}
-        </div>
-
-        <span className="text-[11px] text-muted-foreground">
-          {completed
-            ? 'Read-only until reopened'
-            : 'Changes are saved together'}
-        </span>
-      </div>
-
-      {/* ===============================================
-          PROJECT DETAILS
-          =============================================== */}
-
-      <section className="rounded-xl border border-border bg-card">
-        <SectionTitle
-          title="Project details"
-          detail="Name, owner and internal notes"
-        />
-
-        <div className="grid gap-3 px-4 py-3 sm:grid-cols-2">
-
-          <label className="block min-w-0 text-[11px] font-medium text-muted-foreground">
-            Project title
-
-            <Input
-              className={`${inputClass} mt-1`}
-              maxLength={200}
-              value={body.title}
-              disabled={locked}
-              onChange={(event) =>
-                field(
-                  'title',
-                  event.target.value
-                )
-              }
-            />
-          </label>
-
-          <label className="block min-w-0 text-[11px] font-medium text-muted-foreground">
-            Project owner
-
-            <Input
-              className={`${inputClass} mt-1`}
-              maxLength={200}
-              value={body.owner}
-              disabled={locked}
-              onChange={(event) =>
-                field(
-                  'owner',
-                  event.target.value
-                )
-              }
-              placeholder="Unassigned"
-            />
-          </label>
-
-          {/* COLLAPSIBLE INTERNAL NOTES */}
-
-          <details className="rounded-lg border border-border px-3 py-2 sm:col-span-2">
-            <summary className="cursor-pointer text-xs font-medium text-foreground">
-              Internal project notes{' '}
-              {body.notes
-                ? '· Added'
-                : '· Empty'}
-            </summary>
-
-            <Textarea
-              aria-label="Internal project notes"
-              rows={3}
-              maxLength={4000}
-              value={body.notes}
-              disabled={locked}
-              onChange={(event) =>
-                field(
-                  'notes',
-                  event.target.value
-                )
-              }
-              className="mt-3 text-xs"
-            />
-          </details>
-        </div>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div><h1 className="text-xl font-semibold tracking-tight">Tasks & Milestones</h1><p className="mt-1 text-xs text-muted-foreground">{completed ? 'Read-only until reopened' : 'Edit the work plan, then save changes together.'}</p></div>
+        <div className="flex flex-wrap items-center gap-2"><DirectoryStatus state={record.state} />{dirty && <span className="rounded-md bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200">Unsaved changes</span>}</div>
+      </header>
+      {!gateReady && <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">Prerequisites need review before resuming or completing this project.</p>}
+      <section aria-label="Work plan summary" className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+        <div className="rounded-xl border border-border bg-card p-3"><p className="mb-2 text-[11px] text-muted-foreground">{dirty ? 'Draft task completion' : 'Task completion'}</p><DirectoryProgress project={{...record,body}} /></div>
+        {[
+          ['Open tasks',body.tasks.filter(task => task.status !== 'done').length],
+          ['Blocked tasks',body.tasks.filter(task => task.status === 'blocked').length],
+          ['Milestones completed',`${body.milestones.filter(item => item.status === 'done').length}/${body.milestones.length}`],
+        ].map(([label,value]) => <div key={label} className="rounded-xl border border-border bg-card p-3"><p className="text-[11px] text-muted-foreground">{label}</p><p className="mt-1 text-xl font-semibold tabular-nums">{value}</p></div>)}
       </section>
 
-      {/* ===============================================
-          MILESTONES TABLE
-          =============================================== */}
-
-      <section className="rounded-xl border border-border bg-card">
-
-        <SectionTitle
-          title="Milestones"
-          detail={`${body.milestones.length}/20`}
-          action={
-            <button
-              type="button"
-              className={controlClass}
-              disabled={
-                locked ||
-                body.milestones.length >= 20
-              }
-              onClick={addMilestone}
-            >
-              <Plus size={14} />
-              Add milestone
-            </button>
-          }
-        />
-
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[680px] text-left text-xs">
-
-            <thead className="border-b border-border bg-muted/50 text-[10px] uppercase tracking-wider text-muted-foreground">
-              <tr>
-                <th
-                  scope="col"
-                  className="w-[41%] px-3 py-2 font-medium"
-                >
-                  Milestone
-                </th>
-
-                <th
-                  scope="col"
-                  className="w-[21%] px-3 py-2 font-medium"
-                >
-                  Status
-                </th>
-
-                <th
-                  scope="col"
-                  className="w-[20%] px-3 py-2 font-medium"
-                >
-                  Due
-                </th>
-
-                <th
-                  scope="col"
-                  className="px-3 py-2 font-medium"
-                >
-                  Tasks
-                </th>
-
-                <th
-                  scope="col"
-                  className="w-12 px-3 py-2 font-medium"
-                />
-              </tr>
-            </thead>
-
-            <tbody className="divide-y divide-border">
-              {visibleMilestones.map(
-                ({ milestone, index }) => {
-                  const linked =
-                    body.tasks.filter(
-                      (task) =>
-                        task.milestoneId ===
-                        milestone.id
-                    ).length;
-
-                  return (
-                    <tr
-                      key={milestone.id}
-                      id={milestoneDomId(milestone.id)}
-                      tabIndex={-1}
-                      style={{scrollMarginTop:'6rem'}}
-                      className="hover:bg-muted/20 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-ring"
-                    >
-                      {/* MILESTONE TITLE */}
-
-                      <td className="px-3 py-2">
-                        <input
-                          aria-label={`Milestone ${index + 1} title`}
-                          className={inputClass}
-                          value={milestone.title}
-                          maxLength={300}
-                          disabled={locked}
-                          onChange={(event) =>
-                            editMilestone(index, {
-                              title:
-                                event.target.value,
-                            })
-                          }
-                        />
-                      </td>
-
-                      {/* MILESTONE STATUS */}
-
-                      <td className="px-3 py-2">
-                        <CompactSelect
-                          label={`Status for ${milestone.title}`}
-                          value={milestone.status}
-                          disabled={locked}
-                          onChange={(value) =>
-                            editMilestone(index, {
-                              status:
-                                value as Milestone['status'],
-                            })
-                          }
-                        >
-                          <option value="planned">
-                            Planned
-                          </option>
-
-                          <option value="in_progress">
-                            In progress
-                          </option>
-
-                          <option value="done">
-                            Done
-                          </option>
-                        </CompactSelect>
-                      </td>
-
-                      {/* DUE DATE */}
-
-                      <td className="px-3 py-2">
-                        <input
-                          type="date"
-                          aria-label={`Due date for ${milestone.title}`}
-                          className={inputClass}
-                          value={
-                            milestone.dueOn ?? ''
-                          }
-                          disabled={locked}
-                          onChange={(event) =>
-                            editMilestone(index, {
-                              dueOn:
-                                event.target.value ||
-                                null,
-                            })
-                          }
-                        />
-                      </td>
-
-                      {/* LINKED TASKS */}
-
-                      <td className="px-3 py-2 text-muted-foreground">
-                        {linked}
-                      </td>
-
-                      {/* REMOVE */}
-
-                      <td className="px-3 py-2 text-right">
-                        <button
-                          type="button"
-                          disabled={
-                            locked ||
-                            linked > 0
-                          }
-                          onClick={() =>
-                            removeMilestone(
-                              index,
-                              milestone.id
-                            )
-                          }
-                          title={
-                            linked
-                              ? 'Reassign linked tasks before removing'
-                              : 'Remove milestone'
-                          }
-                          aria-label={`Remove ${milestone.title}`}
-                          className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-destructive disabled:cursor-not-allowed disabled:opacity-30"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                }
-              )}
-            </tbody>
-          </table>
-
-          {!body.milestones.length && (
-            <p className="px-4 py-5 text-xs text-muted-foreground">
-              No milestones yet.
-            </p>
-          )}
-        </div>
-
-        {/* MILESTONE PAGINATION */}
-
-        {milestonePages > 1 && (
-          <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-2 text-xs">
-
-            <span className="text-muted-foreground">
-              Page {visibleMilestonePage} of{' '}
-              {milestonePages}
-            </span>
-
-            <div className="flex gap-1">
-              <button
-                type="button"
-                className={controlClass}
-                disabled={
-                  visibleMilestonePage === 1
-                }
-                onClick={() =>
-                  setMilestonePage(
-                    visibleMilestonePage - 1
-                  )
-                }
-                aria-label="Previous milestones"
-              >
-                <ChevronLeft size={14} />
-              </button>
-
-              <button
-                type="button"
-                className={controlClass}
-                disabled={
-                  visibleMilestonePage ===
-                  milestonePages
-                }
-                onClick={() =>
-                  setMilestonePage(
-                    visibleMilestonePage + 1
-                  )
-                }
-                aria-label="Next milestones"
-              >
-                <ChevronRight size={14} />
-              </button>
-            </div>
-          </div>
-        )}
-      </section>
-
-      {/* ===============================================
-          TASKS TABLE
-          =============================================== */}
-
-      <section className="rounded-xl border border-border bg-card">
+      <div className="grid items-start gap-3 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="min-w-0">
+      <section className="min-w-0 rounded-xl border border-border bg-card">
 
         <SectionTitle
           title="Tasks"
-          detail={`${filteredTasks.length} shown · ${body.tasks.length}/100 total`}
+          detail={`${filteredTasks.length} matching · ${body.tasks.length}/100 total`}
           action={
             <button
               type="button"
@@ -1251,44 +910,32 @@ export function ProjectWorkspace({
 
         <div className="overflow-x-auto">
 
-          <table className="w-full min-w-[930px] text-left text-xs">
+          <table className="w-full min-w-[560px] text-left text-xs">
 
             <thead className="border-b border-border bg-muted/50 text-[10px] uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th
                   scope="col"
-                  className="w-[26%] px-3 py-2 font-medium"
+                  className="w-[43%] px-3 py-2 font-medium"
                 >
                   Task
                 </th>
 
-                <th
-                  scope="col"
-                  className="w-[17%] px-3 py-2 font-medium"
-                >
-                  Owner label
-                </th>
 
                 <th
                   scope="col"
-                  className="w-[16%] px-3 py-2 font-medium"
+                  className="w-[20%] px-3 py-2 font-medium"
                 >
                   Status
                 </th>
 
                 <th
                   scope="col"
-                  className="w-[17%] px-3 py-2 font-medium"
+                  className="w-[22%] px-3 py-2 font-medium"
                 >
                   Due
                 </th>
 
-                <th
-                  scope="col"
-                  className="w-[19%] px-3 py-2 font-medium"
-                >
-                  Milestone
-                </th>
 
                 <th
                   scope="col"
@@ -1340,31 +987,16 @@ export function ProjectWorkspace({
                               })
                             }
                           />
-                        </td>
-
-                        {/* OWNER */}
-
-                        <td className="px-3 py-2">
-                          <input
-                            aria-label={`Owner for ${task.title}`}
-                            className={inputClass}
-                            value={task.owner}
-                            maxLength={200}
-                            placeholder="Unassigned"
-                            disabled={locked}
-                            onChange={(event) =>
-                              editTask(index, {
-                                owner:
-                                  event.target.value,
-                              })
-                            }
-                          />
+                          <p className="mt-1 max-w-[300px] truncate text-[10px] text-muted-foreground" title={`${task.owner || 'Unassigned'} · ${body.milestones.find(item => item.id === task.milestoneId)?.title || 'No milestone'}`}>
+                            {task.owner || 'Unassigned'} · {body.milestones.find(item => item.id === task.milestoneId)?.title || 'No milestone'}
+                          </p>
                         </td>
 
                         {/* STATUS */}
 
                         <td className="px-3 py-2">
                           <CompactSelect
+                            status
                             label={`Status for ${task.title}`}
                             value={task.status}
                             disabled={locked}
@@ -1418,39 +1050,6 @@ export function ProjectWorkspace({
                           />
                         </td>
 
-                        {/* MILESTONE */}
-
-                        <td className="px-3 py-2">
-                          <CompactSelect
-                            label={`Milestone for ${task.title}`}
-                            value={
-                              task.milestoneId ?? ''
-                            }
-                            disabled={locked}
-                            onChange={(value) =>
-                              editTask(index, {
-                                milestoneId:
-                                  value || null,
-                              })
-                            }
-                          >
-                            <option value="">
-                              No milestone
-                            </option>
-
-                            {body.milestones.map(
-                              (milestone) => (
-                                <option
-                                  key={milestone.id}
-                                  value={milestone.id}
-                                >
-                                  {milestone.title}
-                                </option>
-                              )
-                            )}
-                          </CompactSelect>
-                        </td>
-
                         {/* EXPAND DETAILS */}
 
                         <td className="px-3 py-2">
@@ -1490,9 +1089,7 @@ export function ProjectWorkspace({
                               }
                             />
 
-                            {task.notes
-                              ? 'Notes'
-                              : 'More'}
+                            Details
                           </button>
                         </td>
                       </tr>
@@ -1503,9 +1100,57 @@ export function ProjectWorkspace({
                         <tr>
                           <td
                             id={`project-task-details-${task.id}`}
-                            colSpan={6}
+                            colSpan={4}
                             className="bg-muted/25 px-4 py-3"
                           >
+                            <div className="mb-3 grid gap-3 sm:grid-cols-2">
+                              <label className="min-w-0 text-[11px] font-medium">Owner label
+                          <input
+                            aria-label={`Owner for ${task.title}`}
+                            className={inputClass}
+                            value={task.owner}
+                            maxLength={200}
+                            placeholder="Unassigned"
+                            disabled={locked}
+                            onChange={(event) =>
+                              editTask(index, {
+                                owner:
+                                  event.target.value,
+                              })
+                            }
+                          />
+                              </label>
+                              <label className="min-w-0 text-[11px] font-medium">Milestone
+                          <CompactSelect
+                            label={`Milestone for ${task.title}`}
+                            value={
+                              task.milestoneId ?? ''
+                            }
+                            disabled={locked}
+                            onChange={(value) =>
+                              editTask(index, {
+                                milestoneId:
+                                  value || null,
+                              })
+                            }
+                          >
+                            <option value="">
+                              No milestone
+                            </option>
+
+                            {body.milestones.map(
+                              (milestone) => (
+                                <option
+                                  key={milestone.id}
+                                  value={milestone.id}
+                                >
+                                  {milestone.title}
+                                </option>
+                              )
+                            )}
+                          </CompactSelect>
+                              </label>
+                            </div>
                             <div className="flex flex-wrap items-end gap-3">
 
                               <label className="min-w-[220px] flex-1 text-xs font-medium">
@@ -1619,6 +1264,155 @@ export function ProjectWorkspace({
           </div>
         </div>
       </section>
+
+        </div>
+        <div className="min-w-0 space-y-3">
+      <section className="min-w-0 rounded-xl border border-border bg-card">
+        <SectionTitle
+          title="Project details"
+          detail="Name, owner and internal notes"
+        />
+
+        <div className="grid gap-3 px-4 py-3 sm:grid-cols-2 xl:grid-cols-1">
+
+          <label className="block min-w-0 text-[11px] font-medium text-muted-foreground">
+            Project title
+
+            <Input
+              className={`${inputClass} mt-1`}
+              maxLength={200}
+              value={body.title}
+              disabled={locked}
+              onChange={(event) =>
+                field(
+                  'title',
+                  event.target.value
+                )
+              }
+            />
+          </label>
+
+          <label className="block min-w-0 text-[11px] font-medium text-muted-foreground">
+            Project owner
+
+            <Input
+              className={`${inputClass} mt-1`}
+              maxLength={200}
+              value={body.owner}
+              disabled={locked}
+              onChange={(event) =>
+                field(
+                  'owner',
+                  event.target.value
+                )
+              }
+              placeholder="Unassigned"
+            />
+          </label>
+
+          {/* COLLAPSIBLE INTERNAL NOTES */}
+
+          <details className="rounded-lg border border-border px-3 py-2 sm:col-span-2 xl:col-span-1">
+            <summary className="cursor-pointer text-xs font-medium text-foreground">
+              Internal project notes{' '}
+              {body.notes
+                ? '· Added'
+                : '· Empty'}
+            </summary>
+
+            <Textarea
+              aria-label="Internal project notes"
+              rows={3}
+              maxLength={4000}
+              value={body.notes}
+              disabled={locked}
+              onChange={(event) =>
+                field(
+                  'notes',
+                  event.target.value
+                )
+              }
+              className="mt-3 text-xs"
+            />
+          </details>
+        </div>
+      </section>
+
+      <section className="min-w-0 rounded-xl border border-border bg-card">
+        <SectionTitle title="Milestones" detail={`${body.milestones.length}/20`} action={
+          <button type="button" className={controlClass} disabled={locked || body.milestones.length >= 20} onClick={addMilestone}><Plus size={14} aria-hidden />Add milestone</button>
+        } />
+        <div className="divide-y divide-border">
+          {visibleMilestones.map(({milestone, index}) => {
+            const linked = body.tasks.filter(task => task.milestoneId === milestone.id).length;
+            return <div key={milestone.id} id={milestoneDomId(milestone.id)} tabIndex={-1} style={{scrollMarginTop:'6rem'}} className="space-y-2 p-3 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-ring">
+              <div className="flex items-center gap-2">
+                <input aria-label={`Milestone ${index + 1} title`} className={inputClass} value={milestone.title} maxLength={300} disabled={locked} onChange={event => editMilestone(index,{title:event.target.value})} />
+                <button type="button" disabled={locked || linked > 0} onClick={() => removeMilestone(index,milestone.id)} title={linked ? 'Reassign linked tasks before removing' : 'Remove milestone'} aria-label={`Remove ${milestone.title}`} className="shrink-0 rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-destructive disabled:cursor-not-allowed disabled:opacity-30"><Trash2 size={14} aria-hidden /></button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="min-w-0 text-[10px] text-muted-foreground">Status
+                  <CompactSelect status label={`Status for ${milestone.title}`} value={milestone.status} disabled={locked} onChange={value => editMilestone(index,{status:value as Milestone['status']})}><option value="planned">Planned</option><option value="in_progress">In progress</option><option value="done">Done</option></CompactSelect>
+                </div>
+                <label className="min-w-0 text-[10px] text-muted-foreground">Due
+                  <input type="date" aria-label={`Due date for ${milestone.title}`} className={inputClass} value={milestone.dueOn ?? ''} disabled={locked} onChange={event => editMilestone(index,{dueOn:event.target.value || null})} />
+                </label>
+              </div>
+              <p className="text-[10px] text-muted-foreground">{linked} linked {linked === 1 ? 'task' : 'tasks'}{linked > 0 ? ' · Reassign tasks before removing' : ''}</p>
+            </div>;
+          })}
+          {!body.milestones.length && <p className="px-4 py-5 text-xs text-muted-foreground">No milestones yet.</p>}
+        </div>
+        {/* MILESTONE PAGINATION */}
+
+        {milestonePages > 1 && (
+          <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-2 text-xs">
+
+            <span className="text-muted-foreground">
+              Page {visibleMilestonePage} of{' '}
+              {milestonePages}
+            </span>
+
+            <div className="flex gap-1">
+              <button
+                type="button"
+                className={controlClass}
+                disabled={
+                  visibleMilestonePage === 1
+                }
+                onClick={() =>
+                  setMilestonePage(
+                    visibleMilestonePage - 1
+                  )
+                }
+                aria-label="Previous milestones"
+              >
+                <ChevronLeft size={14} />
+              </button>
+
+              <button
+                type="button"
+                className={controlClass}
+                disabled={
+                  visibleMilestonePage ===
+                  milestonePages
+                }
+                onClick={() =>
+                  setMilestonePage(
+                    visibleMilestonePage + 1
+                  )
+                }
+                aria-label="Next milestones"
+              >
+                <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+
+        </div>
+      </div>
 
       {/* ===============================================
           PROJECT DECISIONS
