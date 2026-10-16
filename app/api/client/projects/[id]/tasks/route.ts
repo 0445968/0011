@@ -34,6 +34,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
       blocked: [409, 'Bivi has marked this task as blocked. Review the blocker before continuing.'],
       phase_closed: [409, 'This task is not available in the current project phase yet.'],
       approval_required: [409, 'Approve the project brief from the brief section instead of completing this task manually.'],
+      staff_review_required: [409, 'Submit completed work for Bivi review instead of marking it done directly.'],
+      not_assigned: [403, 'This task is assigned to a different client member.'],
       locked: [409, 'This project is not open for client task updates.'],
     };
     if (failures[data?.result]) {

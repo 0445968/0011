@@ -58,3 +58,9 @@ Baseline: `0445968/0011`, `bivi-dashboard-overhaul`, following D1a–D1c. Preser
 - **Overview layout:** Exchange the positions of Open tasks and Project activity. Move the internal Project record card to Publishing. Upcoming meetings, milestone communications/notes counters and task-editing controls arrive as verified backing sources become available.
 - **R4a roster scope:** Show avatars only for verified active project client access and actively assigned staff accounts; client-to-individual task assignment, a verified project owner, client managers and multi-assignee relationships require a separate schema/API. Do not mistake the legacy `owner` text field for an authenticated owner identity.
 - **R4b permissions:** Bivi controls Responsible side and client-decline policy; organizational project managers may assign their own active members. Client-request workflows (clarification, postponement, modification, conditional decline) require explicit audit-safe states and server authorization before UI controls are enabled.
+
+## R4d — client requests and Bivi review (this patch)
+- Task completion by clients is **submitted for review**, never directly marked complete. Staff acceptance is the only review path that sets a client task Done. Direct legacy `done` RPC calls are rejected server-side.
+- Client clarification/postponement/modification/conditional decline requests are auditable and reviewed by staff. Accepting a non-completion request does **not** silently edit deadline, scope, or status.
+- Conditional decline starts disabled; staff can enable it per client task with a risk and contribution message. Clients must read the in-app warning and submit a reason.
+- Manager self-delegation, client-created tasks, communications notifications, unified Activity timeline and staff/client completion notifications remain follow-up work requiring separate permissions and audit checks.

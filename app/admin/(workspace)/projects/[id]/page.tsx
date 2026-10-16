@@ -61,6 +61,7 @@ import {
 } from '@/lib/projects/lifecycle-data';
 
 import { ProjectOverview } from '@/components/admin/projects/ProjectOverview';
+import { ProjectTaskResponseReview } from '@/components/admin/projects/ProjectTaskResponseReview';
 import { getProjectDirectoryContext } from '@/lib/projects/directory-context';
 import { getProjectOverviewExtras } from '@/lib/projects/overview-data';
 import { taskToday } from '@/lib/tasks/links';
@@ -388,6 +389,7 @@ export default async function ProjectPage({
             selectedTask={selectedTask}
             selectedMilestone={selectedMilestone}
           />
+          {record && <ProjectTaskResponseReview id={params.id} tasks={record.body.tasks.map(task => ({ id:task.id, title:task.title }))} />}
         </div>
       )}
 

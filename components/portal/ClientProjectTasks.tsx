@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
+import { ClientTaskResponseActions } from '@/components/portal/ClientTaskResponseActions';
 import { Textarea } from '@/components/ui/textarea';
 import {
   projectPhaseLabels,
@@ -33,7 +34,7 @@ function ClientTaskCard({ id, work, task }: { id: string; work: ClientProjectWor
   const blocked = Boolean(task.blockerOwner || !task.dependencyComplete || task.status === 'blocked');
   const briefApproval = task.id === 'project-brief-client-approval';
 
-  async function save(status: 'todo' | 'doing' | 'done') {
+  async function save(status: 'todo' | 'doing') {
     setBusy(true);
     setMessage('');
     try {
@@ -83,7 +84,7 @@ function ClientTaskCard({ id, work, task }: { id: string; work: ClientProjectWor
           <Textarea id={`client-task-note-${task.id}`} rows={3} maxLength={2000} value={note} onChange={(event) => setNote(event.target.value)} disabled={busy || future || blocked || work.state !== 'active'} />
           <div className="mt-4 flex flex-wrap gap-3">
             {task.status === 'todo' && <Button type="button" variant="outline" disabled={busy || future || blocked || work.state !== 'active'} onClick={() => void save('doing')}>Start task</Button>}
-            {task.status !== 'done' && <Button type="button" disabled={busy || future || blocked || work.state !== 'active'} onClick={() => void save('done')}>Mark complete</Button>}
+            <ClientTaskResponseActions projectId={id} taskId={task.id} projectRevision={work.projectRevision} disabled={busy || work.state !== 'active'} completed={task.status === 'done'} completionUnavailable={future || blocked} />
             {task.status === 'doing' && <Button type="button" variant="outline" disabled={busy || future || blocked || work.state !== 'active'} onClick={() => void save('doing')}>Save note</Button>}
           </div>
         </>
