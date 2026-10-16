@@ -12,6 +12,8 @@ import {
 } from 'react';
 
 import Link from 'next/link';
+import { DirectoryIdentity, DirectoryProgress, DirectoryPhases, DirectoryStatus } from '@/components/admin/projects/DirectoryIndicators';
+import { validDirectoryMode, type ProjectDirectoryContext, type ProjectDirectoryMode } from '@/lib/projects/directory-types';
 
 import {
   usePathname,
@@ -42,7 +44,6 @@ import {
 
 import {
   projectProgress,
-  projectStates,
 } from '@/lib/projects/schema';
 
 import type {
@@ -55,9 +56,6 @@ import type {
   ProjectSortDirection,
 } from '@/lib/projects/data';
 
-import {
-  WorkspaceStatusBadge,
-} from '@/components/admin/WorkspaceStatusBadge';
 
 import {
   DropdownMenu,
@@ -84,6 +82,8 @@ export interface ProjectDirectoryViewFilters {
 
 interface ProjectDirectoryProps {
   projects: ProjectSummary[];
+  context?: Record<string, ProjectDirectoryContext>;
+  mode: ProjectDirectoryMode;
   total: number;
   page: number;
   filters: ProjectDirectoryViewFilters;
@@ -97,7 +97,8 @@ const columnOptions = [
   { id: 'project', label: 'Project' },
   { id: 'owner', label: 'Owner' },
   { id: 'status', label: 'Status' },
-  { id: 'progress', label: 'Progress' },
+  { id: 'progress', label: 'Task progress' },
+  { id: 'phases', label: 'Phase activity' },
   { id: 'tasks', label: 'Tasks' },
   { id: 'milestones', label: 'Milestones' },
   { id: 'updated', label: 'Updated' },
@@ -113,6 +114,7 @@ const DEFAULT_COLUMNS: ColumnKey[] = [
   'owner',
   'status',
   'progress',
+  'phases',
   'updated',
   'actions',
 ];
@@ -156,7 +158,7 @@ const STATUS_OPTIONS: {
   label: string;
 }[] = [
   { value: null, label: 'All' },
-  { value: 'active', label: 'Active' },
+  { value: 'active', label: 'In progress' },
   { value: 'on_hold', label: 'On hold' },
   { value: 'completed', label: 'Completed' },
 ];
@@ -200,6 +202,7 @@ interface SavedView {
   name: string;
   filters: ProjectDirectoryViewFilters;
   columns: ColumnKey[];
+  mode?: ProjectDirectoryMode;
 }
 
 const COLUMN_STORAGE_KEY = 'bivi-project-columns-v1';
@@ -442,7 +445,7 @@ function ProjectPreview({
           </p>
 
           <p className="mt-1 text-lg font-semibold">
-            {progress.percent}%
+            {progress.total ? `${progress.percent}%` : 'Not enough data'}
           </p>
 
           <p className="mt-1 text-xs text-muted-foreground">
@@ -630,6 +633,8 @@ function ProjectPreview({
 
 export function ProjectDirectory({
   projects,
+  context = {},
+  mode,
   total,
   page,
   filters,
@@ -776,9 +781,11 @@ export function ProjectDirectory({
   function navigate(
     next: ProjectDirectoryViewFilters,
     nextPage = 1,
-    presetId = ''
+    presetId = '',
+    nextMode: ProjectDirectoryMode = mode
   ) {
     const params = new URLSearchParams();
+    if (nextMode !== 'table') params.set('view', nextMode);
 
     if (next.state) {
       params.set('state', next.state);
@@ -898,6 +905,7 @@ export function ProjectDirectory({
       name,
       filters,
       columns,
+      mode,
     };
 
     persistViews([...presets, saved]);
@@ -919,7 +927,7 @@ export function ProjectDirectory({
 
     setVisibleColumns(view.columns);
 
-    navigate(view.filters, 1, view.id);
+    navigate(view.filters, 1, view.id, validDirectoryMode(view.mode));
   }
 
   function deleteView() {
@@ -1020,18 +1028,7 @@ export function ProjectDirectory({
               />
             </button>
 
-            <div className="min-w-0">
-              <Link
-                href={base}
-                className="block max-w-[260px] truncate font-semibold text-foreground hover:underline hover:underline-offset-4"
-              >
-                {project.body.title}
-              </Link>
-
-              <p className="mt-1 text-[11px] text-muted-foreground">
-                {project.body.tasks.length} tasks
-              </p>
-            </div>
+            <DirectoryIdentity project={project} context={context[project.request_id]} />
           </div>
         );
       }
@@ -1040,43 +1037,11 @@ export function ProjectDirectory({
         return project.body.owner || 'Unassigned';
 
       case 'status':
-        return (
-          <WorkspaceStatusBadge
-            kind="project"
-            status={project.state}
-          />
-        );
-
+        return <DirectoryStatus state={project.state} />;
       case 'progress':
-        return (
-          <div className="min-w-[110px]">
-            <div className="flex justify-between gap-2 text-[11px]">
-              <span className="font-semibold">
-                {progress.percent}%
-              </span>
-
-              <span className="text-muted-foreground">
-                {progress.done}/{progress.total}
-              </span>
-            </div>
-
-            <div
-              role="progressbar"
-              aria-label={`${project.body.title} progress`}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={progress.percent}
-              className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted"
-            >
-              <div
-                className="h-full rounded-full bg-foreground"
-                style={{
-                  width: `${progress.percent}%`,
-                }}
-              />
-            </div>
-          </div>
-        );
+        return <DirectoryProgress project={project} />;
+      case 'phases':
+        return <DirectoryPhases project={project} context={context[project.request_id]} />;
 
       case 'tasks': {
         const blocked =
@@ -1152,12 +1117,41 @@ export function ProjectDirectory({
     }
   }
 
+  function renderCard(project: ProjectSummary) {
+    return <article key={project.request_id} className="min-w-0 rounded-xl border border-border bg-card p-4">
+      <DirectoryIdentity project={project} context={context[project.request_id]} />
+      <div className="my-3 flex flex-wrap items-center justify-between gap-2"><DirectoryStatus state={project.state} /><span className="text-[11px] text-muted-foreground">{project.body.owner || 'Unassigned'}</span></div>
+      <div className="border-y border-border py-3"><DirectoryPhases project={project} context={context[project.request_id]} /></div>
+      <div className="mt-3"><DirectoryProgress project={project} /></div>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">{renderCell(project, 'actions')}<span className="text-[10px] text-muted-foreground">{formatDate(project.updated_at)}</span></div>
+      <details className="mt-3 border-t border-border pt-3"><summary className="cursor-pointer text-xs font-medium">Tasks, milestones & actions</summary><div className="mt-3"><ProjectPreview project={project} /></div></details>
+    </article>;
+  }
+
   /* =======================================================
      RENDER
      ======================================================= */
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" aria-busy={isPending}>
+      <section aria-label="Current page summary" className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+        {[
+          ['Matching projects', total],
+          ['In progress on this page', projects.filter(project => project.state === 'active').length],
+          ['On hold on this page', projects.filter(project => project.state === 'on_hold').length],
+          ['Blocked tasks on this page', projects.reduce((count, project) => count + project.body.tasks.filter(task => task.status === 'blocked').length, 0)],
+        ].map(([label, value]) => <div key={label} className="rounded-xl border border-border bg-card px-4 py-3"><p className="text-[11px] text-muted-foreground">{label}</p><p className="mt-1 text-xl font-semibold tabular-nums">{value}</p></div>)}
+      </section>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div role="group" aria-label="Directory layout" className="inline-flex flex-wrap gap-1 rounded-lg border border-border bg-card p-1">
+          {(['table', 'cards', 'grouped'] as const).map(value => <button key={value} type="button" disabled={isPending} aria-pressed={mode === value} onClick={() => navigate(filters, page, selectedPreset, value)} className={`min-h-[36px] rounded-md px-3 text-xs font-medium capitalize focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring ${mode === value ? 'bg-foreground text-background' : 'hover:bg-muted'}`}>{value}</button>)}
+        </div>
+        <div className="flex items-center gap-2">
+          <label htmlFor="project-sort" className="text-xs text-muted-foreground">Sort</label>
+          <select id="project-sort" value={filters.sort} disabled={isPending} onChange={event => changeSort(event.target.value as ProjectSortKey)} className="h-9 rounded-lg border border-border bg-card px-2 text-xs">{SORT_KEYS.map(key => <option key={key} value={key}>{key === 'title' ? 'Project title' : key === 'state' ? 'Status' : key === 'owner' ? 'Owner' : 'Updated'}</option>)}</select>
+          <button type="button" disabled={isPending} onClick={() => changeSort(filters.sort)} className="h-9 rounded-lg border border-border bg-card px-3 text-xs" aria-label={`Sort direction: ${filters.direction === 'asc' ? 'ascending' : 'descending'}. Reverse sort`}>{filters.direction === 'asc' ? 'Ascending' : 'Descending'}</button>
+        </div>
+      </div>
 
       {/* ===================================================
           FILTER TOOLBAR
@@ -1509,7 +1503,7 @@ export function ProjectDirectory({
           </p>
         </div>
 
-        <div className="max-h-[calc(100dvh-360px)] min-h-[180px] overflow-auto scrollbar-transparent">
+        {mode === 'table' ? <div className="max-h-[calc(100dvh-360px)] min-h-[180px] overflow-auto scrollbar-transparent">
           <table className="w-full min-w-max border-collapse text-left text-xs">
             <thead className="sticky top-0 z-10 bg-muted text-muted-foreground">
               <tr>
@@ -1629,6 +1623,16 @@ export function ProjectDirectory({
             </div>
           )}
         </div>
+
+        : <div className="p-3">
+          <p className="mb-3 text-[11px] text-muted-foreground">Showing {projects.length} of {total} matching projects. Groups and counts use this page only.</p>
+          {mode === 'cards' ? <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{projects.map(renderCard)}</div>
+            : <div className="grid gap-3 xl:grid-cols-3">{(['active', 'on_hold', 'completed'] as const).map(state => {
+              const group = projects.filter(project => project.state === state);
+              return <section key={state} aria-label={`${state === 'active' ? 'In progress' : state === 'on_hold' ? 'On hold' : 'Completed'} projects`} className="min-w-0 rounded-xl bg-muted/40 p-2"><div className="mb-3 flex items-center justify-between px-1"><DirectoryStatus state={state} /><span className="text-xs text-muted-foreground">{group.length}</span></div><div className="space-y-3">{group.map(renderCard)}</div>{!group.length && <p className="px-2 py-6 text-xs text-muted-foreground">No projects in this group on this page.</p>}</section>;
+            })}</div>}
+          {!projects.length && <p className="px-3 py-8 text-center text-sm text-muted-foreground">No matching projects. Try changing your search or filters.</p>}
+        </div>}
 
         {/* PAGINATION */}
 

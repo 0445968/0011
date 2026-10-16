@@ -1,3 +1,5 @@
+import { getProjectDirectoryContext } from '@/lib/projects/directory-context';
+import { validDirectoryMode } from '@/lib/projects/directory-types';
 
 import {
   FolderKanban,
@@ -41,6 +43,7 @@ interface ProjectsSearchParams {
   sort?: string;
   direction?: string;
   page?: string;
+  view?: string;
 }
 
 /* =========================================================
@@ -223,6 +226,8 @@ export default async function ProjectsPage({
     }
   );
 
+  const context = await getProjectDirectoryContext(client, projects.map(project => project.request_id));
+
   /* -------------------------------------------------------
      PAGE CONTENT
      ------------------------------------------------------- */
@@ -245,10 +250,10 @@ export default async function ProjectsPage({
           <h1
             className="
               font-heading
-              text-2xl
+              text-xl
               font-semibold
               tracking-tight
-              sm:text-3xl
+              sm:text-2xl
             "
           >
             Projects
@@ -293,6 +298,8 @@ export default async function ProjectsPage({
 
       <ProjectDirectory
         projects={projects}
+        context={context}
+        mode={validDirectoryMode(searchParams.view)}
         total={total}
         page={page}
         filters={filters}
