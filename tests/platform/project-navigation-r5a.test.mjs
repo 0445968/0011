@@ -11,7 +11,7 @@ test('R5a uses one record section configuration for the bar and View menu', () =
   for (const id of ['overview','plan','lifecycle','brief','delivery','files','discussion','access','publishing']) {
     assert.match(config, new RegExp(`id: '${id}'`));
   }
-  assert.match(config, /id: 'activity', label: 'Activity', href: null/);
+  assert.match(config, /id: 'activity', label: 'Activity', href: '\/activity'/);
   assert.match(config, /id: 'calendar', label: 'Calendar', href: null/);
   assert.match(shell, /projectRecordSections\.map/);
   assert.match(menu, /projectRecordSections\.map/);

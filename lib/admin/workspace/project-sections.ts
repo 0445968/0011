@@ -9,7 +9,7 @@ export const projectRecordSections = [
   { id: 'files', label: 'Files', href: '/files' },
   { id: 'discussion', label: 'Discussion', href: '/discussion' },
   { id: 'access', label: 'Access', href: '/access' },
-  { id: 'activity', label: 'Activity', href: null, comingSoon: 'Unified Activity is scheduled for R5b' },
+  { id: 'activity', label: 'Activity', href: '/activity' },
   { id: 'publishing', label: 'Publishing', href: '/publish' },
 ] as const;
 
