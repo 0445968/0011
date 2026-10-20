@@ -24,7 +24,8 @@ test('My Tasks uses verified staff identity, revision checks, deactivation clean
  assert.equal((await db.query('select * from staff_my_tasks')).rows.length,0);
  const options=(await db.query("select staff_assignment_options('',1) r")).rows[0].r;assert.equal(options.total,2);assert.ok(options.rows.every(row=>row.id!==inactive));
  assert.equal((await db.query('select assign_project_task($1,$2,$3,1) r',[project,'first',staff])).rows[0].r.result,'saved');
- const mine=(await db.query('select * from staff_my_tasks')).rows;assert.equal(mine.length,1);assert.equal(mine[0].task_id,'first');assert.equal(mine[0].title,'First task');assert.equal(mine[0].task_status,'todo');assert.equal(mine[0].owner_label,'staff@example.com');
+ assert.equal((await db.query("select manage_project_task_schedule($1,'first','2026-10-10',1,0) r",[project])).rows[0].r.result,'saved');
+ const mine=(await db.query('select * from staff_my_tasks')).rows;assert.equal(mine.length,1);assert.equal(mine[0].task_id,'first');assert.equal(mine[0].title,'First task');assert.equal(mine[0].task_status,'todo');assert.equal(mine[0].owner_label,'staff@example.com');assert.equal(mine[0].start_on.toISOString().slice(0,10),'2026-10-10');
  assert.deepEqual((await db.query('select body from inquiry_projects where request_id=$1',[project])).rows[0].body,body);
  assert.equal((await db.query('select assign_project_task($1,$2,$3,1) r',[project,'first',second])).rows[0].r.result,'conflict');assert.equal((await db.query('select assign_project_task($1,$2,$3,null) r',[project,'first',second])).rows[0].r.result,'conflict');
  await assert.rejects(db.query('select assign_project_task($1,$2,$3,1)',[project,'client',staff]),/Bivi tasks/);await assert.rejects(db.query('select assign_project_task($1,$2,$3,1)',[project,'legacy',inactive]),/active staff/);

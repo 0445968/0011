@@ -2,8 +2,7 @@
 export const projectRecordSections = [
   { id: 'overview', label: 'Overview', href: '' },
   { id: 'plan', label: 'Tasks & Milestones', href: '?tab=plan' },
-  { id: 'calendar', label: 'Calendar', href: null, comingSoon: 'Project Calendar is scheduled for R6' },
-  { id: 'lifecycle', label: 'Lifecycle', href: '?tab=lifecycle' },
+  { id: 'calendar', label: 'Calendar', href: '?tab=calendar' },
   { id: 'brief', label: 'Brief', href: '?tab=brief' },
   { id: 'delivery', label: 'Delivery', href: '?tab=delivery' },
   { id: 'files', label: 'Files', href: '/files' },

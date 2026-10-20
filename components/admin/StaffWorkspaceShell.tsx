@@ -115,7 +115,6 @@ const projectSectionIcons: Record<(typeof projectRecordSections)[number]['id'], 
   overview: LayoutDashboard,
   plan: ClipboardList,
   calendar: CalendarDays,
-  lifecycle: Settings2,
   brief: FileText,
   delivery: Truck,
   files: Files,
@@ -527,7 +526,7 @@ function RecordContextNavigation({
               </Link>
             ) : (
               <span key={section.id} aria-disabled="true"
-                title={'comingSoon' in section ? section.comingSoon : 'Not available yet'}
+                title="Not available yet"
                 className="flex h-full shrink-0 cursor-not-allowed items-center gap-1.5 border-b-2 border-transparent px-2 text-[11px] text-muted-foreground/50">
                 {content}<span className="sr-only">Coming soon</span>
               </span>
@@ -1179,9 +1178,9 @@ useEffect(() => {
      SELECTED SECTION
      ======================================================= */
 
-  const selectedProjectTab =
-    searchParams.get('tab') ??
-    'overview';
+  const requestedProjectTab = searchParams.get('tab') ?? 'overview';
+  // Preserve existing lifecycle deep links as an alias for the integrated project calendar.
+  const selectedProjectTab = requestedProjectTab === 'lifecycle' ? 'calendar' : requestedProjectTab;
 
   /* =======================================================
      STAFF ACCOUNT

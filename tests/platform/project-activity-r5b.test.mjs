@@ -26,8 +26,8 @@ test('R5b actor lookup stays staff-gated and project-scoped',()=>{
   assert.doesNotMatch(sql,/grant (select|execute) .* to anon;/);
 });
 
-test('R5b enables activity while retaining reserved project calendar',()=>{
+test('R5b activity stays live and R6 enables the project calendar',()=>{
   const sections = read('lib/admin/workspace/project-sections.ts');
   assert.match(sections,/id: 'activity', label: 'Activity', href: '\/activity'/);
-  assert.match(sections,/id: 'calendar', label: 'Calendar', href: null/);
+  assert.match(sections,/id: 'calendar'.*tab=calendar/);
 });

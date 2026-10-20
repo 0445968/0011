@@ -6,7 +6,7 @@ import { Check, CheckCheck, ChevronDown, ChevronRight, Clock3, Pencil, Plus, Ref
 import type { ProjectBody } from '@/lib/projects/schema';
 import { projectPhaseLabels, projectPhaseOrder } from '@/lib/projects/lifecycle-schema';
 import type { ProjectPhase } from '@/lib/projects/lifecycle-schema';
-import { milestoneStats, nextStatus, workStatusOrder, milestoneStatusOrder, daysRemaining, remainingLabel, type WorkplanView } from '@/lib/projects/workplan-views';
+import { milestoneStats, nextStatus, workStatusOrder, milestoneStatusOrder, daysRemaining, remainingLabel, suggestedTaskPriority, type WorkplanView } from '@/lib/projects/workplan-views';
 import { taskToday } from '@/lib/tasks/links';
 import type { ProjectHierarchyResponse } from '@/lib/projects/hierarchy-schema';
 import { useProjectHierarchy } from './useProjectHierarchy';
@@ -18,6 +18,7 @@ import { useWorkspaceUnsavedChanges } from '../workspace/WorkspaceNavigationGuar
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { TaskProductivity } from './TaskProductivity';
+import { useProjectTaskSchedule } from './useProjectTaskSchedule';
 
 type Task = ProjectBody['tasks'][number];
 type Milestone = ProjectBody['milestones'][number];
@@ -90,6 +91,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const [newSubtaskTitle,setNewSubtaskTitle]=useState('');
   const [expanded,setExpanded]=useState<Record<string,boolean>>({});
   const today=taskToday('America/Chicago').today;
+  const schedule=useProjectTaskSchedule(id,revision);
   const canEditSidecar=!disabled&&!dirty&&sidecarReady&&!hierarchy.busy&&!hierarchy.conflict&&hierarchy.data?.projectRevision===revision;
   const phaseLinks=hierarchy.data?.milestonePhases??[];
   const subtasks=hierarchy.data?.subtasks??[];
@@ -124,6 +126,8 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const assignment=(task:Task)=> <Popover><PopoverTrigger asChild><button type="button" disabled={disabled} className="max-w-[190px] truncate rounded-md px-2 py-1 text-left text-xs text-muted-foreground hover:bg-muted" aria-label={`Assign milestone for ${task.title}`} title="Assign to a milestone">{body.milestones.find(item=>item.id===task.milestoneId)?.title??'No milestone'} <ChevronDown className="inline h-3 w-3" aria-hidden/></button></PopoverTrigger><PopoverContent align="start" className="max-h-64 w-64 overflow-auto p-2"><p className="mb-2 px-2 text-[11px] font-medium text-muted-foreground">Move task to milestone</p>{[{id:null,title:'No milestone'},...body.milestones].map(m=><button key={m.id??'none'} type="button" className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-2 text-left text-xs hover:bg-muted" onClick={()=>updateTask(task,{milestoneId:m.id})}><span className="truncate">{m.title}</span>{task.milestoneId===m.id&&<Check size={14} aria-hidden/>}</button>)}</PopoverContent></Popover>;
   const taskRow=(task:Task)=>{
     const children=subtasks.filter(item=>item.taskId===task.id);
+    const startOn=schedule.rows.get(task.id)?.start_on??null;
+    const suggested=suggestedTaskPriority(startOn,task.dueOn,today,task.status==='blocked');
     return <li key={task.id} className="border-t border-border/70 px-3 py-3">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <button type="button" disabled={disabled} title="Change task status" aria-label={`Change status of ${task.title}`} className="rounded-full focus-visible:ring-2" onClick={()=>updateTask(task,{status:nextStatus(task.status,workStatusOrder)})}><ProjectTaskStateIcon status={task.status}/></button>
@@ -132,7 +136,9 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
         <div className="shrink-0">{assignment(task)}</div>
         <TaskMemberPicker taskId={task.id} controls={assignments} disabled={disabled||dirty||!sidecarReady} />
         <Remaining dueOn={task.dueOn} today={today} completed={task.status==='done'}/>
+        <label className="text-[10px] text-muted-foreground">Start <input type="date" className={dateClass} aria-label={`Start date for ${task.title}`} disabled={disabled||dirty||schedule.busy!==null} value={startOn??''} onChange={event=>void schedule.save(task.id,event.target.value||null,task.dueOn,dirty)}/></label>
         <input type="date" className={dateClass} aria-label={`Due date for ${task.title}`} disabled={disabled} value={task.dueOn??''} onChange={event=>updateTask(task,{dueOn:event.target.value||null})}/>
+        {suggested&&<span className="rounded-full border border-border px-2 py-1 text-[10px] text-muted-foreground" title="Suggested from the saved start date, deadline, and today">Suggested {suggested} priority</span>}
       </div>
       <TaskProductivity projectId={id} taskId={task.id} taskTitle={task.title} revision={revision} disabled={disabled||dirty} userId={userId} />
       <details className="mt-1 pl-6 text-xs"><summary className="cursor-pointer py-1 text-muted-foreground">Subtasks ({children.length})</summary>
@@ -163,6 +169,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     <ProjectOrganizationOwnerButton projectId={id} controls={assignments} disabled={disabled||dirty||!sidecarReady} />
     <div role="tablist" aria-label="Work-plan view" className="inline-flex gap-1 rounded-xl border border-border bg-muted/40 p-1">{(['tasks','milestones','phases'] as const).map(item=><button role="tab" aria-selected={view===item} key={item} type="button" onClick={()=>setView(item)} className={`rounded-lg px-4 py-2 text-xs font-medium capitalize focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring ${view===item?'bg-card shadow-sm':'text-muted-foreground hover:bg-muted'}`}>{item}</button>)}</div>
     {assignments.error&&<p role="alert" className="rounded-lg border border-red-200 p-3 text-xs text-red-700">{assignments.error}</p>}
+    {schedule.error&&<p role="alert" className="rounded-lg border border-red-200 p-3 text-xs text-red-700">{schedule.error}</p>}
     {hierarchy.error&&<p role="alert" className="rounded-lg border border-red-200 p-3 text-xs text-red-700">{hierarchy.error}</p>}
     {hierarchy.conflict&&<p role="alert" className="text-xs text-red-600">Project changes detected. Refresh hierarchy before continuing.</p>}
     {dirty&&<p className="rounded-lg bg-amber-50 p-3 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">Save All your task and milestone edits before editing phase links and subtasks.</p>}

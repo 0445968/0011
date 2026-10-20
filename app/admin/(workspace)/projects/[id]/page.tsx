@@ -17,10 +17,6 @@ import {
 } from '@/components/admin/ProjectDeliveryControls';
 
 import {
-  ProjectLifecycleControls,
-} from '@/components/admin/ProjectLifecycleControls';
-
-import {
   ProjectWorkspace,
 } from '@/components/admin/ProjectWorkspace';
 
@@ -61,10 +57,13 @@ import {
 } from '@/lib/projects/lifecycle-data';
 
 import { ProjectOverview } from '@/components/admin/projects/ProjectOverview';
+import { ProjectCalendar } from '@/components/admin/projects/ProjectCalendar';
 import { ProjectTaskResponseReview } from '@/components/admin/projects/ProjectTaskResponseReview';
 import { getProjectDirectoryContext } from '@/lib/projects/directory-context';
 import { getProjectOverviewExtras } from '@/lib/projects/overview-data';
 import { taskToday } from '@/lib/tasks/links';
+import { getProjectTaskSchedule } from '@/lib/projects/schedule-data';
+import { projectPhaseStatesSchema } from '@/lib/projects/phase-status';
 
 import {
   getServiceBlueprint,
@@ -77,14 +76,14 @@ import {
 type Tab =
   | 'overview'
   | 'plan'
-  | 'lifecycle'
+  | 'calendar'
   | 'brief'
   | 'delivery';
 
 const ALL_TABS: Tab[] = [
   'overview',
   'plan',
-  'lifecycle',
+  'calendar',
   'brief',
   'delivery',
 ];
@@ -264,10 +263,11 @@ export default async function ProjectPage({
   const requestedTab =
     searchParams.tab;
 
+  const canonicalRequestedTab = requestedTab === 'lifecycle' ? 'calendar' : requestedTab;
   const requested =
     ALL_TABS.find(
       (item) =>
-        item === requestedTab
+        item === canonicalRequestedTab
     );
 
   const tab: Tab =
@@ -286,12 +286,25 @@ export default async function ProjectPage({
 
   const lifecycle =
     record &&
-    tab === 'lifecycle'
+    tab === 'calendar'
       ? await getProjectLifecycle(
           client,
           params.id
         )
       : null;
+
+  const [calendarExtras, scheduleRows, phaseStatesResult] = record && tab === 'calendar'
+    ? await Promise.all([
+        getProjectOverviewExtras(client, params.id),
+        getProjectTaskSchedule(client, params.id),
+        client.rpc('staff_project_phase_states', { p_request: params.id }),
+      ])
+    : [null, null, null] as const;
+  if (phaseStatesResult?.error) throw new Error('Project phase schedule could not load. Check migration 035.');
+  const phaseStates = phaseStatesResult ? projectPhaseStatesSchema.parse(phaseStatesResult.data).states : [];
+  const calendarToday = record && tab === 'calendar'
+    ? taskToday((await client.from('staff_notification_preferences').select('timezone').eq('user_id', user.id).maybeSingle()).data?.timezone || 'America/Chicago').today
+    : '';
 
   const brief =
     record &&
@@ -398,44 +411,21 @@ export default async function ProjectPage({
           LIFECYCLE
           =================================================== */}
 
-      {tab === 'lifecycle' &&
-        record &&
-        (
-          lifecycle?.lifecycle ? (
-            <ProjectLifecycleControls
-              key={`${record.revision}:${selectedTask||''}`}
-              selectedTask={selectedTask}
-              id={params.id}
-              lifecycle={
-                lifecycle.lifecycle
-              }
-              controls={
-                lifecycle.controls
-              }
-              tasks={
-                record.body.tasks
-              }
-              events={
-                lifecycle.events
-              }
-            />
-          ) : (
-            <p
-              className="
-                rounded-xl
-                border
-                border-border
-                bg-card
-                p-5
-                text-sm
-                text-muted-foreground
-              "
-            >
-              Lifecycle information is not available
-              for this project.
-            </p>
-          )
-        )}
+      {tab === 'calendar' && record && lifecycle?.lifecycle && calendarExtras && scheduleRows && (
+        <ProjectCalendar
+          id={params.id}
+          body={record.body}
+          projectRevision={record.revision}
+          controls={lifecycle.controls}
+          events={lifecycle.events}
+          lifecycle={lifecycle.lifecycle}
+          phaseStates={phaseStates}
+          schedule={scheduleRows}
+          members={calendarExtras.members}
+          milestonePhases={calendarExtras.milestonePhases}
+          today={calendarToday}
+        />
+      )}
 
       {/* ===================================================
           BRIEF

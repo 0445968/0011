@@ -1,6 +1,6 @@
 import {taskHref, taskToday} from '@/lib/tasks/links';
 
-export type CalendarKind = 'task' | 'milestone';
+export type CalendarKind = 'task' | 'task_start' | 'milestone';
 export interface CalendarItem {
   event_key: string;
   event_type: CalendarKind;
@@ -22,7 +22,7 @@ export function milestoneDomId(id: string) {
 }
 
 export function calendarHref(item: Pick<CalendarItem, 'event_type' | 'request_id' | 'source_id'>) {
-  if (item.event_type === 'task') return taskHref(item.request_id, item.source_id);
+  if (item.event_type === 'task' || item.event_type === 'task_start') return taskHref(item.request_id, item.source_id);
   const params = new URLSearchParams({tab: 'plan', milestone: item.source_id});
   return `/projects/${item.request_id}?${params}#${encodeURIComponent(milestoneDomId(item.source_id))}`;
 }

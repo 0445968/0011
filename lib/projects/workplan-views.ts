@@ -28,6 +28,23 @@ export function remainingLabel(days: number | null) {
   return `${days}d left`;
 }
 
+function validDateOnly(value: string | null): value is string {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const parsed = new Date(`${value}T12:00:00Z`);
+  return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+}
+
+/** Suggested priority from confirmed task start/due dates; blocked work is paused. */
+export function suggestedTaskPriority(startOn: string | null, dueOn: string | null, today: string, paused = false): 'low' | 'medium' | 'high' | null {
+  if (paused || !validDateOnly(startOn) || !validDateOnly(dueOn) || !validDateOnly(today) || dueOn < today) return null;
+  if (startOn >= dueOn) return null;
+  const duration = Date.parse(`${dueOn}T12:00:00Z`) - Date.parse(`${startOn}T12:00:00Z`);
+  const elapsed = Date.parse(`${today}T12:00:00Z`) - Date.parse(`${startOn}T12:00:00Z`);
+  if (!Number.isFinite(duration) || duration <= 0 || !Number.isFinite(elapsed)) return null;
+  const fraction = elapsed / duration;
+  return fraction >= 0.75 ? 'high' : fraction >= 0.5 ? 'medium' : 'low';
+}
+
 export function milestoneStats(body: ProjectBody, milestoneId: string) {
   const tasks = body.tasks.filter(task => task.milestoneId === milestoneId);
   const done = tasks.filter(task => task.status === 'done').length;

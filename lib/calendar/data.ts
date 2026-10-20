@@ -10,7 +10,8 @@ export async function listCalendar(client: SupabaseClient, userId: string, p: Re
   let query = client.from('staff_calendar').select('*', {count:'exact'});
   const q = cleanCompanySearch(p.q || '');
   if (q) query = query.or(`title.ilike.%${q}%,project_title.ilike.%${q}%,project_public_id.ilike.%${q}%`);
-  if (p.kind === 'task' || p.kind === 'milestone') query = query.eq('event_type', p.kind);
+  if (p.kind === 'task') query = query.in('event_type', ['task', 'task_start']);
+  else if (p.kind === 'milestone') query = query.eq('event_type', p.kind);
   if (p.scope === 'mine') query = query.eq('assigned_staff_id', userId);
   if (['active', 'on_hold', 'completed'].includes(p.project || '')) query = query.eq('project_state', p.project!);
   else if (p.project !== 'all') query = query.neq('project_state', 'completed');

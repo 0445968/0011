@@ -3,6 +3,7 @@ import { requireStaff } from '@/lib/admin/auth';
 import { listMyTasks } from '@/lib/tasks/data';
 import { taskHref } from '@/lib/tasks/links';
 import { projectPhaseLabels } from '@/lib/projects/lifecycle-schema';
+import { suggestedTaskPriority } from '@/lib/projects/workplan-views';
 
 const taskLabels = { todo: 'To do', doing: 'In progress', blocked: 'Blocked', done: 'Done' };
 
@@ -37,14 +38,16 @@ export default async function MyTasksPage({ searchParams: p }: { searchParams: R
     </form>
     <div className="overflow-x-auto rounded-xl border bg-card">
       <table className="w-full text-left text-sm">
-        <thead className="border-b bg-muted/40"><tr>{['Task', 'Project', 'Status', 'Priority', 'Due', 'Phase', 'Assignment'].map(label => <th className="p-4 font-medium" key={label}>{label}</th>)}</tr></thead>
+        <thead className="border-b bg-muted/40"><tr>{['Task', 'Project', 'Status', 'Priority', 'Start', 'Due', 'Phase', 'Assignment'].map(label => <th className="p-4 font-medium" key={label}>{label}</th>)}</tr></thead>
         <tbody>{result.rows.map(task => {
           const overdue = task.task_status !== 'done' && !!task.due_on && task.due_on < result.today;
+          const suggested = suggestedTaskPriority(task.start_on, task.due_on, result.today, task.task_status === 'blocked');
           return <tr key={`${task.request_id}:${task.task_id}`} className="border-b last:border-0">
             <td className="p-4"><Link className="font-semibold hover:underline" href={taskHref(task.request_id, task.task_id)}>{task.title}</Link>{task.is_blocked && <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">{task.blocker_owner ? `Waiting on ${task.blocker_owner}` : task.depends_on ? 'Waiting on a task dependency' : 'Blocked'}</p>}</td>
             <td className="p-4"><Link href={`/projects/${task.request_id}`} className="underline">{task.project_title}</Link><p className="mt-1 font-mono text-xs text-muted-foreground">{task.project_public_id} · {task.project_state.replaceAll('_', ' ')}</p></td>
             <td className="p-4">{taskLabels[task.task_status]}</td>
-            <td className="p-4">{task.priority ? <span className={`rounded-full border px-2 py-1 text-xs capitalize ${task.priority==='urgent'?'border-red-300 bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200':task.priority==='high'?'border-orange-300 bg-orange-50 text-orange-800 dark:bg-orange-950 dark:text-orange-200':'border-border bg-muted/40'}`}>{task.priority}</span> : <span className="text-muted-foreground">Not set</span>}</td>
+            <td className="p-4">{task.priority ? <span className={`rounded-full border px-2 py-1 text-xs capitalize ${task.priority==='urgent'?'border-red-300 bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200':task.priority==='high'?'border-orange-300 bg-orange-50 text-orange-800 dark:bg-orange-950 dark:text-orange-200':'border-border bg-muted/40'}`}>{task.priority}</span> : suggested ? <span className="rounded-full border border-border px-2 py-1 text-xs capitalize">Suggested {suggested}</span> : <span className="text-muted-foreground">Not set</span>}</td>
+            <td className="p-4">{task.start_on || 'Not scheduled'}</td>
             <td className="p-4"><span className={overdue ? 'text-red-600 dark:text-red-400' : ''}>{task.due_on || 'No due date'}{overdue ? ' · Overdue' : ''}</span></td>
             <td className="p-4">{projectPhaseLabels[task.phase]}</td>
             <td className="p-4"><span>{task.assignee_count > 1 ? `You and ${task.assignee_count - 1} other${task.assignee_count === 2 ? '' : 's'}` : 'Assigned to you'}</span><Link className="ml-2 underline" href={taskHref(task.request_id, task.task_id, 'lifecycle')}>Task settings</Link></td>
