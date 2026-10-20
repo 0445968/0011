@@ -6,6 +6,7 @@ import { ProjectFiles } from '@/components/files/ProjectFiles';
 import { ClientDeliveryControls } from '@/components/portal/ClientDeliveryControls';
 import { ClientProjectBrief } from '@/components/portal/ClientProjectBrief';
 import { ClientProjectTasks } from '@/components/portal/ClientProjectTasks';
+import { ClientProjectManagement } from '@/components/portal/ClientProjectManagement';
 import { ClientReview } from '@/components/portal/ClientReview';
 import { PublishedUpdate } from '@/components/portal/PublishedUpdate';
 import { projectFiles } from '@/lib/files/data';
@@ -14,6 +15,7 @@ import { projectFeedback, projectPublications } from '@/lib/portal/data';
 import { getClientBriefVersions } from '@/lib/projects/brief-data';
 import { getProjectDelivery } from '@/lib/projects/delivery-data';
 import { clientProjectWork } from '@/lib/projects/lifecycle-data';
+import { clientProjectAssignmentWorkspaceSchema } from '@/lib/projects/client-team-schema';
 
 export default async function ClientProjectPage({ params }: { params: { id: string } }) {
   const { client, user } = await requireClient();
@@ -21,6 +23,10 @@ export default async function ClientProjectPage({ params }: { params: { id: stri
 
   const work = await clientProjectWork(client, params.id);
   if (!work) notFound();
+
+  const teamResult = await client.rpc('client_project_assignment_workspace', { p_request: params.id });
+  const teamParsed = teamResult.error ? null : clientProjectAssignmentWorkspaceSchema.safeParse(teamResult.data);
+  const team = teamParsed && teamParsed.success ? teamParsed.data : null;
 
   const [updatesRaw, files, feedback, briefVersions, review, delivery] = await Promise.all([
     projectPublications(client, params.id),
@@ -50,6 +56,7 @@ export default async function ClientProjectPage({ params }: { params: { id: stri
 
       <div className="mt-8 space-y-7">
         <ClientProjectTasks id={params.id} work={work} />
+        <ClientProjectManagement id={params.id} work={work} team={team} />
         <ClientProjectBrief id={params.id} version={latestBrief} canReview={canReview} />
         <ClientDeliveryControls
           id={params.id}

@@ -58,7 +58,7 @@ export function useProjectAssignments(projectId: string) {
       return false;
     } finally { setBusy(false); }
   }, [busy, load, projectId]);
-  return { data, error, busy, save };
+  return { data, error, busy, save, load };
 }
 
 type AssignmentControls = ReturnType<typeof useProjectAssignments>;
@@ -149,7 +149,7 @@ export function TaskMemberPicker({ taskId, disabled, controls }: { taskId: strin
           <input className="mt-2 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" type="search" placeholder="Search eligible members" value={search} onChange={event => setSearch(event.target.value)} />
         </label>
         <MemberChoices side={side} options={options} values={ids} change={setIds} search={search} />
-        <p className="text-xs text-muted-foreground">{ids.length} selected · The first Bivi assignee remains primary in the existing My Tasks view until it is updated for multi-assignees.</p>
+        <p className="text-xs text-muted-foreground">{ids.length} selected · Every active Bivi assignee appears in My Tasks.</p>
         <DialogFooter>
           <button type="button" className={buttonClass} disabled={busy} onClick={() => setOpen(false)}>Cancel</button>
           <button type="button" className="rounded-lg bg-foreground px-4 py-2 text-xs font-semibold text-background disabled:opacity-40" disabled={busy || !changed || ids.length > 12} onClick={() => void commit()}>{busy ? 'Saving…' : 'Save responsibility'}</button>
@@ -191,4 +191,51 @@ export function ProjectManagersButton({ controls, disabled }: { controls: Assign
       </DialogContent>
     </Dialog>
   </>;
+}
+
+export function ProjectOrganizationOwnerButton({ projectId, controls, disabled }: { projectId: string; controls: AssignmentControls; disabled: boolean }) {
+  const { data, error, load } = controls;
+  const [ownerId, setOwnerId] = useState('');
+  const [selectedId, setSelectedId] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  useEffect(() => {
+    let active = true;
+    void fetch(`/api/admin/projects/${projectId}/organization-owner`, { cache: 'no-store' })
+      .then(async response => {
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Organization owner could not load.');
+        if (active) { setOwnerId(result.ownerId ?? ''); setSelectedId(result.ownerId ?? ''); }
+      })
+      .catch(cause => { if (active) setMessage(cause instanceof Error ? cause.message : 'Organization owner could not load.'); });
+    return () => { active = false; };
+  }, [projectId]);
+  async function save() {
+    if (!selectedId || busy) return;
+    setBusy(true);
+    setMessage('');
+    try {
+      const response = await fetch(`/api/admin/projects/${projectId}/organization-owner`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: selectedId }), signal: AbortSignal.timeout(20000),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.saved) throw new Error(result.error || 'Organization owner could not be verified.');
+      setOwnerId(selectedId);
+      setMessage('Organization owner verified.');
+      await load();
+    } catch (cause) {
+      setMessage(cause instanceof Error ? cause.message : 'Organization owner could not be verified.');
+    } finally { setBusy(false); }
+  }
+  return <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border p-3">
+    <label className="min-w-[220px] flex-1 text-xs font-medium">Verified organization owner
+      <select className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" value={selectedId} onChange={event => setSelectedId(event.target.value)} disabled={disabled || busy || !data?.clients.length}>
+        <option value="">Select active project client</option>
+        {data?.clients.map(person => <option key={person.id} value={person.id}>{person.label}</option>)}
+      </select>
+    </label>
+    <button type="button" className={buttonClass} disabled={disabled || busy || !selectedId || selectedId === ownerId} onClick={() => void save()}>{busy ? 'Saving…' : 'Verify owner'}</button>
+    {(message || error) && <p role="status" className="w-full text-xs text-muted-foreground">{message || error}</p>}
+  </div>;
 }

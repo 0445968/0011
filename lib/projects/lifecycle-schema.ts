@@ -101,6 +101,7 @@ export const clientTaskCommandSchema = z.object({
 export const clientTaskSchema = z.object({
   id: z.string(),
   title: z.string(),
+  description: z.string(),
   dueOn: z.string().nullable(),
   status: z.enum(['todo', 'doing', 'blocked', 'done']),
   phase: projectPhaseSchema,

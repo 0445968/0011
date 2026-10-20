@@ -9,12 +9,12 @@ Baseline: GitHub `0445968/0011`, branch `bivi-dashboard-overhaul`, after R4a com
 - Up to five client project managers can be designated by staff from active **project-access members who also belong to the project's client organization**. Users outside those boundaries cannot be assigned, even by sending a forged POST request.
 - The picker shows the Bivi icon or a verified client-company logo, with profile pictures, names on hover and a multi-select dialog.
 - Changes go to a single revision-checked RPC, never through direct table writes. All changes leave an actor/time/before/after event. The page does not reload.
-- Existing *primary* Bivi task assignment remains in `project_task_controls.assigned_staff_id` for the current My Tasks query. All project assignees are in `project_task_members`; **additional assignees won't appear in My Tasks until its query is updated**.
+- Existing *primary* Bivi task assignment remains in `project_task_controls.assigned_staff_id` for compatibility. All active Bivi assignees now appear in My Tasks from `project_task_members`.
 - This migration backfills confirmed single Bivi assignees only. It does not guess client managers or derive identity from the old free-text task-owner label.
 
 ## Deliberately deferred
 
-- Client self-service: designated client managers will later be able to reassign active members of their own organization, subject to explicit per-project authorization. R4b is **staff managed only**, so it does not weaken client APIs.
+- Client self-service delegation and client-created tasks are implemented in R5c/R5d through staff-verified organization ownership, project access checks, audit history, and revision-checked database functions.
 - Client task response choices (request clarification/postponement/modification, conditional decline with risk guidance), staff final approval, and notifications are later audited workflow patches.
 - Changing responsibility in this pilot is distinct from the R2 work-plan draft Save All. Do not have dirty project edits while using the picker; finish Save All first.
 - Existing `Lifecycle` task-owner selectors can edit the same single-assignee control. Concurrent edits will be rejected by revision checks; refresh the picker to reconcile. Phase approval and delivery gates stay unchanged.

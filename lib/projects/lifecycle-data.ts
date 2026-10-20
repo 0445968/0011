@@ -78,5 +78,18 @@ export async function clientProjectWork(
 
   if (error) throw new Error('Client tasks could not be loaded. Check migrations 012 and 024.');
   if (data === null) return null;
-  return clientProjectWorkSchema.parse(data);
+  const details = await client.rpc('client_project_created_task_details', { p_request: requestId });
+  if (details.error) throw new Error('Client task details could not be loaded. Check the client task migration.');
+  const descriptions = new Map<string, string>((Array.isArray(details.data) ? details.data : []).flatMap((row: unknown) => {
+    if (!row || typeof row !== 'object' || typeof (row as { taskId?: unknown }).taskId !== 'string' || typeof (row as { description?: unknown }).description !== 'string') return [];
+    const value = row as { taskId: string; description: string };
+    return [[value.taskId, value.description] as [string, string]];
+  }));
+  const project = data as Record<string, unknown>;
+  const tasks = Array.isArray(project.tasks) ? project.tasks.map((task: unknown) => {
+    if (!task || typeof task !== 'object') return task;
+    const value = task as Record<string, unknown>;
+    return { ...value, description: descriptions.get(String(value.id)) ?? '' };
+  }) : project.tasks;
+  return clientProjectWorkSchema.parse({ ...project, tasks });
 }

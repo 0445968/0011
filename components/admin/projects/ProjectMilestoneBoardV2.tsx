@@ -10,7 +10,7 @@ import { milestoneStats, nextStatus, workStatusOrder, milestoneStatusOrder, days
 import { taskToday } from '@/lib/tasks/links';
 import type { ProjectHierarchyResponse } from '@/lib/projects/hierarchy-schema';
 import { useProjectHierarchy } from './useProjectHierarchy';
-import { ProjectManagersButton, TaskMemberPicker, useProjectAssignments } from './ProjectAssignments';
+import { ProjectManagersButton, ProjectOrganizationOwnerButton, TaskMemberPicker, useProjectAssignments } from './ProjectAssignments';
 import { ProjectPhaseCards } from './ProjectPhaseCards';
 import { expectedMilestoneStatus } from '@/lib/projects/phase-status';
 import { ProjectTaskStateIcon } from './DirectoryIndicators';
@@ -157,6 +157,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   };
   return <section aria-label="Project tasks, milestones and phases" className="space-y-3">
     <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-base font-semibold">Work plan</h2><p className="mt-1 text-xs text-muted-foreground">Task and milestone edits use the private draft and Save All. Phase links and subtasks save through the hierarchy API.</p></div><div className="flex flex-wrap gap-2"><ProjectManagersButton controls={assignments} disabled={disabled||dirty||!sidecarReady} />{btn('Refresh hierarchy',<RefreshCcw size={15}/>,()=>{void hierarchy.load();},hierarchy.busy)}</div></div>
+    <ProjectOrganizationOwnerButton projectId={id} controls={assignments} disabled={disabled||dirty||!sidecarReady} />
     <div role="tablist" aria-label="Work-plan view" className="inline-flex gap-1 rounded-xl border border-border bg-muted/40 p-1">{(['tasks','milestones','phases'] as const).map(item=><button role="tab" aria-selected={view===item} key={item} type="button" onClick={()=>setView(item)} className={`rounded-lg px-4 py-2 text-xs font-medium capitalize focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring ${view===item?'bg-card shadow-sm':'text-muted-foreground hover:bg-muted'}`}>{item}</button>)}</div>
     {assignments.error&&<p role="alert" className="rounded-lg border border-red-200 p-3 text-xs text-red-700">{assignments.error}</p>}
     {hierarchy.error&&<p role="alert" className="rounded-lg border border-red-200 p-3 text-xs text-red-700">{hierarchy.error}</p>}
@@ -167,7 +168,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     {view==='phases'&&<ProjectPhaseCards id={id} body={body} links={phaseLinks}
       disabled={disabled||dirty||!sidecarReady||!hierarchy.data||hierarchy.busy||hierarchy.conflict}
       onAssignMilestone={setPhases} />}
-    <p className="text-[11px] text-muted-foreground">Phase assignments support multiple phases. Phase completion is explicitly reviewed in the Phases view; legacy Lifecycle gates remain separate. Staff-only responsibility and verified multi-assignees are now supported; client-side assignment delegation and response actions are upcoming.</p>
+    <p className="text-[11px] text-muted-foreground">Phase assignments support multiple phases. Phase completion is explicitly reviewed in the Phases view; legacy Lifecycle gates remain separate. Staff-verified organization ownership and client-side task delegation are supported alongside existing response review.</p>
     <Dialog open={prompt!==null} onOpenChange={open=>{if(!open)setPrompt(null);}}><DialogContent className="bivi-staff-surface"><DialogTitle>{prompt?.title}</DialogTitle><DialogDescription>{prompt?.description}</DialogDescription><DialogFooter><button type="button" className="rounded-lg border border-border px-4 py-2 text-xs font-medium hover:bg-muted" onClick={()=>setPrompt(null)}>Cancel</button><button type="button" className="rounded-lg bg-foreground px-4 py-2 text-xs font-medium text-background" onClick={()=>{const action=prompt?.confirm;setPrompt(null);action?.();}}>Confirm</button></DialogFooter></DialogContent></Dialog>
   </section>;
 }

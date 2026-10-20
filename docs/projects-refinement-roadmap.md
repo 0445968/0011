@@ -64,3 +64,26 @@ Baseline: `0445968/0011`, `bivi-dashboard-overhaul`, following D1a–D1c. Preser
 - Client clarification/postponement/modification/conditional decline requests are auditable and reviewed by staff. Accepting a non-completion request does **not** silently edit deadline, scope, or status.
 - Conditional decline starts disabled; staff can enable it per client task with a risk and contribution message. Clients must read the in-app warning and submit a reason.
 - Manager self-delegation, client-created tasks, communications notifications, unified Activity timeline and staff/client completion notifications remain follow-up work requiring separate permissions and audit checks.
+
+## R5c — verified client organization ownership and delegation
+- Establish an authenticated organization owner only through an explicit staff verification tied to an active client organization member; never infer identity from the legacy owner label, a contact role, or a user-editable profile field.
+- Let the verified organization owner designate up to five project managers from active project-access members of that same organization. Keep project access, organization membership, owner status, and assignment revisions independently checked server-side.
+- Let designated project managers assign client-owned tasks to themselves or other active, authorized members of the linked organization. Record actor, before/after membership, and task revision in the existing audit sources.
+- Keep Bivi-only controls and client decline policy under Bivi staff authorization. Preserve current client response and staff-review gates.
+
+## R5d — client-created tasks and complete My Tasks membership
+- Let a verified owner or designated project manager create a client-owned task only in an active project phase, with project revision checking, project/task limits, an eligible client assignee, and an audit snapshot. Client creation must not change Bivi-owned work, dates, scope, or completion approvals.
+- Update My Tasks to include every active Bivi assignee in `project_task_members`, while preserving existing primary assignments, filters, pagination, dependency state, and staff-only RLS. Do not show client-owned work in the staff queue.
+- Use the same verified project organization and active project-access boundary for every client assignee; reject forged IDs, cross-organization access, stale revisions, completed projects, and inactive accounts at the database boundary.
+
+## R5e — milestone-centered Work Plan and complete task hierarchy
+- Replace the separate Tasks/Milestones lists with milestone cards, nested tasks/subtasks, accessible scrolling, explicit unassigned work, and linked phase labels for active/concurrent phases. Keep completed milestones ordered last and retain stable ordering.
+- Preserve existing IDs and drafts; add dates, status, completion percent, and calculated suggested priority only from confirmed task data. Handle invalid/zero intervals, pauses, overdue work, cross-phase assignments, and revision conflicts explicitly.
+
+## R5f — task files, communications, notes, and activity integration
+- Add permission-bounded task file previews and links to existing project files, discussion, communications, and notes within the relevant task/milestone context. Show counters only when backed by real records.
+- Extend the audited timeline with supported task assignment, task creation, comment, file, client request/review, and notification events. Preserve provenance, recipient privacy, actor identity, timestamps, ordering, and deduplication; add no synthetic events. Use the existing communications queue for notifications when that integration is scheduled and verified.
+
+## R8 — verified project operational status and closeout
+- Support Active, On hold, Waiting on client, and Inactive as distinct operational states. Waiting on client requires explicit verified dependency/status evidence; a client-owned task alone is not evidence.
+- Make Inactive a deliberate, authorized staff closeout after the final stage, with an audit entry and a lifecycle concept distinct from publication/completion. Review portal/API behavior and migrate completed records only through an explicit reviewed migration; never relabel them implicitly.

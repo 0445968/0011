@@ -66,6 +66,7 @@ function ClientTaskCard({ id, work, task }: { id: string; work: ClientProjectWor
         <div>
           <p className="text-xs text-muted-foreground">{projectPhaseLabels[task.phase]}{task.serviceId ? ` · ${task.serviceId}` : ''}</p>
           <h3 className="mt-1 font-medium">{task.title}</h3>
+          {task.description && <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{task.description}</p>}
         </div>
         <span className="rounded-full bg-muted px-2.5 py-1 text-xs">{taskStatus(task.status)}</span>
       </div>

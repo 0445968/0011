@@ -186,12 +186,12 @@ export async function getProjectActivity(client: SupabaseClient, requestId: stri
   }
   for (const row of bySource.members ?? []) {
     const action = text(row.action);
-    const label = action === 'client_managers' ? 'Client project managers updated' : 'Task responsibility updated';
+    const label = action === 'client_managers' ? 'Client project managers updated' : action === 'organization_owner' ? 'Client organization owner verified' : 'Task responsibility updated';
     const focus = id(row.task_id);
     const state = object(row.after_state);
     const side = text(state.side);
     const size = Array.isArray(state.users) ? state.users.length : null;
-    const detail = action === 'client_managers' ? 'Designated client managers changed' :
+    const detail = action === 'organization_owner' ? `Verified organization member ${text(state.organizationOwner).slice(0, 8)}` : action === 'client_managers' ? 'Designated client managers changed' :
       `${taskName(focus)}${side ? ` · ${side === 'bivi' ? 'Bivi' : 'Client'}` : ''}${size === null ? '' : ` · ${size} assignee(s)`}`;
     events.push(auditEvent('members', 'members', row, label, detail, base, 'actor', 'created_at', focus ?? undefined));
   }
