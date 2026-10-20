@@ -36,7 +36,26 @@ export async function POST(request: Request, { params }: { params: { id: string 
     p_request: params.id, p_phase: parsed.data.phase, p_status: parsed.data.status,
     p_revision: parsed.data.expectedRevision, p_reason: parsed.data.reason,
   });
-  if (result.error) return adminReply({ error: result.error.code === '22023' ? 'Invalid phase change.' : 'Phase change could not save.' }, result.error.code === '22023' ? 400 : 503);
+  if (result.error) {
+    // Keep PostgreSQL internals in server logs; return actionable, bounded diagnostics.
+    console.error('[project phase save] database failure', {
+      code: result.error.code,
+      message: result.error.message,
+      details: result.error.details,
+    });
+    const code = result.error.code || 'unknown';
+    const message = code === '23514'
+      ? 'A database constraint rejected the phase change. Apply migration 038, then retry.'
+      : code === '42501'
+        ? 'The database denied this phase update. Verify staff access and migration 035.'
+        : code === '42883'
+          ? 'The phase update function is missing. Apply migrations 035, 037 and 038 in order.'
+          : code === '22023'
+            ? 'Invalid phase change.'
+            : `Phase change could not save (database error ${code}). Check the server logs.`;
+    return adminReply({ error: message, diagnosticCode: code },
+      code === '42501' ? 403 : code === '22023' ? 400 : code === '23514' ? 409 : 503);
+  }
   switch (result.data?.result) {
     case 'saved': return adminReply({ saved: true, revision: result.data.revision });
     case 'conflict': return adminReply({ error: 'Phase changed in another session. Refresh phase statuses.' }, 409);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { Check, ChevronDown, Users, UserRoundPlus } from 'lucide-react';
 import { ProfileImage } from '@/components/profile-images/ProfileImage';
@@ -16,22 +16,30 @@ export function useProjectAssignments(projectId: string) {
   const [data, setData] = useState<ProjectAssignmentWorkspace | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const load = useCallback(async (signal?: AbortSignal) => {
+  const requestGeneration = useRef(0);
+  // Never abort fetches during React effect cleanup. Ignore stale responses instead.
+  const load = useCallback(async (isActive: () => boolean = () => true) => {
+    const generation = ++requestGeneration.current;
+    const isCurrent = () => isActive() && generation === requestGeneration.current;
     try {
-      const result = await fetch(`/api/admin/projects/${projectId}/assignees`, { cache: 'no-store', signal });
+      const result = await fetch(`/api/admin/projects/${projectId}/assignees`, { cache: 'no-store' });
       const json = await result.json();
+      if (!isCurrent()) return false;
       if (!result.ok) throw new Error(json.error || 'Could not load project members.');
-      if (signal?.aborted) return;
       setData(json as ProjectAssignmentWorkspace);
       setError('');
+      return true;
     } catch (cause) {
-      if (!signal?.aborted) setError(cause instanceof Error ? cause.message : 'Could not load project members.');
+      if (isCurrent()) setError(cause instanceof Error ? cause.message : 'Could not load project members.');
+      return false;
     }
   }, [projectId]);
   useEffect(() => {
-    const controller = new AbortController();
-    void load(controller.signal);
-    return () => controller.abort();
+    let active = true;
+    setData(null);
+    setError('');
+    void load(() => active);
+    return () => { active = false; };
   }, [load]);
   const save = useCallback(async (body: object) => {
     if (busy) return false;
@@ -44,8 +52,7 @@ export function useProjectAssignments(projectId: string) {
       });
       const json = await result.json();
       if (!result.ok || !json.saved) throw new Error(json.error || 'Assignment could not save.');
-      await load();
-      return true;
+      return await load();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Assignment could not save.');
       return false;
