@@ -383,6 +383,7 @@ export default async function ProjectPage({
               `${record?.revision??0}:${selectedTask||''}:${selectedMilestone||''}`
             }
             id={params.id}
+            userId={user.id}
             record={record}
             history={data.history}
             gateReady={gateReady}

@@ -17,6 +17,7 @@ import { ProjectTaskStateIcon } from './DirectoryIndicators';
 import { useWorkspaceUnsavedChanges } from '../workspace/WorkspaceNavigationGuard';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { TaskProductivity } from './TaskProductivity';
 
 type Task = ProjectBody['tasks'][number];
 type Milestone = ProjectBody['milestones'][number];
@@ -73,12 +74,13 @@ function SubtaskEditor({item,disabled,update,requestRemove,today}: {
   </li>;
 }
 
-export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarReady,onTaskChange,onMilestoneChange,onAddTask,onBulkTasks}: {
+export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarReady,onTaskChange,onMilestoneChange,onAddTask,onBulkTasks,userId}: {
   id:string;revision:number;body:ProjectBody;disabled:boolean;dirty:boolean;sidecarReady:boolean;
   onTaskChange:(index:number,changes:Partial<Task>)=>void;
   onMilestoneChange:(index:number,changes:Partial<Milestone>)=>void;
   onAddTask:(milestoneId:string|null)=>void;
   onBulkTasks:(milestoneId:string,status:'done'|'todo')=>void;
+  userId:string;
 }) {
   const hierarchy=useProjectHierarchy(id,revision,true);
   const assignments=useProjectAssignments(id);
@@ -132,6 +134,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
         <Remaining dueOn={task.dueOn} today={today} completed={task.status==='done'}/>
         <input type="date" className={dateClass} aria-label={`Due date for ${task.title}`} disabled={disabled} value={task.dueOn??''} onChange={event=>updateTask(task,{dueOn:event.target.value||null})}/>
       </div>
+      <TaskProductivity projectId={id} taskId={task.id} taskTitle={task.title} revision={revision} disabled={disabled||dirty} userId={userId} />
       <details className="mt-1 pl-6 text-xs"><summary className="cursor-pointer py-1 text-muted-foreground">Subtasks ({children.length})</summary>
         <ul>{children.map(item=><SubtaskEditor key={`${item.id}:${item.revision}`} item={item} disabled={!canEditSidecar} update={updateSubtask} requestRemove={removeSubtask} today={today}/>)}</ul>
         {newSubtaskFor===task.id?<div className="flex flex-wrap items-center gap-2 py-2"><input autoFocus className={nameInput} aria-label="New subtask title" maxLength={300} disabled={!canEditSidecar} value={newSubtaskTitle} onChange={e=>setNewSubtaskTitle(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();void addSubtask(task.id);}}}/>{btn('Save subtask',<Check size={15}/>,()=>{void addSubtask(task.id);},!canEditSidecar||!newSubtaskTitle.trim())}{btn('Cancel',<RotateCcw size={15}/>,()=>setNewSubtaskFor(null))}</div>:<div>{btn('Add subtask',<Plus size={15}/>,()=>{setNewSubtaskFor(task.id);setNewSubtaskTitle('');},!canEditSidecar||children.length>=50)}</div>}
@@ -152,7 +155,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
         <Popover><PopoverTrigger asChild><button type="button" className="rounded-lg border border-border px-2.5 py-1.5 text-xs hover:bg-muted disabled:opacity-50" disabled={!canEditSidecar} title="Manage phases">Phases ({phases.length}) <ChevronDown size={12} className="inline" aria-hidden/></button></PopoverTrigger><PopoverContent align="end" className="max-h-72 overflow-auto p-2"><p className="px-2 py-1 text-xs font-semibold">Assign milestone to phases</p>{projectPhaseOrder.map(phase=><label key={phase} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-xs hover:bg-muted"><input type="checkbox" disabled={!canEditSidecar} checked={phases.includes(phase)} onChange={e=>setPhases(milestone,phase,e.target.checked)}/>{projectPhaseLabels[phase]}</label>)}</PopoverContent></Popover>
       </div>
       <div className="mx-4 mb-3 flex items-center gap-3 text-[11px] text-muted-foreground"><div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-muted"><div className="h-full bg-gradient-to-r from-emerald-400 via-green-500 to-teal-600" style={{width:`${stats.percent??0}%`}}/></div>{stats.percent===null?'No tasks':`${stats.percent}%`}</div>
-      {isOpen&&<div className="border-t border-border bg-background/40"><div className="flex items-center justify-between gap-3 px-4 py-2"><span className="text-xs font-semibold">Tasks</span><div className="flex items-center gap-1">{btn('Mark all tasks completed',<CheckCheck size={16}/>,()=>setPrompt({title:'Complete all tasks?',description:`Mark every task in “${milestone.title}” completed? Changes are saved in your draft until Save All.`,confirm:()=>onBulkTasks(milestone.id,'done')}),disabled||!stats.total)}{btn('Mark all tasks not started',<RotateCcw size={15}/>,()=>setPrompt({title:'Reset task statuses?',description:`Mark all tasks in “${milestone.title}” not started? Existing completion will be removed from the draft.`,confirm:()=>onBulkTasks(milestone.id,'todo')}),disabled||!stats.total)}{btn('Add task',<Plus size={16}/>,()=>onAddTask(milestone.id),disabled||body.tasks.length>=100)}</div></div><ul>{body.tasks.filter(task=>task.milestoneId===milestone.id).map(taskRow)}</ul>{!stats.total&&<p className="px-4 py-4 text-xs text-muted-foreground">No tasks. Use + to add one.</p>}{stats.readyForReview&&milestone.status!=='done'&&<button type="button" disabled={disabled} onClick={()=>setPrompt({title:'Complete milestone?',description:`All tasks in “${milestone.title}” are done. Mark the milestone completed after review?`,confirm:()=>updateMilestone(milestone,{status:'done'})})} className="m-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">All tasks done — review milestone completion</button>}</div>}
+      {isOpen&&<div className="border-t border-border bg-background/40"><div className="flex items-center justify-between gap-3 px-4 py-2"><span className="text-xs font-semibold">Tasks</span><div className="flex items-center gap-1">{btn('Mark all tasks completed',<CheckCheck size={16}/>,()=>setPrompt({title:'Complete all tasks?',description:`Update ${stats.total} task${stats.total===1?'':'s'} in “${milestone.title}” in one audited project revision. Blocked tasks and unmet dependencies will be rejected. Save other work-plan edits first.`,confirm:()=>onBulkTasks(milestone.id,'done')}),disabled||dirty||!stats.total)}{btn('Mark all tasks not started',<RotateCcw size={15}/>,()=>setPrompt({title:'Reset task statuses?',description:`Return ${stats.total} task${stats.total===1?'':'s'} in “${milestone.title}” to To do in one audited project revision? Active tasks may depend on this work. Save other work-plan edits first.`,confirm:()=>onBulkTasks(milestone.id,'todo')}),disabled||dirty||!stats.total)}{btn('Add task',<Plus size={16}/>,()=>onAddTask(milestone.id),disabled||body.tasks.length>=100)}</div></div><ul>{body.tasks.filter(task=>task.milestoneId===milestone.id).map(taskRow)}</ul>{!stats.total&&<p className="px-4 py-4 text-xs text-muted-foreground">No tasks. Use + to add one.</p>}{stats.readyForReview&&milestone.status!=='done'&&<button type="button" disabled={disabled} onClick={()=>setPrompt({title:'Complete milestone?',description:`All tasks in “${milestone.title}” are done. Mark the milestone completed after review?`,confirm:()=>updateMilestone(milestone,{status:'done'})})} className="m-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">All tasks done — review milestone completion</button>}</div>}
     </article>;
   };
   return <section aria-label="Project tasks, milestones and phases" className="space-y-3">

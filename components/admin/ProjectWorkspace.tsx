@@ -65,6 +65,7 @@ type Props = {
   selectedTask?:string;
   selectedMilestone?:string;
   id: string;
+  userId: string;
   record: ProjectRecord | null;
   history: ProjectEvent[];
   gateReady: boolean;
@@ -224,6 +225,7 @@ function SectionTitle({
 
 export function ProjectWorkspace({
   id,
+  userId,
   record,
   history,
   gateReady,
@@ -514,10 +516,14 @@ export function ProjectWorkspace({
   }
 
   function bulkMilestoneTasks(milestoneId: string, status: 'done' | 'todo') {
-    setBody(previous => previous ? {
-      ...previous,
-      tasks: previous.tasks.map(task => task.milestoneId === milestoneId ? { ...task, status } : task),
-    } : previous);
+    if (!body || !savedRevision || dirty) return;
+    const taskIds=body.tasks.filter(task=>task.milestoneId===milestoneId).map(task=>task.id);
+    if(!taskIds.length)return;
+    setBusy(true);setMessage('');
+    void fetch(`/api/admin/projects/${id}/task-productivity`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'bulk_status',expectedProjectRevision:savedRevision,taskIds,status}),signal:AbortSignal.timeout(20000)})
+      .then(async response=>{const result=await response.json();if(!response.ok)throw new Error(result.error||'Bulk task update could not save.');setMessage(`${result.changed??taskIds.length} task${result.changed===1?'':'s'} updated.`);router.refresh();})
+      .catch(error=>setMessage(error instanceof Error?error.message:'Bulk task update could not save.'))
+      .finally(()=>setBusy(false));
   }
 
   /* =======================================================
@@ -890,6 +896,7 @@ export function ProjectWorkspace({
 
       <ProjectMilestoneBoard
         id={id}
+        userId={userId}
         revision={savedRevision}
         body={body}
         disabled={locked}

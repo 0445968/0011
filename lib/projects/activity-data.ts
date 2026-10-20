@@ -136,6 +136,8 @@ export async function getProjectActivity(client: SupabaseClient, requestId: stri
     ['tasks', 'project_task_history', 'id,task_id,action,snapshot,actor,created_at'],
     ['files', 'project_file_history', 'id,file_id,action,reason,actor_id,created_at'],
     ['discussion', 'project_comment_history', 'id,action,snapshot,actor_id,created_at'],
+    ['task_notes', 'project_task_note_history', 'id,task_id,action,snapshot,actor_id,created_at'],
+    ['task_files', 'project_task_file_history', 'id,task_id,file_id,action,actor_id,created_at'],
     ['access', 'project_access_history', 'id,user_id,active,can_review,actor_id,created_at'],
     ['clients', 'project_client_task_responses', 'id,task_id,kind,status,submitted_by,submitted_at,reviewed_by,reviewed_at'],
     ['brief', 'project_brief_versions', 'version,status,published_at,published_by,decided_at,decided_by'],
@@ -198,16 +200,27 @@ export async function getProjectActivity(client: SupabaseClient, requestId: stri
   for (const row of bySource.tasks ?? []) {
     const action = text(row.action);
     const detail = object(row.snapshot);
+    const change = text(detail.change);
     const task = text(row.task_id);
     const labels:Record<string,string> = {
       seed:'Task controls initialized', metadata:'Task responsibility or dependency updated',
       client_update:'Client task update recorded', brief_review:'Brief task review recorded',
     };
-    events.push(auditEvent('tasks', 'task-history', row, labels[action] ?? 'Task control updated',
-      taskName(task) + (text(detail.kind) ? ` · ${display(detail.kind)}` : ''), base, 'actor', 'created_at', task));
+    const changeLabels:Record<string,string>={priority:'Task priority changed',bulk_status:'Task statuses changed in bulk',staff_assignment:'Task staff assignment changed',staff_deactivated:'Inactive staff assignment removed'};
+    const before=detail.before,after=detail.after;
+    const detailText=change==='priority'?`${taskName(task)} · ${display(before,'Not set')} → ${display(after,'Not set')}`:
+      change==='bulk_status'&&before&&after?`${taskName(task)} · ${display(object(before).status)} → ${display(object(after).status)}`:
+      taskName(task) + (text(detail.kind) ? ` · ${display(detail.kind)}` : '');
+    events.push(auditEvent('tasks', 'task-history', row, changeLabels[change]??labels[action] ?? 'Task control updated',
+      detailText, base, 'actor', 'created_at', task));
+  }
+  for (const row of bySource.task_notes ?? []) {
+    const action=text(row.action);
+    const label=action==='create'?'Task note added':action==='edit'?'Task note edited':action==='remove'?'Task note removed':'Task note updated';
+    events.push(auditEvent('tasks','task-note',row,label,taskName(row.task_id),base,'actor_id','created_at',text(row.task_id)));
   }
   const files = new Map<string,string>();
-  if ((bySource.files ?? []).length) {
+  if ((bySource.files ?? []).length || (bySource.task_files ?? []).length) {
     const result = await client.from('project_files').select('id,filename').eq('request_id',requestId).limit(500);
     if (result.error) throw new Error('Project activity could not load file names.');
     for (const file of result.data ?? []) files.set(String(file.id), String(file.filename));
@@ -216,6 +229,11 @@ export async function getProjectActivity(client: SupabaseClient, requestId: stri
     const action = text(row.action);
     events.push(auditEvent('files', 'file', row, `Project file ${action.replaceAll('_',' ')}`,
       [files.get(text(row.file_id)) ?? 'File', text(row.reason)].filter(Boolean).join(' · '), base, 'actor_id'));
+  }
+  for (const row of bySource.task_files ?? []) {
+    const action=text(row.action);
+    events.push(auditEvent('files','task-file',row,action==='link'?'File attached to task':'File removed from task',
+      `${taskName(row.task_id)} · ${files.get(text(row.file_id))??'File'}`,base,'actor_id','created_at',text(row.task_id)));
   }
   for (const row of bySource.discussion ?? []) {
     const snapshot = object(row.snapshot);

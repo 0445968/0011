@@ -3,7 +3,7 @@ import type {SupabaseClient} from '@supabase/supabase-js';
 import {cleanCompanySearch} from '@/lib/companies/data';
 import {taskToday} from './links';
 import {projectPhaseLabels} from '@/lib/projects/lifecycle-schema';
-export type MyTask={request_id:string;project_public_id:string;project_title:string;project_state:string;task_id:string;title:string;task_status:'todo'|'doing'|'blocked'|'done';due_on:string|null;is_blocked:boolean;blocker_owner:string|null;depends_on:string|null;phase:keyof typeof projectPhaseLabels;updated_at:string;assignee_count:number};
+export type MyTask={request_id:string;project_public_id:string;project_title:string;project_state:string;task_id:string;title:string;task_status:'todo'|'doing'|'blocked'|'done';due_on:string|null;is_blocked:boolean;blocker_owner:string|null;depends_on:string|null;phase:keyof typeof projectPhaseLabels;updated_at:string;assignee_count:number;priority:'low'|'medium'|'high'|'urgent'|null};
 export async function listMyTasks(client:SupabaseClient,p:Record<string,string|undefined>){
  const {today,timezone}=taskToday(p.tz||'America/Chicago');let query=client.from('staff_my_tasks').select('*',{count:'exact'});const term=cleanCompanySearch(p.q||'');if(term)query=query.or(`title.ilike.%${term}%,project_title.ilike.%${term}%,project_public_id.ilike.%${term}%`);
  if(p.status==='blocked')query=query.eq('is_blocked',true);else if(['todo','doing','done'].includes(p.status||''))query=query.eq('task_status',p.status!);else if(p.status!=='all')query=query.neq('task_status','done');

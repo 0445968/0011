@@ -1,0 +1,49 @@
+import {PGlite} from '@electric-sql/pglite';
+import fs from 'node:fs';
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {randomUUID} from 'node:crypto';
+
+const migrations=new URL('../../supabase/migrations/',import.meta.url);
+test('task collaboration, files, priorities and bulk actions preserve staff permissions and audited revisions',async()=>{
+ const db=new PGlite();
+ try{
+  await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create table auth.users(id uuid primary key,email text);create function auth.uid() returns uuid language sql as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;grant usage on schema public,auth to anon,authenticated,service_role;grant execute on function auth.uid() to authenticated;create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);create table storage.objects(id bigint generated always as identity,bucket_id text,name text,metadata jsonb,unique(bucket_id,name));alter table storage.objects enable row level security;grant usage on schema storage to authenticated,anon;grant select,insert,update,delete on storage.objects to authenticated,anon;grant usage on sequence storage.objects_id_seq to authenticated,anon;`);
+  for(const file of fs.readdirSync(migrations).filter(name=>name.endsWith('.sql')).sort())await db.exec(fs.readFileSync(new URL(file,migrations),'utf8'));
+  const staff=randomUUID(),other=randomUUID(),request=randomUUID(),file=randomUUID(),comment=randomUUID(),note=randomUUID();
+  await db.query('insert into auth.users(id,email) values($1,$2),($3,$4)',[staff,'staff@example.com',other,'other@example.com']);
+  await db.query('insert into inquiry_staff(user_id,active) values($1,true),($2,true)',[staff,other]);
+  await db.query('insert into project_inquiries(request_id,payload,payload_hash) values($1,$2,$3)',[request,{name:'Task test',email:'staff@example.com'},'b'.repeat(64)]);
+  await db.query("insert into inquiry_proposals(request_id,version,status,body) values($1,1,'accepted','{}')",[request]);
+  const tasks=[{id:'first',title:'First',owner:'',dueOn:null,status:'todo',milestoneId:'mile',notes:''},{id:'second',title:'Second',owner:'',dueOn:null,status:'todo',milestoneId:'mile',notes:''},{id:'outside',title:'Outside',owner:'',dueOn:null,status:'todo',milestoneId:null,notes:''}];
+  const body={title:'Task productivity test',owner:'',notes:'',milestones:[{id:'mile',title:'Milestone',dueOn:null,status:'planned',notes:''}],tasks};
+  await db.query("insert into inquiry_projects(request_id,proposal_version,revision,state,body,scope_snapshot,onboarding_snapshot,readiness_snapshot,activated_readiness_revision,activated_onboarding_revision) values($1,1,1,'active',$2,'{}','{}','{}',1,1)",[request,body]);
+  for(const task of tasks)await db.query('insert into project_task_controls(request_id,task_id,owner_type,phase,depends_on) values($1,$2,\'bivi\',\'discovery\',$3)',[request,task.id,task.id==='second'?'first':null]);
+  await db.query('insert into project_files(id,request_id,object_path,filename,size_bytes,mime_type,uploader_id,state) values($1,$2,$3,$4,10,$5,$6,\'ready\')',[file,request,`${request}/${file}`,'brief.pdf','application/pdf',staff]);
+  await db.exec('set role authenticated');await db.query("select set_config('request.jwt.claim.sub',$1,false)",[staff]);
+  assert.equal((await db.query('select manage_project_task_productivity($1,$2) r',[request,{action:'priority',taskId:'first',priority:'high',expectedProjectRevision:1}])).rows[0].r.result,'saved');
+  assert.equal((await db.query("select priority from project_task_controls where request_id=$1 and task_id='first'",[request])).rows[0].priority,'high');
+  await db.query('select manage_project_task_productivity($1,$2)',[request,{action:'note_create',taskId:'first',noteId:note,body:'Verified handoff note',expectedProjectRevision:1}]);
+  assert.equal((await db.query('select body from project_task_notes where id=$1',[note])).rows[0].body,'Verified handoff note');
+  assert.equal((await db.query('select action from project_task_note_history where note_id=$1',[note])).rows[0].action,'create');
+  await db.query('select manage_project_comment($1,$2)',[request,{action:'create',id:comment,taskId:'first',body:'Task discussion comment',expectedProjectRevision:1}]);
+  assert.equal((await db.query('select task_id,body from project_comments where id=$1',[comment])).rows[0].body,'Task discussion comment');
+  await assert.rejects(db.query('insert into project_task_notes(id,request_id,task_id,body) values($1,$2,\'first\',\'forged\')',[randomUUID(),request]),/permission denied/);
+  await db.query("select set_config('request.jwt.claim.sub',$1,false)",[other]);
+  await assert.rejects(db.query('select manage_project_task_productivity($1,$2)',[request,{action:'note_edit',taskId:'first',noteId:note,expectedNoteRevision:1,body:'forged',expectedProjectRevision:1}]),/Note author authorization required/);
+  await db.query("select set_config('request.jwt.claim.sub',$1,false)",[staff]);
+  await db.query('select manage_project_task_productivity($1,$2)',[request,{action:'note_remove',taskId:'first',noteId:note,expectedNoteRevision:1,expectedProjectRevision:1}]);
+  assert.equal((await db.query('select removed,body from project_task_notes where id=$1',[note])).rows[0].removed,true);
+  assert.equal((await db.query('select action from project_task_note_history where note_id=$1 order by id desc limit 1',[note])).rows[0].action,'remove');
+  assert.equal((await db.query('select manage_project_task_productivity($1,$2) r',[request,{action:'file_link',taskId:'first',fileId:file,expectedProjectRevision:1}])).rows[0].r.result,'saved');
+  assert.equal((await db.query('select count(*)::int n from project_task_file_links where request_id=$1',[request])).rows[0].n,1);
+  assert.equal((await db.query('select action from project_task_file_history where request_id=$1',[request])).rows[0].action,'link');
+  assert.equal((await db.query('select manage_project_task_productivity($1,$2) r',[request,{action:'bulk_status',taskIds:['second'],status:'done',expectedProjectRevision:1}])).rows[0].r.result,'blocked');
+  const bulk=(await db.query('select manage_project_task_productivity($1,$2) r',[request,{action:'bulk_status',taskIds:['first','second'],status:'done',expectedProjectRevision:1}])).rows[0].r;
+  assert.equal(bulk.result,'saved');assert.equal(bulk.changed,2);assert.equal(bulk.revision,2);
+  const snapshot=(await db.query('select body,revision from inquiry_projects where request_id=$1',[request])).rows[0];
+  assert.equal(snapshot.revision,2);assert.ok(snapshot.body.tasks.filter(task=>['first','second'].includes(task.id)).every(task=>task.status==='done'));
+  assert.equal((await db.query("select count(*)::int n from project_task_history where request_id=$1 and snapshot->>'change'='bulk_status'",[request])).rows[0].n,2);
+  assert.equal((await db.query("select count(*)::int n from inquiry_project_history where request_id=$1 and reason='Bulk task status update'",[request])).rows[0].n,1);
+ }finally{await db.close();}
+});
