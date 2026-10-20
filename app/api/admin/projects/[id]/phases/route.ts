@@ -40,8 +40,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
   switch (result.data?.result) {
     case 'saved': return adminReply({ saved: true, revision: result.data.revision });
     case 'conflict': return adminReply({ error: 'Phase changed in another session. Refresh phase statuses.' }, 409);
-    case 'active_work': return adminReply({ error: 'Resolve all active phase tasks before closing or resetting this phase.' }, 409);
-    case 'milestones_incomplete': return adminReply({ error: 'Complete and review all milestones assigned to this phase first.' }, 409);
+    case 'active_work': return adminReply({ error: `${result.data.activeCount || 'Some'} active or blocked task(s) must be resolved before closing this phase.`, code: 'active_work' }, 409);
+    case 'milestones_incomplete': return adminReply({ error: `${result.data.incompleteCount || 'Some'} milestone(s) must be marked Completed before closing this phase.`, code: 'milestones_incomplete' }, 409);
     case 'must_activate': return adminReply({ error: 'Activate this phase before marking it completed.' }, 409);
     case 'locked': return adminReply({ error: 'This project is read-only.' }, 409);
     default: return adminReply({ error: 'Project not found.' }, 404);

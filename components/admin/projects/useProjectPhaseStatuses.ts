@@ -8,19 +8,34 @@ export function useProjectPhaseStatuses(projectId: string) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const pending = useRef(false);
-  const load = useCallback(async (signal?: AbortSignal) => {
+  const requestGeneration = useRef(0);
+
+  // Ignore stale responses without aborting fetches during React effect cleanup.
+  const load = useCallback(async (isActive: () => boolean = () => true) => {
+    const currentGeneration = ++requestGeneration.current;
+    const isCurrent = () => isActive() && currentGeneration === requestGeneration.current;
     try {
-      const response = await fetch(`/api/admin/projects/${projectId}/phases`, { cache:'no-store', signal });
+      const response = await fetch(`/api/admin/projects/${projectId}/phases`, { cache: 'no-store' });
       const json = await response.json();
+      if (!isCurrent()) return false;
       if (!response.ok) throw new Error(json.error || 'Could not load phases.');
-      if (!signal?.aborted) { setStates(json.states); setError(''); }
+      setStates(json.states);
+      setError('');
       return true;
     } catch (cause) {
-      if (!signal?.aborted) setError(cause instanceof Error ? cause.message : 'Could not load phases.');
+      if (isCurrent()) setError(cause instanceof Error ? cause.message : 'Could not load phases.');
       return false;
     }
   }, [projectId]);
-  useEffect(() => { const controller = new AbortController(); void load(controller.signal); return () => controller.abort(); }, [load]);
+
+  useEffect(() => {
+    let active = true;
+    setStates(null);
+    setError('');
+    void load(() => active);
+    return () => { active = false; };
+  }, [load]);
+
   const save = useCallback(async (phase: ProjectPhase, status: PhaseStatus, reason: string) => {
     if (pending.current || !states) return false;
     const current = states.find(item => item.phase === phase);
