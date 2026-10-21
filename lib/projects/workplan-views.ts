@@ -1,6 +1,6 @@
 import type { ProjectBody } from './schema';
 
-export type WorkplanView = 'tasks' | 'milestones' | 'phases';
+export type WorkplanView = 'tasks' | 'milestones';
 export type WorkStatus = 'todo' | 'doing' | 'blocked' | 'done';
 export type MilestoneStatus = 'planned' | 'in_progress' | 'done';
 

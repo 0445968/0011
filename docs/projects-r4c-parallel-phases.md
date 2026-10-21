@@ -4,7 +4,7 @@ Apply R4b first. Run migration `202610160035_parallel_phase_states.sql` after 03
 
 - Phase states are `Planning`, `Active`, `Completed` and are separately saved, staff-only and audited. Multiple phases may be active simultaneously.
 - Legacy `project_lifecycle.phase` remains for existing gates; a prior visit is marked as historically active, **not assumed completed**.
-- Phase controls in the Phases view open an app confirmation dialog. Completion requires at least one assigned milestone and all linked milestones manually completed, with no active task in that phase or linked milestone.
+- Phase controls on the dedicated Phases page open an app confirmation dialog. Completion requires at least one assigned milestone and all linked milestones manually completed, with no active task in that phase or linked milestone. The Overview phase bars read the authoritative saved states.
 - Every server-side update of project task JSON derives noncompleted milestone statuses: in-progress/blocked task => in progress; otherwise planning. Completed milestones require manual approval and remain completed. Staff review is required to reopen a completed milestone with task changes.
 - Started tasks activate their canonical task-control phase automatically, without activating every phase of a multi-phase milestone.
 - Overview uses explicit Active phases, plus completed milestones from historically active phases. Completed cards sort last. No fake phase approvals or historic activity are generated.

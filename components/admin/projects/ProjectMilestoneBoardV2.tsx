@@ -2,16 +2,15 @@
 
 import { useState } from 'react';
 import type { ReactNode } from 'react';
+import Link from 'next/link';
 import { Check, CheckCheck, ChevronDown, ChevronRight, Clock3, Pencil, Plus, RefreshCcw, RotateCcw, Trash2 } from 'lucide-react';
 import type { ProjectBody } from '@/lib/projects/schema';
-import { projectPhaseLabels, projectPhaseOrder } from '@/lib/projects/lifecycle-schema';
-import type { ProjectPhase } from '@/lib/projects/lifecycle-schema';
+import { projectPhaseLabels } from '@/lib/projects/lifecycle-schema';
 import { milestoneStats, nextStatus, workStatusOrder, milestoneStatusOrder, daysRemaining, remainingLabel, suggestedTaskPriority, type WorkplanView } from '@/lib/projects/workplan-views';
 import { taskToday } from '@/lib/tasks/links';
 import type { ProjectHierarchyResponse } from '@/lib/projects/hierarchy-schema';
 import { useProjectHierarchy } from './useProjectHierarchy';
 import { ProjectManagersButton, ProjectOrganizationOwnerButton, TaskMemberPicker, useProjectAssignments } from './ProjectAssignments';
-import { ProjectPhaseCards } from './ProjectPhaseCards';
 import { expectedMilestoneStatus } from '@/lib/projects/phase-status';
 import { ProjectTaskStateIcon } from './DirectoryIndicators';
 import { useWorkspaceUnsavedChanges } from '../workspace/WorkspaceNavigationGuard';
@@ -21,6 +20,8 @@ import { TaskProductivity } from './TaskProductivity';
 import { useProjectTaskSchedule } from './useProjectTaskSchedule';
 import { hasMilestoneCompletionBlockers, milestoneCompletionBlockers } from '@/lib/projects/workplan-completion';
 import { taskDomId } from '@/lib/tasks/links';
+import { phaseColorFor } from '@/lib/projects/phase-colors';
+import { useProjectPhaseColors } from './useProjectPhaseColors';
 
 type Task = ProjectBody['tasks'][number];
 type Milestone = ProjectBody['milestones'][number];
@@ -77,8 +78,8 @@ function SubtaskEditor({item,disabled,update,requestRemove,today}: {
   </li>;
 }
 
-export function ProjectMilestoneBoard({id,revision,body,disabled,phaseStatusDisabled=disabled,dirty,sidecarReady,onTaskChange,onMilestoneChange,onAddTask,onBulkTasks,userId}: {
-  id:string;revision:number;body:ProjectBody;disabled:boolean;phaseStatusDisabled?:boolean;dirty:boolean;sidecarReady:boolean;
+export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarReady,onTaskChange,onMilestoneChange,onAddTask,onBulkTasks,userId}: {
+  id:string;revision:number;body:ProjectBody;disabled:boolean;dirty:boolean;sidecarReady:boolean;
   onTaskChange:(index:number,changes:Partial<Task>)=>void;
   onMilestoneChange:(index:number,changes:Partial<Milestone>)=>void;
   onAddTask:(milestoneId:string|null)=>void;
@@ -94,6 +95,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,phaseStatusDisa
   const [expanded,setExpanded]=useState<Record<string,boolean>>({});
   const today=taskToday('America/Chicago').today;
   const schedule=useProjectTaskSchedule(id,revision);
+  const phaseColors=useProjectPhaseColors(id,[]);
   const canEditSidecar=!disabled&&!dirty&&sidecarReady&&!hierarchy.busy&&!hierarchy.conflict&&hierarchy.data?.projectRevision===revision;
   const phaseLinks=hierarchy.data?.milestonePhases??[];
   const subtasks=hierarchy.data?.subtasks??[];
@@ -116,11 +118,6 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,phaseStatusDisa
         setPrompt({title:'Milestone ready for review',description:`All tasks in “${milestone.title}” are done. Completion still requires explicit review.`,confirm:()=>updateMilestone(milestone,{status:'done'})});
       }
     }
-  };
-  const setPhases=(milestone:Milestone,phase:ProjectPhase,checked:boolean)=>{
-    const current=phaseLinks.filter(link=>link.milestoneId===milestone.id).map(link=>link.phase);
-    const next=checked?[...current,phase]:current.filter(item=>item!==phase);
-    void hierarchy.save({action:'set_milestone_phases',milestoneId:milestone.id,phases:projectPhaseOrder.filter(item=>next.includes(item))});
   };
   const updateSubtask=(item:Subtask,changes:{title:string;status:Subtask['status'];dueOn:string|null})=>hierarchy.save({action:'update_subtask',taskId:item.taskId,subtaskId:item.id,expectedSubtaskRevision:item.revision,...changes});
   const addSubtask=async(taskId:string)=>{if(!canEditSidecar||!newSubtaskTitle.trim())return;const success=await hierarchy.save({action:'add_subtask',taskId,subtaskId:crypto.randomUUID(),title:newSubtaskTitle.trim(),status:'todo',dueOn:null});if(success){setNewSubtaskTitle('');setNewSubtaskFor(null);}};
@@ -177,16 +174,16 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,phaseStatusDisa
         <StatusButton status={milestone.status} disabled={disabled} label={`milestone ${milestone.title}`} onChange={()=>{const next=nextStatus(milestone.status,milestoneStatusOrder);if(next==='done')reviewMilestoneCompletion(milestone);else updateMilestone(milestone,{status:next});}}/>
         <Remaining dueOn={milestone.dueOn} today={today} completed={milestone.status==='done'}/>
         <input type="date" aria-label={`Due date for milestone ${milestone.title}`} value={milestone.dueOn??''} className={dateClass} disabled={disabled} onChange={event=>updateMilestone(milestone,{dueOn:event.target.value||null})}/>
-        <Popover><PopoverTrigger asChild><button type="button" className="rounded-lg border border-border px-2.5 py-1.5 text-xs hover:bg-muted disabled:opacity-50" disabled={!canEditSidecar} title="Manage phases">Phases ({phases.length}) <ChevronDown size={12} className="inline" aria-hidden/></button></PopoverTrigger><PopoverContent align="end" className="max-h-72 overflow-auto p-2"><p className="px-2 py-1 text-xs font-semibold">Assign milestone to phases</p>{projectPhaseOrder.map(phase=><label key={phase} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-xs hover:bg-muted"><input type="checkbox" disabled={!canEditSidecar} checked={phases.includes(phase)} onChange={e=>setPhases(milestone,phase,e.target.checked)}/>{projectPhaseLabels[phase]}</label>)}</PopoverContent></Popover>
+        {phases.length>0&&<div className="flex flex-wrap gap-1.5">{phases.map(phase=><Link key={phase} href={`/projects/${id}?tab=phases`} className="inline-flex min-h-7 items-center gap-1 rounded-md border border-border px-2 text-[10px] text-muted-foreground hover:bg-muted"><span aria-hidden className="h-2 w-2 rounded-sm border border-black/15 dark:border-white/20" style={{backgroundColor:phaseColorFor(phase,phaseColors.rows)}}/>{projectPhaseLabels[phase]}</Link>)}</div>}
       </div>
       <div className="mx-4 mb-3 flex items-center gap-3 text-[11px] text-muted-foreground"><div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-muted"><div className="h-full bg-gradient-to-r from-emerald-400 via-green-500 to-teal-600" style={{width:`${stats.percent??0}%`}}/></div>{stats.percent===null?'No tasks':`${stats.percent}%`}</div>
       {isOpen&&<div className="border-t border-border bg-background/40"><div className="flex items-center justify-between gap-3 px-4 py-2"><span className="text-xs font-semibold">Tasks</span><div className="flex items-center gap-1">{btn('Mark all tasks completed',<CheckCheck size={16}/>,()=>setPrompt({title:'Complete all tasks?',description:`Update ${stats.total} task${stats.total===1?'':'s'} in “${milestone.title}” in one audited project revision. Blocked tasks and unmet dependencies will be rejected. Save other work-plan edits first.`,confirm:()=>onBulkTasks(milestone.id,'done')}),disabled||dirty||!stats.total)}{btn('Mark all tasks not started',<RotateCcw size={15}/>,()=>setPrompt({title:'Reset task statuses?',description:`Return ${stats.total} task${stats.total===1?'':'s'} in “${milestone.title}” to To do in one audited project revision? Active tasks may depend on this work. Save other work-plan edits first.`,confirm:()=>onBulkTasks(milestone.id,'todo')}),disabled||dirty||!stats.total)}{btn('Add task',<Plus size={16}/>,()=>onAddTask(milestone.id),disabled||body.tasks.length>=100)}</div></div><ul>{body.tasks.filter(task=>task.milestoneId===milestone.id).map(taskRow)}</ul>{!stats.total&&<p className="px-4 py-4 text-xs text-muted-foreground">No tasks. Use + to add one.</p>}{stats.readyForReview&&milestone.status!=='done'&&<button type="button" disabled={disabled} onClick={()=>reviewMilestoneCompletion(milestone)} className="m-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">All tasks done — review milestone completion</button>}</div>}
     </article>;
   };
-  return <section aria-label="Project tasks, milestones and phases" className="space-y-3">
-    <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-base font-semibold">Work plan</h2><p className="mt-1 text-xs text-muted-foreground">Task and milestone edits use the private draft and Save All. Phase links and subtasks save through the hierarchy API.</p></div><div className="flex flex-wrap gap-2"><ProjectManagersButton controls={assignments} disabled={disabled||dirty||!sidecarReady} />{btn('Refresh hierarchy',<RefreshCcw size={15}/>,()=>{void hierarchy.load();},hierarchy.busy)}</div></div>
+  return <section aria-label="Project tasks and milestones" className="space-y-3">
+    <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-base font-semibold">Tasks &amp; Milestones</h2><p className="mt-1 text-xs text-muted-foreground">Task and milestone edits use the private draft and Save All. Manage phase links, colors and saved statuses in Phases.</p></div><div className="flex flex-wrap gap-2"><Link href={`/projects/${id}?tab=phases`} className="inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-border px-2.5 text-xs hover:bg-muted">Manage phases</Link><ProjectManagersButton controls={assignments} disabled={disabled||dirty||!sidecarReady} />{btn('Refresh hierarchy',<RefreshCcw size={15}/>,()=>{void hierarchy.load();},hierarchy.busy)}</div></div>
     <ProjectOrganizationOwnerButton projectId={id} controls={assignments} disabled={disabled||dirty||!sidecarReady} />
-    <div role="tablist" aria-label="Work-plan view" className="inline-flex gap-1 rounded-xl border border-border bg-muted/40 p-1">{(['tasks','milestones','phases'] as const).map(item=><button role="tab" aria-selected={view===item} key={item} type="button" onClick={()=>setView(item)} className={`rounded-lg px-4 py-2 text-xs font-medium capitalize focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring ${view===item?'bg-card shadow-sm':'text-muted-foreground hover:bg-muted'}`}>{item}</button>)}</div>
+    <div role="tablist" aria-label="Work-plan view" className="inline-flex gap-1 rounded-xl border border-border bg-muted/40 p-1">{(['tasks','milestones'] as const).map(item=><button role="tab" aria-selected={view===item} key={item} type="button" onClick={()=>setView(item)} className={`rounded-lg px-4 py-2 text-xs font-medium capitalize focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring ${view===item?'bg-card shadow-sm':'text-muted-foreground hover:bg-muted'}`}>{item}</button>)}</div>
     {assignments.error&&<p role="alert" className="rounded-lg border border-red-200 p-3 text-xs text-red-700">{assignments.error}</p>}
     {schedule.error&&<p role="alert" className="rounded-lg border border-red-200 p-3 text-xs text-red-700">{schedule.error}</p>}
     {hierarchy.error&&<p role="alert" className="rounded-lg border border-red-200 p-3 text-xs text-red-700">{hierarchy.error}</p>}
@@ -194,11 +191,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,phaseStatusDisa
     {dirty&&<p className="rounded-lg bg-amber-50 p-3 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">Save All your task and milestone edits before editing phase links and subtasks.</p>}
     {view==='milestones'&&<div className="space-y-3">{body.milestones.map(milestoneCard)}{!body.milestones.length&&<p className="rounded-xl border border-dashed border-border p-5 text-xs text-muted-foreground">Create your first milestone in the Advanced work-plan editor.</p>}{body.tasks.some(task=>!task.milestoneId)&&<div className="rounded-xl border border-border bg-card p-3"><h3 className="text-sm font-semibold">Unassigned tasks</h3><ul>{body.tasks.filter(task=>!task.milestoneId).map(taskRow)}</ul></div>}</div>}
     {view==='tasks'&&<section className="rounded-xl border border-border bg-card"><div className="flex items-center justify-between gap-2 p-3"><h3 className="text-sm font-semibold">All tasks ({body.tasks.length})</h3>{btn('Add unassigned task',<Plus size={16}/>,()=>onAddTask(null),disabled||body.tasks.length>=100)}</div><ul>{body.tasks.map(taskRow)}</ul>{!body.tasks.length&&<p className="px-4 py-5 text-xs text-muted-foreground">No tasks yet.</p>}</section>}
-    {view==='phases'&&<ProjectPhaseCards id={id} body={body} links={phaseLinks}
-      disabled={disabled||dirty||!sidecarReady||!hierarchy.data||hierarchy.busy||hierarchy.conflict}
-      statusDisabled={phaseStatusDisabled}
-      onAssignMilestone={setPhases} />}
-    <p className="text-[11px] text-muted-foreground">Phase assignments support multiple phases. Phase completion is explicitly reviewed in the Phases view; legacy Lifecycle gates remain separate. Staff-verified organization ownership and client-side task delegation are supported alongside existing response review.</p>
+    <p className="text-[11px] text-muted-foreground">Phase assignments support multiple phases. Status changes and Lifecycle approvals are managed in Phases. Staff-verified organization ownership and client-side task delegation are supported alongside existing response review.</p>
     <Dialog open={prompt!==null} onOpenChange={open=>{if(!open)setPrompt(null);}}><DialogContent className="bivi-staff-surface"><DialogTitle>{prompt?.title}</DialogTitle><DialogDescription>{prompt?.description}</DialogDescription>{prompt?.blockers&&hasMilestoneCompletionBlockers(prompt.blockers)&&<div className="max-h-56 overflow-auto rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100"><p className="font-semibold">Complete these tasks before completing this milestone.</p>{prompt.blockers.needsTask&&<p className="mt-2">Add at least one task to {prompt.blockers.milestoneTitle}.</p>}<ul className="ml-4 mt-2 list-disc space-y-1">{prompt.blockers.tasks.map(task=><li key={task.taskId}><a className="underline" href={`#${taskDomId(task.taskId)}`} onClick={event=>{event.preventDefault();navigateToTask(task.taskId);}}>{task.title}</a>{task.taskIncomplete?' — task is not completed':''}{task.subtasks.map(subtask=><span key={subtask.id}>; unfinished subtask: {subtask.title}</span>)}</li>)}</ul></div>}{prompt?.unavailable&&<p role="alert" className="rounded border border-red-300 p-2 text-xs">Completion is unavailable until the task hierarchy loads.</p>}<DialogFooter><button type="button" className="rounded-lg border border-border px-4 py-2 text-xs font-medium hover:bg-muted" onClick={()=>setPrompt(null)}>{prompt?.blockers?'Continue editing':'Cancel'}</button>{(!prompt?.blockers||!hasMilestoneCompletionBlockers(prompt.blockers))&&<button type="button" className="rounded-lg bg-foreground px-4 py-2 text-xs font-medium text-background" onClick={()=>{const action=prompt?.confirm;setPrompt(null);action?.();}}>{prompt?.unavailable?'Refresh hierarchy':'Confirm'}</button>}</DialogFooter></DialogContent></Dialog>
   </section>;
 }

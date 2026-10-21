@@ -50,6 +50,7 @@ import {
   Search,
   Send,
   Settings2,
+  Layers,
   Truck,
   UserRound,
   Users,
@@ -114,6 +115,7 @@ const sections = staffGroups.map(group => ({ ...group, links: sidebarItems.filte
 const projectSectionIcons: Record<(typeof projectRecordSections)[number]['id'], LucideIcon> = {
   overview: LayoutDashboard,
   plan: ClipboardList,
+  phases: Layers,
   calendar: CalendarDays,
   brief: FileText,
   delivery: Truck,
@@ -1179,8 +1181,9 @@ useEffect(() => {
      ======================================================= */
 
   const requestedProjectTab = searchParams.get('tab') ?? 'overview';
-  // Preserve existing lifecycle deep links as an alias for the integrated project calendar.
-  const selectedProjectTab = requestedProjectTab === 'lifecycle' ? 'calendar' : requestedProjectTab;
+  // Preserve former lifecycle and calendar phase-schedule URLs as Phases aliases.
+  const isLegacyPhaseView = requestedProjectTab === 'calendar' && searchParams.get('view') === 'phases';
+  const selectedProjectTab = requestedProjectTab === 'lifecycle' || isLegacyPhaseView ? 'phases' : requestedProjectTab;
 
   /* =======================================================
      STAFF ACCOUNT

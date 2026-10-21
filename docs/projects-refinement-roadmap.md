@@ -2,10 +2,39 @@
 
 Baseline: `0445968/0011`, `bivi-dashboard-overhaul`, following D1a–D1c. Preserve the shared shell and working projects, permissions, history, and revision checks.
 
+## Revised Projects follow-up requirements — 2026-10-21
+
+Implement the dedicated Phases page and shared formal phase indicators as the current slice. Keep the rest of this revised scope explicitly pending; do not present it as delivered until its own implementation and verification are complete.
+
+### Dedicated Phases and shared indicators — current slice
+- Add **Phases** to project navigation. Move phase customization/statuses, deadlines, compact stats and breakdowns, plus “Lifecycle, dependencies and approvals” from Calendar into Phases. Keep task assignment, dependency and approval actions reachable through authoritative APIs/RPCs, permissions, revisions, and audit sources; avoid competing editors.
+- Preserve old phase and lifecycle deep links with aliases or redirects. General Calendar links must continue to open Calendar.
+- Overview reuses its existing phase bars to show authoritative saved formal states: Inactive is neutral, Active uses the light phase color, and Completed uses the solid phase color. Do not add a separate saved-status block or permanent phase-name badges. Preserve simultaneous active phases and map stored `planning` to the intended Inactive display without introducing another status model.
+- Phase name and status are available on hover, keyboard focus, and mobile; provide a non-color distinction to assistive technology. Keep task-completion percentage separately labeled.
+- Staff can configure each phase color in Phases. Use a single persisted, per-project authoritative color source (unless an established scope already governs it), revision checks, authorization, and audit history. Share display/color utilities across Overview bars, Project Calendar, milestone indicators/cards, and other phase displays. Validate colors, support light/dark readability, preserve stable phase IDs/associations, and retain established purple defaults when unset. Never make browser storage the authoritative source or recolor unrelated projects.
+- Phases provides a compact project summary, unique project totals for phases/milestones/top-level tasks, active/completed phase counts, and a collapsible milestone/task breakdown per phase. Phase breakdowns can overlap and must not be summed into project totals; subtasks are separate from top-level tasks, and unassigned work remains discoverable.
+- Every active phase visibly shows its deadline information, including when several phases are active. Use existing task/milestone dates. Any derived range must be labeled derived and its derivation documented; missing dates remain unscheduled.
+- Use compact rows and progressive disclosure instead of long expanded lists or several tall scrolling panels. Phase status/color actions show saving, saved, and error feedback beside the affected phase. They save independently of Save tasks & milestones, keep R7A validation/conflict/recovery behavior, and do not claim success from optimistic UI alone.
+- Refresh Overview, Calendar, and affected cards consistently after a saved phase change without losing unrelated drafts or forcing a full reload.
+- Preserve all existing permissions, revisions, audit history, saved data, IDs, RLS, and approvals. Prepare reviewed additive migrations and apply only after verifying the intended Bivi project and migration ledger; verify resulting schema/RPC behavior. Do not reset the database or apply unrelated changes.
+
+### Remaining revised requirements — pending
+- **Tasks & Milestones:** Compact cards, 1/2/3-column layouts, and filters for phase, responsible side, assignees, status, and deadlines. Open the advanced work-plan editor inside this section through a top-level action and provide “Back to tasks & milestones.”
+- **Brief:** Move verified organization owner and Activation snapshot here; make project name editable here.
+- **Requests:** Move client task requests to a dedicated Requests project section.
+- **Activity and Admin Settings:** Project history belongs in Activity. Replace Overview’s Recent project history with a real Activity preview. Move technical save/revision history to Admin Settings while preserving audit records and meaningful domain events in Activity.
+- **Calendar:** Provide a proper month grid with previous/next/today navigation, alongside useful existing views.
+- **Validation and delivery for the current slice:** Verify simultaneous phase activation across reload; independent phase completion; saved formal-state bars; persisted color propagation across Overview, Calendar, and milestone cards; hover/focus/mobile labels; compact stats and date handling for shared milestones/missing dates; relocated lifecycle actions and old deep links; draft and revision recovery; and light/dark/narrow layouts. Run `npm run typecheck`, `npm run verify:platform`, and `npm run build` before committing and pushing this coherent slice to `bivi-dashboard-overhaul`. Never modify, merge into, or deploy `restore`. Stop after delivery for user testing before starting the pending sections above.
+
+### Implementation status — 2026-10-21
+- Phases/shared-indicator code and automated checks are complete: `npm run typecheck` passed, `npm run verify:platform` passed (118 tests), and `npm run build` passed. Interactive staff acceptance of state changes, color propagation, narrow/dark layouts, and draft/conflict behavior is pending user testing; no live project phase or color records were changed.
+- Applied `20261023120000_project_phase_colors.sql` to active Supabase project `0011` (`xxnvekmbotzcyuhsyxbw`). Schema, RLS policies, table grants and RPC execution grants were verified read-only. The Supabase migration listing is empty and `supabase_migrations.schema_migrations` is absent, so there is no database ledger entry to report.
+- All other revised requirements listed as pending above remain pending.
+
 ## Slice R1 — visual tokens, Overview organization, no-full-reload work-plan saves (this patch)
 - Project In progress: yellow/amber badge with partially filled pie icon; Completed: solid green checked circle. On hold remains distinct.
 - Task markers: To do = grey dashed empty ring; In progress = yellow center with white gap and yellow outline; Done = solid green circle/check; Blocked = red distinct ring.
-- Phase activity: nine purple/neutral upright bars with rounded corners, no numbers. Solid purple means mapped tasks all done, pale purple means tasks underway. Existing hover/accessible descriptions are retained. **These are task-evidence states, not formal phase approvals.**
+- Historical R1 behavior: phase activity bars reflected task evidence. This is superseded by the revised formal saved-status indicators above; task completion remains separately labeled progress.
 - Project task-progress bars use a green/teal gradient. Overdue date text is red.
 - Overview: project history above record; internal notes removed from Overview (retained in work-plan editor); links to all presently implemented project areas are discoverable. The history panel still contains recorded project events, **not** an invented unified activity feed.
 - All history/update timestamps are formatted in `America/Chicago` (CST in winter, CDT in summer). Date-only deadlines remain based on the user's saved timezone.
@@ -32,9 +61,9 @@ Baseline: `0445968/0011`, `bivi-dashboard-overhaul`, following D1a–D1c. Preser
 - Unassigned tasks area remains accessible; never silently hide work outside a milestone. Compact card scrolling and keyboard/touch interactions. Project files link and per-task permission-bounded file previews.
 - Automatic suggested priority after a confirmed start date: low until 50% of elapsed scheduled duration; medium from 50%; high from 75%, matching 50% and 25% time remaining. An overdue item is overdue irrespective of priority. Handle zero/invalid intervals, pauses, revisions, and milestone/phase derived dates explicitly.
 
-## R6 — Calendar replaces Lifecycle as visible project tab
-- Project calendar with day/week/month/timeline/phase schedule views; colored phases, assignee photos and task/milestone deadlines. Existing lifecycle ownership, blockers, assignments and approval actions move into Task Plan/phase panels before the old tab is hidden.
-- Keep old `/projects/[id]?tab=lifecycle` deep links working via redirect/alias until all workflows are moved; do not remove authoritative lifecycle APIs or history.
+## R6 — Calendar and Lifecycle Controls (historical placement, superseded)
+- Calendar currently provides the existing day/week/month/timeline views, colored phase indicators, assignee photos and task/milestone deadlines. The revised roadmap requires a proper navigable month grid; that is pending above.
+- Lifecycle, dependency, assignment and approval controls now live in Phases. Old `/projects/[id]?tab=lifecycle` and `?tab=calendar&view=phases` links resolve to Phases; general Calendar links still resolve to Calendar. Authoritative APIs, permissions and history remain.
 
 ## R7 — enriched Project Overview
 - One horizontally scrollable row of cards for milestones in **active phases**, showing status, done/total, deadlines, member avatars, activity counts, communications and notes counts, and calculated priority.

@@ -6,8 +6,10 @@ import { ProfileImage } from '@/components/profile-images/ProfileImage';
 import type { ProjectSummary } from '@/lib/projects/data';
 import type { ProjectDirectoryContext } from '@/lib/projects/directory-types';
 import { directoryProgress } from '@/lib/projects/directory-progress';
-import { projectPhaseLabels } from '@/lib/projects/lifecycle-schema';
+import { projectPhaseLabels, projectPhaseOrder } from '@/lib/projects/lifecycle-schema';
 import type { ProjectPhaseState } from '@/lib/projects/phase-status';
+import type { ProjectPhaseColorMap } from '@/lib/projects/phase-colors';
+import { activePhaseFill, phaseColorFor, phaseTextColor } from '@/lib/projects/phase-colors';
 
 const projectStatusStyles = {
   active: 'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200',
@@ -79,31 +81,33 @@ export function DirectoryProgress({ project }: { project: ProjectSummary }) {
   </div>;
 }
 
-const phaseStyles = {
-  unknown: 'border-dashed border-border bg-background',
-  not_started: 'border-border bg-muted',
-  in_progress: 'border-violet-300 bg-violet-200 dark:border-violet-700 dark:bg-violet-900/60',
-  completed: 'border-violet-600 bg-violet-600 dark:border-violet-400 dark:bg-violet-500',
-};
-const phaseText = { unknown: 'No mapped tasks', not_started: 'Tasks not started', in_progress: 'Tasks in progress', completed: 'Tasks completed' };
-
-export function DirectoryPhases({ project, context, formalStates }: { project: ProjectSummary; context?: ProjectDirectoryContext; formalStates?: ProjectPhaseState[] }) {
+export function DirectoryPhases({ project, context, formalStates, phaseColors = {} }: { project: ProjectSummary; context?: ProjectDirectoryContext; formalStates: ProjectPhaseState[]; phaseColors?: ProjectPhaseColorMap }) {
   const progress = directoryProgress(project.body, context?.taskPhases ?? []);
-  const latestComplete = [...progress.phases].reverse().find(phase => phase.state === 'completed');
+  const saved = new Map((formalStates ?? []).map(item=>[item.phase,item.status]));
+  const projectId=project.request_id;
   return <div className="min-w-[170px] space-y-2">
-    {formalStates&&<div aria-label="Saved formal phase statuses" className="space-y-1.5"><p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Saved phase status</p><ul className="flex flex-wrap gap-1.5">{formalStates.map(phase=><li key={phase.phase} className={`inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[10px] ${phase.status==='completed'?'bg-emerald-100 font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200':phase.status==='active'?'bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-200':'bg-muted text-muted-foreground'}`}>{phase.status==='completed'&&<Check className="h-3 w-3" aria-hidden/>}{projectPhaseLabels[phase.phase]} · {phase.status==='completed'?'Completed':phase.status==='active'?'Active':'Planning'}</li>)}</ul></div>}
-    <div className="flex items-stretch gap-1" role="group" aria-label="Task activity by phase">
-      {progress.phases.map(phase => <span key={phase.phase}
-        title={`${projectPhaseLabels[phase.phase]}: ${phaseText[phase.state]} (${phase.done}/${phase.total}); ${phase.blocked} blocked`}
-        className={`h-6 min-w-[6px] flex-1 rounded-[3px] border ${phaseStyles[phase.state]}`}>
-        <span className="sr-only">{projectPhaseLabels[phase.phase]}: {phaseText[phase.state]}, {phase.done} of {phase.total}, {phase.blocked} blocked.</span>
-      </span>)}
+    <div className="flex items-center gap-0.5" role="group" aria-label="Saved project phase statuses">
+      {projectPhaseOrder.map(phase=>{
+        const formal=saved.get(phase)??'planning';
+        const state=formal==='completed'?'completed':formal==='active'?'in_progress':'not_started';
+        const status=state==='completed'?'Completed':state==='in_progress'?'Active':'Inactive';
+        const color=phaseColorFor(phase,phaseColors);
+        const fill=activePhaseFill(color);
+        return <Link key={phase} href={`/projects/${projectId}?tab=phases`} title={`${projectPhaseLabels[phase]}: ${status}`}
+          aria-label={`${projectPhaseLabels[phase]}: ${status}. Open Phases.`}
+          className="group relative flex h-8 min-w-[16px] flex-1 items-center justify-center rounded-[3px] border border-transparent outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring"
+          data-phase-status={state}>
+          <span aria-hidden className={`absolute inset-x-0 inset-y-1.5 rounded-[3px] border ${state==='completed'?'border-transparent':state==='in_progress'?'border-transparent':'border-dashed border-border bg-muted'}`}
+            style={state==='completed'?{backgroundColor:color}:state==='in_progress'?{backgroundColor:fill.light}:undefined}/>
+          {state==='in_progress'&&<span aria-hidden className="absolute inset-x-0 inset-y-1.5 hidden rounded-[3px] dark:block" style={{backgroundColor:fill.dark}}/>}
+          {state==='completed'&&<Check aria-hidden size={10} className="relative z-[1] drop-shadow" style={{color:phaseTextColor(color)}}/>}
+          {state==='in_progress'&&<span aria-hidden className="relative z-[1] h-1.5 w-1.5 rounded-full border border-violet-950/60 bg-white dark:border-white dark:bg-zinc-900"/>}
+          {state==='not_started'&&<Minus aria-hidden size={10} className="relative z-[1] text-muted-foreground"/>}
+          <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1.5 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-popover px-2 py-1 text-[10px] text-popover-foreground shadow-md group-hover:block group-focus-visible:block">{projectPhaseLabels[phase]} · {status}</span>
+          <span className="sr-only">{projectPhaseLabels[phase]}: {status}.</span>
+        </Link>;
+      })}
     </div>
-    <div className="flex flex-wrap gap-1">
-      {progress.activePhases.map(phase => <span key={phase.phase} className="rounded-md bg-violet-100 px-1.5 py-0.5 text-[10px] text-violet-800 dark:bg-violet-950 dark:text-violet-200">{projectPhaseLabels[phase.phase]}{phase.blocked ? ' · blocked' : ''}</span>)}
-      {!progress.activePhases.length && <span className="text-[11px] text-muted-foreground">{latestComplete ? `${projectPhaseLabels[latestComplete.phase]} tasks completed` : 'No active phase tasks'}</span>}
-    </div>
-    <p className="text-[10px] text-muted-foreground">Selected phase: {context?.selectedPhase ? projectPhaseLabels[context.selectedPhase] : 'Not recorded'}{progress.unassigned > 0 ? ` · ${progress.unassigned} unmapped tasks` : ''}</p>
-    <details className="text-[10px] text-muted-foreground"><summary className="cursor-pointer">Phase details</summary><ul className="mt-1 space-y-1">{progress.phases.map(phase => <li key={phase.phase}>{projectPhaseLabels[phase.phase]}: {phaseText[phase.state]} ({phase.done}/{phase.total}){phase.blocked ? ` · ${phase.blocked} blocked` : ''}</li>)}</ul><p className="mt-1">Task activity only; formal phase completion remains in Lifecycle.</p></details>
+    {progress.unassigned>0&&<p className="text-[10px] text-muted-foreground">{progress.unassigned} unmapped tasks</p>}
   </div>;
 }

@@ -27,11 +27,12 @@ test('milestone progress is derived from saved and draft task state without fabr
 test('revised R3b board preserves advanced editor and uses app dialogs for confirmations',()=>{
   const board=fs.readFileSync(new URL('../../components/admin/projects/ProjectMilestoneBoardV2.tsx',import.meta.url),'utf8');
   const preview=fs.readFileSync(new URL('../../components/admin/projects/ProjectMilestonePreviews.tsx',import.meta.url),'utf8');
-  assert.match(board,/\['tasks','milestones','phases'\]/);
+  const phases=fs.readFileSync(new URL('../../components/admin/projects/ProjectPhasesPage.tsx',import.meta.url),'utf8');
+  assert.match(board,/\['tasks','milestones'\]/);
   assert.match(board,/<Dialog /);
   assert.doesNotMatch(board,/window\.confirm\(/);
   assert.match(board,/onBulkTasks/);
-  assert.match(board,/set_milestone_phases/);
+  assert.match(phases,/set_milestone_phases/);
   assert.match(preview,/overflow-x-auto/);
   assert.match(preview,/milestoneStats/);
 });

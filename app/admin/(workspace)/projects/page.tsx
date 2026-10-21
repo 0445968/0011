@@ -1,4 +1,7 @@
 import { getProjectDirectoryContext } from '@/lib/projects/directory-context';
+import { projectPhaseOrder, projectPhaseSchema, type ProjectPhase } from '@/lib/projects/lifecycle-schema';
+import type { ProjectPhaseColorMap } from '@/lib/projects/phase-colors';
+import type { ProjectPhaseState } from '@/lib/projects/phase-status';
 import { validDirectoryMode } from '@/lib/projects/directory-types';
 
 import {
@@ -227,6 +230,38 @@ export default async function ProjectsPage({
   );
 
   const context = await getProjectDirectoryContext(client, projects.map(project => project.request_id));
+  const phaseColorsByProject: Record<string, ProjectPhaseColorMap> = {};
+  const phaseStatesByProject: Record<string, ProjectPhaseState[]> = {};
+  if (projects.length) {
+    const [colors,states]=await Promise.all([
+      client.from('project_phase_colors').select('request_id,phase,color').in('request_id',projects.map(project=>project.request_id)),
+      client.from('project_phase_states').select('request_id,phase,status,revision,activated_at,completed_at').in('request_id',projects.map(project=>project.request_id)),
+    ]);
+    if (colors.error) throw new Error('Project phase colors could not load. Check the phase color migration.');
+    if (states.error) throw new Error('Saved project phase statuses could not load. Check migration 035.');
+    for (const row of colors.data ?? []) {
+      const phase = projectPhaseSchema.safeParse(row.phase);
+      if (phase.success && typeof row.color === 'string' && /^#[0-9A-Fa-f]{6}$/.test(row.color)) {
+        const byProject = phaseColorsByProject[row.request_id] ??= {};
+        byProject[phase.data as ProjectPhase] = row.color.toUpperCase();
+      }
+    }
+    const stateRows=new Map<string,Map<ProjectPhase,{status:ProjectPhaseState['status'];revision:number;activated_at:string|null;completed_at:string|null}>>();
+    for(const row of states.data??[]){
+      const phase=projectPhaseSchema.safeParse(row.phase);
+      if(!phase.success||!['planning','active','completed'].includes(String(row.status)))continue;
+      const byProject=stateRows.get(row.request_id)??new Map();
+      byProject.set(phase.data,{status:row.status as ProjectPhaseState['status'],revision:row.revision,activated_at:row.activated_at,completed_at:row.completed_at});
+      stateRows.set(row.request_id,byProject);
+    }
+    for(const project of projects){
+      const byPhase=stateRows.get(project.request_id)??new Map();
+      phaseStatesByProject[project.request_id]=projectPhaseOrder.map(phase=>{
+        const saved=byPhase.get(phase);
+        return {phase,status:saved?.status??'planning',revision:saved?.revision??0,everActive:Boolean(saved?.activated_at),activatedAt:saved?.activated_at??null,completedAt:saved?.completed_at??null};
+      });
+    }
+  }
 
   /* -------------------------------------------------------
      PAGE CONTENT
@@ -299,6 +334,8 @@ export default async function ProjectsPage({
       <ProjectDirectory
         projects={projects}
         context={context}
+        phaseColorsByProject={phaseColorsByProject}
+        phaseStatesByProject={phaseStatesByProject}
         mode={validDirectoryMode(searchParams.view)}
         total={total}
         page={page}

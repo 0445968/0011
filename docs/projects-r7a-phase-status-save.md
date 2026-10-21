@@ -23,7 +23,7 @@ The existing completion RPC checked active tasks by joining task JSON to `projec
 
 ## Staff verification
 
-1. Open a staff project, edit a task or milestone without using Save All, then open **Tasks & Milestones → Phases**. Change a phase to Active. The draft remains in the editor and the phase action saves independently.
+1. Open a staff project, edit a task or milestone without using Save All, then open the project **Phases** section. Change a phase to Active. The draft remains in the editor and the phase action saves independently.
 2. Activate two phases. Verify both remain Active after navigating between other project views.
 3. With an Active phase containing an unfinished linked milestone, confirm completion. Expect a specific milestone blocker in the dialog; no phase state changes.
 4. Mark all linked milestones complete while leaving an associated task active or blocked. Confirm completion. Expect the active task blocker.
@@ -36,3 +36,9 @@ The existing completion RPC checked active tasks by joining task JSON to `projec
 Automated checks cover state reconciliation and the migration RPC in an isolated PostgreSQL-compatible database. The production read-only inspection verifies the deployed implementation and security grants, but does not invoke a live phase transition.
 
 The subsequent milestone-save and draft-reconciliation repair is documented separately in [R7A milestone save reconciliation](./projects-r7a-milestone-save-reconciliation.md); it has a distinct migration and execution status.
+
+## Dedicated Phases and shared colors — follow-up
+
+The revised follow-up adds a dedicated project Phases section for formal statuses, milestone links, deadlines and Lifecycle controls. Overview phase bars read saved states; the color customization is stored per project in `project_phase_colors`, with writes audited in `project_phase_color_history` through `manage_project_phase_color`. See the [Projects refinement roadmap](./projects-refinement-roadmap.md) for the full revised scope and pending sections.
+
+On 2026-10-21, migration `20261023120000_project_phase_colors.sql` was applied to active project `0011` (`xxnvekmbotzcyuhsyxbw`). The Supabase migration-list tool returned no entries and `supabase_migrations.schema_migrations` is absent, so application was confirmed from the successful migration result plus read-only schema, RLS-policy, table-grant and RPC-permission inspection. No color records or project rows were changed. Live staff UI color/status transitions remain manual acceptance tests.

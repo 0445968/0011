@@ -985,7 +985,6 @@ export function ProjectWorkspace({
         revision={savedRevision}
         body={body}
         disabled={locked || drafts.conflict}
-        phaseStatusDisabled={locked}
         dirty={dirty}
         sidecarReady={drafts.ready && !drafts.recoverable && !drafts.conflict}
         onTaskChange={editTask}

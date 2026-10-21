@@ -14,6 +14,8 @@ import {
 import Link from 'next/link';
 import { DirectoryIdentity, DirectoryProgress, DirectoryPhases, DirectoryStatus } from '@/components/admin/projects/DirectoryIndicators';
 import { validDirectoryMode, type ProjectDirectoryContext, type ProjectDirectoryMode } from '@/lib/projects/directory-types';
+import type { ProjectPhaseColorMap } from '@/lib/projects/phase-colors';
+import type { ProjectPhaseState } from '@/lib/projects/phase-status';
 
 import {
   usePathname,
@@ -83,6 +85,8 @@ export interface ProjectDirectoryViewFilters {
 interface ProjectDirectoryProps {
   projects: ProjectSummary[];
   context?: Record<string, ProjectDirectoryContext>;
+  phaseColorsByProject?: Record<string, ProjectPhaseColorMap>;
+  phaseStatesByProject?: Record<string, ProjectPhaseState[]>;
   mode: ProjectDirectoryMode;
   total: number;
   page: number;
@@ -634,6 +638,8 @@ function ProjectPreview({
 export function ProjectDirectory({
   projects,
   context = {},
+  phaseColorsByProject = {},
+  phaseStatesByProject = {},
   mode,
   total,
   page,
@@ -1041,7 +1047,7 @@ export function ProjectDirectory({
       case 'progress':
         return <DirectoryProgress project={project} />;
       case 'phases':
-        return <DirectoryPhases project={project} context={context[project.request_id]} />;
+        return <DirectoryPhases project={project} context={context[project.request_id]} phaseColors={phaseColorsByProject[project.request_id]} formalStates={phaseStatesByProject[project.request_id]??[]} />;
 
       case 'tasks': {
         const blocked =
@@ -1121,7 +1127,7 @@ export function ProjectDirectory({
     return <article key={project.request_id} className="min-w-0 rounded-xl border border-border bg-card p-4">
       <DirectoryIdentity project={project} context={context[project.request_id]} />
       <div className="my-3 flex flex-wrap items-center justify-between gap-2"><DirectoryStatus state={project.state} /><span className="text-[11px] text-muted-foreground">{project.body.owner || 'Unassigned'}</span></div>
-      <div className="border-y border-border py-3"><DirectoryPhases project={project} context={context[project.request_id]} /></div>
+      <div className="border-y border-border py-3"><DirectoryPhases project={project} context={context[project.request_id]} phaseColors={phaseColorsByProject[project.request_id]} formalStates={phaseStatesByProject[project.request_id]??[]} /></div>
       <div className="mt-3"><DirectoryProgress project={project} /></div>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2">{renderCell(project, 'actions')}<span className="text-[10px] text-muted-foreground">{formatDate(project.updated_at)}</span></div>
       <details className="mt-3 border-t border-border pt-3"><summary className="cursor-pointer text-xs font-medium">Tasks, milestones & actions</summary><div className="mt-3"><ProjectPreview project={project} /></div></details>

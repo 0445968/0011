@@ -2,7 +2,7 @@
 
 R6 makes the existing project calendar the visible project Calendar section. Its day, week, month, timeline, and phase schedule views read saved task/milestone dates, phase links/statuses, and verified assignee roster data. Task due dates stay in the canonical project body, so changes continue to feed My Tasks, the staff Calendar, and the client task portal. The timeline adds a staff-managed task start date in a separate, revisioned sidecar table, surfaced in My Tasks and the staff Calendar. Suggested task priority follows saved start/due dates (low before 50% elapsed, medium from 50%, high from 75%); blocked tasks are treated as paused and overdue tasks are labeled overdue rather than assigned a suggestion.
 
-The existing lifecycle controls are embedded under “Lifecycle, dependencies and approvals” in the project Calendar. Their RPCs, staff authorization, dependency checks, lifecycle records, and authoritative history remain intact. Existing `?tab=lifecycle` URLs resolve to Calendar.
+The “Lifecycle, dependencies and approvals” controls now live on the project Phases page. Their RPCs, staff authorization, dependency checks, lifecycle records, and authoritative history remain intact. Existing `?tab=lifecycle` and `?tab=calendar&view=phases` URLs resolve to Phases. General Calendar navigation remains on Calendar.
 
 ## Migration
 

@@ -6,6 +6,8 @@ import { ArrowUpRight, CalendarDays, CheckCheck, ChevronLeft, ChevronRight, List
 import type { ProjectBody } from '@/lib/projects/schema';
 import type { ProjectPhase } from '@/lib/projects/lifecycle-schema';
 import { projectPhaseLabels } from '@/lib/projects/lifecycle-schema';
+import type { ProjectPhaseColorMap } from '@/lib/projects/phase-colors';
+import { phaseColorFor } from '@/lib/projects/phase-colors';
 import type { MilestonePhaseLink, ProjectRosterMember } from '@/lib/projects/overview-data';
 import { milestoneStats } from '@/lib/projects/workplan-views';
 import { activePhaseMilestones } from '@/lib/projects/overview-milestones';
@@ -14,12 +16,13 @@ import { ProjectTaskStateIcon } from './DirectoryIndicators';
 import { ProjectMemberStack } from './ProjectMemberStack';
 import { useProjectPhaseStatuses } from './useProjectPhaseStatuses';
 
-export function ProjectMilestonePreviews({ id, body, activePhases, milestonePhases, members }: {
+export function ProjectMilestonePreviews({ id, body, activePhases, milestonePhases, members, phaseColors }: {
   id: string;
   body: ProjectBody;
   activePhases: ProjectPhase[];
   milestonePhases: MilestonePhaseLink[];
   members: ProjectRosterMember[];
+  phaseColors: ProjectPhaseColorMap;
 }) {
   const carousel = useRef<HTMLDivElement>(null);
   const phases = useProjectPhaseStatuses(id);
@@ -60,9 +63,7 @@ export function ProjectMilestonePreviews({ id, body, activePhases, milestonePhas
               <Link href={href} className="min-w-0 break-words text-base font-semibold leading-snug hover:underline">{milestone.title}</Link>
               <Link href={href} aria-label={`Open ${milestone.title}`} className="rounded-full border border-border p-1.5 text-muted-foreground hover:bg-muted"><ArrowUpRight size={14} aria-hidden /></Link>
             </div>
-            <p className="mt-2 line-clamp-2 text-[11px] font-medium text-violet-700 dark:text-violet-300">
-              {phases.map(phase => projectPhaseLabels[phase]).join(' · ')}
-            </p>
+            <div className="mt-2 flex flex-wrap gap-x-2 gap-y-1">{phases.map(phase=><span key={phase} className="inline-flex items-center gap-1 text-[11px] font-medium text-foreground"><span aria-hidden className="h-2.5 w-2.5 rounded-sm border border-black/15 dark:border-white/20" style={{backgroundColor:phaseColorFor(phase,phaseColors)}}/>{projectPhaseLabels[phase]}</span>)}</div>
             <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <CalendarDays size={15} aria-hidden /><span>{milestone.dueOn ? `Due ${milestone.dueOn}` : 'No due date'}</span>
               <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 font-medium ${milestone.status === 'done' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200' : milestone.status === 'in_progress' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200' : 'bg-muted text-foreground'}`}>

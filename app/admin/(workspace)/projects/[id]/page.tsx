@@ -58,12 +58,15 @@ import {
 
 import { ProjectOverview } from '@/components/admin/projects/ProjectOverview';
 import { ProjectCalendar } from '@/components/admin/projects/ProjectCalendar';
+import { ProjectPhasesPage } from '@/components/admin/projects/ProjectPhasesPage';
 import { ProjectTaskResponseReview } from '@/components/admin/projects/ProjectTaskResponseReview';
 import { getProjectDirectoryContext } from '@/lib/projects/directory-context';
 import { getProjectOverviewExtras } from '@/lib/projects/overview-data';
 import { taskToday } from '@/lib/tasks/links';
 import { getProjectTaskSchedule } from '@/lib/projects/schedule-data';
 import { projectPhaseStatesSchema } from '@/lib/projects/phase-status';
+import { getProjectPhaseColors } from '@/lib/projects/phase-color-data';
+import { phaseColorMap } from '@/lib/projects/phase-colors';
 
 import {
   getServiceBlueprint,
@@ -76,6 +79,7 @@ import {
 type Tab =
   | 'overview'
   | 'plan'
+  | 'phases'
   | 'calendar'
   | 'brief'
   | 'delivery';
@@ -83,6 +87,7 @@ type Tab =
 const ALL_TABS: Tab[] = [
   'overview',
   'plan',
+  'phases',
   'calendar',
   'brief',
   'delivery',
@@ -97,7 +102,7 @@ export default async function ProjectPage({
   searchParams = {},
 }: {
   params: { id: string };
-  searchParams?: { tab?: string;task?:string;focus?:string;milestone?:string };
+  searchParams?: { tab?: string;task?:string;focus?:string;milestone?:string;view?:string };
 }) {
   /* =======================================================
      AUTHENTICATION
@@ -263,7 +268,8 @@ export default async function ProjectPage({
   const requestedTab =
     searchParams.tab;
 
-  const canonicalRequestedTab = requestedTab === 'lifecycle' ? 'calendar' : requestedTab;
+  const legacyPhaseView = requestedTab === 'calendar' && searchParams.view === 'phases';
+  const canonicalRequestedTab = requestedTab === 'lifecycle' || legacyPhaseView ? 'phases' : requestedTab;
   const requested =
     ALL_TABS.find(
       (item) =>
@@ -286,23 +292,25 @@ export default async function ProjectPage({
 
   const lifecycle =
     record &&
-    tab === 'calendar'
+    (tab === 'phases' || tab === 'calendar')
       ? await getProjectLifecycle(
           client,
           params.id
         )
       : null;
 
-  const [calendarExtras, scheduleRows, phaseStatesResult] = record && tab === 'calendar'
+  const [calendarExtras, scheduleRows, phaseStatesResult, phaseColorsResult] = record && (tab === 'calendar' || tab === 'phases')
     ? await Promise.all([
         getProjectOverviewExtras(client, params.id),
         getProjectTaskSchedule(client, params.id),
         client.rpc('staff_project_phase_states', { p_request: params.id }),
+        getProjectPhaseColors(client, params.id),
       ])
-    : [null, null, null] as const;
+    : [null, null, null, null] as const;
   if (phaseStatesResult?.error) throw new Error('Project phase schedule could not load. Check migration 035.');
   const phaseStates = phaseStatesResult ? projectPhaseStatesSchema.parse(phaseStatesResult.data).states : [];
-  const calendarToday = record && tab === 'calendar'
+  const phaseColors = phaseColorsResult?.colors ?? [];
+  const calendarToday = record && (tab === 'calendar' || tab === 'phases')
     ? taskToday((await client.from('staff_notification_preferences').select('timezone').eq('user_id', user.id).maybeSingle()).data?.timezone || 'America/Chicago').today
     : '';
 
@@ -328,17 +336,18 @@ export default async function ProjectPage({
   // source data, keys, revision checks and action handlers.
   let overview = null;
   if (record && tab === 'overview') {
-    const [contexts, preferences, extras, formalPhasesResult] = await Promise.all([
+    const [contexts, preferences, extras, formalPhasesResult, formalColors] = await Promise.all([
       getProjectDirectoryContext(client, [params.id]),
       client.from('staff_notification_preferences').select('timezone').eq('user_id', user.id).maybeSingle(),
       getProjectOverviewExtras(client, params.id),
       client.rpc('staff_project_phase_states', { p_request: params.id }),
+      getProjectPhaseColors(client, params.id),
     ]);
     if (preferences.error) throw new Error('Project timezone preferences could not load.');
     if (formalPhasesResult.error) throw new Error('Saved project phase statuses could not load. Check migration 035.');
     const formalPhases = projectPhaseStatesSchema.parse(formalPhasesResult.data).states;
     const day = taskToday(preferences.data?.timezone || 'America/Chicago');
-    overview = { context: contexts[params.id], ...day, ...extras, phaseStates: formalPhases };
+    overview = { context: contexts[params.id], ...day, ...extras, phaseStates: formalPhases, phaseColors: phaseColorMap(formalColors.colors) };
   }
 
   /* =======================================================
@@ -377,6 +386,7 @@ export default async function ProjectPage({
           members={overview.members}
           milestonePhases={overview.milestonePhases}
           phaseStates={overview.phaseStates}
+          phaseColors={overview.phaseColors}
         />
       )}
 
@@ -415,15 +425,28 @@ export default async function ProjectPage({
           LIFECYCLE
           =================================================== */}
 
-      {tab === 'calendar' && record && lifecycle?.lifecycle && calendarExtras && scheduleRows && (
+      {tab === 'phases' && record && lifecycle?.lifecycle && calendarExtras && scheduleRows && (
+        <ProjectPhasesPage
+          key={`${params.id}:${record.revision}`}
+          id={params.id}
+          revision={record.revision}
+          body={record.body}
+          lifecycle={lifecycle.lifecycle}
+          controls={lifecycle.controls}
+          events={lifecycle.events}
+          phaseStates={phaseStates}
+          phaseColors={phaseColors}
+          readOnly={record.state==='completed'}
+        />
+      )}
+
+      {tab === 'calendar' && record && calendarExtras && scheduleRows && (
         <ProjectCalendar
           id={params.id}
           body={record.body}
           projectRevision={record.revision}
-          controls={lifecycle.controls}
-          events={lifecycle.events}
-          lifecycle={lifecycle.lifecycle}
-          phaseStates={phaseStates}
+          controls={lifecycle?.controls ?? []}
+          phaseColors={phaseColorMap(phaseColors)}
           schedule={scheduleRows}
           members={calendarExtras.members}
           milestonePhases={calendarExtras.milestonePhases}

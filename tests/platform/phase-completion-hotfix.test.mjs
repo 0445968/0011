@@ -19,6 +19,6 @@ test('dialog previews blockers, lets the server decide saved state, and shows ac
  assert.match(dialog,/onClick=\{closeDialog\}/);
  assert.doesNotMatch(dialog,/Boolean\(completeBlocked\)/);
  assert.match(dialog,/The server checks saved data when you confirm/);
- assert.match(dialog,/phases\.error && <p/);
+ assert.match(dialog,/\(dialogError\|\|phases\.error\)/);
  assert.match(route,/result\.data\.incompleteCount/);
 });

@@ -234,10 +234,11 @@ test('same-session revision changes use saved-body reconciliation, preserve draf
   assert.match(responseReview, /router\.refresh\(\)/);
   assert.match(phaseHook, /setSavedByPhase/);
   assert.match(phaseHook, /router\.refresh\(\)/);
-  assert.match(phaseCards, /Save phase status/);
+  assert.match(phaseCards, /Confirm change/);
   assert.match(page, /staff_project_phase_states/);
   assert.match(page, /phaseStates=\{overview\.phaseStates\}/);
   assert.match(overview, /formalStates=\{phaseStates\}/);
-  assert.match(directory, /Saved phase status/);
-  assert.match(directory, /phase\.status==='completed'.*Check/s);
+  assert.match(directory, /Saved project phase statuses/);
+  assert.doesNotMatch(directory, /Saved phase status/);
+  assert.match(directory, /state==='completed'.*Check/s);
 });

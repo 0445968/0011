@@ -35,7 +35,7 @@ const link = (base: string, source: AuditSource, itemId?: string): string => {
   if (source === 'discussion') return `${base}/discussion`;
   if (source === 'access' || source === 'members') return `${base}/access`;
   if (source === 'brief') return `${base}?tab=brief`;
-  if (source === 'phases') return `${base}?tab=plan`;
+  if (source === 'phases') return `${base}?tab=phases`;
   if (source === 'clients') return `${base}?tab=plan`;
   if ((source === 'tasks' || source === 'milestones') && itemId) {
     const key = source === 'tasks' ? 'task' : 'milestone';
@@ -131,6 +131,7 @@ export async function getProjectActivity(client: SupabaseClient, requestId: stri
   const sources = [
     ['project', 'inquiry_project_history', 'id,action,reason,snapshot,actor,created_at'],
     ['phases', 'project_phase_status_history', 'id,phase,previous_status,next_status,reason,actor,created_at'],
+    ['phase_colors', 'project_phase_color_history', 'id,phase,previous_color,next_color,revision,reason,actor,created_at'],
     ['hierarchy', 'project_hierarchy_history', 'id,action,details,actor,created_at'],
     ['members', 'project_assignment_events', 'id,task_id,action,before_state,after_state,actor,created_at'],
     ['tasks', 'project_task_history', 'id,task_id,action,snapshot,actor,created_at'],
@@ -174,6 +175,10 @@ export async function getProjectActivity(client: SupabaseClient, requestId: stri
   for (const row of bySource.phases ?? []) {
     events.push(auditEvent('phases', 'phase', row, `Phase ${display(row.phase)}: ${display(row.previous_status)} → ${display(row.next_status)}`,
       text(row.reason) || null, base));
+  }
+  for (const row of bySource.phase_colors ?? []) {
+    events.push(auditEvent('phases', 'phase-color', row, `${display(row.phase)} phase color changed`,
+      `${display(row.previous_color, 'Purple default')} → ${display(row.next_color, 'Purple default')}${text(row.reason) ? ` · ${text(row.reason)}` : ''}`, base));
   }
   for (const row of bySource.hierarchy ?? []) {
     const detail = object(row.details);

@@ -4,19 +4,23 @@ import { readFileSync } from 'node:fs';
 
 const read = path => readFileSync(path, 'utf8');
 
-test('R6 project calendar exposes all planned schedule views and saved source links', () => {
+test('R6 project calendar retains schedule views and links while Lifecycle moves to Phases', () => {
   const calendar = read('components/admin/projects/ProjectCalendar.tsx');
   const page = read('app/admin/(workspace)/projects/[id]/page.tsx');
   const sections = read('lib/admin/workspace/project-sections.ts');
-  assert.match(calendar, /'day','week','month','timeline','phases'/);
+  assert.match(calendar, /'day' \| 'week' \| 'month' \| 'timeline'/);
+  assert.doesNotMatch(calendar, /ProjectLifecycleControls/);
+  assert.doesNotMatch(calendar, /Lifecycle, dependencies and approvals/);
   assert.match(calendar, /api\/admin\/projects\/\$\{id\}\/schedule/);
-  assert.match(calendar, /ProjectLifecycleControls/);
   assert.match(calendar, /ProfileImage/);
   assert.match(calendar, /Task starts/);
   assert.match(read('components/admin/projects/ProjectMilestoneBoardV2.tsx'), /Suggested \{suggested\} priority/);
   assert.match(read('lib/tasks/data.ts'), /start_on:string\|null/);
   assert.match(read('lib/projects/activity-data.ts'), /start_date:'Task start date changed'/);
-  assert.match(page, /canonicalRequestedTab = requestedTab === 'lifecycle' \? 'calendar'/);
+  assert.match(page, /canonicalRequestedTab = requestedTab === 'lifecycle' \|\| legacyPhaseView \? 'phases'/);
+  assert.match(page, /searchParams\.view === 'phases'/);
+  assert.match(page, /tab === 'calendar' && record && calendarExtras && scheduleRows/);
+  assert.match(page, /ProjectPhasesPage/);
   assert.match(sections, /id: 'calendar', label: 'Calendar', href: '\?tab=calendar'/);
 });
 

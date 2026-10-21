@@ -71,11 +71,14 @@ test('phase actions remain available through dirty work-plan drafts and migratio
   const board = read('components/admin/projects/ProjectMilestoneBoardV2.tsx');
   const workspace = read('components/admin/ProjectWorkspace.tsx');
   const cards = read('components/admin/projects/ProjectPhaseCards.tsx');
+  const phases = read('components/admin/projects/ProjectPhasesPage.tsx');
   const sql = read('supabase/migrations/20261022120000_r7a_phase_completion_integrity.sql');
   const route = read('app/api/admin/projects/[id]/phases/route.ts');
-  assert.match(board, /statusDisabled=\{phaseStatusDisabled\}/);
-  assert.match(workspace, /phaseStatusDisabled=\{locked\}/);
-  assert.match(cards, /disabled=\{statusDisabled\|\|!phases\.states\|\|phases\.busy\}/);
+  assert.doesNotMatch(board, /view==='phases'/);
+  assert.doesNotMatch(workspace, /phaseStatusDisabled/);
+  assert.match(phases, /<ProjectPhaseCards/);
+  assert.match(phases, /<ProjectLifecycleControls/);
+  assert.match(cards, /disabled=\{disabled\|\|!phases\.states\|\|phases\.busy\}/);
   assert.doesNotMatch(cards, /disabled=\{phases\.busy\|\|Boolean\(completeBlocked\)\}/);
   assert.match(sql, /'task_controls_missing'/);
   assert.match(sql, /'subtasks_incomplete'/);

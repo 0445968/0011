@@ -12,9 +12,9 @@ export type PhaseSaveResult =
 
 const failed = (error: string): PhaseSaveResult => ({ outcome: 'failed', error });
 
-export function useProjectPhaseStatuses(projectId: string) {
+export function useProjectPhaseStatuses(projectId: string, initialStates?: ProjectPhaseState[]) {
   const router = useRouter();
-  const [states, setStates] = useState<ProjectPhaseState[] | null>(null);
+  const [states, setStates] = useState<ProjectPhaseState[] | null>(initialStates ?? null);
   const [savedByPhase, setSavedByPhase] = useState<Record<string, { status: PhaseStatus; at: string }>>({});
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -44,7 +44,7 @@ export function useProjectPhaseStatuses(projectId: string) {
 
   useEffect(() => {
     let active = true;
-    setStates(null);
+    if (!initialStates) setStates(null);
     setError('');
     void load(() => active);
     return () => { active = false; };
