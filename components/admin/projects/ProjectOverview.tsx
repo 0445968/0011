@@ -9,6 +9,7 @@ import { projectOverviewSummary } from '@/lib/projects/overview-summary';
 import { taskHref } from '@/lib/tasks/links';
 import { directoryProgress } from '@/lib/projects/directory-progress';
 import type { MilestonePhaseLink, ProjectRosterMember } from '@/lib/projects/overview-data';
+import type { ProjectPhaseState } from '@/lib/projects/phase-status';
 import { ProjectMemberStack } from './ProjectMemberStack';
 import { ProjectMilestonePreviews } from './ProjectMilestonePreviews';
 
@@ -37,7 +38,7 @@ function Metric({label, value, detail}: {label:string; value:string; detail:stri
   return <div className="min-w-0 rounded-xl border border-border bg-card px-4 py-3"><p className="text-[11px] text-muted-foreground">{label}</p><p className="mt-1 text-xl font-semibold tabular-nums">{value}</p><p className="mt-1 text-[11px] text-muted-foreground">{detail}</p></div>;
 }
 
-export function ProjectOverview({record, history, context, today, members, milestonePhases}: {
+export function ProjectOverview({record, history, context, today, members, milestonePhases, phaseStates}: {
   record: OverviewRecord;
   history: ProjectEvent[];
   context?: ProjectDirectoryContext;
@@ -45,6 +46,7 @@ export function ProjectOverview({record, history, context, today, members, miles
   timezone: string;
   members: ProjectRosterMember[];
   milestonePhases: MilestonePhaseLink[];
+  phaseStates: ProjectPhaseState[];
 }) {
   const base = `/projects/${record.request_id}`;
   const summary = projectOverviewSummary(record.body, today);
@@ -103,7 +105,7 @@ export function ProjectOverview({record, history, context, today, members, miles
 
       <div className="min-w-0 space-y-3 xl:order-1">
         <Panel title="Phase & task progress" action={<Link href={`${base}?tab=lifecycle`} className={linkClass}>Lifecycle<ArrowUpRight size={13} aria-hidden /></Link>}>
-          <div className="space-y-4 p-4"><DirectoryPhases project={record} context={context} /><div className="border-t border-border pt-3"><p className="mb-2 text-[11px] text-muted-foreground">Task completion</p><DirectoryProgress project={record} /><p className="mt-2 text-[11px] text-muted-foreground">Completed tasks ÷ all tasks. Approval and delivery readiness are managed separately.</p></div></div>
+          <div className="space-y-4 p-4"><DirectoryPhases project={record} context={context} formalStates={phaseStates} /><div className="border-t border-border pt-3"><p className="mb-2 text-[11px] text-muted-foreground">Task completion</p><DirectoryProgress project={record} /><p className="mt-2 text-[11px] text-muted-foreground">Completed tasks ÷ all tasks. Approval and delivery readiness are managed separately.</p></div></div>
         </Panel>
         <Panel title="Recent project history" action={<Link href={`${base}/activity`} className={linkClass}>View all activity<ArrowUpRight size={13} aria-hidden /></Link>}>
         <ol tabIndex={0} aria-label="Recent project events" className="max-h-72 divide-y divide-border overflow-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring">{history.slice(0,5).map(event => <li key={event.id} className="flex items-start gap-2.5 px-4 py-3"><Clock3 size={14} aria-hidden className="mt-0.5 shrink-0 text-muted-foreground" /><div className="min-w-0"><p className="break-words text-xs font-medium capitalize">{event.action.replaceAll('_',' ')}</p><time dateTime={event.created_at} className="mt-1 block text-[11px] text-muted-foreground">{stamp(event.created_at)}</time>{event.reason && <p className="mt-1 break-words text-xs text-muted-foreground">{event.reason}</p>}</div></li>)}</ol>

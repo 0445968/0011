@@ -69,10 +69,12 @@ test('a lost write response is reconciled before the desired state is retried', 
 
 test('phase actions remain available through dirty work-plan drafts and migration reports missing controls and subtasks', () => {
   const board = read('components/admin/projects/ProjectMilestoneBoardV2.tsx');
+  const workspace = read('components/admin/ProjectWorkspace.tsx');
   const cards = read('components/admin/projects/ProjectPhaseCards.tsx');
   const sql = read('supabase/migrations/20261022120000_r7a_phase_completion_integrity.sql');
   const route = read('app/api/admin/projects/[id]/phases/route.ts');
-  assert.match(board, /statusDisabled=\{disabled\}/);
+  assert.match(board, /statusDisabled=\{phaseStatusDisabled\}/);
+  assert.match(workspace, /phaseStatusDisabled=\{locked\}/);
   assert.match(cards, /disabled=\{statusDisabled\|\|!phases\.states\|\|phases\.busy\}/);
   assert.doesNotMatch(cards, /disabled=\{phases\.busy\|\|Boolean\(completeBlocked\)\}/);
   assert.match(sql, /'task_controls_missing'/);

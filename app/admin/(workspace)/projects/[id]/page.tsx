@@ -328,14 +328,17 @@ export default async function ProjectPage({
   // source data, keys, revision checks and action handlers.
   let overview = null;
   if (record && tab === 'overview') {
-    const [contexts, preferences, extras] = await Promise.all([
+    const [contexts, preferences, extras, formalPhasesResult] = await Promise.all([
       getProjectDirectoryContext(client, [params.id]),
       client.from('staff_notification_preferences').select('timezone').eq('user_id', user.id).maybeSingle(),
       getProjectOverviewExtras(client, params.id),
+      client.rpc('staff_project_phase_states', { p_request: params.id }),
     ]);
     if (preferences.error) throw new Error('Project timezone preferences could not load.');
+    if (formalPhasesResult.error) throw new Error('Saved project phase statuses could not load. Check migration 035.');
+    const formalPhases = projectPhaseStatesSchema.parse(formalPhasesResult.data).states;
     const day = taskToday(preferences.data?.timezone || 'America/Chicago');
-    overview = { context: contexts[params.id], ...day, ...extras };
+    overview = { context: contexts[params.id], ...day, ...extras, phaseStates: formalPhases };
   }
 
   /* =======================================================
@@ -373,6 +376,7 @@ export default async function ProjectPage({
           timezone={overview.timezone}
           members={overview.members}
           milestonePhases={overview.milestonePhases}
+          phaseStates={overview.phaseStates}
         />
       )}
 

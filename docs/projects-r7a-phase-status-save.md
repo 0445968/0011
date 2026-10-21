@@ -34,3 +34,5 @@ The existing completion RPC checked active tasks by joining task JSON to `projec
 9. Verify completing one phase does not change another phase, milestones, project status, lifecycle gates, or client approval state.
 
 Automated checks cover state reconciliation and the migration RPC in an isolated PostgreSQL-compatible database. The production read-only inspection verifies the deployed implementation and security grants, but does not invoke a live phase transition.
+
+The subsequent milestone-save and draft-reconciliation repair is documented separately in [R7A milestone save reconciliation](./projects-r7a-milestone-save-reconciliation.md); it has a distinct migration and execution status.

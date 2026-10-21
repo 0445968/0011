@@ -7,6 +7,7 @@ import type { ProjectSummary } from '@/lib/projects/data';
 import type { ProjectDirectoryContext } from '@/lib/projects/directory-types';
 import { directoryProgress } from '@/lib/projects/directory-progress';
 import { projectPhaseLabels } from '@/lib/projects/lifecycle-schema';
+import type { ProjectPhaseState } from '@/lib/projects/phase-status';
 
 const projectStatusStyles = {
   active: 'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200',
@@ -86,10 +87,11 @@ const phaseStyles = {
 };
 const phaseText = { unknown: 'No mapped tasks', not_started: 'Tasks not started', in_progress: 'Tasks in progress', completed: 'Tasks completed' };
 
-export function DirectoryPhases({ project, context }: { project: ProjectSummary; context?: ProjectDirectoryContext }) {
+export function DirectoryPhases({ project, context, formalStates }: { project: ProjectSummary; context?: ProjectDirectoryContext; formalStates?: ProjectPhaseState[] }) {
   const progress = directoryProgress(project.body, context?.taskPhases ?? []);
   const latestComplete = [...progress.phases].reverse().find(phase => phase.state === 'completed');
   return <div className="min-w-[170px] space-y-2">
+    {formalStates&&<div aria-label="Saved formal phase statuses" className="space-y-1.5"><p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Saved phase status</p><ul className="flex flex-wrap gap-1.5">{formalStates.map(phase=><li key={phase.phase} className={`inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[10px] ${phase.status==='completed'?'bg-emerald-100 font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200':phase.status==='active'?'bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-200':'bg-muted text-muted-foreground'}`}>{phase.status==='completed'&&<Check className="h-3 w-3" aria-hidden/>}{projectPhaseLabels[phase.phase]} · {phase.status==='completed'?'Completed':phase.status==='active'?'Active':'Planning'}</li>)}</ul></div>}
     <div className="flex items-stretch gap-1" role="group" aria-label="Task activity by phase">
       {progress.phases.map(phase => <span key={phase.phase}
         title={`${projectPhaseLabels[phase.phase]}: ${phaseText[phase.state]} (${phase.done}/${phase.total}); ${phase.blocked} blocked`}

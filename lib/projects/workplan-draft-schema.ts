@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { projectBodySchema } from './schema';
 
 // Drafts may contain a temporarily empty title while staff are editing.
 // Publishing still uses the stricter projectBodySchema and server RPC validation.
@@ -28,5 +29,7 @@ export const workplanDraftBodySchema = z.object({
 
 export const saveWorkplanDraftSchema = z.object({
   baseRevision: z.number().int().positive(),
+  baseBody: projectBodySchema,
+  expectedGeneration: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
   body: workplanDraftBodySchema,
 }).strict();

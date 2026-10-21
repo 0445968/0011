@@ -47,8 +47,8 @@ export function ProjectPhaseCards({id,body,links,disabled,statusDisabled=disable
     if (!prompt || phases.busy) return;
     setDialogError('');
     const result = await phases.save(prompt.phase,prompt.status,reason.trim());
-    if (result === 'saved' || result === 'saved_refresh_failed') closeDialog();
-    else setDialogError('The phase change was not confirmed. Reconcile phase statuses before retrying.');
+    if (result.outcome === 'saved' || result.outcome === 'saved_refresh_failed') closeDialog();
+    else setDialogError(result.error);
   };
   return <section aria-label="Parallel project phase statuses" className="space-y-3">
     <p className="text-xs text-muted-foreground">Phases can be active at the same time. Only Bivi staff can formally complete a phase, after all its milestones are reviewed.</p>
@@ -67,6 +67,7 @@ export function ProjectPhaseCards({id,body,links,disabled,statusDisabled=disable
           <span className="min-w-0 flex-1">
             <span className={`block text-sm font-semibold ${status==='completed'?'text-muted-foreground line-through':'text-foreground'}`}>{phaseName}</span>
             <span className="mt-1 block text-[11px] text-muted-foreground">{progress.completed}/{progress.total} milestones completed</span>
+            {phases.savedByPhase[phase]&&<span role="status" className="mt-1 block text-[11px] font-medium text-emerald-700 dark:text-emerald-300">Saved as {phases.savedByPhase[phase].status==='active'?'Active':phases.savedByPhase[phase].status==='completed'?'Completed':'Planning'} · {new Date(phases.savedByPhase[phase].at).toLocaleTimeString('en-US',{timeZone:'America/Chicago',hour:'numeric',minute:'2-digit'})}</span>}
           </span>
           <Popover><PopoverTrigger asChild><button type="button" onClick={event=>event.stopPropagation()} disabled={statusDisabled||!phases.states||phases.busy} title={phases.busy?'A phase change is saving. Wait for it to finish.':!phases.states?'Saved phase statuses are unavailable. Retry the phase refresh.':statusDisabled?'This project is read-only.':''} aria-label={`Change ${phaseName} status`} className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-[11px] font-medium hover:bg-muted disabled:opacity-50">
             <PhaseIcon status={status}/>{status==='active'?'Active':status==='completed'?'Completed':'Planning'}
@@ -123,7 +124,7 @@ export function ProjectPhaseCards({id,body,links,disabled,statusDisabled=disable
         <DialogFooter>
           <button type="button" className="rounded-lg border px-3 py-2 text-xs" disabled={phases.busy} onClick={closeDialog}>Cancel</button>
           <button type="button" className="rounded-lg bg-foreground px-3 py-2 text-xs text-background disabled:opacity-50" disabled={phases.busy} onClick={()=>{void perform();}}>
-            {phases.busy?'Saving…':'Confirm change'}
+            {phases.busy?'Saving…':'Save phase status'}
           </button>
         </DialogFooter>
       </DialogContent>

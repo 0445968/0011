@@ -1,13 +1,21 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import type { ProjectPhase } from '@/lib/projects/lifecycle-schema';
 import type { PhaseStatus, ProjectPhaseState } from '@/lib/projects/phase-status';
 import { reconcilePhaseStatusSave, updatePhaseState } from '@/lib/projects/phase-save';
 
-export type PhaseSaveResult = 'saved' | 'saved_refresh_failed' | 'failed';
+export type PhaseSaveResult =
+  | { outcome: 'saved' }
+  | { outcome: 'saved_refresh_failed' }
+  | { outcome: 'failed'; error: string };
+
+const failed = (error: string): PhaseSaveResult => ({ outcome: 'failed', error });
 
 export function useProjectPhaseStatuses(projectId: string) {
+  const router = useRouter();
   const [states, setStates] = useState<ProjectPhaseState[] | null>(null);
+  const [savedByPhase, setSavedByPhase] = useState<Record<string, { status: PhaseStatus; at: string }>>({});
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [refreshWarning, setRefreshWarning] = useState('');
@@ -43,17 +51,17 @@ export function useProjectPhaseStatuses(projectId: string) {
   }, [load]);
 
   const save = useCallback(async (phase: ProjectPhase, status: PhaseStatus, reason: string) => {
-    if (pending.current || !states) return 'failed' as const;
+    if (pending.current || !states) return failed('Saved phase statuses are unavailable. Refresh them before retrying.');
     let currentStates = states;
     pending.current = true; setBusy(true); setError('');
     if (needsReconcile.current) {
       const refreshed = await load();
-      if (!refreshed) { pending.current = false; setBusy(false); return 'failed' as const; }
+      if (!refreshed) { pending.current = false; setBusy(false); return failed('Phase statuses could not refresh. Retry before saving again.'); }
       needsReconcile.current = false;
       currentStates = refreshed;
     }
     const current = currentStates.find(item => item.phase === phase);
-    if (!current) { pending.current = false; setBusy(false); return 'failed' as const; }
+    if (!current) { pending.current = false; setBusy(false); return failed('This project phase is unavailable. Refresh phase statuses.'); }
     try {
       const result = await reconcilePhaseStatusSave({
         phase, status, expectedRevision: current.revision,
@@ -78,22 +86,31 @@ export function useProjectPhaseStatuses(projectId: string) {
       });
       if (result.states) setStates(result.states);
       if (result.outcome === 'saved_refresh_failed') {
+        setSavedByPhase(previous => ({ ...previous, [phase]: { status, at: new Date().toISOString() } }));
         needsReconcile.current = true;
         setRefreshWarning('The phase change was saved. Its display could not refresh; use Refresh phases to reconcile before another change.');
-        return 'saved_refresh_failed' as const;
+        router.refresh();
+        return { outcome: 'saved_refresh_failed' } as const;
       }
-      if (result.outcome === 'saved') { setError(''); return 'saved' as const; }
+      if (result.outcome === 'saved') {
+        setError('');
+        setSavedByPhase(previous => ({ ...previous, [phase]: { status, at: new Date().toISOString() } }));
+        router.refresh();
+        return { outcome: 'saved' } as const;
+      }
       if (result.uncertain) needsReconcile.current = true;
-      setError(result.error || 'The phase change was not confirmed. Refresh phase statuses before retrying.');
-      return 'failed' as const;
+      const message = result.error || 'The phase change was not confirmed. Refresh phase statuses before retrying.';
+      setError(message);
+      return failed(message);
     } catch (cause) {
       needsReconcile.current = true;
       const message = cause instanceof Error ? cause.message : 'Could not save phase.';
       const refreshed = await load();
-      if (!refreshed) setError(`${message} The save outcome is uncertain. Refresh phase statuses before retrying.`);
-      return 'failed' as const;
+      const actionable = refreshed ? message : `${message} The save outcome is uncertain. Refresh phase statuses before retrying.`;
+      setError(actionable);
+      return failed(actionable);
     }
     finally { pending.current = false; setBusy(false); }
-  }, [projectId, states, load]);
-  return {states, busy, error, refreshWarning, load, save};
+  }, [projectId, states, load, router]);
+  return {states, busy, error, refreshWarning, savedByPhase, load, save};
 }
