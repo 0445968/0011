@@ -12,11 +12,13 @@ test('phase close permits empty phases but blocks active work and unfinished mil
  assert.match(migration,/incompleteCount/);
  assert.match(migration,/if old_status<>'active'/);
 });
-test('dialog previews blockers and offers a clear cancel path', () => {
+test('dialog previews blockers, lets the server decide saved state, and shows actionable errors', () => {
  assert.match(dialog,/unfinished\.map/);
  assert.match(dialog,/activeLinkedTasks\.slice/);
  assert.match(dialog,/role="alert"/);
  assert.match(dialog,/onClick=\{closeDialog\}/);
- assert.match(dialog,/disabled=\{phases\.busy\|\|Boolean\(completeBlocked\)\}/);
+ assert.doesNotMatch(dialog,/Boolean\(completeBlocked\)/);
+ assert.match(dialog,/The server checks saved data when you confirm/);
+ assert.match(dialog,/phases\.error && <p/);
  assert.match(route,/result\.data\.incompleteCount/);
 });

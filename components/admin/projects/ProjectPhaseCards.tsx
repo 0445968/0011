@@ -22,10 +22,11 @@ function PhaseIcon({status}: {status:PhaseStatus}) {
   return <CircleDashed className="h-5 w-5 text-slate-400" aria-hidden="true"/>;
 }
 
-export function ProjectPhaseCards({id,body,links,disabled,onAssignMilestone}: {
+export function ProjectPhaseCards({id,body,links,disabled,statusDisabled=disabled,onAssignMilestone}: {
   id:string; body:ProjectBody;
   links:ProjectHierarchyResponse['milestonePhases'];
   disabled:boolean;
+  statusDisabled?:boolean;
   onAssignMilestone:(milestone:ProjectBody['milestones'][number],phase:ProjectPhase,checked:boolean)=>void;
 }) {
   const phases = useProjectPhaseStatuses(id);
@@ -41,24 +42,18 @@ export function ProjectPhaseCards({id,body,links,disabled,onAssignMilestone}: {
       promptMilestones.some(milestone => milestone.id === task.milestoneId))
     : [];
   const currentPromptStatus = prompt ? phases.states?.find(item => item.phase === prompt.phase)?.status : null;
-  const completeBlocked = prompt?.status === 'completed' && (
-    currentPromptStatus !== 'active' || unfinished.length > 0 || activeLinkedTasks.length > 0
-  );
   const closeDialog = () => { setPrompt(null); setReason(''); setDialogError(''); };
   const perform = async () => {
     if (!prompt || phases.busy) return;
-    if (completeBlocked) {
-      setDialogError('Resolve the requirements below before completing the phase.');
-      return;
-    }
     setDialogError('');
-    const success = await phases.save(prompt.phase,prompt.status,reason.trim());
-    if (success) closeDialog();
-    else setDialogError('The phase change was not saved. See the detailed error below and retry after resolving it.');
+    const result = await phases.save(prompt.phase,prompt.status,reason.trim());
+    if (result === 'saved' || result === 'saved_refresh_failed') closeDialog();
+    else setDialogError('The phase change was not confirmed. Reconcile phase statuses before retrying.');
   };
   return <section aria-label="Parallel project phase statuses" className="space-y-3">
     <p className="text-xs text-muted-foreground">Phases can be active at the same time. Only Bivi staff can formally complete a phase, after all its milestones are reviewed.</p>
     {phases.error && <div role="alert" className="rounded-lg border border-red-300 p-3 text-xs text-red-700 dark:text-red-300">{phases.error} <button type="button" onClick={()=>{void phases.load();}} className="ml-2 underline">Retry</button></div>}
+    {phases.refreshWarning && <div role="status" className="rounded-lg border border-amber-300 p-3 text-xs text-amber-900 dark:text-amber-200">{phases.refreshWarning} <button type="button" onClick={()=>{void phases.load();}} className="ml-2 underline">Refresh phases</button></div>}
     {!phases.states && !phases.error && <p role="status" className="text-xs text-muted-foreground">Loading saved phase statuses…</p>}
     {projectPhaseOrder.map(phase => {
       const state=phases.states?.find(item=>item.phase===phase);
@@ -73,7 +68,7 @@ export function ProjectPhaseCards({id,body,links,disabled,onAssignMilestone}: {
             <span className={`block text-sm font-semibold ${status==='completed'?'text-muted-foreground line-through':'text-foreground'}`}>{phaseName}</span>
             <span className="mt-1 block text-[11px] text-muted-foreground">{progress.completed}/{progress.total} milestones completed</span>
           </span>
-          <Popover><PopoverTrigger asChild><button type="button" onClick={event=>event.stopPropagation()} disabled={disabled||!phases.states||phases.busy} aria-label={`Change ${phaseName} status`} className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-[11px] font-medium hover:bg-muted disabled:opacity-50">
+          <Popover><PopoverTrigger asChild><button type="button" onClick={event=>event.stopPropagation()} disabled={statusDisabled||!phases.states||phases.busy} title={phases.busy?'A phase change is saving. Wait for it to finish.':!phases.states?'Saved phase statuses are unavailable. Retry the phase refresh.':statusDisabled?'This project is read-only.':''} aria-label={`Change ${phaseName} status`} className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-[11px] font-medium hover:bg-muted disabled:opacity-50">
             <PhaseIcon status={status}/>{status==='active'?'Active':status==='completed'?'Completed':'Planning'}
           </button></PopoverTrigger><PopoverContent align="end" className="w-40 p-1">{statuses.map(option=><button key={option.status} type="button" className="flex w-full items-center gap-2 rounded px-2 py-2 text-left text-xs hover:bg-muted" disabled={option.status===status} onClick={()=>{setPrompt({phase,status:option.status});setReason('');setDialogError('');}}><PhaseIcon status={option.status}/>{option.label}</button>)}</PopoverContent></Popover>
         </summary>
@@ -105,7 +100,7 @@ export function ProjectPhaseCards({id,body,links,disabled,onAssignMilestone}: {
           Completing a phase never automatically completes its milestones or other phases.
         </DialogDescription>
         {prompt?.status === 'completed' && <div className="space-y-2 rounded-lg bg-muted/50 p-3 text-xs">
-          {currentPromptStatus !== 'active' && <p className="font-medium text-amber-700 dark:text-amber-300">Activate this phase before marking it completed.</p>}
+          {currentPromptStatus !== 'active' && <p className="font-medium text-amber-700 dark:text-amber-300">This phase must be Active before it can be completed.</p>}
           {unfinished.length > 0 && <div>
             <p className="font-semibold text-amber-700 dark:text-amber-300">{unfinished.length} milestone{unfinished.length === 1 ? '' : 's'} still need completion and review:</p>
             <ul className="ml-4 mt-1 list-disc space-y-1">{unfinished.map(milestone => <li key={milestone.id}>{milestone.title}</li>)}</ul>
@@ -114,8 +109,9 @@ export function ProjectPhaseCards({id,body,links,disabled,onAssignMilestone}: {
             <p className="font-semibold text-amber-700 dark:text-amber-300">{activeLinkedTasks.length} linked task{activeLinkedTasks.length === 1 ? ' is' : 's are'} still active or blocked:</p>
             <ul className="ml-4 mt-1 list-disc space-y-1">{activeLinkedTasks.slice(0,6).map(task => <li key={task.id}>{task.title}</li>)}</ul>
           </div>}
-          {!promptMilestones.length && <p>No milestones are linked to this phase. You may still close it manually if no active tasks belong to it.</p>}
-          {!completeBlocked && promptMilestones.length > 0 && <p className="text-emerald-700 dark:text-emerald-300">All linked milestones are complete. Confirm to close this phase.</p>}
+          {!promptMilestones.length && <p>No milestones are linked to this phase. The saved project data is checked when you confirm.</p>}
+          {promptMilestones.length > 0 && unfinished.length === 0 && activeLinkedTasks.length === 0 && <p className="text-emerald-700 dark:text-emerald-300">The current work-plan view shows no open milestone or active-task blockers. The server checks saved data when you confirm.</p>}
+          <p className="text-muted-foreground">Phase transitions are independent of work-plan drafts. Unsaved task and milestone edits stay in the editor; closure checks use the last saved work plan.</p>
         </div>}
         {(dialogError || phases.error) && <div role="alert" className="rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200">
           {dialogError && <p>{dialogError}</p>}
@@ -126,7 +122,7 @@ export function ProjectPhaseCards({id,body,links,disabled,onAssignMilestone}: {
         </label>
         <DialogFooter>
           <button type="button" className="rounded-lg border px-3 py-2 text-xs" disabled={phases.busy} onClick={closeDialog}>Cancel</button>
-          <button type="button" className="rounded-lg bg-foreground px-3 py-2 text-xs text-background disabled:opacity-50" disabled={phases.busy||Boolean(completeBlocked)} onClick={()=>{void perform();}}>
+          <button type="button" className="rounded-lg bg-foreground px-3 py-2 text-xs text-background disabled:opacity-50" disabled={phases.busy} onClick={()=>{void perform();}}>
             {phases.busy?'Saving…':'Confirm change'}
           </button>
         </DialogFooter>
