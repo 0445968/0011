@@ -95,20 +95,28 @@ export function useProjectWorkDraft({ id, initialRevision, revision, body, saved
     setState('loading');
     void (async () => {
       try {
+        cancelPendingAutosave();
+        if (inFlight.current) await inFlight.current;
         const [response, current] = await Promise.all([
           fetch(url, { cache: 'no-store' }), snapshot(),
         ]);
         const json = await response.json();
-        if (Number.isInteger(json.generation)) generation.current = json.generation;
         if (!response.ok) throw new Error(json.error || 'Saved draft could not be loaded.');
         if (!active) return;
+        if (Number.isInteger(json.generation)) generation.current = json.generation;
+        const localBody = latest.current;
+        const localBaseline = currentSaved.current;
         setError('');
         setSavedBody(current.body);
         setRevision(current.revision);
         baseBody.current = current.body;
         const draft = json.draft as StoredDraft | null;
         if (draft && !workplanDraftBodySchema.safeParse(draft.body).success) throw new Error('Saved draft is invalid. It has not been deleted.');
-        if (draft && JSON.stringify(draft.body) !== JSON.stringify(current.body)) {
+        if (localBody && localBaseline && JSON.stringify(localBody) !== JSON.stringify(localBaseline)) {
+          // A server refresh must reconcile the latest in-memory edit, which can
+          // be newer than the private autosave returned by this request.
+          applyRebase(localBaseline, localBody, current.body, current.revision);
+        } else if (draft && JSON.stringify(draft.body) !== JSON.stringify(current.body)) {
           setSavedAt(draft.updatedAt);
           const baseline = draft.baseBody ?? (draft.baseRevision === current.revision ? current.body : null);
           if (baseline && draft.baseRevision !== current.revision) {
@@ -123,6 +131,7 @@ export function useProjectWorkDraft({ id, initialRevision, revision, body, saved
             setError('This older draft has no recoverable saved baseline. Export it before choosing Discard draft.');
           }
         } else {
+          setBody(current.body);
           setRecoverable(null);
           setConflict(false);
           setRebase(null);
@@ -139,7 +148,7 @@ export function useProjectWorkDraft({ id, initialRevision, revision, body, saved
     return () => { active = false; };
   // This loads only when the page's authoritative project revision changes or the editor mounts.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [url, initialRevision, enabled, snapshot, applyRebase, setBody, setRevision, setSavedBody]);
+  }, [url, initialRevision, enabled, snapshot, applyRebase, setBody, setRevision, setSavedBody, cancelPendingAutosave]);
 
   const waitForDraft = useCallback(async () => {
     cancelPendingAutosave();

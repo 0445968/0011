@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { Check, ChevronDown, Users, UserRoundPlus } from 'lucide-react';
 import { ProfileImage } from '@/components/profile-images/ProfileImage';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from '@/components/ui/dialog';
@@ -12,10 +13,12 @@ type Side = 'bivi' | 'client';
 const buttonClass = 'inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50';
 
 /** One RLS-authorized request for the work plan, not one request per task. */
-export function useProjectAssignments(projectId: string) {
+export function useProjectAssignments(projectId: string, projectRevision?: number) {
+  const router=useRouter();
   const [data, setData] = useState<ProjectAssignmentWorkspace | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
   const requestGeneration = useRef(0);
   // Never abort fetches during React effect cleanup. Ignore stale responses instead.
   const load = useCallback(async (isActive: () => boolean = () => true) => {
@@ -40,11 +43,12 @@ export function useProjectAssignments(projectId: string) {
     setError('');
     void load(() => active);
     return () => { active = false; };
-  }, [load]);
+  }, [load, projectRevision]);
   const save = useCallback(async (body: object) => {
     if (busy) return false;
     setBusy(true);
     setError('');
+    setMessage('');
     try {
       const result = await fetch(`/api/admin/projects/${projectId}/assignees`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -52,13 +56,16 @@ export function useProjectAssignments(projectId: string) {
       });
       const json = await result.json();
       if (!result.ok || !json.saved) throw new Error(json.error || 'Assignment could not save.');
-      return await load();
+      const refreshed=await load();
+      setMessage(refreshed?'Task assignments saved.':'Task assignments saved. Refresh members before another change.');
+      router.refresh();
+      return refreshed;
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Assignment could not save.');
       return false;
     } finally { setBusy(false); }
-  }, [busy, load, projectId]);
-  return { data, error, busy, save, load };
+  }, [busy, load, projectId, router]);
+  return { data, error, busy, message, save, load };
 }
 
 type AssignmentControls = ReturnType<typeof useProjectAssignments>;

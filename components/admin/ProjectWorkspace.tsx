@@ -4,6 +4,7 @@ import {milestoneDomId} from '@/lib/calendar/links';
 import {taskDomId} from '@/lib/tasks/links';
 import { DirectoryProgress, DirectoryStatus, ProjectTaskStateIcon } from './projects/DirectoryIndicators';
 import { ProjectMilestoneBoard } from './projects/ProjectMilestoneBoardV2';
+import type { ProjectTaskControl } from '@/lib/projects/lifecycle-schema';
 import { useProjectWorkDraft } from './projects/useProjectWorkDraft';
 import { normalizeWorkplanBodyForSave, projectBodiesEqual } from '@/lib/projects/workplan-merge';
 import { interpretProjectSaveOutcome } from '@/lib/projects/workplan-save-outcome';
@@ -66,6 +67,7 @@ type TaskFilter = 'all' | Task['status'];
 type Props = {
   selectedTask?:string;
   selectedMilestone?:string;
+  taskControls?: ProjectTaskControl[];
   id: string;
   userId: string;
   record: ProjectRecord | null;
@@ -233,6 +235,7 @@ export function ProjectWorkspace({
   gateReady,
   selectedTask,
   selectedMilestone,
+  taskControls = [],
 }: Props) {
   const router = useRouter();
 
@@ -273,6 +276,34 @@ export function ProjectWorkspace({
 
   const [expandedTaskId, setExpandedTaskId] =
     useState<string | null>(null);
+
+  const [advanced, setAdvanced] = useState(Boolean(selectedTask || selectedMilestone));
+  const [editorFocus, setEditorFocus] = useState<string | null>(null);
+  function openAdvanced(taskId?: string, milestoneId?: string) {
+    setAdvanced(true);
+    if (taskId) {
+      const index = body?.tasks.findIndex(task=>task.id===taskId) ?? -1;
+      setTaskFilter('all'); setTaskQuery('');
+      if (index>=0) setTaskPage(Math.floor(index/TASK_PAGE_SIZE)+1);
+      setExpandedTaskId(taskId); setEditorFocus(taskDomId(taskId));
+    } else if (milestoneId) {
+      const index = body?.milestones.findIndex(item=>item.id===milestoneId) ?? -1;
+      if (index>=0) setMilestonePage(Math.floor(index/MILESTONE_PAGE_SIZE)+1);
+      setEditorFocus(milestoneDomId(milestoneId));
+    } else setEditorFocus('project-advanced-editor');
+  }
+  function returnToWorkplan() {
+    setAdvanced(false); setEditorFocus(null);
+    window.requestAnimationFrame(()=>{
+      const cards=document.getElementById('project-workplan-cards');
+      cards?.focus({preventScroll:true}); cards?.scrollIntoView({block:'start'});
+    });
+  }
+  useEffect(()=>{
+    if (!advanced || !editorFocus) return;
+    const row=document.getElementById(editorFocus);
+    row?.focus({preventScroll:true}); row?.scrollIntoView({block:'center'});
+  },[advanced,editorFocus,taskPage,milestonePage]);
 
   useEffect(()=>{if(!selectedTask||!record)return;const index=record.body.tasks.findIndex(task=>task.id===selectedTask);if(index<0)return;setTaskFilter('all');setTaskQuery('');setTaskPage(Math.floor(index/TASK_PAGE_SIZE)+1);setExpandedTaskId(selectedTask);},[selectedTask,record]);
   useEffect(()=>{if(selectedTask&&expandedTaskId===selectedTask){const row=document.getElementById(taskDomId(selectedTask));row?.focus({preventScroll:true});row?.scrollIntoView({block:'start'});}},[selectedTask,expandedTaskId,taskPage]);
@@ -523,6 +554,7 @@ export function ProjectWorkspace({
     );
 
     setExpandedTaskId(task.id);
+    return task.id;
   }
 
   function bulkMilestoneTasks(milestoneId: string, status: 'done' | 'todo') {
@@ -548,10 +580,11 @@ export function ProjectWorkspace({
       return;
     }
 
+    const milestoneId = crypto.randomUUID();
     field('milestones', [
       ...body.milestones,
       {
-        id: crypto.randomUUID(),
+        id: milestoneId,
         title: 'New milestone',
         dueOn: null,
         status: 'planned',
@@ -564,6 +597,7 @@ export function ProjectWorkspace({
           MILESTONE_PAGE_SIZE
       )
     );
+    return milestoneId;
   }
 
   /* =======================================================
@@ -956,8 +990,8 @@ export function ProjectWorkspace({
           =============================================== */}
 
       <header className="flex flex-wrap items-start justify-between gap-3">
-        <div><h1 className="text-xl font-semibold tracking-tight">Tasks & Milestones</h1><p className="mt-1 text-xs text-muted-foreground">{completed ? 'Read-only until reopened' : 'Edit the work plan, then save changes together.'}</p></div>
-        <div className="flex flex-wrap items-center gap-2"><DirectoryStatus state={record.state} />{dirty && <span className="rounded-md bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200">Unsaved changes</span>}</div>
+        <div><h1 className="text-xl font-semibold tracking-tight">{advanced ? 'Advanced work-plan editor' : 'Tasks & Milestones'}</h1><p className="mt-1 text-xs text-muted-foreground">{completed ? 'Read-only until reopened' : 'Edit the work plan, then save changes together.'}</p></div>
+        <div className="flex flex-wrap items-center gap-2"><button type="button" className={controlClass} onClick={()=>advanced ? returnToWorkplan() : openAdvanced()}>{advanced ? 'Back to tasks & milestones' : 'Advanced work-plan editor'}</button><DirectoryStatus state={record.state} />{dirty && <span className="rounded-md bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200">Unsaved changes</span>}</div>
       </header>
       {!gateReady && <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">Prerequisites need review before resuming or completing this project.</p>}
       {drafts.recoverable && (
@@ -969,7 +1003,7 @@ export function ProjectWorkspace({
       {drafts.rebase && <section aria-label="Resolve project draft conflicts" className="space-y-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100"><div><p className="font-semibold">The saved project changed. Resolve these fields before saving.</p><p className="mt-1">Nonconflicting edits are already combined. Each choice applies only to the field shown.</p></div>{drafts.rebase.conflicts.map(conflict => <article key={conflict.path} className="rounded-md border border-amber-300/70 bg-background/70 p-3 dark:border-amber-800"><p className="font-semibold">{conflict.label}</p><div className="mt-2 grid gap-2 md:grid-cols-2"><div><p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Your draft</p><pre className="mt-1 max-h-28 overflow-auto whitespace-pre-wrap break-words rounded bg-muted p-2">{JSON.stringify(conflict.draft, null, 2)}</pre><button type="button" className={`${controlClass} mt-2`} onClick={() => drafts.chooseConflict(conflict.path, 'draft')}>Keep my edit</button></div><div><p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Latest saved value</p><pre className="mt-1 max-h-28 overflow-auto whitespace-pre-wrap break-words rounded bg-muted p-2">{JSON.stringify(conflict.latest, null, 2)}</pre><button type="button" className={`${controlClass} mt-2`} onClick={() => drafts.chooseConflict(conflict.path, 'latest')}>Use saved value</button></div></div></article>)}</section>}
       {drafts.conflict && !drafts.rebase && <p role="alert" className="rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-100">The private draft’s original saved baseline is unavailable, so it cannot be merged safely. Export it to keep a copy, then discard it only if you want to load the latest saved project.</p>}
       {drafts.error && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-100"><p>Draft reconciliation unavailable: {drafts.error}. Your edits remain in the editor until a discard is confirmed.</p><button type="button" className={controlClass} disabled={busy} onClick={() => { if (window.confirm('Discard the private draft and load the latest saved project?')) void drafts.discardDraft().then(ok => { if (ok) setMessage('The private draft was discarded. The latest saved project is loaded.'); }); }}>Discard draft and load latest</button></div>}
-      {serverBlockers.length > 0 && <section role="alert" className="space-y-2 rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-950 dark:border-red-800 dark:bg-red-950 dark:text-red-100"><p className="font-semibold">Complete these tasks before completing this milestone.</p>{serverBlockers.map(milestone => <div key={milestone.milestoneId}><p className="font-medium">{milestone.milestoneTitle}{milestone.needsTask ? ' — add at least one linked task' : ''}</p><ul className="ml-4 mt-1 list-disc">{milestone.tasks.map(task => <li key={task.taskId}><a className="underline" href={`#${taskDomId(task.taskId)}`}>{task.title}</a>{task.taskIncomplete ? ' — task is not completed' : ''}{task.subtasks.map(subtask => <span key={subtask.id}>; unfinished subtask: {subtask.title}</span>)}</li>)}</ul></div>)}</section>}
+      {serverBlockers.length > 0 && <section role="alert" className="space-y-2 rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-950 dark:border-red-800 dark:bg-red-950 dark:text-red-100"><p className="font-semibold">Complete these tasks before completing this milestone.</p>{serverBlockers.map(milestone => <div key={milestone.milestoneId}><p className="font-medium">{milestone.milestoneTitle}{milestone.needsTask ? ' — add at least one linked task' : ''}</p><ul className="ml-4 mt-1 list-disc">{milestone.tasks.map(task => <li key={task.taskId}><a className="underline" href={`#${taskDomId(task.taskId)}`} onClick={event=>{event.preventDefault();openAdvanced(task.taskId);}}>{task.title}</a>{task.taskIncomplete ? ' — task is not completed' : ''}{task.subtasks.map(subtask => <span key={subtask.id}>; unfinished subtask: {subtask.title}</span>)}</li>)}</ul></div>)}</section>}
       <section aria-label="Work plan summary" className="grid grid-cols-2 gap-2 lg:grid-cols-4">
         <div className="rounded-xl border border-border bg-card p-3"><p className="mb-2 text-[11px] text-muted-foreground">{dirty ? 'Draft task completion' : 'Task completion'}</p><DirectoryProgress project={{...record,body}} /></div>
         {[
@@ -979,6 +1013,7 @@ export function ProjectWorkspace({
         ].map(([label,value]) => <div key={label} className="rounded-xl border border-border bg-card p-3"><p className="text-[11px] text-muted-foreground">{label}</p><p className="mt-1 text-xl font-semibold tabular-nums">{value}</p></div>)}
       </section>
 
+      <div id="project-workplan-cards" tabIndex={-1} hidden={advanced} className="scroll-mt-24 focus:outline-none">
       <ProjectMilestoneBoard
         id={id}
         userId={userId}
@@ -989,12 +1024,17 @@ export function ProjectWorkspace({
         sidecarReady={drafts.ready && !drafts.recoverable && !drafts.conflict}
         onTaskChange={editTask}
         onMilestoneChange={editMilestone}
-        onAddTask={addTask}
+        onAddTask={milestoneId=>{const taskId=addTask(milestoneId);if(taskId)openAdvanced(taskId);}}
+        onAddMilestone={()=>{const milestoneId=addMilestone();if(milestoneId)openAdvanced(undefined,milestoneId);}}
+        onEditTask={taskId=>openAdvanced(taskId)}
+        onEditMilestone={milestoneId=>openAdvanced(undefined,milestoneId)}
+        taskControls={taskControls}
         onBulkTasks={bulkMilestoneTasks}
       />
+      </div>
 
-      <details className="rounded-xl border border-border bg-card" open={Boolean(selectedTask || selectedMilestone)}>
-        <summary className="cursor-pointer p-3 text-sm font-semibold">Advanced work-plan editor · notes, owners, removal, and detailed controls</summary>
+      <section id="project-advanced-editor" tabIndex={-1} hidden={!advanced} aria-label="Advanced work-plan editor" className="scroll-mt-24 rounded-xl border border-border bg-card focus:outline-none">
+        <p className="p-3 text-xs text-muted-foreground">Detailed task and milestone controls share your current draft. Use Back to tasks &amp; milestones to return without discarding edits.</p>
       <div className="grid items-start gap-3 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-w-0">
       <section className="min-w-0 rounded-xl border border-border bg-card">
@@ -1018,7 +1058,7 @@ export function ProjectWorkspace({
           }
         />
 
-        <p className="border-b border-border px-3 py-2 text-xs text-muted-foreground">Assign verified staff accounts in Lifecycle → Task ownership. Owner labels here are optional display text.</p>
+        <p className="border-b border-border px-3 py-2 text-xs text-muted-foreground">Choose verified assignees from task details in Tasks & Milestones. Dependencies and lifecycle approvals are in Phases. Owner labels here are optional display text.</p>
         {/* SEARCH AND STATUS FILTER */}
 
         <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2.5">
@@ -1581,7 +1621,7 @@ export function ProjectWorkspace({
 
         </div>
       </div>
-      </details>
+      </section>
 
       {/* ===============================================
           PROJECT DECISIONS
@@ -1968,8 +2008,8 @@ export function ProjectWorkspace({
 
           <span className="font-semibold">
             {dirty
-              ? 'Unpublished changes'
-              : 'All project changes saved'}
+              ? 'Unsaved task & milestone fields'
+              : 'Task & milestone fields saved'}
           </span>
           {!completed && <p className="mt-1 text-[11px] text-muted-foreground" role="status">Draft: {drafts.state === 'saving' ? 'Saving…' : drafts.state === 'saved' ? 'Autosaved privately' : drafts.state === 'pending' ? 'Pending autosave' : drafts.state === 'loading' ? 'Checking saved drafts…' : drafts.state === 'conflict' ? 'Conflict — review required' : drafts.state === 'error' ? 'Save unavailable' : 'Ready to autosave'}</p>}
 

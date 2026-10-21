@@ -4,9 +4,9 @@ Baseline: `0445968/0011`, `bivi-dashboard-overhaul`, following D1a–D1c. Preser
 
 ## Revised Projects follow-up requirements — 2026-10-21
 
-Implement the dedicated Phases page and shared formal phase indicators as the current slice. Keep the rest of this revised scope explicitly pending; do not present it as delivered until its own implementation and verification are complete.
+The dedicated Phases page and shared formal phase indicators are implemented with live UI acceptance pending. Tasks & Milestones is the current implementation slice. Keep the remaining revised scope explicitly pending until its own implementation and verification are complete.
 
-### Dedicated Phases and shared indicators — current slice
+### Dedicated Phases and shared indicators — implemented; live UI acceptance pending
 - Add **Phases** to project navigation. Move phase customization/statuses, deadlines, compact stats and breakdowns, plus “Lifecycle, dependencies and approvals” from Calendar into Phases. Keep task assignment, dependency and approval actions reachable through authoritative APIs/RPCs, permissions, revisions, and audit sources; avoid competing editors.
 - Preserve old phase and lifecycle deep links with aliases or redirects. General Calendar links must continue to open Calendar.
 - Overview reuses its existing phase bars to show authoritative saved formal states: Inactive is neutral, Active uses the light phase color, and Completed uses the solid phase color. Do not add a separate saved-status block or permanent phase-name badges. Preserve simultaneous active phases and map stored `planning` to the intended Inactive display without introducing another status model.
@@ -18,18 +18,23 @@ Implement the dedicated Phases page and shared formal phase indicators as the cu
 - Refresh Overview, Calendar, and affected cards consistently after a saved phase change without losing unrelated drafts or forcing a full reload.
 - Preserve all existing permissions, revisions, audit history, saved data, IDs, RLS, and approvals. Prepare reviewed additive migrations and apply only after verifying the intended Bivi project and migration ledger; verify resulting schema/RPC behavior. Do not reset the database or apply unrelated changes.
 
-### Remaining revised requirements — pending
+### Tasks & Milestones — implemented; live UI acceptance pending
 - **Tasks & Milestones:** Compact cards, 1/2/3-column layouts, and filters for phase, responsible side, assignees, status, and deadlines. Open the advanced work-plan editor inside this section through a top-level action and provide “Back to tasks & milestones.”
+- Implementation and acceptance details: [Tasks & Milestones redesign](./projects-tasks-milestones-redesign.md). Existing R7A draft generation, validation, conflict and recovery protections remain required. Validate combined filters, grouping, responsive columns, internal editor navigation, drafts, revision changes and dependent displays. Run typecheck, platform verification and build before pushing; live UI acceptance remains a separate status.
+
+### Remaining revised requirements — pending
 - **Brief:** Move verified organization owner and Activation snapshot here; make project name editable here.
 - **Requests:** Move client task requests to a dedicated Requests project section.
 - **Activity and Admin Settings:** Project history belongs in Activity. Replace Overview’s Recent project history with a real Activity preview. Move technical save/revision history to Admin Settings while preserving audit records and meaningful domain events in Activity.
 - **Calendar:** Provide a proper month grid with previous/next/today navigation, alongside useful existing views.
-- **Validation and delivery for the current slice:** Verify simultaneous phase activation across reload; independent phase completion; saved formal-state bars; persisted color propagation across Overview, Calendar, and milestone cards; hover/focus/mobile labels; compact stats and date handling for shared milestones/missing dates; relocated lifecycle actions and old deep links; draft and revision recovery; and light/dark/narrow layouts. Run `npm run typecheck`, `npm run verify:platform`, and `npm run build` before committing and pushing this coherent slice to `bivi-dashboard-overhaul`. Never modify, merge into, or deploy `restore`. Stop after delivery for user testing before starting the pending sections above.
+- **Phases live acceptance:** Verify simultaneous phase activation across reload; independent phase completion; saved formal-state bars; persisted color propagation; hover/focus/mobile labels; shared/missing-date stats; relocated lifecycle actions/deep links; draft/revision recovery; and light/dark/narrow layouts. This acceptance remains pending. Never modify, merge into, or deploy `restore`; stop after each implementation slice for user testing.
 
 ### Implementation status — 2026-10-21
 - Phases/shared-indicator code and automated checks are complete: `npm run typecheck` passed, `npm run verify:platform` passed (118 tests), and `npm run build` passed. Interactive staff acceptance of state changes, color propagation, narrow/dark layouts, and draft/conflict behavior is pending user testing; no live project phase or color records were changed.
 - Applied `20261023120000_project_phase_colors.sql` to active Supabase project `0011` (`xxnvekmbotzcyuhsyxbw`). Schema, RLS policies, table grants and RPC execution grants were verified read-only. The Supabase migration listing is empty and `supabase_migrations.schema_migrations` is absent, so there is no database ledger entry to report.
 - All other revised requirements listed as pending above remain pending.
+- Subsequent read-only verification for the Tasks & Milestones slice found the migration ledger now present with `project_phase_colors` at remote version `20261021202346`. The repository migration file is `20261023120000_project_phase_colors.sql`; it was not reapplied. R7A phase guards, draft baseline columns, generation table/RPC checks, RLS and authenticated-only draft RPC grants are installed.
+- Tasks & Milestones implementation is complete. Typecheck passed, platform verification passed (125 tests), and the production build passed. The slice adds compact cards and responsive columns, all agreed filters, task grouping and persistent internal editing views; it retains the dedicated Phases page and R7A protections. No migration or database mutation was required. Browser automation was unavailable, so live UI acceptance remains pending in [the slice acceptance checklist](./projects-tasks-milestones-redesign.md#manual-acceptance). Brief, Requests, history relocation and the Calendar month grid remain pending.
 
 ## Slice R1 — visual tokens, Overview organization, no-full-reload work-plan saves (this patch)
 - Project In progress: yellow/amber badge with partially filled pie icon; Completed: solid green checked circle. On hold remains distinct.

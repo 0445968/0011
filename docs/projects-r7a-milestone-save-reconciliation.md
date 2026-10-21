@@ -11,7 +11,7 @@
 
 ## Remaining verification limits
 
-The repository owner reports that the migration was applied to the connected `0011` project. The connected project’s schema and deployed function have not been independently re-read for this continuation. The database trigger, grants, RLS, and RPC behavior remain pending post-application read-only verification. The PGlite tests execute repository SQL against isolated test fixtures; they do not establish live database state.
+Subsequent read-only verification during the Tasks & Milestones redesign confirmed the draft baseline columns, `project_workplan_draft_versions`, generation checks in both draft RPCs, RLS on both draft tables, staff checks, authenticated execution and anonymous execution denial. The deployed milestone synchronization function checks subtasks, and phase completion retains missing-control and subtask guards. Live mutating RPC behavior and staff UI acceptance remain pending; automated isolated fixtures do not establish live UI behavior.
 
 ## Migration
 
@@ -25,9 +25,9 @@ The function changes are transactional. Do not roll back by dropping the generat
 
 ### Execution and verification record
 
-- **Execution status:** The repository owner reports that the migration has been applied to the connected `0011` project. This reflects that report and is not an independent live-database verification.
+- **Execution status:** Installed objects and the protections listed above are independently confirmed read-only on active `0011` (`xxnvekmbotzcyuhsyxbw`). No migration was reapplied during the redesign.
 - **Migration ledger:** No ledger entry has been created or claimed. The earlier repository record for the previous R7A phase migration is separate from this new migration.
-- **Live object and permission checks:** Pending read-only verification after application.
+- **Live object and permission checks:** Read-only prerequisite checks complete; live transition acceptance remains pending.
 - **Remote behavior checks:** Not run; no mutating RPCs were invoked against Supabase.
 
 ## Staff acceptance steps after applying the migration

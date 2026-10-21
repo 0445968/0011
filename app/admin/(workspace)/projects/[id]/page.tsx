@@ -292,7 +292,7 @@ export default async function ProjectPage({
 
   const lifecycle =
     record &&
-    (tab === 'phases' || tab === 'calendar')
+    (tab === 'phases' || tab === 'calendar' || tab === 'plan')
       ? await getProjectLifecycle(
           client,
           params.id
@@ -407,7 +407,7 @@ export default async function ProjectPage({
           {requestedMilestone && !selectedMilestone && <p role="status" className="rounded border p-4 text-sm">This milestone is no longer in the project. The current work plan remains available below.</p>}
           <ProjectWorkspace
             key={
-              `${record?.revision??0}:${selectedTask||''}:${selectedMilestone||''}`
+              `${params.id}:${selectedTask||''}:${selectedMilestone||''}`
             }
             id={params.id}
             userId={user.id}
@@ -416,6 +416,7 @@ export default async function ProjectPage({
             gateReady={gateReady}
             selectedTask={selectedTask}
             selectedMilestone={selectedMilestone}
+            taskControls={lifecycle?.controls ?? []}
           />
           {record && <ProjectTaskResponseReview id={params.id} tasks={record.body.tasks.map(task => ({ id:task.id, title:task.title }))} />}
         </div>

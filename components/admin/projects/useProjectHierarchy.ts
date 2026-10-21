@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import type { ProjectHierarchyCommand, ProjectHierarchyResponse } from '@/lib/projects/hierarchy-schema';
 
 type WithoutRevisions<T> = T extends unknown ? Omit<T, 'expectedProjectRevision' | 'expectedHierarchyRevision'> : never;
@@ -8,10 +9,12 @@ type EditableCommand = WithoutRevisions<ProjectHierarchyCommand>;
 
 /** Server-authoritative, revision-checked sidecar for phases/subtasks; never changes legacy project JSON. */
 export function useProjectHierarchy(id: string, projectRevision: number, enabled: boolean) {
+  const router=useRouter();
   const [data, setData] = useState<ProjectHierarchyResponse | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [conflict, setConflict] = useState(false);
+  const [message, setMessage] = useState('');
   const pending = useRef(false);
   const url = `/api/admin/projects/${id}/hierarchy`;
 
@@ -57,6 +60,7 @@ export function useProjectHierarchy(id: string, projectRevision: number, enabled
     pending.current = true;
     setBusy(true);
     setError('');
+    setMessage('');
     try {
       const response = await fetch(url, {
         method: 'POST', headers: {'Content-Type':'application/json'},
@@ -70,6 +74,8 @@ export function useProjectHierarchy(id: string, projectRevision: number, enabled
       // Refresh the sidecar only: the Next.js page, draft state and editing scroll position remain intact.
       const fresh = await load();
       if (!fresh) setConflict(true);
+      setMessage(fresh ? 'Task hierarchy saved.' : 'Task hierarchy saved. Refresh its display before another change.');
+      router.refresh();
       return fresh;
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Hierarchy changes could not be saved.');
@@ -78,7 +84,7 @@ export function useProjectHierarchy(id: string, projectRevision: number, enabled
       pending.current = false;
       setBusy(false);
     }
-  }, [data, conflict, projectRevision, url, load]);
+  }, [data, conflict, projectRevision, url, load, router]);
 
-  return { data, busy, error, conflict, load, save };
+  return { data, busy, error, conflict, message, load, save };
 }
