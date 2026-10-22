@@ -13,6 +13,7 @@ export interface NotificationFeed {
  preferences: NotificationPreferences;
 }
 export function notificationHref(item: StaffNotification) {
+ if(item.event_key?.startsWith('signal:')&&item.source_id){const base=`/projects/${item.request_id}`;return item.source_id===base||item.source_id.startsWith(base+'?')||item.source_id.startsWith(base+'/')?item.source_id:base;}
  if (item.task_id) return taskHref(item.request_id, item.task_id);
  if (item.kind && item.source_id) return approvalHref({...item, kind:item.kind, source_id:item.source_id});
  return `/projects/${item.request_id}`;
