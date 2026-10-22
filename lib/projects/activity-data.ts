@@ -15,6 +15,7 @@ export interface ProjectActivityEvent {
   actorId: string | null;
   createdAt: string;
   href: string;
+  technical?: boolean;
 }
 
 export interface ProjectActivityActor {
@@ -53,7 +54,7 @@ function auditEvent(source: AuditSource, prefix: string, row: Row, title: string
   };
 }
 
-function snapshots(history: Row[], base: string): ProjectActivityEvent[] {
+export function snapshots(history: Row[], base: string): ProjectActivityEvent[] {
   const events: ProjectActivityEvent[] = [];
   // Oldest to newest. Use the oldest retained snapshot as the baseline, rather
   // than inventing changes that predate our bounded audit window.
@@ -67,7 +68,7 @@ function snapshots(history: Row[], base: string): ProjectActivityEvent[] {
     const common = { actorId: id(row.actor), createdAt: date(row.created_at) };
     const create = (source: AuditSource, slug: string, title: string, detail: string | null, itemId?: string) => {
       events.push({ id: `project:${String(row.id)}:${slug}`, source, title, detail,
-        href: link(base, source, itemId), ...common });
+        href: link(base, source, itemId), technical:slug==='revision'||slug==='baseline', ...common });
     };
     if (action !== 'save') {
       const labels: Record<string, string> = {
@@ -84,6 +85,10 @@ function snapshots(history: Row[], base: string): ProjectActivityEvent[] {
       }
       if (before.owner !== body.owner) {
         create('project', 'owner', 'Legacy owner label updated', `${display(before.owner)} → ${display(body.owner)}`);
+        count++;
+      }
+      if (before.notes !== body.notes) {
+        create('project','notes','Project work-plan notes updated',null);
         count++;
       }
       for (const [kind, source] of [['tasks','tasks'],['milestones','milestones']] as const) {
@@ -104,6 +109,10 @@ function snapshots(history: Row[], base: string): ProjectActivityEvent[] {
             }
             if (kind === 'tasks' && earlier.milestoneId !== item.milestoneId) {
               create(source, `${kind}:${itemId}:milestone`, 'Task moved between milestones', name, itemId);
+              count++;
+            }
+            if (kind === 'tasks' && earlier.notes !== item.notes) {
+              create(source,`${kind}:${itemId}:notes`,'Task work-plan notes updated',name,itemId);
               count++;
             }
           }
@@ -288,6 +297,14 @@ export async function getProjectActivity(client: SupabaseClient, requestId: stri
       avatarPath:id(row.avatarPath),
     };
   }
-  events.sort((a,b) => b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id));
-  return { events: events.filter(row => row.createdAt).slice(0,250), actors };
+  return { events: domainActivity(events), actors };
 }
+
+/** Stable identities deduplicate repeat audit rows; distinct audit sources remain
+ * distinct evidence. Technical snapshots are retained in storage/history readers. */
+export function domainActivity(events:ProjectActivityEvent[]) {
+  return [...new Map(events.filter(event=>event.createdAt&&!event.technical).map(event=>[event.id,event])).values()]
+    .sort((a,b)=>b.createdAt.localeCompare(a.createdAt)||a.id.localeCompare(b.id)).slice(0,250);
+}
+
+export type ProjectActivity = Awaited<ReturnType<typeof getProjectActivity>>;

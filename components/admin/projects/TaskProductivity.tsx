@@ -75,9 +75,9 @@ export function TaskProductivity({projectId,taskId,taskTitle,revision,disabled,u
   }
   return <details className="mt-2 border-t border-border/70 pt-2" onToggle={event=>{const next=event.currentTarget.open;setOpen(next);if(next)void load();}}>
     <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 text-[11px] text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring">
-      <span className="inline-flex items-center gap-1"><StickyNote size={13} aria-hidden/>Notes{data?` (${data.notes.length})`:''}</span>
-      <Link href={`/admin/projects/${projectId}/discussion?task=${encodeURIComponent(taskId)}`} onClick={event=>event.stopPropagation()} className="inline-flex items-center gap-1 underline underline-offset-2"><MessageSquareText size={13} aria-hidden/>Comments{data?` (${data.comments.length})`:''}</Link>
-      <span className="inline-flex items-center gap-1"><Paperclip size={13} aria-hidden/>Files{data?` (${data.files.length})`:''}</span>
+      <span className="inline-flex items-center gap-1"><StickyNote size={13} aria-hidden/>Notes preview{data?` (${data.notes.length}, up to 50)`:''}</span>
+      <Link href={`/admin/projects/${projectId}/discussion?task=${encodeURIComponent(taskId)}`} onClick={event=>event.stopPropagation()} className="inline-flex items-center gap-1 underline underline-offset-2"><MessageSquareText size={13} aria-hidden/>Comments preview{data?` (${data.comments.length}, up to 50)`:''}</Link>
+      <span className="inline-flex items-center gap-1"><Paperclip size={13} aria-hidden/>Files preview{data?` (${data.files.length}, from up to 200 ready files)`:''}</span>
       <span className="ml-auto">Task details</span>
     </summary>
     {open&&<div className="mt-3 space-y-4 rounded-lg bg-muted/30 p-3">

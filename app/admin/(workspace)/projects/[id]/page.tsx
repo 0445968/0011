@@ -61,6 +61,8 @@ import { ProjectCalendar } from '@/components/admin/projects/ProjectCalendar';
 import { ProjectPhasesPage } from '@/components/admin/projects/ProjectPhasesPage';
 import { ProjectTaskResponseReview } from '@/components/admin/projects/ProjectTaskResponseReview';
 import { getProjectDirectoryContext } from '@/lib/projects/directory-context';
+import {getProjectOverviewContent} from '@/lib/projects/overview-content-data';
+import {getProjectActivity} from '@/lib/projects/activity-data';
 import { getProjectOverviewExtras } from '@/lib/projects/overview-data';
 import { taskToday } from '@/lib/tasks/links';
 import { getProjectTaskSchedule } from '@/lib/projects/schedule-data';
@@ -340,18 +342,20 @@ export default async function ProjectPage({
   // source data, keys, revision checks and action handlers.
   let overview = null;
   if (record && tab === 'overview') {
-    const [contexts, preferences, extras, formalPhasesResult, formalColors] = await Promise.all([
+    const [contexts, preferences, extras, formalPhasesResult, formalColors, content, activityResult] = await Promise.all([
       getProjectDirectoryContext(client, [params.id]),
       client.from('staff_notification_preferences').select('timezone').eq('user_id', user.id).maybeSingle(),
       getProjectOverviewExtras(client, params.id),
       client.rpc('staff_project_phase_states', { p_request: params.id }),
       getProjectPhaseColors(client, params.id),
+      getProjectOverviewContent(client, params.id),
+      getProjectActivity(client,params.id,record.body).then(data=>({data,error:null})).catch(()=>({data:null,error:'Recent activity unavailable. Retry saved data.'})),
     ]);
     if (preferences.error) throw new Error('Project timezone preferences could not load.');
     if (formalPhasesResult.error) throw new Error('Saved project phase statuses could not load. Check migration 035.');
     const formalPhases = projectPhaseStatesSchema.parse(formalPhasesResult.data).states;
     const day = taskToday(preferences.data?.timezone || 'America/Chicago');
-    overview = { context: contexts[params.id], ...day, ...extras, phaseStates: formalPhases, phaseColors: phaseColorMap(formalColors.colors) };
+    overview = { content, activityResult, context: contexts[params.id], ...day, ...extras, phaseStates: formalPhases, phaseColors: phaseColorMap(formalColors.colors) };
   }
 
   /* =======================================================
@@ -385,7 +389,8 @@ export default async function ProjectPage({
           savedToday={overview.today} taskControls={lifecycle?.controls??[]}
           overview={<ProjectOverview
           record={record}
-          history={data.history}
+          content={overview.content}
+          activityResult={overview.activityResult}
           context={overview.context}
           today={overview.today}
           timezone={overview.timezone}

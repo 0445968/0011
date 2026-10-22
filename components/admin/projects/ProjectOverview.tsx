@@ -1,14 +1,18 @@
 'use client';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { ArrowUpRight, CalendarDays, Clock3 } from 'lucide-react';
+import { ArrowUpRight, CalendarDays } from 'lucide-react';
 import { ProfileImage } from '@/components/profile-images/ProfileImage';
 import { DirectoryPhases, DirectoryProgress, DirectoryStatus, ProjectTaskStateIcon } from './DirectoryIndicators';
-import type { ProjectEvent, ProjectRecord } from '@/lib/projects/data';
+import type { ProjectRecord } from '@/lib/projects/data';
 import type { ProjectDirectoryContext } from '@/lib/projects/directory-types';
 import { projectOverviewSummary } from '@/lib/projects/overview-summary';
 import { taskHref } from '@/lib/tasks/links';
-import { directoryProgress } from '@/lib/projects/directory-progress';
+import {useRouter} from 'next/navigation';
+import {ProjectActivityList} from './ProjectActivityList';
+import type {ProjectActivity} from '@/lib/projects/activity-data';
+import type {OverviewContent} from '@/lib/projects/overview-content';
+import {distinctById} from '@/lib/projects/metrics';
 import type { MilestonePhaseLink, ProjectRosterMember } from '@/lib/projects/overview-data';
 import type { ProjectPhaseState } from '@/lib/projects/phase-status';
 import type { ProjectPhaseColorMap } from '@/lib/projects/phase-colors';
@@ -41,9 +45,10 @@ function Metric({label, value, detail}: {label:string; value:string; detail:stri
   return <div className="min-w-0 rounded-xl border border-border bg-card px-4 py-3"><p className="text-[11px] text-muted-foreground">{label}</p><p className="mt-1 text-xl font-semibold tabular-nums">{value}</p><p className="mt-1 text-[11px] text-muted-foreground">{detail}</p></div>;
 }
 
-export function ProjectOverview({record, history, context, today, members, milestonePhases, phaseStates, phaseColors}: {
+export function ProjectOverview({record, activityResult, content, context, today, timezone, members, milestonePhases, phaseStates, phaseColors}: {
   record: OverviewRecord;
-  history: ProjectEvent[];
+  activityResult:{data:ProjectActivity|null;error:string|null};
+  content:OverviewContent;
   context?: ProjectDirectoryContext;
   today: string;
   timezone: string;
@@ -53,18 +58,10 @@ export function ProjectOverview({record, history, context, today, members, miles
   phaseColors: ProjectPhaseColorMap;
 }) {
   const editing=useProjectEditingActions();
+  const router=useRouter();
   const base = `/projects/${record.request_id}`;
   const summary = projectOverviewSummary(record.body, today);
-  const progress = directoryProgress(record.body, context?.taskPhases ?? []);
-  const activePhases = progress.activePhases.map(item => item.phase);
-  if (context?.selectedPhase && !activePhases.includes(context.selectedPhase)) activePhases.unshift(context.selectedPhase);
   const name = context?.company?.name || record.body.title;
-  const stamp = (value:string) => {
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? 'Not recorded' : new Intl.DateTimeFormat('en-US', {
-      month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit', timeZone:'America/Chicago', timeZoneName:'short',
-    }).format(date);
-  };
   return <div className="space-y-3">
     <header className="grid gap-4 rounded-xl border border-border bg-card p-4 lg:grid-cols-[minmax(0,1fr)_auto]">
       <div className="flex min-w-0 flex-1 items-start gap-3">
@@ -80,14 +77,14 @@ export function ProjectOverview({record, history, context, today, members, miles
     </header>
 
     <section aria-label="Project work summary" className="grid grid-cols-2 gap-2 xl:grid-cols-4">
-      <Metric label="Open tasks" value={String(summary.openTasks.length)} detail={`${summary.done} of ${record.body.tasks.length} completed`} />
-      <Metric label="Blocked tasks" value={String(summary.blocked)} detail="Recorded task blockers" />
+      <Metric label="Open tasks" value={String(summary.openTasks.length)} detail={`${summary.done} of ${distinctById(record.body.tasks).length} completed`} />
+      <Metric label="Blocked tasks" value={String(summary.blocked)} detail="Saved Blocked status · subset of Open" />
       <Metric label="Past-due open tasks" value={String(summary.overdue)} detail={`${summary.dueToday} due today · ${today}`} />
       <Metric label="Milestones completed" value={`${summary.milestoneDone}/${record.body.milestones.length}`} detail="Saved milestone states" />
     </section>
 
     <ProjectMilestonePreviews id={record.request_id} body={record.body} members={members} phaseColors={phaseColors}
-      activePhases={activePhases} milestonePhases={milestonePhases} />
+      phaseStates={phaseStates} milestonePhases={milestonePhases} content={content} today={today} />
 
 
     <div className="grid items-start gap-3 xl:grid-cols-[minmax(0,2fr)_minmax(260px,1fr)]">
@@ -112,11 +109,12 @@ export function ProjectOverview({record, history, context, today, members, miles
         <Panel title="Phase & task progress" action={<Link href={`${base}?tab=phases`} className={linkClass}>Phases<ArrowUpRight size={13} aria-hidden /></Link>}>
           <div className="space-y-4 p-4"><DirectoryPhases project={record} context={context} formalStates={phaseStates} phaseColors={phaseColors} /><div className="border-t border-border pt-3"><p className="mb-2 text-[11px] text-muted-foreground">Task completion</p><DirectoryProgress project={record} /><p className="mt-2 text-[11px] text-muted-foreground">Completed tasks ÷ all tasks. Phase approval and delivery readiness are separate.</p></div></div>
         </Panel>
-        <Panel title="Recent project history" action={<Link href={`${base}/activity`} className={linkClass}>View all activity<ArrowUpRight size={13} aria-hidden /></Link>}>
-        <ol tabIndex={0} aria-label="Recent project events" className="max-h-72 divide-y divide-border overflow-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring">{history.slice(0,5).map(event => <li key={event.id} className="flex items-start gap-2.5 px-4 py-3"><Clock3 size={14} aria-hidden className="mt-0.5 shrink-0 text-muted-foreground" /><div className="min-w-0"><p className="break-words text-xs font-medium capitalize">{event.action.replaceAll('_',' ')}</p><time dateTime={event.created_at} className="mt-1 block text-[11px] text-muted-foreground">{stamp(event.created_at)}</time>{event.reason && <p className="mt-1 break-words text-xs text-muted-foreground">{event.reason}</p>}</div></li>)}</ol>
-        {!history.length && <p className="px-4 py-5 text-xs text-muted-foreground">No recorded project history.</p>}
-        {history.length > 5 && <p className="border-t border-border px-4 py-2 text-[11px] text-muted-foreground">Showing the 5 latest project events.</p>}
-      </Panel>
+        <Panel title="Recent activity" action={<Link href={`${base}/activity`} className={linkClass}>View all activity<ArrowUpRight size={13} aria-hidden /></Link>}>
+          {activityResult.data?<><ProjectActivityList activity={{...activityResult.data,events:activityResult.data.events.slice(0,5)}} timezone={timezone}/>
+            {!activityResult.data.events.length&&<p className="px-4 py-5 text-xs text-muted-foreground">No recorded domain activity in the retained audit window.</p>}
+            <p className="px-4 py-2 text-[11px] text-muted-foreground">Latest available audited events, up to 5; not a total activity count.</p></>:
+            <p role="alert" className="p-4 text-xs">{activityResult.error}<button type="button" className="ml-2 underline" onClick={()=>router.refresh()}>Retry activity</button></p>}
+        </Panel>
 
       </div>
     </div>

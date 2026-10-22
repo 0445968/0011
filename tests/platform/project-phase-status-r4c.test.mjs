@@ -26,7 +26,7 @@ const states=[
   {phase:'handoff',status:'planning',everActive:false},
 ];
 
-test('parallel active phase includes planning milestones; historical completed remains at right',()=>{
+test('active phase includes planned and completed linked milestones; completed last',()=>{
   assert.deepEqual(activePhaseMilestones(body(),links,[],states).map(m=>m.id),['a','b']);
 });
 test('multi-phase completed milestone appears exactly once',()=>{
@@ -34,7 +34,7 @@ test('multi-phase completed milestone appears exactly once',()=>{
 });
 test('no unrelated future milestone or unapproved inactive work',()=>{
   const s=states.map(s=>s.phase==='production'?{...s,status:'planning'}:s);
-  assert.deepEqual(activePhaseMilestones(body(),links,[],s).map(m=>m.id),['b']);
+  assert.deepEqual(activePhaseMilestones(body(),links,[],s).map(m=>m.id),[]);
 });
 test('migration maintains protected staff-only phase statuses and server-side syncing',()=>{
   for(const fragment of [

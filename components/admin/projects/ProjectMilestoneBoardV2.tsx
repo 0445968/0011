@@ -84,8 +84,8 @@ function SubtaskEditor({item,disabled,update,requestRemove,today}: {
   </li>;
 }
 
-export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarReady,onTaskChange,onMilestoneChange,onAddTask,onAddMilestone,onEditTask,onEditMilestone,taskControls,onBulkTasks,userId,today,focusTaskId}: {
-  id:string;revision:number;body:ProjectBody;disabled:boolean;dirty:boolean;sidecarReady:boolean;today:string;focusTaskId?:string|null;
+export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarReady,onTaskChange,onMilestoneChange,onAddTask,onAddMilestone,onEditTask,onEditMilestone,taskControls,onBulkTasks,userId,today,focusTaskId,focusTaskRequest}: {
+  id:string;revision:number;body:ProjectBody;disabled:boolean;dirty:boolean;sidecarReady:boolean;today:string;focusTaskId?:string|null;focusTaskRequest?:number;
   onTaskChange:(index:number,changes:Partial<Task>)=>void;
   onMilestoneChange:(index:number,changes:Partial<Milestone>)=>void;
   onAddTask:(milestoneId:string|null)=>void;
@@ -103,8 +103,8 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const [detailTask,setDetailTask]=useState<string|null>(null);
   const [visitedTasks,setVisitedTasks]=useState<string[]>([]);
   function openTask(taskId:string) {setVisitedTasks(previous=>previous.includes(taskId)?previous:[...previous,taskId]);setDetailTask(taskId);}
-  useEffect(()=>{if(focusTaskId)openTask(focusTaskId);},[focusTaskId]);
-  useEffect(()=>{if(detailTask){const row=document.getElementById(`workplan-task-${detailTask}`);row?.focus({preventScroll:true});row?.scrollIntoView({block:'start'});}},[detailTask]);
+  useEffect(()=>{if(focusTaskId)openTask(focusTaskId);},[focusTaskId,focusTaskRequest]);
+  useEffect(()=>{if(detailTask){const row=document.getElementById(`workplan-task-${detailTask}`);row?.focus({preventScroll:true});row?.scrollIntoView({block:'start'});}},[detailTask,focusTaskRequest]);
   const [prompt,setPrompt]=useState<Prompt|null>(null);
   const [newSubtaskFor,setNewSubtaskFor]=useState<string|null>(null);
   const [newSubtaskTitle,setNewSubtaskTitle]=useState('');

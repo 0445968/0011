@@ -2,6 +2,7 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { projectPhaseSchema, type ProjectPhase } from './lifecycle-schema';
+import { assignmentWorkspaceSchema } from './assignment-schema';
 
 export type ProjectRosterMember = {
   id: string;
@@ -25,23 +26,27 @@ const linkSchema = z.array(z.object({milestone_id: z.string(), phase: projectPha
 
 /** Read-only staff-scoped roster; never infers account ownership from legacy free-text fields. */
 export async function getProjectOverviewExtras(client: SupabaseClient, requestId: string) {
-  const [rosterResponse, phaseResponse] = await Promise.all([
+  const [rosterResponse, phaseResponse, assignmentResponse] = await Promise.all([
     client.rpc('staff_project_roster', { p_request_id: requestId }),
     client.from('project_milestone_phases').select('milestone_id,phase').eq('request_id',requestId),
+    client.rpc('staff_project_assignment_workspace', { p_request: requestId }),
   ]);
-  if (rosterResponse.error || phaseResponse.error) {
+  if (rosterResponse.error || phaseResponse.error || assignmentResponse.error) {
     throw new Error('Verified project members or milestone phases could not load. Apply the R4a migration.');
   }
   const roster = rosterSchema.parse(rosterResponse.data);
+  const assignments = assignmentWorkspaceSchema.parse(assignmentResponse.data);
+  const taskIds = (personId: string, side: 'bivi'|'client') => assignments.tasks
+    .filter(task => task.side === side && task.assignees.includes(personId)).map(task => task.task_id);
   const links = linkSchema.parse(phaseResponse.data ?? []);
   const members: ProjectRosterMember[] = [
     ...roster.staff.map(row => ({
       id: row.id, kind: 'staff' as const, name: row.label,
-      avatarPath: row.avatar_path, assignedTaskIds: row.task_ids,
+      avatarPath: row.avatar_path, assignedTaskIds: taskIds(row.id, 'bivi'),
     })),
     ...roster.clients.map(row => ({
       id: row.id, kind: 'client' as const, name: row.label,
-      avatarPath: row.avatar_path, assignedTaskIds: [],
+      avatarPath: row.avatar_path, assignedTaskIds: taskIds(row.id, 'client'),
     })),
   ];
   return { members, milestonePhases: links.map(row => ({milestoneId:row.milestone_id,phase:row.phase})) };

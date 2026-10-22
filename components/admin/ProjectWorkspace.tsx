@@ -248,12 +248,18 @@ export function ProjectWorkspace({
      EDITOR STATE
      ======================================================= */
 
-  const controller=useProjectEditingController(id,record,Boolean(selectedTask||selectedMilestone));
+  const controller=useProjectEditingController(id,record,Boolean(selectedMilestone));
   const {body,savedRevision,setBody,busy,setBusy,blocked,setBlocked,
     message,setMessage,saveOutcomeUnknown,setSaveOutcomeUnknown,serverBlockers,setServerBlockers,dirty,drafts,advanced,setAdvanced}=controller;
   const [reason,setReason]=useState('');
   const [overviewEditing,setOverviewEditing]=useState(false);
-  const [overviewTaskId,setOverviewTaskId]=useState<string|null>(null);
+  const [overviewTaskId,setOverviewTaskId]=useState<string|null>(selectedTask??null);
+  const [taskFocusRequest,setTaskFocusRequest]=useState(0);
+  useEffect(()=>{if(selectedTask){setOverviewTaskId(selectedTask);setTaskFocusRequest(value=>value+1);}},[selectedTask]);
+  function focusTaskDetails(taskId:string) {
+    setOverviewEditing(true);setAdvanced(false);setOverviewTaskId(taskId);
+    setTaskFocusRequest(value=>value+1);
+  }
   /* =======================================================
      TASK VIEW
      ======================================================= */
@@ -822,8 +828,9 @@ export function ProjectWorkspace({
      ======================================================= */
 
   return (
-    <ProjectEditingContext.Provider value={{editTask:taskId=>{setOverviewEditing(true);setAdvanced(false);setOverviewTaskId(taskId);},editMilestone:milestoneId=>{setOverviewEditing(true);openAdvanced(undefined,milestoneId);}}}>
+    <ProjectEditingContext.Provider value={{editTask:focusTaskDetails,editMilestone:milestoneId=>{setOverviewEditing(true);openAdvanced(undefined,milestoneId);}}}>
     {overview}
+    {((selectedTask&&!record.body.tasks.some(task=>task.id===selectedTask))||(selectedMilestone&&!record.body.milestones.some(item=>item.id===selectedMilestone)))&&<p role="status" className="text-xs text-amber-800 dark:text-amber-200">The linked item is no longer in the saved project. Browse Tasks &amp; Milestones below; any private draft remains recoverable.</p>}
     {overview&&(drafts.recoverable||dirty||drafts.error)&&<p role="status" className="text-xs text-amber-800 dark:text-amber-200">A private work-plan draft needs attention. Open the shared project editor to restore, reconcile, save or discard it. Saved Overview totals do not include private edits.</p>}
     {overview&&<button type="button" className={controlClass} onClick={()=>setOverviewEditing(value=>!value)}>{overviewEditing?'Hide project editor':'Open shared project editor'}</button>}
     <div hidden={Boolean(overview&&!overviewEditing)} className="space-y-3 pb-4">
@@ -859,6 +866,7 @@ export function ProjectWorkspace({
       <div id="project-workplan-cards" tabIndex={-1} hidden={advanced} className="scroll-mt-24 focus:outline-none">
       <ProjectMilestoneBoard
         focusTaskId={overviewTaskId}
+        focusTaskRequest={taskFocusRequest}
         today={today}
         id={id}
         userId={userId}

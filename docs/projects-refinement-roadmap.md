@@ -4,7 +4,14 @@ Baseline: `0445968/0011`, `bivi-dashboard-overhaul`, following D1a–D1c. Preser
 
 ## Revised Projects follow-up requirements — 2026-10-21
 
-The dedicated Phases page, shared formal phase indicators and Tasks & Milestones slice are implemented with live UI acceptance pending. R7B data integrity, completion rules and statistics is the current technical slice. Keep the remaining revised scope explicitly pending until its own implementation and verification are complete.
+The dedicated Phases page, shared formal phase indicators and Tasks & Milestones slice are implemented with live UI acceptance pending. R7B/R7C technical implementation is delivered; R7D Overview data connections is delivered with live acceptance pending. Keep the remaining revised scope explicitly pending until its own implementation and verification are complete.
+
+### R7D — complete Overview data connections (implemented; live UI acceptance pending)
+- Use saved project, formal phases/colors, verified assignments, schedule, productivity and the shared audited Activity service. Keep R7B distinct-ID metrics and the R7C controller; private previews never alter saved totals.
+- Default milestone scope is any saved Active phase, once per milestone, stable completed-last order. Explicit All/unassigned scopes keep historical and unassigned work reachable; show every associated phase, actual due date, task completion and verified staff/client assignees.
+- Count distinct accessible ready file IDs linked to tasks, nonremoved authored task notes and nonremoved task discussion comments; aggregate across milestone tasks without counting bounded previews. Counts open the corresponding task content context. Unavailable sources show retry, not zero. No milestone-level priority field or staff-readable milestone communication source exists: distinguish task suggestions/manual priorities and record missing sources as pending.
+- Recent activity must reuse Activity's domain events, actor mapping, ordering and deduplication; generic revision snapshots stay preserved outside the domain feed. Meaningful snapshot-derived changes remain. R7E owns broader event coverage, notifications and verified meetings.
+- Existing layout and R7B/R7C protections are preserved. Typecheck, 156 platform tests and build pass; authenticated browser acceptance is pending. [Implementation, source contracts, limitations and exact manual tests](projects-r7d-overview.md). Brief name/owner/activation, Requests, Admin Settings technical history, Calendar grid and end-of-R7 visual work remain pending. Stop after R7D for user testing.
 
 ### R7B — data integrity, completion and statistics (implemented; live UI acceptance pending)
 - Preserve Project → Phase → Milestone → Task → Subtask IDs and milestone many-to-many phase links. Effective task phases are the union of the direct control phase and linked milestone phases; these are independent associations, not a contradiction. Do not infer missing associations. Keep unassigned work visible; surface orphan/missing records.
@@ -43,7 +50,7 @@ The dedicated Phases page, shared formal phase indicators and Tasks & Milestones
 ### Remaining revised requirements — pending
 - **Brief:** Move verified organization owner and Activation snapshot here; make project name editable here.
 - **Requests:** Move client task requests to a dedicated Requests project section.
-- **Activity and Admin Settings:** Project history belongs in Activity. Replace Overview’s Recent project history with a real Activity preview. Move technical save/revision history to Admin Settings while preserving audit records and meaningful domain events in Activity.
+- **Activity and Admin Settings:** R7D delivers Overview’s real Recent activity preview through the shared domain Activity service, preserving meaningful snapshot-derived changes and all audit records. Moving the remaining technical save/revision history from the work-plan workspace to Admin Settings is still pending.
 - **Calendar:** Provide a proper month grid with previous/next/today navigation, alongside useful existing views.
 - **Phases live acceptance:** Verify simultaneous phase activation across reload; independent phase completion; saved formal-state bars; persisted color propagation; hover/focus/mobile labels; shared/missing-date stats; relocated lifecycle actions/deep links; draft/revision recovery; and light/dark/narrow layouts. This acceptance remains pending. Never modify, merge into, or deploy `restore`; stop after each implementation slice for user testing.
 
