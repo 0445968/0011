@@ -7,7 +7,6 @@ import { Check, CheckCheck, ChevronDown, ChevronRight, Clock3, Pencil, Plus, Ref
 import type { ProjectBody } from '@/lib/projects/schema';
 import { projectPhaseLabels, type ProjectTaskControl } from '@/lib/projects/lifecycle-schema';
 import { milestoneStats, nextStatus, workStatusOrder, milestoneStatusOrder, daysRemaining, remainingLabel, suggestedTaskPriority, type WorkplanView } from '@/lib/projects/workplan-views';
-import { taskToday } from '@/lib/tasks/links';
 import type { ProjectHierarchyResponse } from '@/lib/projects/hierarchy-schema';
 import { useProjectHierarchy } from './useProjectHierarchy';
 import { ProjectManagersButton, ProjectOrganizationOwnerButton, TaskMemberPicker, useProjectAssignments } from './ProjectAssignments';
@@ -57,7 +56,7 @@ function NameField({title, completed, disabled, large = false, onChange}: {
 
 function Remaining({dueOn,today,completed}:{dueOn:string|null;today:string;completed:boolean}) {
   const days=daysRemaining(dueOn,today);
-  return <span className={`inline-flex items-center gap-1 text-xs tabular-nums ${!completed && days!==null && days<0 ? 'font-medium text-red-600 dark:text-red-400' : 'text-muted-foreground'}`} title={dueOn ?? 'No due date'}><Clock3 size={13} aria-hidden/>{remainingLabel(days)}</span>;
+  return <span className={`inline-flex items-center gap-1 text-xs tabular-nums ${!completed && days!==null && days<0 ? 'font-medium text-red-600 dark:text-red-400' : 'text-muted-foreground'}`} title={dueOn ?? 'No due date'}><Clock3 size={13} aria-hidden/>{completed ? dueOn?`Completed · due ${dueOn}`:'Completed' : remainingLabel(days)}</span>;
 }
 
 function SubtaskEditor({item,disabled,update,requestRemove,today}: {
@@ -81,8 +80,8 @@ function SubtaskEditor({item,disabled,update,requestRemove,today}: {
   </li>;
 }
 
-export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarReady,onTaskChange,onMilestoneChange,onAddTask,onAddMilestone,onEditTask,onEditMilestone,taskControls,onBulkTasks,userId}: {
-  id:string;revision:number;body:ProjectBody;disabled:boolean;dirty:boolean;sidecarReady:boolean;
+export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarReady,onTaskChange,onMilestoneChange,onAddTask,onAddMilestone,onEditTask,onEditMilestone,taskControls,onBulkTasks,userId,today}: {
+  id:string;revision:number;body:ProjectBody;disabled:boolean;dirty:boolean;sidecarReady:boolean;today:string;
   onTaskChange:(index:number,changes:Partial<Task>)=>void;
   onMilestoneChange:(index:number,changes:Partial<Milestone>)=>void;
   onAddTask:(milestoneId:string|null)=>void;
@@ -105,7 +104,6 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const [newSubtaskFor,setNewSubtaskFor]=useState<string|null>(null);
   const [newSubtaskTitle,setNewSubtaskTitle]=useState('');
   const [expanded,setExpanded]=useState<Record<string,boolean>>({});
-  const today=taskToday('America/Chicago').today;
   const schedule=useProjectTaskSchedule(id,revision);
   const phaseColors=useProjectPhaseColors(id,[]);
   const canEditSidecar=!disabled&&!dirty&&sidecarReady&&!hierarchy.busy&&!hierarchy.conflict&&hierarchy.data?.projectRevision===revision;
@@ -201,7 +199,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     return <article key={milestone.id} className={`min-w-0 overflow-hidden rounded-xl border border-border ${milestone.status==='done'?'bg-muted/60':'bg-card'}`}>
       <div className="flex flex-wrap items-center gap-2 px-3 py-2.5">
         <button type="button" aria-expanded={isOpen} aria-label={`${isOpen?'Collapse':'Expand'} ${milestone.title}`} className={miniButton} onClick={()=>setExpanded(old=>({...old,[milestone.id]:!isOpen}))}>{isOpen?<ChevronDown size={17}/>:<ChevronRight size={17}/>}</button>
-        <div className="min-w-0 flex-1"><span className="text-[9px] uppercase tracking-wide text-muted-foreground">Milestone</span><NameField title={milestone.title} completed={milestone.status==='done'} disabled={disabled} onChange={title=>updateMilestone(milestone,{title})}/><p className="mt-1 text-[11px] text-muted-foreground">{stats.done}/{stats.total} tasks completed</p></div>
+        <div className="min-w-0 basis-[calc(100%-3rem)] flex-1"><span className="text-[9px] uppercase tracking-wide text-muted-foreground">Milestone</span><NameField title={milestone.title} completed={milestone.status==='done'} disabled={disabled} onChange={title=>updateMilestone(milestone,{title})}/><p className="mt-1 text-[11px] text-muted-foreground">{stats.done}/{stats.total} tasks completed</p></div>
         <button type="button" onClick={()=>onEditMilestone(milestone.id)} className="min-h-8 rounded-lg border border-border px-2 text-[11px] hover:bg-muted">Edit milestone</button>
         <StatusButton status={milestone.status} disabled={disabled} label={`milestone ${milestone.title}`} onChange={()=>{const next=nextStatus(milestone.status,milestoneStatusOrder);if(next==='done')reviewMilestoneCompletion(milestone);else updateMilestone(milestone,{status:next});}}/>
         <Remaining dueOn={milestone.dueOn} today={today} completed={milestone.status==='done'}/>

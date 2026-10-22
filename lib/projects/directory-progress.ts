@@ -1,4 +1,5 @@
 import type { ProjectBody } from './schema';
+import { distinctById, taskMetrics } from './metrics';
 import { projectPhaseOrder, type ProjectPhase } from './lifecycle-schema';
 
 export type PhaseTaskState = 'unknown' | 'not_started' | 'in_progress' | 'completed';
@@ -6,11 +7,10 @@ export interface DirectoryTaskPhase { taskId: string; phase: ProjectPhase }
 
 /** Task evidence only. Never treats an earlier phase as approved or completed. */
 export function directoryProgress(body: ProjectBody, controls: DirectoryTaskPhase[]) {
-  const done = body.tasks.filter(task => task.status === 'done').length;
-  const total = body.tasks.length;
+  const {done,total,percent} = taskMetrics(body.tasks);
   const phases = projectPhaseOrder.map(phase => {
     const ids = new Set(controls.filter(control => control.phase === phase).map(control => control.taskId));
-    const tasks = body.tasks.filter(task => ids.has(task.id));
+    const tasks = distinctById(body.tasks).filter(task => ids.has(task.id));
     const completed = tasks.filter(task => task.status === 'done').length;
     const blocked = tasks.filter(task => task.status === 'blocked').length;
     const active = tasks.some(task => task.status === 'doing' || task.status === 'blocked');
@@ -21,8 +21,8 @@ export function directoryProgress(body: ProjectBody, controls: DirectoryTaskPhas
   });
   const mapped = new Set(controls.map(control => control.taskId));
   return {
-    done, total, percent: total ? Math.round(done / total * 100) : null, phases,
-    unassigned: body.tasks.filter(task => !mapped.has(task.id)).length,
+    done, total, percent, phases,
+    unassigned: distinctById(body.tasks).filter(task => !mapped.has(task.id)).length,
     activePhases: phases.filter(phase => phase.state === 'in_progress'),
   };
 }

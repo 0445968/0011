@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { getStaffAccess } from '@/lib/admin/auth';
 import { adminReply, isSameOrigin, readAdminJson } from '@/lib/admin/http';
+import {classifyProjectSaveDatabaseError} from '@/lib/projects/workplan-save-errors';
 
 const projectId = z.string().uuid();
 const command = z.object({
@@ -53,6 +54,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
   const parsed = command.safeParse(raw);
   if (!parsed.success) return adminReply({ error: 'Check the task update fields.' }, 400);
   const { data, error } = await access.client.rpc('manage_project_task_productivity', { p_request: params.id, p_command: parsed.data });
+  if(error?.code==='23514')return adminReply(classifyProjectSaveDatabaseError(error.code,error.message)??{error:'Completion requirements are not satisfied.'},422);
   if (error) return adminReply({ error: error.code === '42501' ? 'Staff access is required.' : 'Task update could not be saved.' }, error.code === '42501' ? 403 : error.code === '22023' ? 400 : 503);
   const messages: Record<string,string> = { conflict: 'The project changed. Reload before saving.', locked: 'Completed projects are read-only.', not_found: 'Project or task not found.', blocked: 'Review blocked tasks and dependencies before this bulk change.', file_unavailable: 'Choose a verified file from this project.' };
   if (data?.result !== 'saved') return adminReply({ error: messages[data?.result] ?? 'Task update could not be confirmed.' }, data?.result === 'not_found' ? 404 : data?.result === 'conflict' || data?.result === 'blocked' || data?.result === 'locked' ? 409 : 400);

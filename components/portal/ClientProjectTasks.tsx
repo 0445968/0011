@@ -30,7 +30,7 @@ function ClientTaskCard({ id, work, task }: { id: string; work: ClientProjectWor
 
   const currentRank = projectPhaseOrder.indexOf(work.currentPhase);
   const taskRank = projectPhaseOrder.indexOf(task.phase);
-  const future = taskRank > currentRank;
+  const future = work.activePhases ? !(task.phases??[task.phase]).some(phase=>work.activePhases!.includes(phase)) : taskRank > currentRank;
   const blocked = Boolean(task.blockerOwner || !task.dependencyComplete || task.status === 'blocked');
   const briefApproval = task.id === 'project-brief-client-approval';
 
@@ -64,7 +64,7 @@ function ClientTaskCard({ id, work, task }: { id: string; work: ClientProjectWor
     <article className="rounded-xl border border-border p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-xs text-muted-foreground">{projectPhaseLabels[task.phase]}{task.serviceId ? ` · ${task.serviceId}` : ''}</p>
+          <p className="text-xs text-muted-foreground">{(task.phases??[task.phase]).map(phase=>projectPhaseLabels[phase]).join(' · ')}{task.serviceId ? ` · ${task.serviceId}` : ''}</p>
           <h3 className="mt-1 font-medium">{task.title}</h3>
           {task.description && <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{task.description}</p>}
         </div>

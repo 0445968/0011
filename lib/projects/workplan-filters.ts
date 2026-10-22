@@ -1,4 +1,5 @@
 import type { ProjectBody } from './schema';
+import { effectiveTaskPhases } from './metrics';
 import type { ProjectPhase, ProjectTaskControl } from './lifecycle-schema';
 import type { ProjectHierarchyResponse } from './hierarchy-schema';
 import type { ProjectAssignmentWorkspace } from './assignment-schema';
@@ -26,10 +27,7 @@ export type WorkplanFilterContext = {
 
 /** A task keeps its canonical phase and also belongs to its milestone's linked phases. */
 export function workplanTaskPhases(task: Task, context: WorkplanFilterContext): ProjectPhase[] {
-  return [...new Set([
-    ...context.controls.filter(control=>control.taskId===task.id).map(control=>control.phase),
-    ...context.links.filter(link=>link.milestoneId===task.milestoneId).map(link=>link.phase),
-  ])];
+  return effectiveTaskPhases(task,context.controls,context.links);
 }
 
 function statusMatches(status: Task['status'] | Milestone['status'], filter: WorkplanFilters['status']) {

@@ -16,10 +16,10 @@ type Lifecycle = { requestId:string; phase:ProjectPhase; revision:number; update
 type Event = { id:number; task_id:string; action:string; snapshot:Record<string,unknown>; created_at:string };
 type PhaseLinkCommand = Extract<Parameters<ReturnType<typeof useProjectHierarchy>['save']>[0],{action:'set_milestone_phases'}>;
 
-export function ProjectPhasesPage({id,revision,body,lifecycle,controls,events,phaseStates,phaseColors,readOnly}: {
+export function ProjectPhasesPage({id,revision,body,lifecycle,controls,events,phaseStates,phaseColors,readOnly,completionIssues}: {
   id:string; revision:number; body:ProjectBody; lifecycle:Lifecycle; controls:ProjectTaskControl[]; events:Event[];
   phaseStates:ProjectPhaseState[]; phaseColors:ProjectPhaseColor[];
-  readOnly:boolean;
+  readOnly:boolean; completionIssues:string[];
 }) {
   const hierarchy=useProjectHierarchy(id,revision,true);
   const colors=useProjectPhaseColors(id,phaseColors);
@@ -37,6 +37,7 @@ export function ProjectPhasesPage({id,revision,body,lifecycle,controls,events,ph
       <div><p className="text-[10px] uppercase tracking-wide text-muted-foreground">Project settings</p><h1 className="mt-1 text-lg font-semibold">Phases</h1><p className="mt-1 text-xs text-muted-foreground">Saved phase status, colors, deadlines, milestones, and lifecycle controls.</p></div>
       <button type="button" disabled={hierarchy.busy} onClick={()=>{void hierarchy.load();void colors.refresh().catch(()=>undefined);}} className="inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-border px-2.5 text-xs hover:bg-muted disabled:opacity-50"><RefreshCcw size={13} aria-hidden/>Refresh phase data</button>
     </header>
+    {completionIssues.length>0&&<div role="alert" className="rounded-lg border border-amber-300 p-3 text-xs"><p className="font-semibold">Completion evidence needs review</p><ul className="mt-2 list-disc pl-4">{completionIssues.map((issue,index)=><li key={index}>{issue}</li>)}</ul></div>}
     {colors.loadError&&<p role="alert" className="rounded-lg border border-red-300 p-3 text-xs text-red-700 dark:text-red-300">{colors.loadError}<button type="button" onClick={()=>{void colors.refresh().catch(()=>undefined);}} className="ml-2 underline">Refresh colors</button></p>}
     {hierarchy.error&&<p role="alert" className="rounded-lg border border-red-300 p-3 text-xs text-red-700 dark:text-red-300">{hierarchy.error}</p>}
     {hierarchy.conflict&&<p role="alert" className="rounded-lg border border-amber-300 p-3 text-xs text-amber-900 dark:text-amber-200">Project or hierarchy revision changed. Refresh phase data before editing.</p>}

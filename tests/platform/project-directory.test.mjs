@@ -7,11 +7,12 @@ const require = createRequire(import.meta.url);
 function load(path, imports = {}) {
   const module = {exports:{}};
   const source = fs.readFileSync(new URL(path, import.meta.url), 'utf8');
-  new Function('module','exports','require',ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText)(module,module.exports,name => name in imports ? imports[name] : require(name));
+  new Function('module','exports','require',ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText)(module,module.exports,name => name in imports ? imports[name] : name.startsWith('.')?loadProjectTs(new URL(`${name}.ts`,new URL(path,import.meta.url))):require(name));
   return module.exports;
 }
+import {loadProjectTs} from './load-project-ts.mjs';
 const lifecycle = load('../../lib/projects/lifecycle-schema.ts');
-const { directoryProgress } = load('../../lib/projects/directory-progress.ts', {'./lifecycle-schema': lifecycle});
+const { directoryProgress } = load('../../lib/projects/directory-progress.ts', {'./lifecycle-schema': lifecycle,'./metrics':loadProjectTs('lib/projects/metrics.ts')});
 const { validDirectoryMode } = load('../../lib/projects/directory-types.ts');
 const body = tasks => ({title:'Test',owner:'',notes:'',milestones:[],tasks});
 const task = (id,status) => ({id,status,title:id,owner:'',notes:'',milestoneId:null,dueOn:null});
@@ -50,7 +51,7 @@ test('Directory enrichment respects page IDs, paginates task controls, and uses 
   const calls=[];
   const client={from(table){const call={table};calls.push(call);const query={
     select(){return query;},in(column,ids){call.ids=ids;return query;},order(){return query;},range(start,end){call.range=[start,end];return query;},
-    then(resolve,reject){let data=table==='inquiry_projects'?[{request_id:id,company_id:company}]:table==='project_lifecycle'?[{request_id:id,phase:'discovery'}]:table==='company_directory'?[{id:company,name:'Acme',logo_path:null}]:rows.slice(call.range[0],call.range[1]+1);return Promise.resolve({data,error:null}).then(resolve,reject);}
+    then(resolve,reject){let data=table==='inquiry_projects'?[{request_id:id,company_id:company,body:body([task('t0','todo')])}]:table==='project_lifecycle'?[{request_id:id,phase:'discovery'}]:table==='company_directory'?[{id:company,name:'Acme',logo_path:null}]:table==='project_milestone_phases'?[]:rows.slice(call.range[0],call.range[1]+1);return Promise.resolve({data,error:null}).then(resolve,reject);}
   };return query;}};
   const result=await getProjectDirectoryContext(client,[id]);
   assert.equal(result[id].company.name,'Acme');

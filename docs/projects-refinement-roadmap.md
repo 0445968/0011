@@ -4,7 +4,16 @@ Baseline: `0445968/0011`, `bivi-dashboard-overhaul`, following D1a–D1c. Preser
 
 ## Revised Projects follow-up requirements — 2026-10-21
 
-The dedicated Phases page and shared formal phase indicators are implemented with live UI acceptance pending. Tasks & Milestones is the current implementation slice. Keep the remaining revised scope explicitly pending until its own implementation and verification are complete.
+The dedicated Phases page, shared formal phase indicators and Tasks & Milestones slice are implemented with live UI acceptance pending. R7B data integrity, completion rules and statistics is the current technical slice. Keep the remaining revised scope explicitly pending until its own implementation and verification are complete.
+
+### R7B — data integrity, completion and statistics (implemented; live UI acceptance pending)
+- Preserve Project → Phase → Milestone → Task → Subtask IDs and milestone many-to-many phase links. Effective task phases are the union of the direct control phase and linked milestone phases; these are independent associations, not a contradiction. Do not infer missing associations. Keep unassigned work visible; surface orphan/missing records.
+- All linked tasks are required: the existing model has no optional-task flag. Unfinished subtasks block task completion; unfinished tasks block explicit milestone review. Client completion requires recorded Bivi review. Phase closure validates every applicable task, milestone, subtask, dependency and approval. Parallel phases remain independent.
+- Validate the submitted candidate atomically, including legitimate same-save task/milestone completion. Rejections must preserve revision, audit and drafts. Reopening requires reopening completed ancestors/dependents explicitly first or in the same candidate.
+- Shared distinct-ID metrics: Open = Total − Done, Blocked is a subset of Open, subtasks separate, no join inflation, empty progress unknown, overdue excludes Done and uses the saved user timezone. Filters/pages are labeled subsets, never project totals. Unavailable reads fail visibly. Draft counts remain labeled and isolated from saved dashboards.
+- Verify R7A save/conflict/recovery and phase foundations through behavior/database tests; live UI acceptance remains pending until exercised in authenticated sessions.
+- Layout remains provisional. Only necessary operability fixes belong here, including milestone title width in three-column mode. Defer card density, spacing, theme polish and other visual refinements to the end-of-R7 frontend pass. Pending Brief/Requests/history relocations, Calendar month grid and all other agreed requirements remain pending.
+- Implementation, applied migration ledger, known legacy review exception and exact acceptance steps: [R7B implementation](projects-r7b-data-integrity.md). Technical checks and hosted read checks are distinct from authenticated browser acceptance. No acceptance claim is made for the earlier Phases or Tasks & Milestones slices.
 
 ### Dedicated Phases and shared indicators — implemented; live UI acceptance pending
 - Add **Phases** to project navigation. Move phase customization/statuses, deadlines, compact stats and breakdowns, plus “Lifecycle, dependencies and approvals” from Calendar into Phases. Keep task assignment, dependency and approval actions reachable through authoritative APIs/RPCs, permissions, revisions, and audit sources; avoid competing editors.

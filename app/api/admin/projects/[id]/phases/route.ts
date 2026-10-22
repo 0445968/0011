@@ -3,6 +3,7 @@ import { getStaffAccess } from '@/lib/admin/auth';
 import { adminReply, isSameOrigin, readAdminJson } from '@/lib/admin/http';
 import { projectPhaseSchema } from '@/lib/projects/lifecycle-schema';
 import { phaseStatusSchema, projectPhaseStatesSchema } from '@/lib/projects/phase-status';
+import { classifyProjectSaveDatabaseError } from '@/lib/projects/workplan-save-errors';
 
 export const dynamic = 'force-dynamic';
 const command = z.object({
@@ -44,9 +45,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
       details: result.error.details,
     });
     const code = result.error.code || 'unknown';
-    const message = code === '23514'
-      ? 'A database constraint rejected the phase change. Verify migration 038, then retry.'
-      : code === '42501'
+    if(code==='23514') {
+      const detail=classifyProjectSaveDatabaseError(code,result.error.message);
+      return adminReply({error:detail?.error??'Phase completion requirements are not satisfied.',code:detail?.code??'validation_rejected'},422);
+    }
+    const message = code === '42501'
         ? 'The database denied this phase update. Verify staff access and migration 035.'
         : code === '42883'
           ? 'The phase update function is missing. Apply migrations 035, 037 and 038 in order.'

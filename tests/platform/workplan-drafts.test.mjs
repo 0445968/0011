@@ -13,7 +13,8 @@ function transpile(sourceUrl, requireLocal = require) {
   }).outputText)(loaded, loaded.exports, requireLocal);
   return loaded.exports;
 }
-const schemaExports = transpile('../../lib/projects/schema.ts');
+import {loadProjectTs} from './load-project-ts.mjs';
+const schemaExports = loadProjectTs('lib/projects/schema.ts');
 const module = { exports: transpile('../../lib/projects/workplan-draft-schema.ts', name => name === './schema' ? schemaExports : require(name)) };
 const { saveWorkplanDraftSchema } = module.exports;
 

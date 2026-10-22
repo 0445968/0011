@@ -3,10 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import ts from 'typescript';
 
-const source=readFileSync(new URL('../../lib/projects/workplan-filters.ts',import.meta.url),'utf8');
-const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText;
-const module={exports:{}};
-new Function('module','exports',compiled)(module,module.exports);
+import {loadProjectTs} from './load-project-ts.mjs';
+const module={exports:loadProjectTs('lib/projects/workplan-filters.ts')};
 const {emptyWorkplanFilters,workplanTaskMatches,workplanMilestoneMatches,workplanTaskPhases,groupWorkplanTasks}=module.exports;
 const filters=change=>({...emptyWorkplanFilters,...change});
 const task=(id,changes={})=>({id,title:id,notes:'',owner:'',status:'todo',dueOn:null,milestoneId:'shared',...changes});

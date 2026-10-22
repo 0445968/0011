@@ -25,6 +25,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       p_request_id: params.id,
       p_command: parsed.data,
     });
+    if(error?.code==='23514')return adminReply({error:'This change requires Bivi to reopen completed work or resolve completion requirements first.',code:'validation_rejected'},422);
     if (error) return adminReply({ error: error.code === '22023' ? 'Check the task update.' : 'The task could not be saved.' }, error.code === '42501' ? 403 : error.code === '22023' ? 400 : 503);
 
     const failures: Record<string, [number, string]> = {

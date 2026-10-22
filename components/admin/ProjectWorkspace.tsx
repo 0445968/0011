@@ -65,6 +65,7 @@ type Command =
 type TaskFilter = 'all' | Task['status'];
 
 type Props = {
+  savedToday: string;
   selectedTask?:string;
   selectedMilestone?:string;
   taskControls?: ProjectTaskControl[];
@@ -228,6 +229,7 @@ function SectionTitle({
    ========================================================= */
 
 export function ProjectWorkspace({
+  savedToday,
   id,
   userId,
   record,
@@ -358,9 +360,7 @@ export function ProjectWorkspace({
     if (saved !== true) throw new Error('Project changes were not saved. Review the editor message.');
   });
 
-  const today = new Date()
-    .toISOString()
-    .slice(0, 10);
+  const today=savedToday;
 
   /* =======================================================
      FILTERED TASKS
@@ -1015,6 +1015,7 @@ export function ProjectWorkspace({
 
       <div id="project-workplan-cards" tabIndex={-1} hidden={advanced} className="scroll-mt-24 focus:outline-none">
       <ProjectMilestoneBoard
+        today={today}
         id={id}
         userId={userId}
         revision={savedRevision}

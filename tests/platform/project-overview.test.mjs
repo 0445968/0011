@@ -2,9 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import ts from 'typescript';
+import {loadProjectTs} from './load-project-ts.mjs';
 function load(path) {
   const module={exports:{}};
-  new Function('module','exports',ts.transpileModule(fs.readFileSync(new URL(path,import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText)(module,module.exports);
+  new Function('module','exports','require',ts.transpileModule(fs.readFileSync(new URL(path,import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText)(module,module.exports,()=>loadProjectTs('lib/projects/metrics.ts'));
   return module.exports;
 }
 const {projectOverviewSummary}=load('../../lib/projects/overview-summary.ts');

@@ -11,6 +11,7 @@ import { projectPhaseLabels, type ProjectPhase, type ProjectTaskControl } from '
 import type { ProjectTaskScheduleRow } from '@/lib/projects/schedule-schema';
 import type { ProjectPhaseColorMap } from '@/lib/projects/phase-colors';
 import { phaseColorFor } from '@/lib/projects/phase-colors';
+import { effectiveTaskPhases } from '@/lib/projects/metrics';
 import type { ProjectBody } from '@/lib/projects/schema';
 import type { ProjectRosterMember, MilestonePhaseLink } from '@/lib/projects/overview-data';
 
@@ -40,7 +41,7 @@ export function ProjectCalendar({id,body,projectRevision,controls,phaseColors,sc
   ].sort((a,b)=>(a.date??'9999-12-31').localeCompare(b.date??'9999-12-31')||a.title.localeCompare(b.title)),[body]);
   const assigned=(taskId:string)=>members.filter(person=>person.assignedTaskIds.includes(taskId));
   const phasesForEvent=(event:Event)=>event.type==='task'
-    ? controls.filter(control=>control.taskId===event.id).map(control=>control.phase)
+    ? effectiveTaskPhases(body.tasks.find(task=>task.id===event.id)!,controls,milestonePhases)
     : milestonePhases.filter(link=>link.milestoneId===event.id).map(link=>link.phase);
   const saveStart=async(taskId:string,value:string)=>{
     setSaving(taskId);setMessage('');

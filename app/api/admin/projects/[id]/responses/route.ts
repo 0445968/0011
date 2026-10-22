@@ -34,7 +34,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
         p_response: command.responseId, p_action: command.decision,
         p_note: command.note, p_revision: command.projectRevision,
       });
-  if (result.error) return adminReply({ error: result.error.code === '23514' ? 'Project milestone or phase rules prevent this change.' : 'The action could not be saved.' }, result.error.code === '23514' ? 409 : 503);
+  if (result.error) return adminReply({ error: result.error.code === '23514' ? 'Completion rejected. Complete subtasks, resolve dependencies, and reopen affected completed milestones or phases before review.' : 'The action could not be saved.',code:result.error.code==='23514'?'validation_rejected':'database_error' }, result.error.code === '23514' ? 422 : 503);
   const failures: Record<string, [number, string]> = {
     not_found: [404, 'Task or request no longer exists.'],
     conflict: [409, 'Another edit was saved. Refresh and retry.'],

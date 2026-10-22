@@ -86,7 +86,8 @@ export async function POST(request: Request, { params }: RouteContext) {
   });
   if (error) {
     if (error.code === '42501') return adminReply({ error: 'Staff access is required.' }, 403);
-    if (error.code === '22023' || error.code === '23514') return adminReply({ error: 'Invalid milestone, phase, or subtask data.' }, 400);
+    if (error.code === '23514') return adminReply({ error: 'This change would leave completed work inconsistent. Reopen the parent task, milestone and affected completed phases first; check dependencies and phase associations.',code:'validation_rejected' }, 422);
+    if (error.code === '22023') return adminReply({ error: 'Invalid milestone, phase, or subtask data.' }, 400);
     return adminReply({ error: 'Project hierarchy could not be saved.' }, 503);
   }
   if (data?.result === 'conflict') return adminReply({ error: 'The project changed. Refresh its hierarchy before editing.' }, 409);

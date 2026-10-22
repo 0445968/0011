@@ -216,7 +216,7 @@ export async function getProjectActivity(client: SupabaseClient, requestId: stri
     const detailText=change==='priority'||change==='start_date'?`${taskName(task)} · ${display(before,'Not set')} → ${display(after,'Not set')}`:
       change==='bulk_status'&&before&&after?`${taskName(task)} · ${display(object(before).status)} → ${display(object(after).status)}`:
       taskName(task) + (text(detail.kind) ? ` · ${display(detail.kind)}` : '');
-    events.push(auditEvent('tasks', 'task-history', row, changeLabels[change]??labels[action] ?? 'Task control updated',
+    events.push(auditEvent('tasks', 'task-history', row, detail.kind==='completion_reopened'?'Task reopened — renewed completion review required':changeLabels[change]??labels[action] ?? 'Task control updated',
       detailText, base, 'actor', 'created_at', task));
   }
   for (const row of bySource.task_notes ?? []) {

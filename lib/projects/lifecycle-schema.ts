@@ -105,6 +105,7 @@ export const clientTaskSchema = z.object({
   dueOn: z.string().nullable(),
   status: z.enum(['todo', 'doing', 'blocked', 'done']),
   phase: projectPhaseSchema,
+  phases: z.array(projectPhaseSchema).optional(),
   dependsOn: z.string().nullable(),
   dependencyComplete: z.boolean(),
   blockerOwner: blockerOwnerSchema,
@@ -121,6 +122,7 @@ export const clientProjectWorkSchema = z.object({
   state: z.enum(['active', 'on_hold', 'completed']),
   projectRevision: z.number().int().positive(),
   currentPhase: projectPhaseSchema,
+  activePhases: z.array(projectPhaseSchema).optional(),
   nextAction: z.object({
     id: z.string(),
     title: z.string(),

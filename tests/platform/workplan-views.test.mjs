@@ -2,9 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import ts from 'typescript';
 import fs from 'node:fs';
-const code = ts.transpileModule(fs.readFileSync(new URL('../../lib/projects/workplan-views.ts', import.meta.url), 'utf8'), { compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020} }).outputText;
-const module = {exports:{}};
-new Function('module','exports',code)(module,module.exports);
+import {loadProjectTs} from './load-project-ts.mjs';
+const module={exports:loadProjectTs('lib/projects/workplan-views.ts')};
 const {daysRemaining,remainingLabel,milestoneStats,nextStatus,workStatusOrder,milestoneStatusOrder} = module.exports;
 test('status icons/labels share deterministic transitions',()=>{
   assert.deepEqual(workStatusOrder.map(status=>nextStatus(status,workStatusOrder)),['doing','blocked','done','todo']);
@@ -18,7 +17,7 @@ test('date-only time remaining and overdue labels are timezone-neutral',()=>{
   assert.equal(remainingLabel(null),'No deadline');
 });
 test('milestone progress is derived from saved and draft task state without fabricating completion',()=>{
-  const body={tasks:[{milestoneId:'m',status:'done'},{milestoneId:'m',status:'doing'},{milestoneId:null,status:'done'}]};
+  const body={tasks:[{id:'one',milestoneId:'m',status:'done'},{id:'two',milestoneId:'m',status:'doing'},{id:'loose',milestoneId:null,status:'done'}]};
   assert.deepEqual(milestoneStats(body,'m'),{total:2,done:1,percent:50,readyForReview:false});
   assert.deepEqual(milestoneStats(body,'other'),{total:0,done:0,percent:null,readyForReview:false});
   assert.equal(milestoneStats({...body,tasks:[{milestoneId:'m',status:'done'}]},'m').readyForReview,true);

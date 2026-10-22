@@ -310,9 +310,13 @@ export default async function ProjectPage({
   if (phaseStatesResult?.error) throw new Error('Project phase schedule could not load. Check migration 035.');
   const phaseStates = phaseStatesResult ? projectPhaseStatesSchema.parse(phaseStatesResult.data).states : [];
   const phaseColors = phaseColorsResult?.colors ?? [];
-  const calendarToday = record && (tab === 'calendar' || tab === 'phases')
-    ? taskToday((await client.from('staff_notification_preferences').select('timezone').eq('user_id', user.id).maybeSingle()).data?.timezone || 'America/Chicago').today
-    : '';
+  const completionIssues=record&&tab==='phases' ? await client.rpc('staff_project_completion_issues',{p_request:params.id}) : null;
+  if(completionIssues?.error)throw new Error('Project completion checks could not load.');
+  const completionIssueRows=completionIssues?z.array(z.string()).parse(completionIssues.data):[];
+  const workPreferences=record&&['calendar','phases','plan'].includes(tab)
+    ? await client.from('staff_notification_preferences').select('timezone').eq('user_id',user.id).maybeSingle() : null;
+  if(workPreferences?.error)throw new Error('Project timezone preferences could not load.');
+  const calendarToday=taskToday(workPreferences?.data?.timezone||'America/Chicago').today;
 
   const brief =
     record &&
@@ -406,6 +410,7 @@ export default async function ProjectPage({
           {requestedTask&&!selectedTask&&<p role="status" className="rounded border p-4 text-sm">This task is no longer in the project. The current work plan remains available below.</p>}
           {requestedMilestone && !selectedMilestone && <p role="status" className="rounded border p-4 text-sm">This milestone is no longer in the project. The current work plan remains available below.</p>}
           <ProjectWorkspace
+            savedToday={calendarToday}
             key={
               `${params.id}:${selectedTask||''}:${selectedMilestone||''}`
             }
@@ -428,6 +433,7 @@ export default async function ProjectPage({
 
       {tab === 'phases' && record && lifecycle?.lifecycle && calendarExtras && scheduleRows && (
         <ProjectPhasesPage
+          completionIssues={completionIssueRows}
           key={`${params.id}:${record.revision}`}
           id={params.id}
           revision={record.revision}

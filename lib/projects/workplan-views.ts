@@ -1,4 +1,5 @@
 import type { ProjectBody } from './schema';
+import { taskMetrics } from './metrics';
 
 export type WorkplanView = 'tasks' | 'milestones';
 export type WorkStatus = 'todo' | 'doing' | 'blocked' | 'done';
@@ -47,7 +48,6 @@ export function suggestedTaskPriority(startOn: string | null, dueOn: string | nu
 
 export function milestoneStats(body: ProjectBody, milestoneId: string) {
   const tasks = body.tasks.filter(task => task.milestoneId === milestoneId);
-  const done = tasks.filter(task => task.status === 'done').length;
-  return { total: tasks.length, done, percent: tasks.length ? Math.round(done / tasks.length * 100) : null,
-    readyForReview: tasks.length > 0 && done === tasks.length };
+  const metrics = taskMetrics(tasks);
+  return {total:metrics.total,done:metrics.done,percent:metrics.percent,readyForReview:metrics.total>0&&metrics.done===metrics.total};
 }

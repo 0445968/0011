@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Check, ChevronDown, CircleDashed, Minus, Plus } from 'lucide-react';
+import { effectiveTaskPhases, taskMetrics } from '@/lib/projects/metrics';
+import { projectIntegrityIssues } from '@/lib/projects/integrity';
 import type { ProjectBody } from '@/lib/projects/schema';
 import { projectPhaseLabels, projectPhaseOrder, type ProjectPhase } from '@/lib/projects/lifecycle-schema';
 import { phaseProgress, type PhaseStatus, type ProjectPhaseState } from '@/lib/projects/phase-status';
@@ -79,13 +81,21 @@ export function ProjectPhaseCards({id,body,links,initialStates,colorRows,colorFe
   const unassignedMilestones = body.milestones.filter(milestone=>!linkedMilestones.has(milestone.id));
   const unassignedTasks = body.tasks.filter(task=>!controls.some(control=>control.taskId===task.id)
     &&!(task.milestoneId&&links.some(link=>link.milestoneId===task.milestoneId)));
+  const issues=projectIntegrityIssues(body,controls,links,subtasks);
+  for(const task of body.tasks){
+    const closed=effectiveTaskPhases(task,controls,links).filter(phase=>savedStates.some(state=>state.phase===phase&&state.status==='completed'));
+    if(task.status!=='done'&&closed.length)issues.push(`${task.title}: unfinished work belongs to completed phases (${closed.map(phase=>projectPhaseLabels[phase]).join(', ')}). Reopen those phases before changing the work.`);
+    if(task.status==='done'&&subtasks.some(item=>item.taskId===task.id&&item.status!=='done'))issues.push(`${task.title}: completed parent has unfinished subtasks. Reopen affected ancestors and the task before continuing.`);
+  }
+  const totals=taskMetrics(body.tasks);
   return <section aria-label="Project phase management" className="space-y-3">
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
       <div className="rounded-lg border border-border bg-card px-3 py-2"><p className="text-[10px] text-muted-foreground">Phases</p><p className="text-sm font-semibold tabular-nums">{projectPhaseOrder.length}</p></div>
       <div className="rounded-lg border border-border bg-card px-3 py-2"><p className="text-[10px] text-muted-foreground">Active phases</p><p className="text-sm font-semibold tabular-nums">{activeCount}</p></div>
       <div className="rounded-lg border border-border bg-card px-3 py-2"><p className="text-[10px] text-muted-foreground">Completed phases</p><p className="text-sm font-semibold tabular-nums">{completedCount}</p></div>
-      <div className="rounded-lg border border-border bg-card px-3 py-2"><p className="text-[10px] text-muted-foreground">Project work</p><p className="text-sm font-semibold tabular-nums">{body.milestones.length} milestones · {body.tasks.length} tasks</p><p className="text-[10px] text-muted-foreground">{subtasks.length} subtasks, counted separately</p></div>
+      <div className="rounded-lg border border-border bg-card px-3 py-2"><p className="text-[10px] text-muted-foreground">Project work</p><p className="text-sm font-semibold tabular-nums">{body.milestones.length} milestones · {totals.total} tasks</p><p className="text-[10px] text-muted-foreground">{subtasks.length} subtasks, counted separately</p></div>
     </div>
+    {issues.length>0&&<details className="rounded-lg border border-amber-300 p-3 text-xs"><summary>Association checks · {issues.length} item(s) to review</summary><ul className="mt-2 list-disc pl-4">{issues.map((issue,index)=><li key={index}>{issue}</li>)}</ul></details>}
     <p className="text-[11px] text-muted-foreground">Phase date ranges are derived from linked task and milestone due dates only. A phase with no saved due dates remains unscheduled.</p>
     {phases.error&&<div role="alert" className="rounded-lg border border-red-300 p-3 text-xs text-red-700 dark:text-red-300">{phases.error}<button type="button" onClick={()=>{void phases.load();}} className="ml-2 underline">Refresh statuses</button></div>}
     {phases.refreshWarning&&<div role="status" className="rounded-lg border border-amber-300 p-3 text-xs text-amber-900 dark:text-amber-200">{phases.refreshWarning}<button type="button" onClick={()=>{void phases.load();}} className="ml-2 underline">Refresh phases</button></div>}
@@ -97,8 +107,7 @@ export function ProjectPhaseCards({id,body,links,initialStates,colorRows,colorFe
           const phaseName=projectPhaseLabels[phase];
           const related=body.milestones.filter(milestone=>links.some(link=>link.phase===phase&&link.milestoneId===milestone.id));
           const relatedIds=new Set(related.map(item=>item.id));
-          const phaseTasks=new Map(body.tasks.filter(task=>controls.some(control=>control.taskId===task.id&&control.phase===phase)).map(task=>[task.id,task]));
-          body.tasks.filter(task=>task.milestoneId&&relatedIds.has(task.milestoneId)).forEach(task=>phaseTasks.set(task.id,task));
+          const phaseTasks=new Map(body.tasks.filter(task=>effectiveTaskPhases(task,controls,links).includes(phase)).map(task=>[task.id,task]));
           const tasks=[...phaseTasks.values()];
           const children=subtasks.filter(item=>phaseTasks.has(item.taskId));
           const progress=phaseProgress(body,related.map(milestone=>milestone.id));

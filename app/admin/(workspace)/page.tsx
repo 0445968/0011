@@ -573,7 +573,7 @@ export default async function StaffDashboardPage() {
                           </span>
 
                           <span className="font-medium">
-                            {progress.percent}%
+                            {progress.percent===null?'No tasks':`${progress.percent??0}%`}
                           </span>
                         </div>
 
@@ -593,7 +593,7 @@ export default async function StaffDashboardPage() {
                               bg-primary
                             "
                             style={{
-                              width: `${progress.percent}%`,
+                              width: `${progress.percent===null?'No tasks':`${progress.percent??0}%`}`,
                             }}
                           />
                         </div>
