@@ -1,3 +1,4 @@
+import {revalidateProjectSurfaces} from '@/lib/projects/revalidate';
 import { z } from 'zod';
 import { getStaffAccess } from '@/lib/admin/auth';
 import { adminReply, isSameOrigin, readAdminJson } from '@/lib/admin/http';
@@ -48,7 +49,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     return adminReply({ error: message, diagnosticCode: code }, code === '42501' ? 403 : code === '22023' ? 400 : 503);
   }
   switch (result.data?.result) {
-    case 'saved': return adminReply({ saved: true, color: result.data.color, revision: result.data.revision });
+    case 'saved': revalidateProjectSurfaces(params.id); return adminReply({ saved: true, color: result.data.color, revision: result.data.revision });
     case 'conflict': return adminReply({ error: 'This phase color changed in another session. Refresh phase colors.', revision: result.data.revision }, 409);
     case 'locked': return adminReply({ error: 'This project is read-only.' }, 409);
     default: return adminReply({ error: 'Project not found.' }, 404);

@@ -1,3 +1,4 @@
+import {revalidateProjectSurfaces} from '@/lib/projects/revalidate';
 import { z } from 'zod';
 import { getStaffAccess } from '@/lib/admin/auth';
 import { adminReply, isSameOrigin, readAdminJson } from '@/lib/admin/http';
@@ -50,5 +51,6 @@ export async function POST(request: Request, { params }: { params: { id: string 
     const [status, message] = failures[result.data.result];
     return adminReply({ error: message }, status);
   }
+  if(result.data?.result==='saved')revalidateProjectSurfaces(params.id);
   return result.data?.result === 'saved' ? adminReply({ saved: true, projectRevision: result.data.projectRevision, revision: result.data.revision }) : adminReply({ error: 'Action could not be confirmed.' }, 503);
 }

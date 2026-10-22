@@ -5,9 +5,10 @@ import {taskDomId} from '@/lib/tasks/links';
 import { DirectoryProgress, DirectoryStatus, ProjectTaskStateIcon } from './projects/DirectoryIndicators';
 import { ProjectMilestoneBoard } from './projects/ProjectMilestoneBoardV2';
 import type { ProjectTaskControl } from '@/lib/projects/lifecycle-schema';
-import { useProjectWorkDraft } from './projects/useProjectWorkDraft';
-import { normalizeWorkplanBodyForSave, projectBodiesEqual } from '@/lib/projects/workplan-merge';
-import { interpretProjectSaveOutcome } from '@/lib/projects/workplan-save-outcome';
+import { useProjectEditingController } from './projects/useProjectEditingController';
+import {postProjectCommand} from '@/lib/projects/immediate-command';
+import {refreshProjectSurfaces} from '@/lib/projects/refresh';
+import { ProjectEditingContext } from './projects/ProjectEditingContext';
 import { useWorkspaceUnsavedChanges } from './workspace/WorkspaceNavigationGuard';
 
 import {
@@ -65,6 +66,7 @@ type Command =
 type TaskFilter = 'all' | Task['status'];
 
 type Props = {
+  overview?: ReactNode;
   savedToday: string;
   selectedTask?:string;
   selectedMilestone?:string;
@@ -229,6 +231,7 @@ function SectionTitle({
    ========================================================= */
 
 export function ProjectWorkspace({
+  overview,
   savedToday,
   id,
   userId,
@@ -245,21 +248,12 @@ export function ProjectWorkspace({
      EDITOR STATE
      ======================================================= */
 
-  const [body, setBody] = useState<
-    ProjectBody | undefined
-  >(record?.body);
-
-  const [savedBody, setSavedBody] = useState<ProjectBody | undefined>(record?.body);
-  const [savedRevision, setSavedRevision] = useState(record?.revision ?? 0);
-
-  const [reason, setReason] = useState('');
-
-  const [busy, setBusy] = useState(false);
-  const [blocked, setBlocked] = useState(false);
-  const [message, setMessage] = useState('');
-  const [saveOutcomeUnknown, setSaveOutcomeUnknown] = useState(false);
-  const [serverBlockers, setServerBlockers] = useState<{ milestoneId: string; milestoneTitle: string; needsTask: boolean; tasks: { taskId: string; title: string; taskIncomplete: boolean; subtasks: { id: string; title: string }[] }[] }[]>([]);
-
+  const controller=useProjectEditingController(id,record,Boolean(selectedTask||selectedMilestone));
+  const {body,savedRevision,setBody,busy,setBusy,blocked,setBlocked,
+    message,setMessage,saveOutcomeUnknown,setSaveOutcomeUnknown,serverBlockers,setServerBlockers,dirty,drafts,advanced,setAdvanced}=controller;
+  const [reason,setReason]=useState('');
+  const [overviewEditing,setOverviewEditing]=useState(false);
+  const [overviewTaskId,setOverviewTaskId]=useState<string|null>(null);
   /* =======================================================
      TASK VIEW
      ======================================================= */
@@ -279,7 +273,6 @@ export function ProjectWorkspace({
   const [expandedTaskId, setExpandedTaskId] =
     useState<string | null>(null);
 
-  const [advanced, setAdvanced] = useState(Boolean(selectedTask || selectedMilestone));
   const [editorFocus, setEditorFocus] = useState<string | null>(null);
   function openAdvanced(taskId?: string, milestoneId?: string) {
     setAdvanced(true);
@@ -331,26 +324,6 @@ export function ProjectWorkspace({
   const locked =
     busy || blocked || completed;
 
-  const dirty = Boolean(
-    record &&
-    body &&
-    JSON.stringify(body) !==
-      JSON.stringify(savedBody)
-  );
-
-  const drafts = useProjectWorkDraft({
-    id,
-    initialRevision: record?.revision ?? 0,
-    revision: savedRevision,
-    body,
-    savedBody,
-    enabled: Boolean(record && !completed),
-    busy,
-    setBody,
-    setSavedBody,
-    setRevision: setSavedRevision,
-  });
-
   useEffect(() => {
     window.dispatchEvent(new CustomEvent('bivi:project-workplan-dirty', { detail: { projectId: id, dirty, ready: drafts.ready } }));
   }, [id, dirty, drafts.ready]);
@@ -358,7 +331,7 @@ export function ProjectWorkspace({
   const markWorkspaceSaved = useWorkspaceUnsavedChanges(dirty, 'Project work plan', async () => {
     const saved = await command('save');
     if (saved !== true) throw new Error('Project changes were not saved. Review the editor message.');
-  });
+  },async()=>{if(!await controller.discard())throw new Error('Private draft discard could not be confirmed. Your edits remain available.');});
 
   const today=savedToday;
 
@@ -557,15 +530,18 @@ export function ProjectWorkspace({
     return task.id;
   }
 
-  function bulkMilestoneTasks(milestoneId: string, status: 'done' | 'todo') {
-    if (!body || !savedRevision || dirty) return;
+  async function bulkMilestoneTasks(milestoneId:string,status:'done'|'todo'){
+    if(!body||!savedRevision||dirty||busy)return;
     const taskIds=body.tasks.filter(task=>task.milestoneId===milestoneId).map(task=>task.id);
     if(!taskIds.length)return;
     setBusy(true);setMessage('');
-    void fetch(`/api/admin/projects/${id}/task-productivity`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'bulk_status',expectedProjectRevision:savedRevision,taskIds,status}),signal:AbortSignal.timeout(20000)})
-      .then(async response=>{const result=await response.json();if(!response.ok)throw new Error(result.error||'Bulk task update could not save.');setMessage(`${result.changed??taskIds.length} task${result.changed===1?'':'s'} updated.`);router.refresh();})
-      .catch(error=>setMessage(error instanceof Error?error.message:'Bulk task update could not save.'))
-      .finally(()=>setBusy(false));
+    try{
+      const result=await postProjectCommand(`/api/admin/projects/${id}/task-productivity`,{action:'bulk_status',expectedProjectRevision:savedRevision,taskIds,status});
+      await controller.checkUncertainSave();
+      setMessage(`${result.changed??taskIds.length} tasks saved. The editor was reconciled against the saved project.`);
+      refreshProjectSurfaces(id,router);
+    }catch(cause){setMessage(cause instanceof Error?cause.message:'Bulk task update could not save.');}
+    finally{setBusy(false);}
   }
 
   /* =======================================================
@@ -669,86 +645,11 @@ export function ProjectWorkspace({
      PROJECT COMMANDS
      ======================================================= */
 
-  async function loadLatestSnapshot() {
-    const response = await fetch(`/api/admin/projects/${id}`, { cache: 'no-store' });
-    const payload = await response.json();
-    if (!response.ok || !payload.body || !Number.isInteger(payload.revision)) {
-      throw new Error(payload.error || 'The latest saved project could not be loaded.');
-    }
-    return { body: payload.body as ProjectBody, revision: payload.revision as number };
-  }
-
-  async function confirmSaveAgainstLatest(candidate: ProjectBody) {
-    const latest = await loadLatestSnapshot();
-    const normalized = normalizeWorkplanBodyForSave(candidate);
-    if (latest.revision > savedRevision && projectBodiesEqual(latest.body, normalized)) {
-      setBody(latest.body);
-      setSavedBody(latest.body);
-      setSavedRevision(latest.revision);
-      const cleared = await drafts.clearSavedDraft();
-      markWorkspaceSaved();
-      setSaveOutcomeUnknown(false);
-      setMessage(cleared ? 'All work-plan changes were saved and verified.' : 'Project changes were saved; the private draft could not be cleared.');
-      router.refresh();
-      return 'saved' as const;
-    }
-    if (latest.revision !== savedRevision || (savedBody && !projectBodiesEqual(latest.body, savedBody))) {
-      const result = drafts.reconcile(latest.body, latest.revision);
-      setSaveOutcomeUnknown(false);
-      setMessage(result.conflicts.length
-        ? 'The saved project changed. Review each conflicting field before saving again.'
-        : 'The saved project changed. Nonconflicting work-plan edits were reconciled; review and save them.');
-      return 'conflict' as const;
-    }
-    return 'not_saved' as const;
-  }
-
-  async function checkUncertainSave() {
-    try {
-      if (!body) throw new Error('The current work-plan is unavailable.');
-      const status = await confirmSaveAgainstLatest(body);
-      if (status === 'not_saved') {
-        setSaveOutcomeUnknown(false);
-        setMessage('The latest saved project still has the previous revision. Your edits remain in the editor and can be retried.');
-      }
-    } catch (cause) {
-      setMessage(cause instanceof Error ? cause.message : 'The save outcome is still uncertain.');
-    }
-  }
-
   async function command(action: Command) {
     if (busy || blocked) return false;
 
-    /* VALIDATE SAVE */
-
-    if (action === 'save') {
-      if (saveOutcomeUnknown) {
-        setMessage('Check the latest saved project before retrying this save.');
-        return false;
-      }
-      if (!drafts.ready || drafts.recoverable || drafts.conflict) {
-        setMessage('Resolve the saved draft or revision conflict before saving the live project.');
-        return false;
-      }
-      if (
-        !record ||
-        completed ||
-        !dirty
-      ) {
-        return;
-      }
-
-      if (
-        !projectBodySchema
-          .safeParse(body)
-          .success
-      ) {
-        setMessage(
-          'Check the project title, task names, dates and milestone assignments.'
-        );
-        return;
-      }
-    } else {
+    if(action==='save')return controller.save();
+    {
       /* PROJECT STATE CHANGE */
 
       if (dirty) {
@@ -806,7 +707,6 @@ export function ProjectWorkspace({
     setMessage('');
 
     try {
-      if (action === 'save') await drafts.waitForDraft();
       const response = await fetch(
         `/api/admin/projects/${id}`,
         {
@@ -820,9 +720,7 @@ export function ProjectWorkspace({
             expectedRevision:
               savedRevision,
 
-            ...(action === 'save'
-              ? { body }
-              : action === 'activate'
+            ...(action === 'activate'
                 ? {}
                 : { reason }),
           }),
@@ -833,7 +731,6 @@ export function ProjectWorkspace({
 
       const result =
         await response.json();
-      const saveOutcome = action === 'save' ? interpretProjectSaveOutcome(response.status, result) : null;
 
       if (
         response.status === 401
@@ -843,32 +740,6 @@ export function ProjectWorkspace({
         return;
       }
 
-      if (action === 'save' && saveOutcome?.kind === 'revision_conflict') {
-        try {
-          const latest = await loadLatestSnapshot();
-          const merged = drafts.reconcile(latest.body, latest.revision);
-          setMessage(merged.conflicts.length
-            ? 'The saved project changed. Review each conflicting field before saving again.'
-            : 'The saved project changed. Nonconflicting edits were reconciled; review and save them.');
-        } catch (cause) {
-          setBlocked(true);
-          setMessage(`The save was rejected because the project revision changed. ${cause instanceof Error ? cause.message : 'Load the latest saved project before retrying.'}`);
-        }
-        return false;
-      }
-
-      if (action === 'save' && saveOutcome?.kind === 'validation_rejected') {
-        setServerBlockers(saveOutcome.blockers as typeof serverBlockers);
-        setMessage(saveOutcome.error);
-        return false;
-      }
-
-      if (action === 'save' && saveOutcome?.kind === 'unknown') {
-        const uncertain = new Error(saveOutcome.error);
-        uncertain.name = 'SaveOutcomeUnknown';
-        throw uncertain;
-      }
-
       if (!response.ok) {
         throw new Error(
           result.error ||
@@ -876,42 +747,10 @@ export function ProjectWorkspace({
         );
       }
 
-      if (action === 'save') {
-        if (!body || saveOutcome?.kind !== 'saved' || saveOutcome.revision <= savedRevision) {
-          throw new Error('The result could not be verified. Check the saved project before retrying.');
-        }
-        const canonical = projectBodySchema.safeParse(saveOutcome.body);
-        const saved = canonical.success ? canonical.data : normalizeWorkplanBodyForSave(body);
-        setBody(saved);
-        setSavedBody(saved);
-        setSavedRevision(saveOutcome.revision);
-        setServerBlockers([]);
-        setSaveOutcomeUnknown(false);
-        markWorkspaceSaved();
-        const draftCleared = await drafts.clearSavedDraft();
-        setMessage(saveOutcome.refreshWarning
-          ? `All work-plan changes were saved. ${saveOutcome.refreshWarning}`
-          : draftCleared ? 'All work-plan changes saved.' : 'Project changes are saved, but the private draft could not be cleared.');
-        router.refresh();
-      } else {
-        markWorkspaceSaved();
-        router.refresh();
-      }
+      markWorkspaceSaved();
+      router.refresh();
       return true;
     } catch (error) {
-      if (action === 'save' && body && error instanceof Error && ['TimeoutError', 'TypeError', 'SyntaxError', 'SaveOutcomeUnknown'].includes(error.name)) {
-        try {
-          const outcome = await confirmSaveAgainstLatest(body);
-          if (outcome === 'saved' || outcome === 'conflict') return false;
-          setSaveOutcomeUnknown(true);
-          setMessage('The save response was lost and the latest project does not show your submitted change yet. Check save status before retrying. Your edits remain available.');
-          return false;
-        } catch {
-          setSaveOutcomeUnknown(true);
-          setMessage('The save response was lost and the saved project could not be checked. Your edits remain available; check save status before retrying.');
-          return false;
-      }
-      }
       setMessage(error instanceof Error ? error.message : 'Project could not be saved.');
       return false;
     } finally {
@@ -968,7 +807,7 @@ export function ProjectWorkspace({
             variant="outline"
             className="ml-2 mt-3"
             onClick={() =>
-              window.location.reload()
+              void controller.checkUncertainSave()
             }
           >
             Reload
@@ -983,7 +822,11 @@ export function ProjectWorkspace({
      ======================================================= */
 
   return (
-    <div className="space-y-3 pb-4">
+    <ProjectEditingContext.Provider value={{editTask:taskId=>{setOverviewEditing(true);setAdvanced(false);setOverviewTaskId(taskId);},editMilestone:milestoneId=>{setOverviewEditing(true);openAdvanced(undefined,milestoneId);}}}>
+    {overview}
+    {overview&&(drafts.recoverable||dirty||drafts.error)&&<p role="status" className="text-xs text-amber-800 dark:text-amber-200">A private work-plan draft needs attention. Open the shared project editor to restore, reconcile, save or discard it. Saved Overview totals do not include private edits.</p>}
+    {overview&&<button type="button" className={controlClass} onClick={()=>setOverviewEditing(value=>!value)}>{overviewEditing?'Hide project editor':'Open shared project editor'}</button>}
+    <div hidden={Boolean(overview&&!overviewEditing)} className="space-y-3 pb-4">
 
       {/* ===============================================
           COMPACT SUMMARY
@@ -997,12 +840,12 @@ export function ProjectWorkspace({
       {drafts.recoverable && (
         <section role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-violet-300 bg-violet-50 p-3 text-xs text-violet-900 dark:border-violet-800 dark:bg-violet-950 dark:text-violet-100">
           <div><p className="font-semibold">A private work-plan draft is available.</p><p className="mt-1">Last saved: {new Date(drafts.recoverable.updatedAt).toLocaleString('en-US', {timeZone:'America/Chicago'})}. {drafts.rebase ? 'Review the conflicting fields below.' : drafts.recoverable.baseRevision !== savedRevision ? 'Its saved baseline needs reconciliation before it can be restored.' : 'Restore it to continue editing.'}</p></div>
-          <div className="flex flex-wrap gap-2"><button type="button" className={controlClass} disabled={Boolean(drafts.rebase) || drafts.recoverable.baseRevision !== savedRevision} onClick={drafts.restore}>Restore draft</button><button type="button" className={controlClass} onClick={() => { const blob = new Blob([JSON.stringify(drafts.recoverable?.body,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=`bivi-project-${id}-draft.json`;link.click();URL.revokeObjectURL(url); }}>Export draft</button><button type="button" className={controlClass} onClick={() => { if (window.confirm('Permanently delete your saved draft and load the latest saved project?')) void drafts.discardDraft().then(ok => { if (ok) setMessage('The private draft was discarded. The latest saved project is loaded.'); }); }}>Discard draft</button></div>
+          <div className="flex flex-wrap gap-2"><button type="button" className={controlClass} disabled={Boolean(drafts.rebase) || drafts.recoverable.baseRevision !== savedRevision} onClick={drafts.restore}>Restore draft</button><button type="button" className={controlClass} onClick={() => { const blob = new Blob([JSON.stringify(drafts.recoverable?.body,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=`bivi-project-${id}-draft.json`;link.click();URL.revokeObjectURL(url); }}>Export draft</button><button type="button" className={controlClass} onClick={() => { if (window.confirm('Permanently delete your saved draft and load the latest saved project?')) void controller.discard().then(ok => { if (ok) setMessage('The private draft was discarded. The latest saved project is loaded.'); }); }}>Discard draft</button></div>
         </section>
       )}
       {drafts.rebase && <section aria-label="Resolve project draft conflicts" className="space-y-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100"><div><p className="font-semibold">The saved project changed. Resolve these fields before saving.</p><p className="mt-1">Nonconflicting edits are already combined. Each choice applies only to the field shown.</p></div>{drafts.rebase.conflicts.map(conflict => <article key={conflict.path} className="rounded-md border border-amber-300/70 bg-background/70 p-3 dark:border-amber-800"><p className="font-semibold">{conflict.label}</p><div className="mt-2 grid gap-2 md:grid-cols-2"><div><p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Your draft</p><pre className="mt-1 max-h-28 overflow-auto whitespace-pre-wrap break-words rounded bg-muted p-2">{JSON.stringify(conflict.draft, null, 2)}</pre><button type="button" className={`${controlClass} mt-2`} onClick={() => drafts.chooseConflict(conflict.path, 'draft')}>Keep my edit</button></div><div><p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Latest saved value</p><pre className="mt-1 max-h-28 overflow-auto whitespace-pre-wrap break-words rounded bg-muted p-2">{JSON.stringify(conflict.latest, null, 2)}</pre><button type="button" className={`${controlClass} mt-2`} onClick={() => drafts.chooseConflict(conflict.path, 'latest')}>Use saved value</button></div></div></article>)}</section>}
       {drafts.conflict && !drafts.rebase && <p role="alert" className="rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-100">The private draft’s original saved baseline is unavailable, so it cannot be merged safely. Export it to keep a copy, then discard it only if you want to load the latest saved project.</p>}
-      {drafts.error && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-100"><p>Draft reconciliation unavailable: {drafts.error}. Your edits remain in the editor until a discard is confirmed.</p><button type="button" className={controlClass} disabled={busy} onClick={() => { if (window.confirm('Discard the private draft and load the latest saved project?')) void drafts.discardDraft().then(ok => { if (ok) setMessage('The private draft was discarded. The latest saved project is loaded.'); }); }}>Discard draft and load latest</button></div>}
+      {drafts.error && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-100"><p>Draft reconciliation unavailable: {drafts.error}. Your edits remain in the editor until a discard is confirmed.</p><button type="button" className={controlClass} disabled={busy} onClick={() => { if (window.confirm('Discard the private draft and load the latest saved project?')) void controller.discard().then(ok => { if (ok) setMessage('The private draft was discarded. The latest saved project is loaded.'); }); }}>Discard draft and load latest</button></div>}
       {serverBlockers.length > 0 && <section role="alert" className="space-y-2 rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-950 dark:border-red-800 dark:bg-red-950 dark:text-red-100"><p className="font-semibold">Complete these tasks before completing this milestone.</p>{serverBlockers.map(milestone => <div key={milestone.milestoneId}><p className="font-medium">{milestone.milestoneTitle}{milestone.needsTask ? ' — add at least one linked task' : ''}</p><ul className="ml-4 mt-1 list-disc">{milestone.tasks.map(task => <li key={task.taskId}><a className="underline" href={`#${taskDomId(task.taskId)}`} onClick={event=>{event.preventDefault();openAdvanced(task.taskId);}}>{task.title}</a>{task.taskIncomplete ? ' — task is not completed' : ''}{task.subtasks.map(subtask => <span key={subtask.id}>; unfinished subtask: {subtask.title}</span>)}</li>)}</ul></div>)}</section>}
       <section aria-label="Work plan summary" className="grid grid-cols-2 gap-2 lg:grid-cols-4">
         <div className="rounded-xl border border-border bg-card p-3"><p className="mb-2 text-[11px] text-muted-foreground">{dirty ? 'Draft task completion' : 'Task completion'}</p><DirectoryProgress project={{...record,body}} /></div>
@@ -1015,6 +858,7 @@ export function ProjectWorkspace({
 
       <div id="project-workplan-cards" tabIndex={-1} hidden={advanced} className="scroll-mt-24 focus:outline-none">
       <ProjectMilestoneBoard
+        focusTaskId={overviewTaskId}
         today={today}
         id={id}
         userId={userId}
@@ -1401,7 +1245,7 @@ export function ProjectWorkspace({
 
                             {overdue && (
                               <p className="mt-2 text-[11px] text-red-600 dark:text-red-400">
-                                Overdue (UTC date)
+                                Overdue (saved timezone)
                               </p>
                             )}
                           </td>
@@ -2037,13 +1881,14 @@ export function ProjectWorkspace({
         </div>
 
         <div className="flex items-center gap-2">
+          <button type="button" className={controlClass} disabled={busy} onClick={()=>void controller.checkUncertainSave()}>Refresh saved data</button>
 
           {blocked ? (
             <button
               type="button"
               className={controlClass}
               onClick={() =>
-                window.location.reload()
+                void controller.checkUncertainSave()
               }
             >
               <RotateCcw size={14} />
@@ -2051,7 +1896,7 @@ export function ProjectWorkspace({
             </button>
           ) : (
             <>
-              {saveOutcomeUnknown && <button type="button" className={controlClass} disabled={busy} onClick={() => void checkUncertainSave()}>Check save status</button>}
+              {saveOutcomeUnknown && <button type="button" className={controlClass} disabled={busy} onClick={() => void controller.checkUncertainSave()}>Check save status</button>}
               {dirty && !completed && (
                 <button
                   type="button"
@@ -2063,7 +1908,7 @@ export function ProjectWorkspace({
                         'Discard work-plan edits, remove the private draft, and load the latest saved project?'
                       )
                     ) {
-                      void drafts.discardDraft().then(ok => {
+                      void controller.discard().then(ok => {
                         if (ok) {
                           setMessage('Work-plan edits were discarded. The latest saved project is loaded.');
                           setServerBlockers([]);
@@ -2101,5 +1946,6 @@ export function ProjectWorkspace({
         </div>
       </div>
     </div>
+    </ProjectEditingContext.Provider>
   );
 }

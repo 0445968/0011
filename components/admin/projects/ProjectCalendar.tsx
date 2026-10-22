@@ -1,4 +1,5 @@
 'use client';
+import {useProjectTaskSchedule} from './useProjectTaskSchedule';
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -31,10 +32,10 @@ export function ProjectCalendar({id,body,projectRevision,controls,phaseColors,sc
 }) {
   const [view,setView]=useState<View>('month');
   const [anchor,setAnchor]=useState(()=>new Date(`${today}T12:00:00`));
-  const [starts,setStarts]=useState(()=>new Map(schedule.map(row=>[row.task_id,row.start_on])));
-  const [revisions,setRevisions]=useState(()=>new Map(schedule.map(row=>[row.task_id,row.revision])));
-  const [message,setMessage]=useState('');
-  const [saving,setSaving]=useState<string|null>(null);
+  const scheduling=useProjectTaskSchedule(id,projectRevision,schedule);
+  const starts=new Map([...scheduling.rows].map(([id,row])=>[id,row.start_on]));
+  const saving=scheduling.busy;
+  const message=scheduling.error||scheduling.message;
   const allEvents=useMemo<Event[]>(()=>[
     ...body.tasks.map(task=>({key:`task:${task.id}`,title:task.title,date:task.dueOn,dateKind:'due' as const,type:'task' as const,id:task.id,status:task.status,task})),
     ...body.milestones.filter(item=>item.dueOn).map(item=>({key:`milestone:${item.id}`,title:item.title,date:item.dueOn,dateKind:'due' as const,type:'milestone' as const,id:item.id,status:item.status})),
@@ -43,15 +44,7 @@ export function ProjectCalendar({id,body,projectRevision,controls,phaseColors,sc
   const phasesForEvent=(event:Event)=>event.type==='task'
     ? effectiveTaskPhases(body.tasks.find(task=>task.id===event.id)!,controls,milestonePhases)
     : milestonePhases.filter(link=>link.milestoneId===event.id).map(link=>link.phase);
-  const saveStart=async(taskId:string,value:string)=>{
-    setSaving(taskId);setMessage('');
-    try {
-      const response=await fetch(`/api/admin/projects/${id}/schedule`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({taskId,startOn:value||null,expectedProjectRevision:projectRevision,expectedScheduleRevision:revisions.get(taskId)||0})});
-      const result=await response.json();if(!response.ok)throw new Error(result.error||'Schedule could not save.');
-      setStarts(old=>new Map(old).set(taskId,value||null));setRevisions(old=>new Map(old).set(taskId,result.revision));setMessage('Task schedule saved.');
-    } catch(error) { setMessage(error instanceof Error?error.message:'Schedule could not save.'); }
-    finally { setSaving(null); }
-  };
+  const saveStart=(taskId:string,value:string)=>scheduling.save(taskId,value||null,body.tasks.find(task=>task.id===taskId)?.dueOn??null,false);
   const period=useMemo(()=>{
     if(view==='day')return {from:isoDate(anchor),to:isoDate(anchor)};
     if(view==='week'){const start=shift(anchor,-((anchor.getDay()+6)%7));return {from:isoDate(start),to:isoDate(shift(start,6))};}
@@ -83,6 +76,6 @@ export function ProjectCalendar({id,body,projectRevision,controls,phaseColors,sc
     {period&&<div className="flex items-center justify-between"><button aria-label="Previous period" className={button} onClick={()=>navigate(-1)}><ChevronLeft size={16}/></button><div className="flex gap-2"><button className={button} onClick={()=>setAnchor(new Date(`${today}T12:00:00`))}>Today</button><button className={button} onClick={()=>navigate(1)} aria-label="Next period"><ChevronRight size={16}/></button></div></div>}
     {view==='timeline'?<section className="overflow-x-auto rounded-xl border border-border bg-card"><div className="min-w-[720px]"><div className="grid grid-cols-[minmax(210px,1fr)_minmax(340px,2fr)] border-b px-4 py-3 text-xs font-semibold"><span>Task or milestone</span><span className="flex justify-between"><time dateTime={timelineStart}>{label(timelineStart)}</time><time dateTime={timelineEnd}>{label(timelineEnd)}</time></span></div>{allEvents.map(event=>{const start=event.type==='task'?starts.get(event.id):null;return <div key={event.key} className="grid grid-cols-[minmax(210px,1fr)_minmax(340px,2fr)] items-center gap-3 border-b px-4 py-3"><div><Link className="text-xs font-medium hover:underline" href={eventLink(event)}>{event.title}</Link><p className="mt-1 text-[10px] capitalize text-muted-foreground">{event.type} · {event.status}</p></div><div>{event.type==='task'&&<label className="text-[10px] text-muted-foreground">Start <input type="date" className="ml-1 rounded border bg-background px-1 py-1 text-xs" aria-label={`Start date for ${event.title}`} disabled={saving===event.id} value={start||''} onChange={e=>void saveStart(event.id,e.target.value)}/></label>}<span className="ml-3 text-[10px] text-muted-foreground">Due {event.date?label(event.date):'unscheduled'}</span>{timelineBar(event)}<div className="mt-2 flex items-center justify-between"><div className="flex gap-1">{phasesForEvent(event).map(phase=><span key={phase} title={projectPhaseLabels[phase]} aria-label={projectPhaseLabels[phase]} className="h-2.5 w-2.5 rounded-full border border-black/10 dark:border-white/20" style={{backgroundColor:phaseColorFor(phase,phaseColors)}}/>)}</div><div className="flex -space-x-2">{event.type==='task'&&assigned(event.id).slice(0,4).map(person=><ProfileImage key={person.id} kind={person.kind} subject={person.id} name={person.name} path={person.avatarPath} size="h-6 w-6"/> )}</div></div></div></div>})}{!allEvents.length&&<p className="p-5 text-xs text-muted-foreground">No saved tasks or milestones. Add work in Tasks & Milestones.</p>}</div></section>
       :<div className="space-y-5">{Array.from(new Set(visible.flatMap(event=>event.date?[event.date]:[]))).map(date=><section key={date}><h2 className="mb-2 text-xs font-semibold"><time dateTime={date}>{label(date)}</time>{date===today?' · Today':''}</h2><div className="rounded-xl border border-border bg-card">{visible.filter(item=>item.date===date).map(item=><div key={item.key} className="flex flex-wrap items-center gap-3 border-b p-4 last:border-0"><span className="inline-flex shrink-0 items-center gap-0.5">{phasesForEvent(item).length?phasesForEvent(item).map(phase=><span key={phase} title={projectPhaseLabels[phase]} aria-label={projectPhaseLabels[phase]} className="h-2.5 w-2.5 rounded-full border border-black/10 dark:border-white/20" style={{backgroundColor:phaseColorFor(phase,phaseColors)}}/>):<span className={`h-2.5 w-2.5 rounded-full ${item.type==='task'?'bg-blue-500':'bg-emerald-500'}`} aria-hidden/>}</span><div className="min-w-0 flex-1"><Link href={eventLink(item)} className="text-sm font-medium hover:underline">{item.title}</Link><p className="text-xs text-muted-foreground">{item.type==='task'?item.dateKind==='start'?'Task starts':'Task due':'Milestone due'} · {item.status}</p></div>{item.type==='task'&&<ProjectMemberStack members={assigned(item.id)} max={4} size="h-7 w-7"/>}</div>)}</div></section>)}{!visible.some(event=>event.date)&&<p className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">No saved tasks or milestones in this period.</p>}</div>}
-    {message&&<p role="status" className="text-xs text-muted-foreground">{message}</p>}
+    {message&&<p role="status" className="text-xs text-muted-foreground">{message}<button type="button" className="ml-2 underline" onClick={()=>void scheduling.reload()}>Refresh saved schedules</button></p>}
   </div>;
 }

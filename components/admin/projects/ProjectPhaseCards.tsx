@@ -15,6 +15,7 @@ import type { ProjectTaskControl } from '@/lib/projects/lifecycle-schema';
 import { milestoneStats } from '@/lib/projects/workplan-views';
 import { ProjectTaskStateIcon } from './DirectoryIndicators';
 import { useProjectPhaseStatuses } from './useProjectPhaseStatuses';
+import {useWorkspaceUnsavedChanges} from '../workspace/WorkspaceNavigationGuard';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
@@ -33,19 +34,29 @@ function label(date:string) {
 }
 
 function PhaseColorControl({phase,row,saving,disabled,feedback,onSave}: {
-  phase:ProjectPhase; row:ProjectPhaseColor; saving:boolean; disabled:boolean; feedback?:{kind:'saved'|'error';message:string}; onSave:(phase:ProjectPhase,color:string|null)=>void;
+  phase:ProjectPhase; row:ProjectPhaseColor; saving:boolean; disabled:boolean; feedback?:{kind:'saved'|'error';message:string}; onSave:(phase:ProjectPhase,color:string|null)=>Promise<boolean>;
 }) {
   const current = row.color?.toUpperCase() ?? null;
   const [draft,setDraft] = useState(current ?? DEFAULT_PROJECT_PHASE_COLOR);
-  useEffect(()=>setDraft(current ?? DEFAULT_PROJECT_PHASE_COLOR),[current,row.revision]);
-  const dirty = draft.toUpperCase() !== (current ?? DEFAULT_PROJECT_PHASE_COLOR);
+  const [baseline,setBaseline]=useState({color:current??DEFAULT_PROJECT_PHASE_COLOR,revision:row.revision});
+  const dirty=draft.toUpperCase()!==baseline.color;
+  const stale=row.revision>baseline.revision;
+  useEffect(()=>{if(!dirty){setDraft(current??DEFAULT_PROJECT_PHASE_COLOR);setBaseline({color:current??DEFAULT_PROJECT_PHASE_COLOR,revision:row.revision});}},[current,row.revision,dirty]);
+  async function save(value:string|null){
+    if(stale||disabled||saving)return false;
+    const saved=await onSave(phase,value);
+    if(saved){setDraft(previous=>previous===draft?value??DEFAULT_PROJECT_PHASE_COLOR:previous);setBaseline({color:value??DEFAULT_PROJECT_PHASE_COLOR,revision:row.revision+1});}
+    return saved;
+  }
+  useWorkspaceUnsavedChanges(dirty,`${projectPhaseLabels[phase]} phase color`,async()=>{if(!await save(draft.toUpperCase()))throw new Error('Phase color needs review or could not save.');});
   return <div className="flex flex-wrap items-center gap-2">
     <label className="flex min-h-8 items-center gap-2 rounded-lg border border-border bg-background px-2 text-[11px]">
       <span>Color</span><input aria-label={`${projectPhaseLabels[phase]} phase color`} type="color" value={draft} disabled={saving||disabled} onChange={event=>setDraft(event.target.value.toUpperCase())} className="h-6 w-8 cursor-pointer rounded border-0 bg-transparent p-0 disabled:opacity-50"/>
       <span className="font-mono text-muted-foreground">{draft.toUpperCase()}</span>
     </label>
-    <button type="button" disabled={saving||disabled||!dirty} onClick={()=>onSave(phase,draft.toUpperCase())} className="min-h-8 rounded-lg border border-border px-2.5 text-[11px] font-medium hover:bg-muted disabled:opacity-45">{saving?'Saving…':'Save color'}</button>
-    <button type="button" disabled={saving||disabled||current===null} onClick={()=>onSave(phase,null)} className="min-h-8 rounded-lg px-2 text-[11px] text-muted-foreground underline hover:text-foreground disabled:opacity-45">Reset default</button>
+    <button type="button" disabled={saving||disabled||!dirty||stale} onClick={()=>void save(draft.toUpperCase())} className="min-h-8 rounded-lg border border-border px-2.5 text-[11px] font-medium hover:bg-muted disabled:opacity-45">{saving?'Saving…':'Save color'}</button>
+    <button type="button" disabled={saving||disabled||current===null||stale} onClick={()=>void save(null)} className="min-h-8 rounded-lg px-2 text-[11px] text-muted-foreground underline hover:text-foreground disabled:opacity-45">Reset default</button>
+    {stale&&dirty&&<span role="alert" className="text-[11px]">Saved color changed to {current??DEFAULT_PROJECT_PHASE_COLOR}. <button type="button" className="underline" onClick={()=>{setDraft(current??DEFAULT_PROJECT_PHASE_COLOR);setBaseline({color:current??DEFAULT_PROJECT_PHASE_COLOR,revision:row.revision});}}>Use saved</button> <button type="button" className="underline" onClick={()=>setBaseline({color:current??DEFAULT_PROJECT_PHASE_COLOR,revision:row.revision})}>Keep my color after review</button></span>}
     {feedback&&<span role={feedback.kind==='error'?'alert':'status'} className={`text-[11px] ${feedback.kind==='error'?'text-red-700 dark:text-red-300':'text-emerald-700 dark:text-emerald-300'}`}>{feedback.message}</span>}
   </div>;
 }
@@ -53,7 +64,7 @@ function PhaseColorControl({phase,row,saving,disabled,feedback,onSave}: {
 export function ProjectPhaseCards({id,body,links,initialStates,colorRows,colorFeedback,colorSaving,onSaveColor,controls,subtasks,disabled,onAssignMilestone}: {
   id:string; body:ProjectBody; links:ProjectHierarchyResponse['milestonePhases']; initialStates:ProjectPhaseState[];
   colorRows:Record<ProjectPhase,ProjectPhaseColor>; colorFeedback:Partial<Record<ProjectPhase,{kind:'saved'|'error';message:string}>>;
-  colorSaving:ProjectPhase|null; onSaveColor:(phase:ProjectPhase,color:string|null)=>void;
+  colorSaving:ProjectPhase|null; onSaveColor:(phase:ProjectPhase,color:string|null)=>Promise<boolean>;
   controls:ProjectTaskControl[]; subtasks:ProjectHierarchyResponse['subtasks'];
   disabled:boolean; onAssignMilestone:(milestone:ProjectBody['milestones'][number],phase:ProjectPhase,checked:boolean)=>void;
 }) {

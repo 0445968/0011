@@ -11,7 +11,8 @@ test('R6 project calendar retains schedule views and links while Lifecycle moves
   assert.match(calendar, /'day' \| 'week' \| 'month' \| 'timeline'/);
   assert.doesNotMatch(calendar, /ProjectLifecycleControls/);
   assert.doesNotMatch(calendar, /Lifecycle, dependencies and approvals/);
-  assert.match(calendar, /api\/admin\/projects\/\$\{id\}\/schedule/);
+  assert.match(calendar,/useProjectTaskSchedule\(id,projectRevision,schedule\)/);
+  assert.match(read('components/admin/projects/useProjectTaskSchedule.ts'),/expectedScheduleRevision/);
   assert.match(calendar, /ProfileImage/);
   assert.match(calendar, /Task starts/);
   assert.match(read('components/admin/projects/ProjectMilestoneBoardV2.tsx'), /Suggested \{suggested\} priority/);

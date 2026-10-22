@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import {revalidateProjectSurfaces} from '@/lib/projects/revalidate';
 import { getStaffAccess } from '@/lib/admin/auth';
 import { adminReply, isSameOrigin, readAdminJson } from '@/lib/admin/http';
 import { assignmentWorkspaceSchema, projectAssignmentCommandSchema } from '@/lib/projects/assignment-schema';
@@ -41,9 +42,10 @@ export async function POST(request: Request, { params }: { params: { id: string 
       : 'Project assignments could not be saved.' }, result.error.code === '22023' ? 400 : 503);
   }
   const outcome = result.data?.result;
-  if (outcome === 'conflict') return adminReply({ error: 'Task responsibility changed. Reopen the picker to review the latest assignment.' }, 409);
+  if (outcome === 'conflict') return adminReply({ error: 'Task responsibility changed. Review the latest assignment before saving your selections.',code:'revision_conflict' }, 409);
   if (outcome === 'locked') return adminReply({ error: 'Completed projects cannot be reassigned.' }, 409);
   if (outcome === 'not_found') return adminReply({ error: 'Task or project no longer exists.' }, 404);
   if (outcome !== 'saved') return adminReply({ error: 'Assignment could not be confirmed.' }, 503);
+  revalidateProjectSurfaces(params.id);
   return adminReply({ saved: true, revision: result.data?.revision ?? null });
 }

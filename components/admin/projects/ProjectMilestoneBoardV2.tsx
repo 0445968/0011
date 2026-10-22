@@ -62,26 +62,30 @@ function Remaining({dueOn,today,completed}:{dueOn:string|null;today:string;compl
 function SubtaskEditor({item,disabled,update,requestRemove,today}: {
   item:Subtask;disabled:boolean;update:(item:Subtask,changes:{title:string;status:Subtask['status'];dueOn:string|null})=>Promise<boolean>;requestRemove:(item:Subtask)=>void;today:string;
 }) {
+  const [baseline,setBaseline]=useState(item);
   const [title,setTitle]=useState(item.title);
   const [dueOn,setDueOn]=useState(item.dueOn??'');
   const [editing,setEditing]=useState(false);
-  const dirty=title!==item.title||dueOn!==(item.dueOn??'');
-  async function save() {if(!dirty)return true;if(!title.trim())return false;return update(item,{title:title.trim(),status:item.status,dueOn:dueOn||null});}
+  const dirty=title!==baseline.title||dueOn!==(baseline.dueOn??'');
+  const stale=item.revision>baseline.revision;
+  useEffect(()=>{if(!dirty&&item.revision>baseline.revision){setBaseline(item);setTitle(item.title);setDueOn(item.dueOn??'');}},[item,dirty,baseline.revision]);
+  async function save() {if(!dirty)return true;if(stale||!title.trim())return false;const saved=await update(baseline,{title:title.trim(),status:baseline.status,dueOn:dueOn||null});if(saved)setBaseline({...baseline,title:title.trim(),dueOn:dueOn||null,revision:baseline.revision+1});return saved;}
   useWorkspaceUnsavedChanges(dirty,`Subtask: ${item.title}`,async()=>{if(!(await save()))throw new Error('Subtask could not save.');});
   return <li className="flex flex-wrap items-center gap-2 border-t border-border/60 px-3 py-2 text-xs sm:flex-nowrap">
-    <div className="flex min-w-[160px] flex-1 items-center gap-2 pl-5"><button type="button" disabled={disabled||dirty} onClick={()=>{void update(item,{title:item.title,status:nextStatus(item.status,workStatusOrder),dueOn:item.dueOn});}} className="rounded-full focus-visible:ring-2" aria-label={`Change subtask status: ${item.title}`}><ProjectTaskStateIcon status={item.status}/></button>
+    <div className="flex min-w-[160px] flex-1 items-center gap-2 pl-5"><button type="button" disabled={disabled||dirty||stale} onClick={()=>{void update(item,{title:item.title,status:nextStatus(item.status,workStatusOrder),dueOn:item.dueOn});}} className="rounded-full focus-visible:ring-2" aria-label={`Change subtask status: ${item.title}`}><ProjectTaskStateIcon status={item.status}/></button>
       {editing?<input autoFocus className={nameInput} value={title} maxLength={300} disabled={disabled} onChange={event=>setTitle(event.target.value)} onBlur={()=>{setEditing(false);void save();}} onKeyDown={event=>{if(event.key==='Enter')event.currentTarget.blur();}}/>:<span className={`min-w-0 flex-1 break-words ${item.status==='done'?'line-through text-muted-foreground':''}`}>{title}</span>}
       {!disabled&&!editing&&<button className={miniButton} type="button" aria-label={`Edit subtask ${title}`} onClick={()=>setEditing(true)}><Pencil size={13} aria-hidden/></button>}
     </div>
-    <StatusButton label={`subtask ${title}`} status={item.status} disabled={disabled||dirty} onChange={()=>{void update(item,{title:item.title,status:nextStatus(item.status,workStatusOrder),dueOn:item.dueOn});}}/>
+    <StatusButton label={`subtask ${title}`} status={item.status} disabled={disabled||dirty||stale} onChange={()=>{void update(item,{title:item.title,status:nextStatus(item.status,workStatusOrder),dueOn:item.dueOn});}}/>
+    {stale&&dirty&&<span role="alert" className="text-[11px] text-amber-800 dark:text-amber-200">Saved subtask: {item.title}, due {item.dueOn??'unscheduled'}. Local edits retained. <button type="button" className="underline" onClick={()=>{setBaseline(item);setTitle(item.title);setDueOn(item.dueOn??'');}}>Use saved</button> <button type="button" className="underline" onClick={()=>setBaseline(item)}>Keep my edits after review</button></span>}
     <Remaining dueOn={item.dueOn} today={today} completed={item.status==='done'}/>
     <input type="date" className={dateClass} aria-label={`Subtask due date ${title}`} value={dueOn} disabled={disabled} onChange={event=>setDueOn(event.target.value)} onBlur={()=>{void save();}}/>
     <button type="button" className={miniButton} disabled={disabled} onClick={()=>requestRemove(item)} aria-label={`Remove subtask ${title}`} title="Remove subtask"><Trash2 size={14} aria-hidden/></button>
   </li>;
 }
 
-export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarReady,onTaskChange,onMilestoneChange,onAddTask,onAddMilestone,onEditTask,onEditMilestone,taskControls,onBulkTasks,userId,today}: {
-  id:string;revision:number;body:ProjectBody;disabled:boolean;dirty:boolean;sidecarReady:boolean;today:string;
+export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarReady,onTaskChange,onMilestoneChange,onAddTask,onAddMilestone,onEditTask,onEditMilestone,taskControls,onBulkTasks,userId,today,focusTaskId}: {
+  id:string;revision:number;body:ProjectBody;disabled:boolean;dirty:boolean;sidecarReady:boolean;today:string;focusTaskId?:string|null;
   onTaskChange:(index:number,changes:Partial<Task>)=>void;
   onMilestoneChange:(index:number,changes:Partial<Milestone>)=>void;
   onAddTask:(milestoneId:string|null)=>void;
@@ -99,6 +103,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const [detailTask,setDetailTask]=useState<string|null>(null);
   const [visitedTasks,setVisitedTasks]=useState<string[]>([]);
   function openTask(taskId:string) {setVisitedTasks(previous=>previous.includes(taskId)?previous:[...previous,taskId]);setDetailTask(taskId);}
+  useEffect(()=>{if(focusTaskId)openTask(focusTaskId);},[focusTaskId]);
   useEffect(()=>{if(detailTask){const row=document.getElementById(`workplan-task-${detailTask}`);row?.focus({preventScroll:true});row?.scrollIntoView({block:'start'});}},[detailTask]);
   const [prompt,setPrompt]=useState<Prompt|null>(null);
   const [newSubtaskFor,setNewSubtaskFor]=useState<string|null>(null);
@@ -163,7 +168,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
       <div className="grid gap-3 sm:grid-cols-2"><label className="text-[11px] font-medium">Task notes<textarea aria-label={`Work-plan notes for ${task.title}`} className="mt-1 min-h-20 w-full rounded-lg border border-input bg-background p-2 text-xs" maxLength={2000} disabled={disabled} value={task.notes} onChange={event=>updateTask(task,{notes:event.target.value})}/></label><div className="space-y-2 text-[11px] text-muted-foreground"><p>Task phase: {taskControls.find(control=>control.taskId===task.id) ? projectPhaseLabels[taskControls.find(control=>control.taskId===task.id)!.phase] : 'Not saved yet'}</p><p>Milestone phases: {phaseLinks.filter(link=>link.milestoneId===task.milestoneId).map(link=>projectPhaseLabels[link.phase]).join(', ')||'None'}</p>{(()=>{const dependency=taskControls.find(control=>control.taskId===task.id)?.dependsOn;return dependency?<p>Depends on {body.tasks.some(item=>item.id===dependency)?<button type="button" className="underline" onClick={()=>openTask(dependency)}>{body.tasks.find(item=>item.id===dependency)?.title}</button>:<span>a task removed from this draft. Review the saved dependency in Phases.</span>}</p>:<p>No saved dependency.</p>;})()}<Link className="inline-block underline" href={`/projects/${id}?tab=phases`}>Manage dependencies and approvals in Phases</Link></div></div>
       <TaskProductivity projectId={id} taskId={task.id} taskTitle={task.title} revision={revision} disabled={disabled||dirty} userId={userId} />
       <details className="mt-1 pl-6 text-xs"><summary className="cursor-pointer py-1 text-muted-foreground">Subtasks ({hierarchy.data?children.length:'loading'})</summary>
-        <ul>{children.map(item=><SubtaskEditor key={`${item.id}:${item.revision}`} item={item} disabled={!canEditSidecar} update={updateSubtask} requestRemove={removeSubtask} today={today}/>)}</ul>
+        <ul>{children.map(item=><SubtaskEditor key={item.id} item={item} disabled={!canEditSidecar} update={updateSubtask} requestRemove={removeSubtask} today={today}/>)}</ul>
         {newSubtaskFor===task.id?<div className="flex flex-wrap items-center gap-2 py-2"><input autoFocus className={nameInput} aria-label="New subtask title" maxLength={300} disabled={!canEditSidecar} value={newSubtaskTitle} onChange={e=>setNewSubtaskTitle(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();void addSubtask(task.id);}}}/>{btn('Save subtask',<Check size={15}/>,()=>{void addSubtask(task.id);},!canEditSidecar||!newSubtaskTitle.trim())}{btn('Cancel',<RotateCcw size={15}/>,()=>setNewSubtaskFor(null))}</div>:<div>{btn('Add subtask',<Plus size={15}/>,()=>{setNewSubtaskFor(task.id);setNewSubtaskTitle('');},!canEditSidecar||children.length>=50||Boolean(newSubtaskTitle.trim()&&newSubtaskFor!==task.id))}</div>}
       </details>
     </div>;
@@ -217,7 +222,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     <ProjectWorkplanToolbar filters={filters} onChange={change=>setFilters(previous=>({...previous,...change}))} columns={columns} onColumns={setColumns} assignees={memberOptions} phasesReady={Boolean(hierarchy.data)} assignmentsReady={Boolean(assignments.data)}/>
     {((!hierarchy.data&&!hierarchy.error)||(!assignments.data&&!assignments.error))&&<p role="status" className="text-xs text-muted-foreground">Loading saved phase associations and project members…</p>}
     {assignments.error&&<p role="alert" className="rounded-lg border border-red-200 p-3 text-xs text-red-700 dark:text-red-300">{assignments.error}<button type="button" className="ml-2 underline" onClick={()=>void assignments.load()}>Retry members</button></p>}
-    {schedule.error&&<p role="alert" className="rounded-lg border border-red-200 p-3 text-xs text-red-700 dark:text-red-300">{schedule.error}</p>}
+    {schedule.error&&<p role="alert" className="rounded-lg border border-red-200 p-3 text-xs text-red-700 dark:text-red-300">{schedule.error}<button type="button" className="ml-2 underline" onClick={()=>void schedule.reload()}>Refresh saved schedules</button></p>}
     {hierarchy.error&&<p role="alert" className="rounded-lg border border-red-200 p-3 text-xs text-red-700 dark:text-red-300">{hierarchy.error}</p>}
     {hierarchy.conflict&&<p role="alert" className="text-xs text-red-700 dark:text-red-300">Project changes detected. Refresh hierarchy before continuing.</p>}
     {(hierarchy.busy||assignments.busy||schedule.busy)&&<p role="status" className="text-xs text-muted-foreground">Saving task details…</p>}

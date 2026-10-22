@@ -1,4 +1,6 @@
 'use client';
+import {useRouter} from 'next/navigation';
+import {refreshProjectSurfaces} from '@/lib/projects/refresh';
 import {TaskAssignee} from './tasks/TaskAssignee';
 import {taskDomId} from '@/lib/tasks/links';
 import { useWorkspaceUnsavedChanges } from './workspace/WorkspaceNavigationGuard';
@@ -118,6 +120,9 @@ function TaskControlRow({
   expanded: boolean;
   onToggle: () => void;
 }) {
+  const router=useRouter();
+  const [expectedRevision,setExpectedRevision]=useState(control.revision);
+  useEffect(()=>{if(control.revision>expectedRevision)setBlocked(true);},[control.revision,expectedRevision]);
   const [ownerType, setOwnerType] = useState(control.ownerType);
   const [phase, setPhase] = useState(control.phase);
   const [serviceId, setServiceId] = useState(control.serviceId ?? '');
@@ -155,7 +160,7 @@ function TaskControlRow({
           body: JSON.stringify({
             action: 'update_task',
             taskId: task.id,
-            expectedRevision: control.revision,
+            expectedRevision,
             ownerType,
             phase,
             serviceId: serviceId.trim() || null,
@@ -175,7 +180,8 @@ function TaskControlRow({
       if (!response.ok || result?.saved !== true) {
         throw new Error(result?.error || 'Task controls could not be saved.');
       }
-      markWorkspaceSaved(); window.location.reload();
+      setExpectedRevision(result.revision);setBlocked(false);setMessage('Task settings saved.');
+      markWorkspaceSaved(); refreshProjectSurfaces(id,router);
     } catch (error) {
       if (error instanceof Error &&
           ['TimeoutError', 'TypeError', 'SyntaxError'].includes(error.name)) {
@@ -354,11 +360,12 @@ function TaskControlRow({
                 {message}
               </p>
             )}
+            {blocked&&<div className="mt-2 space-y-2 text-xs"><p>Latest saved settings (revision {control.revision}): {control.ownerType}, {control.phase}, dependency {control.dependsOn??'none'}, blocker {control.blockerOwner??'none'}. Your local fields are retained.</p><button type="button" className={subtleButton} onClick={()=>{setOwnerType(control.ownerType);setPhase(control.phase);setServiceId(control.serviceId??'');setDependsOn(control.dependsOn??'');setBlockerOwner(control.blockerOwner??'');setExpectedRevision(control.revision);setBlocked(false);}}>Use latest saved settings</button>{control.revision>expectedRevision&&<button type="button" className={subtleButton} onClick={()=>{setExpectedRevision(control.revision);setBlocked(false);setMessage('Local settings retained against the displayed saved revision. Review and save explicitly.');}}>Keep my settings after review</button>}</div>}
             {blocked && (
               <button
                 type="button"
                 className={`${subtleButton} mt-3`}
-                onClick={() => window.location.reload()}
+                onClick={() => refreshProjectSurfaces(id,router)}
               >
                 <RotateCcw size={14} /> Reload latest task
               </button>
@@ -375,7 +382,7 @@ function TaskControlRow({
               <button
                 type="button"
                 className="underline underline-offset-4"
-                onClick={() => window.location.reload()}
+                onClick={() => refreshProjectSurfaces(id,router)}
               >
                 Reload
               </button>
@@ -406,6 +413,9 @@ export function ProjectLifecycleControls({
   events: Event[];
   selectedTask?:string;
 }) {
+  const router=useRouter();
+  const [expectedRevision,setExpectedRevision]=useState(lifecycle.revision);
+  useEffect(()=>{if(lifecycle.revision>expectedRevision)setBlocked(true);},[lifecycle.revision,expectedRevision]);
   const [phase, setPhase] = useState<ProjectPhase>(lifecycle.phase);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
@@ -455,6 +465,7 @@ export function ProjectLifecycleControls({
   useEffect(()=>{if(selectedTask&&expandedId===selectedTask){const row=document.getElementById(taskDomId(selectedTask,'lifecycle'));row?.focus({preventScroll:true});row?.scrollIntoView({block:'start'});}},[selectedTask,expandedId,page]);
   const phaseIndex = projectPhaseOrder.indexOf(lifecycle.phase);
   const phaseChanged = phase !== lifecycle.phase;
+  useWorkspaceUnsavedChanges(phaseChanged||Boolean(reason),'Project lifecycle',savePhase);
 
   async function savePhase() {
     if (!phaseChanged || !reason.trim() || busy || blocked) {
@@ -470,7 +481,7 @@ export function ProjectLifecycleControls({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'set_phase',
-          expectedRevision: lifecycle.revision,
+          expectedRevision,
           phase,
           reason,
         }),
@@ -485,7 +496,8 @@ export function ProjectLifecycleControls({
       if (!response.ok || result?.saved !== true) {
         throw new Error(result?.error || 'The project phase could not be saved.');
       }
-      window.location.reload();
+      setExpectedRevision(result.revision);setReason('');setBlocked(false);setMessage('Lifecycle phase saved.');
+      refreshProjectSurfaces(id,router);
     } catch (error) {
       if (error instanceof Error &&
           ['TimeoutError', 'TypeError', 'SyntaxError'].includes(error.name)) {
@@ -605,11 +617,12 @@ export function ProjectLifecycleControls({
             {message}
           </p>
         )}
+        {blocked&&<div className="mt-2 text-xs"><p>Latest saved lifecycle: {lifecycle.phase} (revision {lifecycle.revision}). Review it before retrying your local phase choice.</p><button type="button" className={subtleButton} onClick={()=>{setPhase(lifecycle.phase);setReason('');setExpectedRevision(lifecycle.revision);setBlocked(false);}}>Use saved lifecycle</button>{lifecycle.revision>expectedRevision&&<button type="button" className={subtleButton} onClick={()=>{setExpectedRevision(lifecycle.revision);setBlocked(false);}}>Keep my phase choice after review</button>}</div>}
         {blocked && (
           <button
             type="button"
             className={`${subtleButton} mt-2`}
-            onClick={() => window.location.reload()}
+            onClick={() => refreshProjectSurfaces(id,router)}
           >
             <RotateCcw size={14} /> Reload latest phase
           </button>

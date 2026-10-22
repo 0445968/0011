@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import type { ProjectBody } from '@/lib/projects/schema';
 import { workplanDraftBodySchema } from '@/lib/projects/workplan-draft-schema';
-import { mergeProjectBodies, type MergeChoice, type WorkplanMergeConflict } from '@/lib/projects/workplan-merge';
+import { projectBodiesEqual, mergeProjectBodies, type MergeChoice, type WorkplanMergeConflict } from '@/lib/projects/workplan-merge';
 
 type StoredDraft = { body: ProjectBody; baseBody: ProjectBody | null; baseRevision: number; updatedAt: string };
 type DraftState = 'loading' | 'idle' | 'pending' | 'saving' | 'saved' | 'error' | 'conflict';
@@ -44,6 +44,9 @@ export function useProjectWorkDraft({ id, initialRevision, revision, body, saved
   const timer = useRef<number | null>(null);
   const operation = useRef(0);
   const autosavesSuspended = useRef(false);
+  const loadedInitialRevision=useRef<number|null>(null);
+  const unresolved=useRef(rebase);
+  unresolved.current=rebase;
 
   const cancelPendingAutosave = useCallback(() => {
     operation.current += 1;
@@ -89,7 +92,9 @@ export function useProjectWorkDraft({ id, initialRevision, revision, body, saved
   }, [applyRebase]);
 
   useEffect(() => {
-    if (!enabled) { setReady(false); setState('idle'); return; }
+    if (!enabled) { loadedInitialRevision.current=null;setReady(false); setState('idle'); return; }
+    if (busy) return;
+    if(loadedInitialRevision.current===initialRevision)return;
     let active = true;
     setReady(false);
     setState('loading');
@@ -112,11 +117,14 @@ export function useProjectWorkDraft({ id, initialRevision, revision, body, saved
         baseBody.current = current.body;
         const draft = json.draft as StoredDraft | null;
         if (draft && !workplanDraftBodySchema.safeParse(draft.body).success) throw new Error('Saved draft is invalid. It has not been deleted.');
-        if (localBody && localBaseline && JSON.stringify(localBody) !== JSON.stringify(localBaseline)) {
+        if(unresolved.current){
+          const previous=unresolved.current;
+          applyRebase(previous.baseline,previous.draft,current.body,current.revision,previous.choices);
+        } else if (localBody && localBaseline && !projectBodiesEqual(localBody,localBaseline)) {
           // A server refresh must reconcile the latest in-memory edit, which can
           // be newer than the private autosave returned by this request.
           applyRebase(localBaseline, localBody, current.body, current.revision);
-        } else if (draft && JSON.stringify(draft.body) !== JSON.stringify(current.body)) {
+        } else if (draft && !projectBodiesEqual(draft.body,current.body)) {
           setSavedAt(draft.updatedAt);
           const baseline = draft.baseBody ?? (draft.baseRevision === current.revision ? current.body : null);
           if (baseline && draft.baseRevision !== current.revision) {
@@ -138,6 +146,7 @@ export function useProjectWorkDraft({ id, initialRevision, revision, body, saved
           setState('idle');
         }
         setReady(true);
+        loadedInitialRevision.current=initialRevision;
       } catch (cause) {
         if (!active) return;
         setReady(false);
@@ -146,9 +155,9 @@ export function useProjectWorkDraft({ id, initialRevision, revision, body, saved
       }
     })();
     return () => { active = false; };
-  // This loads only when the page's authoritative project revision changes or the editor mounts.
+  // Reconcile after authoritative revisions and after a coordinated command settles.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [url, initialRevision, enabled, snapshot, applyRebase, setBody, setRevision, setSavedBody, cancelPendingAutosave]);
+  }, [url, initialRevision, enabled, busy, snapshot, applyRebase, setBody, setRevision, setSavedBody, cancelPendingAutosave]);
 
   const waitForDraft = useCallback(async () => {
     cancelPendingAutosave();
@@ -179,14 +188,14 @@ export function useProjectWorkDraft({ id, initialRevision, revision, body, saved
         if (json.conflict) {
           try {
             const current = await snapshot();
-            applyRebase(draftBaseline, snapshotBody, current.body, current.revision);
+            applyRebase(draftBaseline, latest.current ?? snapshotBody, current.body, current.revision);
           } catch (cause) {
             setConflict(true);
             setState('conflict');
             setError(cause instanceof Error ? cause.message : 'The draft is based on an older project revision. Load the latest project to reconcile it.');
           }
           return false;
-        } else if (JSON.stringify(latest.current) === JSON.stringify(snapshotBody)) {
+        } else if (latest.current&&projectBodiesEqual(latest.current,snapshotBody)) {
           setState('saved');
         } else {
           setState('pending');
@@ -205,7 +214,7 @@ export function useProjectWorkDraft({ id, initialRevision, revision, body, saved
     finally { if (inFlight.current === promise) inFlight.current = null; }
   }, [url, snapshot, applyRebase]);
 
-  const dirty = Boolean(body && savedBody && JSON.stringify(body) !== JSON.stringify(savedBody));
+  const dirty = Boolean(body && savedBody && !projectBodiesEqual(body,savedBody));
   useEffect(() => {
     if (!enabled || !ready || !dirty || !body || recoverable || conflict || busy || autosavesSuspended.current) return;
     const signature = `${revision}:${JSON.stringify(body)}`;
@@ -238,16 +247,8 @@ export function useProjectWorkDraft({ id, initialRevision, revision, body, saved
 
   const resumeAutosaves = useCallback(() => { autosavesSuspended.current = false; }, []);
 
-  const readGeneration = useCallback(async () => {
-    const response = await fetch(url, { cache: 'no-store' });
-    const json = await response.json();
-    if (!Number.isInteger(json.generation)) throw new Error(json.error || 'Draft state could not be verified.');
-    generation.current = json.generation;
-    return generation.current;
-  }, [url]);
-
   const deletePrivateDraft = useCallback(async () => {
-    const currentGeneration = await readGeneration();
+    const currentGeneration = generation.current;
     const response = await fetch(url, {
       method: 'DELETE', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ generation: currentGeneration }),
@@ -257,18 +258,25 @@ export function useProjectWorkDraft({ id, initialRevision, revision, body, saved
     generation.current = json.generation;
     if (!json.body || !Number.isInteger(json.revision)) throw new Error(json.error || 'The draft discard snapshot could not be verified.');
     return { generation: json.generation as number, body: json.body as ProjectBody, revision: json.revision as number };
-  }, [readGeneration, url]);
+  }, [url]);
 
   /** User-requested discard adopts the latest authoritative body and only clears after DELETE confirms. */
   const discardDraft = useCallback(async () => {
+    const discardedBody=latest.current;
     await suspendAutosaves();
     try {
       const current = await deletePrivateDraft();
+      if(discardedBody&&latest.current&&!projectBodiesEqual(discardedBody,latest.current)){
+        applyRebase(discardedBody,latest.current,current.body,current.revision);
+        setSavedAt(null);setError('The requested draft was discarded; newer edits remain for review.');
+        lastAttempt.current='';autosavesSuspended.current=false;return false;
+      }
       baseBody.current = current.body;
       currentSaved.current = current.body;
       setSavedBody(current.body);
       setRevision(current.revision);
-      setBody(current.body);
+      const newer=discardedBody&&latest.current ? mergeProjectBodies(discardedBody,latest.current,current.body) : null;
+      setBody(newer?.body??current.body);
       setRecoverable(null);
       setRebase(null);
       setConflict(false);
@@ -284,7 +292,7 @@ export function useProjectWorkDraft({ id, initialRevision, revision, body, saved
       autosavesSuspended.current = false;
       return false;
     }
-  }, [suspendAutosaves, deletePrivateDraft, setSavedBody, setRevision, setBody]);
+  }, [suspendAutosaves, deletePrivateDraft, setSavedBody, setRevision, setBody,applyRebase]);
 
   /** Clear a private draft after the canonical project save has already succeeded. */
   const clearSavedDraft = useCallback(async () => {
@@ -325,9 +333,14 @@ export function useProjectWorkDraft({ id, initialRevision, revision, body, saved
     applyRebase(rebase.baseline, rebase.draft, rebase.latest, rebase.revision, choices);
   }, [rebase, applyRebase]);
 
+  const acceptSaved=useCallback((submitted:ProjectBody,canonical:ProjectBody,nextRevision:number)=>{
+    // Only the submitted snapshot is acknowledged. Edits typed later remain a draft.
+    return applyRebase(submitted,latest.current??submitted,canonical,nextRevision);
+  },[applyRebase]);
+
   return {
     state, ready, recoverable, conflict, rebase, error, savedAt, dirty,
     saveDraft, discardDraft, clearSavedDraft, restore, waitForDraft,
-    suspendAutosaves, resumeAutosaves, reconcile, chooseConflict,
+    suspendAutosaves, resumeAutosaves, reconcile, chooseConflict, acceptSaved,
   };
 }

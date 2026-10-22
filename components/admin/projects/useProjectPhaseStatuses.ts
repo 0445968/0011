@@ -1,4 +1,6 @@
 'use client';
+import {useProjectMutationRefresh} from './useProjectMutationRefresh';
+import {refreshProjectSurfaces} from '@/lib/projects/refresh';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ProjectPhase } from '@/lib/projects/lifecycle-schema';
@@ -50,6 +52,7 @@ export function useProjectPhaseStatuses(projectId: string, initialStates?: Proje
     return () => { active = false; };
   }, [load]);
 
+  useProjectMutationRefresh(projectId,()=>load());
   const save = useCallback(async (phase: ProjectPhase, status: PhaseStatus, reason: string) => {
     if (pending.current || !states) return failed('Saved phase statuses are unavailable. Refresh them before retrying.');
     let currentStates = states;
@@ -89,13 +92,13 @@ export function useProjectPhaseStatuses(projectId: string, initialStates?: Proje
         setSavedByPhase(previous => ({ ...previous, [phase]: { status, at: new Date().toISOString() } }));
         needsReconcile.current = true;
         setRefreshWarning('The phase change was saved. Its display could not refresh; use Refresh phases to reconcile before another change.');
-        router.refresh();
+        refreshProjectSurfaces(projectId,router);
         return { outcome: 'saved_refresh_failed' } as const;
       }
       if (result.outcome === 'saved') {
         setError('');
         setSavedByPhase(previous => ({ ...previous, [phase]: { status, at: new Date().toISOString() } }));
-        router.refresh();
+        refreshProjectSurfaces(projectId,router);
         return { outcome: 'saved' } as const;
       }
       if (result.uncertain) needsReconcile.current = true;

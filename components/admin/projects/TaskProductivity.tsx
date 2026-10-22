@@ -1,4 +1,7 @@
 'use client';
+import {postProjectCommand,confirmProjectCommandRead,ProjectCommandError} from '@/lib/projects/immediate-command';
+import {useProjectMutationRefresh} from './useProjectMutationRefresh';
+import {refreshProjectSurfaces} from '@/lib/projects/refresh';
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
@@ -8,7 +11,7 @@ import { MessageSquareText, Paperclip, StickyNote } from 'lucide-react';
 
 type Note = { id:string; body:string; author_id:string|null; revision:number; created_at:string; updated_at:string };
 type FileRow = { id:string; filename:string };
-type TaskContext = { projectRevision:number; priority:string|null; notes:Note[]; comments:{id:string}[]; files:FileRow[]; availableFiles:FileRow[] };
+type TaskContext = { projectRevision:number; priority:string|null; notes:Note[]; comments:{id:string}[]; files:FileRow[]; linkedFileIds?:string[]; availableFiles:FileRow[] };
 
 export function TaskProductivity({projectId,taskId,taskTitle,revision,disabled,userId,onPriority}: {
   projectId:string;taskId:string;taskTitle:string;revision:number;disabled:boolean;userId:string;
@@ -25,6 +28,8 @@ export function TaskProductivity({projectId,taskId,taskTitle,revision,disabled,u
   const [error,setError]=useState('');
   const [message,setMessage]=useState('');
   const loadGeneration=useRef(0);
+  const latestData=useRef<TaskContext|null>(null);
+  const noteCreateId=useRef<string|null>(null);
   const noteDirty=editId ? draft!==(data?.notes.find(note=>note.id===editId)?.body??'') : Boolean(draft);
   useWorkspaceUnsavedChanges(noteDirty,`Task note: ${taskTitle}`,async()=>{
     const note=data?.notes.find(item=>item.id===editId);
@@ -35,17 +40,32 @@ export function TaskProductivity({projectId,taskId,taskTitle,revision,disabled,u
   async function load(){
     const generation=++loadGeneration.current;
     setLoading(true);
-    try { const response=await fetch(`${endpoint}?taskId=${encodeURIComponent(taskId)}`,{cache:'no-store'});const json=await response.json();if(generation!==loadGeneration.current)return false;if(!response.ok)throw new Error(json.error||'Task details could not load.');setData(json as TaskContext);setError('');return true; }
+    try { const response=await fetch(`${endpoint}?taskId=${encodeURIComponent(taskId)}`,{cache:'no-store'});const json=await response.json();if(generation!==loadGeneration.current)return false;if(!response.ok)throw new Error(json.error||'Task details could not load.');latestData.current=json as TaskContext;confirmProjectCommandRead(endpoint);setData(json as TaskContext);setError('');return true; }
     catch(cause){if(generation===loadGeneration.current)setError(cause instanceof Error?cause.message:'Task details could not load.');return false;}
     finally{if(generation===loadGeneration.current)setLoading(false);}
   }
   useEffect(()=>{if(open)void load();},[revision]);
+  useProjectMutationRefresh(projectId,()=>{if(open)return load();});
   async function save(payload:Record<string,unknown>){
     if(busy||disabled||loading)return false;setBusy(true);setBusyLabel('Saving task details…');setError('');setMessage('');
-    try{const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...payload,expectedProjectRevision:revision}),signal:AbortSignal.timeout(20000)});const json=await response.json();if(!response.ok||!json.saved)throw new Error(json.error||'Task update could not save.');const refreshed=await load();setMessage(refreshed?'Task details saved.':'Task details saved. Refresh their display before another change.');router.refresh();return true;}
-    catch(cause){setError(cause instanceof Error?cause.message:'Task update could not save.');return false;}finally{setBusy(false);}
+    try{
+      await postProjectCommand(endpoint,{...payload,expectedProjectRevision:revision});
+      const refreshed=await load();setMessage(refreshed?'Task details saved.':'Task details saved. Refresh their display before another change.');refreshProjectSurfaces(projectId,router);return true;
+    }catch(cause){
+      if(cause instanceof ProjectCommandError&&cause.kind==='unknown'&&await load()){
+        const current=latestData.current;
+        const verified=payload.action==='note_create'||payload.action==='note_edit'?current?.notes.some(note=>note.id===payload.noteId&&note.body===payload.body)
+          :payload.action==='note_remove'?!current?.notes.some(note=>note.id===payload.noteId)
+          :payload.action==='file_link'?current?.linkedFileIds?.includes(String(payload.fileId))
+          :payload.action==='file_unlink'?current?.linkedFileIds!==undefined&&!current.linkedFileIds.includes(String(payload.fileId))
+          :payload.action==='priority'?current?.priority===payload.priority:false;
+        if(verified){setMessage('Task details saved and verified after the response was lost.');refreshProjectSurfaces(projectId,router);return true;}
+      }
+      setError(cause instanceof Error?cause.message:'Task update could not save.');return false;
+    }finally{setBusy(false);}
   }
-  async function addNote(){if(!draft.trim())return false;const id=crypto.randomUUID();const saved=await save({action:'note_create',taskId,noteId:id,body:draft.trim()});if(saved)setDraft('');return saved;}
+
+  async function addNote(){if(!draft.trim())return false;const id=noteCreateId.current??crypto.randomUUID();noteCreateId.current=id;const saved=await save({action:'note_create',taskId,noteId:id,body:draft.trim()});if(saved){noteCreateId.current=null;setDraft('');}return saved;}
   async function editNote(note:Note){if(!draft.trim())return false;const saved=await save({action:'note_edit',taskId,noteId:note.id,expectedNoteRevision:note.revision,body:draft.trim()});if(saved){setDraft('');setEditId(null);}return saved;}
   async function removeNote(note:Note){await save({action:'note_remove',taskId,noteId:note.id,expectedNoteRevision:note.revision});}
   async function preview(file:FileRow){

@@ -292,7 +292,7 @@ export default async function ProjectPage({
 
   const lifecycle =
     record &&
-    (tab === 'phases' || tab === 'calendar' || tab === 'plan')
+    (tab === 'overview' || tab === 'phases' || tab === 'calendar' || tab === 'plan')
       ? await getProjectLifecycle(
           client,
           params.id
@@ -381,7 +381,9 @@ export default async function ProjectPage({
           =================================================== */}
 
       {tab === 'overview' && record && overview && (
-        <ProjectOverview
+        <ProjectWorkspace id={params.id} userId={user.id} record={record} history={data.history} gateReady={gateReady}
+          savedToday={overview.today} taskControls={lifecycle?.controls??[]}
+          overview={<ProjectOverview
           record={record}
           history={data.history}
           context={overview.context}
@@ -391,7 +393,7 @@ export default async function ProjectPage({
           milestonePhases={overview.milestonePhases}
           phaseStates={overview.phaseStates}
           phaseColors={overview.phaseColors}
-        />
+        />} />
       )}
 
       {/* ===================================================
@@ -434,7 +436,7 @@ export default async function ProjectPage({
       {tab === 'phases' && record && lifecycle?.lifecycle && calendarExtras && scheduleRows && (
         <ProjectPhasesPage
           completionIssues={completionIssueRows}
-          key={`${params.id}:${record.revision}`}
+          key={params.id}
           id={params.id}
           revision={record.revision}
           body={record.body}

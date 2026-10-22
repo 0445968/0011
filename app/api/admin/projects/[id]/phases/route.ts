@@ -1,3 +1,4 @@
+import {revalidateProjectSurfaces} from '@/lib/projects/revalidate';
 import { z } from 'zod';
 import { getStaffAccess } from '@/lib/admin/auth';
 import { adminReply, isSameOrigin, readAdminJson } from '@/lib/admin/http';
@@ -60,7 +61,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       code === '42501' ? 403 : code === '22023' ? 400 : code === '23514' ? 409 : 503);
   }
   switch (result.data?.result) {
-    case 'saved': return adminReply({ saved: true, revision: result.data.revision });
+    case 'saved': revalidateProjectSurfaces(params.id); return adminReply({ saved: true, revision: result.data.revision });
     case 'conflict': return adminReply({ error: 'Phase changed in another session. Refresh phase statuses.' }, 409);
     case 'active_work': return adminReply({ error: `${result.data.activeCount || 'Some'} active or blocked task(s) must be resolved before closing this phase.`, code: 'active_work' }, 409);
     case 'milestones_incomplete': return adminReply({ error: `${result.data.incompleteCount || 'Some'} milestone(s) must be marked Completed before closing this phase.`, code: 'milestones_incomplete' }, 409);

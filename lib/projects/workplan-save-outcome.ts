@@ -28,6 +28,6 @@ export function interpretProjectSaveOutcome(status: number, payload: Record<stri
       blockers: Array.isArray(payload.blockers) ? payload.blockers : [],
     };
   }
-  if (status >= 500) return { kind: 'unknown', error: typeof payload.error === 'string' ? payload.error : 'The save outcome could not be confirmed.' };
+  if (status >= 500 || (status >= 200 && status < 300)) return { kind: 'unknown', error: typeof payload.error === 'string' ? payload.error : 'The save outcome could not be confirmed.' };
   return { kind: 'rejected', error: typeof payload.error === 'string' ? payload.error : 'The project save was rejected.', code: typeof payload.code === 'string' ? payload.code : undefined };
 }

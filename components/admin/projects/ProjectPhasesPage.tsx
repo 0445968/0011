@@ -44,7 +44,7 @@ export function ProjectPhasesPage({id,revision,body,lifecycle,controls,events,ph
     {!hierarchy.data&&<p role="status" className="rounded-lg border border-border p-3 text-xs text-muted-foreground">Loading phase links and subtasks…</p>}
     {hierarchy.data&&<ProjectPhaseCards
       id={id} body={body} links={hierarchy.data.milestonePhases} initialStates={phaseStates}
-      colorRows={colors.rows} colorFeedback={colors.feedback} colorSaving={colors.saving} onSaveColor={(phase,color)=>{void colors.save(phase,color);}}
+      colorRows={colors.rows} colorFeedback={colors.feedback} colorSaving={colors.saving} onSaveColor={(phase,color)=>colors.save(phase,color)}
       controls={controls} subtasks={subtasks}
       disabled={readOnly||hierarchy.busy||hierarchy.conflict||hierarchy.data.projectRevision!==revision}
       onAssignMilestone={assign}
@@ -53,7 +53,7 @@ export function ProjectPhasesPage({id,revision,body,lifecycle,controls,events,ph
       <summary className="cursor-pointer px-4 py-3 text-sm font-semibold">Lifecycle, dependencies and approvals</summary>
       <div className="border-t border-border p-3 sm:p-4">
         <p className="mb-3 text-xs text-muted-foreground">Task assignment, dependencies, ownership and lifecycle approvals use the existing revision-checked staff controls and audit history.</p>
-        <ProjectLifecycleControls key={`${revision}:${lifecycle.revision}`} id={id} lifecycle={lifecycle} controls={controls} tasks={body.tasks} events={events}/>
+        <ProjectLifecycleControls key={id} id={id} lifecycle={lifecycle} controls={controls} tasks={body.tasks} events={events}/>
       </div>
     </details>
   </div>;

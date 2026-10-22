@@ -10,7 +10,12 @@ export type WorkplanMergeConflict = {
 };
 export type WorkplanMergeResult = { body: ProjectBody; conflicts: WorkplanMergeConflict[] };
 
-const same = (left: unknown, right: unknown) => JSON.stringify(left) === JSON.stringify(right);
+function stableValue(value:unknown):unknown{
+  if(Array.isArray(value))return value.map(stableValue);
+  if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).sort(([a],[b])=>a.localeCompare(b)).map(([key,item])=>[key,stableValue(item)]));
+  return value;
+}
+const same = (left: unknown, right: unknown) => JSON.stringify(stableValue(left)) === JSON.stringify(stableValue(right));
 const display = (value: unknown) => value === undefined ? null : value;
 
 function mergeValue<T>(

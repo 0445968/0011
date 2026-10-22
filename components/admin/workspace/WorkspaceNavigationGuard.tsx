@@ -4,19 +4,20 @@ import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import {discardWorkspaceEditors} from '@/lib/admin/workspace/navigation-discard';
 
-type Editor = { label: string; save?: () => Promise<unknown> };
+type Editor = { label: string; save?: () => Promise<unknown>; discard?:()=>Promise<unknown> };
 const editors = new Map<string, Editor>();
 let requestNavigation: ((action: () => void) => void) | undefined;
 
 /** Register actual editor dirty state; navigation never guesses from input events. */
-export function useWorkspaceUnsavedChanges(dirty: boolean, label: string, save?: () => Promise<unknown>) {
+export function useWorkspaceUnsavedChanges(dirty: boolean, label: string, save?: () => Promise<unknown>,discard?:()=>Promise<unknown>) {
   const id = useId();
-  const latest = useRef({ label, save });
-  latest.current = { label, save };
+  const latest = useRef({ label, save,discard });
+  latest.current = { label, save,discard };
   const hasSave = Boolean(save);
   useEffect(() => {
-    if (dirty) editors.set(id, { label, save: hasSave ? () => latest.current.save!() : undefined });
+    if (dirty) editors.set(id, { label, save: hasSave ? () => latest.current.save!() : undefined,discard:()=>latest.current.discard?.()??Promise.resolve() });
     else editors.delete(id);
     return () => { editors.delete(id); };
   }, [id, dirty, label, hasSave]);
@@ -80,11 +81,13 @@ export function WorkspaceNavigationGuard({ children }: { children: ReactNode }) 
         {saveError && <p role="alert" className="text-xs text-destructive">{saveError}</p>}
         <div className="flex flex-wrap justify-end gap-2">
           <Button variant="outline" disabled={saving} onClick={() => setPending(null)}>Stay</Button>
-          <Button variant="outline" disabled={saving} onClick={() => {
-            const action = pendingRef.current;
-            editors.clear();
-            setPending(null);
-            action?.();
+          <Button variant="outline" disabled={saving} onClick={async () => {
+            setSaving(true);setSaveError('');
+            try{
+              await discardWorkspaceEditors(editors.values());
+              const action=pendingRef.current;editors.clear();setPending(null);action?.();
+            }catch(cause){setSaveError(cause instanceof Error?cause.message:'Discard could not be confirmed. Stay to keep your edits.');}
+            finally{setSaving(false);}
           }}>Discard and leave</Button>
           {dirtyEditors.length === 1 && dirtyEditors[0].save && <Button disabled={saving} onClick={async () => {
             setSaving(true);

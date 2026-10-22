@@ -1,3 +1,4 @@
+import {revalidateProjectSurfaces} from '@/lib/projects/revalidate';
 import { z } from 'zod';
 import { getStaffAccess } from '@/lib/admin/auth';
 import { adminReply, isSameOrigin, readAdminJson } from '@/lib/admin/http';
@@ -40,6 +41,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
     priority: control.data.priority,
     notes: notes.data ?? [], comments: comments.data ?? [],
     files: (files.data ?? []).filter(file => linkedIds.has(file.id)),
+    linkedFileIds:[...linkedIds],
     availableFiles: (files.data ?? []).filter(file => !linkedIds.has(file.id)),
   });
 }
@@ -58,5 +60,6 @@ export async function POST(request: Request, { params }: { params: { id: string 
   if (error) return adminReply({ error: error.code === '42501' ? 'Staff access is required.' : 'Task update could not be saved.' }, error.code === '42501' ? 403 : error.code === '22023' ? 400 : 503);
   const messages: Record<string,string> = { conflict: 'The project changed. Reload before saving.', locked: 'Completed projects are read-only.', not_found: 'Project or task not found.', blocked: 'Review blocked tasks and dependencies before this bulk change.', file_unavailable: 'Choose a verified file from this project.' };
   if (data?.result !== 'saved') return adminReply({ error: messages[data?.result] ?? 'Task update could not be confirmed.' }, data?.result === 'not_found' ? 404 : data?.result === 'conflict' || data?.result === 'blocked' || data?.result === 'locked' ? 409 : 400);
+  revalidateProjectSurfaces(params.id);
   return adminReply({ saved: true, revision: data.revision ?? parsed.data.expectedProjectRevision, changed: data.changed ?? null });
 }

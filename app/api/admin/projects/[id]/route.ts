@@ -1,3 +1,4 @@
+import {revalidateProjectSurfaces} from '@/lib/projects/revalidate';
 import { z } from 'zod';
 
 import { getStaffAccess } from '@/lib/admin/auth';
@@ -110,6 +111,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       return adminReply({ error: message, code }, status);
     }
     if (data?.result !== 'saved') return adminReply({ error: 'The result could not be confirmed. Reload before retrying.' }, 503);
+  revalidateProjectSurfaces(params.id);
     if (parsed.data.action === 'save') {
       const fresh = await access.client.from('inquiry_projects').select('body,revision').eq('request_id', params.id).maybeSingle();
       const canonical = projectBodySchema.safeParse(fresh.data?.body);

@@ -1,4 +1,7 @@
 'use client';
+import {postProjectCommand,confirmProjectCommandRead,ProjectCommandError} from '@/lib/projects/immediate-command';
+import {useProjectMutationRefresh} from './useProjectMutationRefresh';
+import {refreshProjectSurfaces} from '@/lib/projects/refresh';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
@@ -20,6 +23,8 @@ export function useProjectAssignments(projectId: string, projectRevision?: numbe
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const requestGeneration = useRef(0);
+  const pending=useRef(false);
+  const url=`/api/admin/projects/${projectId}/assignees`;
   // Never abort fetches during React effect cleanup. Ignore stale responses instead.
   const load = useCallback(async (isActive: () => boolean = () => true) => {
     const generation = ++requestGeneration.current;
@@ -29,6 +34,7 @@ export function useProjectAssignments(projectId: string, projectRevision?: numbe
       const json = await result.json();
       if (!isCurrent()) return false;
       if (!result.ok) throw new Error(json.error || 'Could not load project members.');
+      confirmProjectCommandRead(url);
       setData(json as ProjectAssignmentWorkspace);
       setError('');
       return true;
@@ -44,26 +50,24 @@ export function useProjectAssignments(projectId: string, projectRevision?: numbe
     void load(() => active);
     return () => { active = false; };
   }, [load, projectRevision]);
+  useProjectMutationRefresh(projectId,()=>load());
   const save = useCallback(async (body: object) => {
-    if (busy) return false;
+    if (pending.current) return false;
+    pending.current=true;++requestGeneration.current;
     setBusy(true);
     setError('');
     setMessage('');
     try {
-      const result = await fetch(`/api/admin/projects/${projectId}/assignees`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body), signal: AbortSignal.timeout(20000),
-      });
-      const json = await result.json();
-      if (!result.ok || !json.saved) throw new Error(json.error || 'Assignment could not save.');
+      await postProjectCommand(url,body);
       const refreshed=await load();
       setMessage(refreshed?'Task assignments saved.':'Task assignments saved. Refresh members before another change.');
-      router.refresh();
-      return refreshed;
+      refreshProjectSurfaces(projectId,router);
+      return true;
     } catch (cause) {
+      if(cause instanceof ProjectCommandError&&cause.kind==='conflict')await load();
       setError(cause instanceof Error ? cause.message : 'Assignment could not save.');
       return false;
-    } finally { setBusy(false); }
+    } finally { pending.current=false;setBusy(false); }
   }, [busy, load, projectId, router]);
   return { data, error, busy, message, save, load };
 }
@@ -114,6 +118,7 @@ export function TaskMemberPicker({ taskId, disabled, controls }: { taskId: strin
   const [open, setOpen] = useState(false);
   const [side, setSide] = useState<Side>('bivi');
   const [ids, setIds] = useState<string[]>([]);
+  const [expectedRevision,setExpectedRevision]=useState(0);
   const [search, setSearch] = useState('');
   const options = side === 'bivi' ? data?.staff ?? [] : data?.clients ?? [];
   const chosen = task?.side === 'bivi' ? data?.staff ?? [] : data?.clients ?? [];
@@ -121,6 +126,7 @@ export function TaskMemberPicker({ taskId, disabled, controls }: { taskId: strin
   const changed = Boolean(task && (task.side !== side || JSON.stringify(task.assignees) !== JSON.stringify(ids)));
   function show() {
     if (!task || !data) return;
+    setExpectedRevision(task.revision);
     setSide(task.side);
     setIds(task.assignees);
     setSearch('');
@@ -133,8 +139,8 @@ export function TaskMemberPicker({ taskId, disabled, controls }: { taskId: strin
     setSearch('');
   }
   async function commit() {
-    if (!task || !data || busy || ids.length > 12) return;
-    const okay = await save({ action: 'task', taskId, side, userIds: ids, expectedRevision: task.revision });
+    if (!task || !data || busy || task.revision!==expectedRevision || ids.length > 12) return;
+    const okay = await save({ action: 'task', taskId, side, userIds: ids, expectedRevision });
     if (okay) setOpen(false);
   }
   return <>
@@ -157,9 +163,10 @@ export function TaskMemberPicker({ taskId, disabled, controls }: { taskId: strin
         </label>
         <MemberChoices side={side} options={options} values={ids} change={setIds} search={search} />
         <p className="text-xs text-muted-foreground">{ids.length} selected · Every active Bivi assignee appears in My Tasks.</p>
+        {task&&task.revision!==expectedRevision&&<div role="alert" className="text-xs"><p>Saved responsibility changed: {task.side}, {task.assignees.map(id=>[...(data?.staff??[]),...(data?.clients??[])].find(person=>person.id===id)?.label??id).join(', ')||'no assignees'}. Your selections remain unchanged.</p><button type="button" className={buttonClass} onClick={()=>{setSide(task.side);setIds(task.assignees);setExpectedRevision(task.revision);}}>Use saved</button><button type="button" className={buttonClass} onClick={()=>setExpectedRevision(task.revision)}>Keep selections after review</button></div>}
         <DialogFooter>
           <button type="button" className={buttonClass} disabled={busy} onClick={() => setOpen(false)}>Cancel</button>
-          <button type="button" className="rounded-lg bg-foreground px-4 py-2 text-xs font-semibold text-background disabled:opacity-40" disabled={busy || !changed || ids.length > 12} onClick={() => void commit()}>{busy ? 'Saving…' : 'Save responsibility'}</button>
+          <button type="button" className="rounded-lg bg-foreground px-4 py-2 text-xs font-semibold text-background disabled:opacity-40" disabled={busy || !changed || task?.revision!==expectedRevision || ids.length > 12} onClick={() => void commit()}>{busy ? 'Saving…' : 'Save responsibility'}</button>
         </DialogFooter>
         {controls.error && <p role="alert" className="text-xs text-red-600">{controls.error}</p>}
       </DialogContent>
@@ -171,14 +178,15 @@ export function ProjectManagersButton({ controls, disabled }: { controls: Assign
   const { data, save, busy } = controls;
   const [open, setOpen] = useState(false);
   const [ids, setIds] = useState<string[]>([]);
+  const [expectedRevision,setExpectedRevision]=useState(0);
   const [search, setSearch] = useState('');
   const selected = useMemo(() => [...ids].sort().join(','), [ids]);
   const original = useMemo(() => [...(data?.managers ?? [])].sort().join(','), [data]);
   async function commit() {
-    if (await save({ action: 'managers', userIds: ids, expectedRevision: data?.assignmentRevision })) setOpen(false);
+    if (await save({ action: 'managers', userIds: ids, expectedRevision })) setOpen(false);
   }
   return <>
-    <button type="button" className={buttonClass} disabled={disabled || busy || !data} onClick={() => { setIds(data?.managers ?? []); setSearch(''); setOpen(true); }}>
+    <button type="button" className={buttonClass} disabled={disabled || busy || !data} onClick={() => { setExpectedRevision(data?.assignmentRevision??0);setIds(data?.managers ?? []); setSearch(''); setOpen(true); }}>
       <Users size={15} aria-hidden /> Client managers ({data?.managers.length ?? 0})
     </button>
     <Dialog open={open} onOpenChange={value => { if (!busy) setOpen(value); }}>

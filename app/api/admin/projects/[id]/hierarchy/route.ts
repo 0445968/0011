@@ -1,3 +1,4 @@
+import {revalidateProjectSurfaces} from '@/lib/projects/revalidate';
 import { z } from 'zod';
 
 import { getStaffAccess } from '@/lib/admin/auth';
@@ -90,9 +91,10 @@ export async function POST(request: Request, { params }: RouteContext) {
     if (error.code === '22023') return adminReply({ error: 'Invalid milestone, phase, or subtask data.' }, 400);
     return adminReply({ error: 'Project hierarchy could not be saved.' }, 503);
   }
-  if (data?.result === 'conflict') return adminReply({ error: 'The project changed. Refresh its hierarchy before editing.' }, 409);
+  if (data?.result === 'conflict') return adminReply({ error: 'The project changed. Refresh its hierarchy before editing.',code:'revision_conflict' }, 409);
   if (data?.result === 'locked') return adminReply({ error: 'Completed projects are read-only.' }, 409);
   if (data?.result === 'not_found') return adminReply({ error: 'Project or task not found.' }, 404);
   if (data?.result !== 'saved') return adminReply({ error: 'The save could not be confirmed.' }, 503);
-  return adminReply({ hierarchyRevision: data.hierarchyRevision, subtaskRevision: data.subtaskRevision ?? null });
+  revalidateProjectSurfaces(params.id);
+  return adminReply({ saved:true, hierarchyRevision: data.hierarchyRevision, subtaskRevision: data.subtaskRevision ?? null });
 }

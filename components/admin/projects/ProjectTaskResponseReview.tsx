@@ -1,4 +1,5 @@
 'use client';
+import {refreshProjectSurfaces} from '@/lib/projects/refresh';
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -64,7 +65,7 @@ export function ProjectTaskResponseReview({ id, tasks }: {
       await load();
       // Completion approval may advance the canonical project revision. The editor
       // reloads its private draft and three-way reconciles against that saved body.
-      router.refresh();
+      refreshProjectSurfaces(id,router);
       return true;
     } catch (cause) { setError(cause instanceof Error && cause.name !== 'TimeoutError' ? cause.message : 'Save status uncertain. Refresh before retrying.'); return false; }
     finally { setBusy(false); }

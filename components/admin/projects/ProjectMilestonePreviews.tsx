@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import {useProjectEditingActions} from './ProjectEditingContext';
 import { useRef } from 'react';
 import { ArrowUpRight, CalendarDays, CheckCheck, ChevronLeft, ChevronRight, ListChecks } from 'lucide-react';
 import type { ProjectBody } from '@/lib/projects/schema';
@@ -24,6 +25,7 @@ export function ProjectMilestonePreviews({ id, body, activePhases, milestonePhas
   members: ProjectRosterMember[];
   phaseColors: ProjectPhaseColorMap;
 }) {
+  const editing=useProjectEditingActions();
   const carousel = useRef<HTMLDivElement>(null);
   const phases = useProjectPhaseStatuses(id);
   // Preserve milestone order within each status; finished milestones always move right.
@@ -63,6 +65,7 @@ export function ProjectMilestonePreviews({ id, body, activePhases, milestonePhas
               <Link href={href} className="min-w-0 break-words text-base font-semibold leading-snug hover:underline">{milestone.title}</Link>
               <Link href={href} aria-label={`Open ${milestone.title}`} className="rounded-full border border-border p-1.5 text-muted-foreground hover:bg-muted"><ArrowUpRight size={14} aria-hidden /></Link>
             </div>
+            {editing&&<button type="button" className="mt-2 text-xs underline" onClick={()=>editing.editMilestone(milestone.id)}>Edit milestone</button>}
             <div className="mt-2 flex flex-wrap gap-x-2 gap-y-1">{phases.map(phase=><span key={phase} className="inline-flex items-center gap-1 text-[11px] font-medium text-foreground"><span aria-hidden className="h-2.5 w-2.5 rounded-sm border border-black/15 dark:border-white/20" style={{backgroundColor:phaseColorFor(phase,phaseColors)}}/>{projectPhaseLabels[phase]}</span>)}</div>
             <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <CalendarDays size={15} aria-hidden /><span>{milestone.dueOn ? `Due ${milestone.dueOn}` : 'No due date'}</span>
