@@ -14,14 +14,15 @@ type RecordSource={body:ProjectBody;revision:number;state:string};
 const field='min-h-9 w-full min-w-0 rounded-lg border border-input bg-background px-2.5 py-1.5 text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50';
 const button='inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-xs font-medium hover:bg-muted disabled:opacity-50';
 
-export function ProjectLifecycleMilestones({id,record,createOnOpen=false}:{
-  id:string;record:RecordSource;createOnOpen?:boolean;
+export function ProjectLifecycleMilestones({id,record,createOnOpen=false,focusMilestone}:{
+  id:string;record:RecordSource;createOnOpen?:boolean;focusMilestone?:string;
 }) {
   const editor=useProjectEditingController(id,record);
   const {body,setBody,dirty,drafts,busy,blocked,message,saveOutcomeUnknown,serverBlockers}=editor;
   const readonly=record.state==='completed'||blocked||saveOutcomeUnknown||Boolean(drafts.conflict);
   const creationHandled=useRef(false);
   const [expanded,setExpanded]=useState<string|null>(null);
+  useEffect(()=>{if(focusMilestone){setExpanded(focusMilestone);document.getElementById(`lifecycle-milestone-${focusMilestone}`)?.scrollIntoView({block:'center'});}},[focusMilestone]);
   const acknowledge=useWorkspaceUnsavedChanges(dirty,'Project milestone draft',async()=>{
     if(!await editor.save())throw new Error('Review and save milestone changes before leaving Lifecycle.');
   });
@@ -71,7 +72,7 @@ export function ProjectLifecycleMilestones({id,record,createOnOpen=false}:{
       const stats=milestoneStats(body,item.id);
       const children=body.tasks.filter(task=>task.milestoneId===item.id);
       const isExpanded=expanded===item.id;
-      return <article key={item.id} className="py-2 transition-colors hover:bg-slate-50 dark:hover:bg-muted/40">
+      return <article id={`lifecycle-milestone-${item.id}`} key={item.id} className="scroll-mt-24 py-2 transition-colors hover:bg-slate-50 dark:hover:bg-muted/40">
         <div className="flex flex-wrap items-center gap-3">
           <button type="button" aria-label={`${isExpanded?'Collapse':'Expand'} milestone ${item.title}`} aria-expanded={isExpanded} className="min-w-0 flex-1 py-2 text-left text-xs font-medium" onClick={()=>setExpanded(isExpanded?null:item.id)}><ProjectTaskStateIcon status={item.status}/><span className="ml-2">{item.title}</span><span className="ml-2 text-[11px] font-normal text-muted-foreground">{stats.done}/{stats.total} tasks done</span></button>
           <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground"><Flag size={13}/>{item.dueOn??'No due date'}</span>
