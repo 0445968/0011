@@ -1,9 +1,14 @@
 import type { ProjectBody } from './schema';
 
+export type ProjectWorkflowGate = {
+  type: 'task'; taskId: string; targetStatus: 'done'; gate: 'client_completion_review';
+  title: string; requirement: string; correctiveActions: string[]; overrideAvailable: boolean;
+};
+
 export type ProjectSaveOutcome =
   | { kind: 'saved'; revision: number; body?: ProjectBody; refreshWarning?: string }
   | { kind: 'revision_conflict'; error: string }
-  | { kind: 'validation_rejected'; code: string; error: string; blockers: unknown[] }
+  | { kind: 'validation_rejected'; code: string; error: string; blockers: unknown[]; workflowGate?: ProjectWorkflowGate }
   | { kind: 'rejected'; error: string; code?: string }
   | { kind: 'unknown'; error: string };
 
@@ -26,6 +31,7 @@ export function interpretProjectSaveOutcome(status: number, payload: Record<stri
       code: typeof payload.code === 'string' ? payload.code : 'validation_rejected',
       error: typeof payload.error === 'string' ? payload.error : 'Review the project validation errors.',
       blockers: Array.isArray(payload.blockers) ? payload.blockers : [],
+      workflowGate: payload.workflowGate && typeof payload.workflowGate === 'object' ? payload.workflowGate as ProjectWorkflowGate : undefined,
     };
   }
   if (status >= 500 || (status >= 200 && status < 300)) return { kind: 'unknown', error: typeof payload.error === 'string' ? payload.error : 'The save outcome could not be confirmed.' };

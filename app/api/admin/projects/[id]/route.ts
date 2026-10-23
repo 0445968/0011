@@ -89,7 +89,22 @@ export async function POST(request: Request, { params }: { params: { id: string 
             }
           }
         }
-        return adminReply({ error: domainError.error, code: domainError.code, blockers }, 422);
+        let workflowGate: unknown;
+        if (domainError.workflowGate) {
+          const [permission, latest] = await Promise.all([
+            access.client.rpc('is_project_workflow_admin'),
+            access.client.from('inquiry_projects').select('body').eq('request_id', params.id).maybeSingle(),
+          ]);
+          const candidateTask = parsed.data.body.tasks.find(task => task.id === domainError.workflowGate!.taskId);
+          const savedBody = projectBodySchema.safeParse(latest.data?.body);
+          const savedTask = savedBody.success ? savedBody.data.tasks.find(task => task.id === domainError.workflowGate!.taskId) : undefined;
+          workflowGate = {
+            ...domainError.workflowGate,
+            title: candidateTask?.title ?? 'Task',
+            overrideAvailable: !permission.error && permission.data === true && candidateTask?.status === 'done' && savedTask?.status !== 'done',
+          };
+        }
+        return adminReply({ error: domainError.error, code: domainError.code, blockers, workflowGate }, 422);
       }
       if (error.code === '23514' && parsed.data.action !== 'save') {
         return adminReply({ error: error.message || 'The project transition failed a completion rule.', code: 'project_transition_rejected' }, 409);

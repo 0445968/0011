@@ -254,8 +254,9 @@ export function ProjectWorkspace({
 
   const controller=useProjectEditingController(id,record,Boolean(selectedMilestone));
   const {body,savedRevision,setBody,busy,setBusy,blocked,setBlocked,
-    message,setMessage,saveOutcomeUnknown,setSaveOutcomeUnknown,serverBlockers,setServerBlockers,dirty,drafts,advanced,setAdvanced}=controller;
+    message,setMessage,saveOutcomeUnknown,setSaveOutcomeUnknown,serverBlockers,setServerBlockers,workflowGate,setWorkflowGate,dirty,drafts,advanced,setAdvanced}=controller;
   const [reason,setReason]=useState('');
+  const [workflowOverrideReason,setWorkflowOverrideReason]=useState('');
   const [overviewEditing,setOverviewEditing]=useState(false);
   const [overviewTaskId,setOverviewTaskId]=useState<string|null>(selectedTask??null);
   const [taskFocusRequest,setTaskFocusRequest]=useState(0);
@@ -769,6 +770,29 @@ export function ProjectWorkspace({
     }
   }
 
+  async function overrideTaskStatus() {
+    const gate=workflowGate;
+    if (!gate || !gate.overrideAvailable || !workflowOverrideReason.trim() || busy || !savedRevision) return false;
+    setBusy(true);setMessage('Saving admin workflow override…');
+    await drafts.suspendAutosaves();
+    try {
+      const result=await postProjectCommand(`/api/admin/projects/${id}/task-status-override`,{
+        taskId:gate.taskId,targetStatus:gate.targetStatus,expectedProjectRevision:savedRevision,reason:workflowOverrideReason.trim(),
+      });
+      if (!result.body || !Number.isInteger(result.revision)) throw new Error('The override was saved, but its canonical task and revision could not be confirmed. Refresh before retrying.');
+      const merged=drafts.reconcile(result.body,result.revision);
+      setWorkflowGate(null);setServerBlockers([]);setWorkflowOverrideReason('');
+      setMessage(`Admin workflow override saved for “${gate.title}”.${merged.conflicts.length?' Review the draft conflicts before saving.':' Other unsaved work-plan edits remain in your private draft.'}`);
+      refreshProjectSurfaces(id,router);
+      return true;
+    } catch(cause) {
+      setMessage(cause instanceof Error?cause.message:'The override could not be confirmed. Your work-plan draft remains available.');
+      return false;
+    } finally {
+      drafts.resumeAutosaves();setBusy(false);
+    }
+  }
+
   /* =======================================================
      ACTIVATION VIEW
      ======================================================= */
@@ -857,6 +881,15 @@ export function ProjectWorkspace({
       {drafts.conflict && !drafts.rebase && <p role="alert" className="rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-100">The private draft’s original saved baseline is unavailable, so it cannot be merged safely. Export it to keep a copy, then discard it only if you want to load the latest saved project.</p>}
       {drafts.error && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-100"><p>Draft reconciliation unavailable: {drafts.error}. Your edits remain in the editor until a discard is confirmed.</p><button type="button" className={controlClass} disabled={busy} onClick={() => { if (window.confirm('Discard the private draft and load the latest saved project?')) void controller.discard().then(ok => { if (ok) setMessage('The private draft was discarded. The latest saved project is loaded.'); }); }}>Discard draft and load latest</button></div>}
       {serverBlockers.length > 0 && <section role="alert" className="space-y-2 rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-950 dark:border-red-800 dark:bg-red-950 dark:text-red-100"><p className="font-semibold">Complete these tasks before completing this milestone.</p>{serverBlockers.map(milestone => <div key={milestone.milestoneId}><p className="font-medium">{milestone.milestoneTitle}{milestone.needsTask ? ' — add at least one linked task' : ''}</p><ul className="ml-4 mt-1 list-disc">{milestone.tasks.map(task => <li key={task.taskId}><a className="underline" href={`#${taskDomId(task.taskId)}`} onClick={event=>{event.preventDefault();openAdvanced(task.taskId);}}>{task.title}</a>{task.taskIncomplete ? ' — task is not completed' : ''}{task.subtasks.map(subtask => <span key={subtask.id}>; unfinished subtask: {subtask.title}</span>)}</li>)}</ul></div>)}</section>}
+      {workflowGate && <section role="alert" aria-label="Task workflow requirement" className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
+        <p className="font-semibold">{workflowGate.title}: {workflowGate.requirement}</p>
+        <p>The status change is still a private draft. <button type="button" className="underline" onClick={()=>openAdvanced(workflowGate.taskId)}>Open this task</button> to review its saved and draft values.</p>
+        <ul className="ml-4 list-disc">{workflowGate.correctiveActions.map(action=><li key={action}>{action}</li>)}</ul>
+        {workflowGate.overrideAvailable ? <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+          <label className="text-[11px] font-medium">Reason for overriding the completion review<textarea className="mt-1 min-h-16 w-full rounded-md border border-input bg-background p-2 text-xs" maxLength={2000} value={workflowOverrideReason} onChange={event=>setWorkflowOverrideReason(event.target.value)} disabled={busy} /></label>
+          <button type="button" className={controlClass} disabled={busy||!workflowOverrideReason.trim()||!drafts.ready||drafts.recoverable!==null||drafts.conflict} onClick={()=>void overrideTaskStatus()}>Override and change status</button>
+        </div> : <p className="font-medium">This action is available only to a designated project workflow admin, and only for a new client-task completion transition.</p>}
+      </section>}
       <section aria-label="Work plan summary" className="grid grid-cols-2 gap-2 lg:grid-cols-4">
         <div className="min-w-0 rounded-lg border border-border bg-card px-3 py-2"><p className="mb-1 text-[10px] text-muted-foreground">{dirty ? 'Draft task progress' : 'Saved task progress'}</p><DirectoryProgress project={{...record,body}} /></div>
         {[

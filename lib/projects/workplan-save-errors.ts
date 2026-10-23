@@ -1,6 +1,10 @@
 export type ProjectSaveDomainError = {
   code: string;
   error: string;
+  workflowGate?: {
+    type: 'task'; taskId: string; targetStatus: 'done'; gate: 'client_completion_review';
+    requirement: string; correctiveActions: string[];
+  };
 };
 
 /** Database check violations are validation outcomes; only the RPC's explicit `conflict` is a revision conflict. */
@@ -19,8 +23,20 @@ export function classifyProjectSaveDatabaseError(code: string | undefined, messa
   if (detail.includes('dependency')) {
     return { code: 'task_dependencies_incomplete', error: 'Complete prerequisite tasks and resolve blockers before completing this work.' };
   }
+  if (detail.includes('client_completion_review_required|task=')) {
+    const taskId = (message ?? '').match(/client_completion_review_required\|task=([^\s|]+)/i)?.[1];
+    return {
+      code: 'client_completion_review_required',
+      error: 'This client task needs a current Bivi completion review before it can be marked Done.',
+      ...(taskId ? { workflowGate: {
+        type: 'task' as const, taskId, targetStatus: 'done' as const, gate: 'client_completion_review' as const,
+        requirement: 'A current accepted Bivi review of this task is required.',
+        correctiveActions: ['Submit and accept a fresh client completion review.', 'A designated project workflow admin may override this review gate with a recorded reason.'],
+      } } : {}),
+    };
+  }
   if (detail.includes('client') && (detail.includes('approval') || detail.includes('review'))) {
-    return { code: 'client_completion_review_required', error: 'Client task completion requires a current Bivi review. Reopen unreviewed completed work, then submit and accept a fresh completion review.' };
+    return { code: 'client_completion_review_required', error: 'Client task completion requires a current Bivi review.' };
   }
   if (detail.includes('completed milestone')) {
     return { code: 'milestone_reopen_required', error: 'Reopen the completed milestone before changing its tasks.' };

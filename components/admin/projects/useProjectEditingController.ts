@@ -4,6 +4,7 @@ import {useRouter} from 'next/navigation';
 import {projectBodySchema,type ProjectBody} from '@/lib/projects/schema';
 import {normalizeWorkplanBodyForSave,projectBodiesEqual} from '@/lib/projects/workplan-merge';
 import {readSavedProject,savedCandidateMatches,submitProjectWorkplan,type SavedProject} from '@/lib/projects/editing';
+import type { ProjectWorkflowGate } from '@/lib/projects/workplan-save-outcome';
 import {projectMutationEvent,refreshProjectSurfaces} from '@/lib/projects/refresh';
 import {useProjectWorkDraft} from './useProjectWorkDraft';
 
@@ -23,6 +24,7 @@ export function useProjectEditingController(id:string,record:RecordState,initial
   const [busy,setBusy]=useState(false),[blocked,setBlocked]=useState(false),[message,setMessage]=useState('');
   const [saveOutcomeUnknown,setSaveOutcomeUnknown]=useState(false);
   const [serverBlockers,setServerBlockers]=useState<Blocker[]>([]);
+  const [workflowGate,setWorkflowGate]=useState<ProjectWorkflowGate|null>(null);
   const [advanced,setAdvanced]=useState(initialAdvanced);
   const pending=useRef(false),active=useRef(true);
   const submitted=useRef<{body:ProjectBody;revision:number}|null>(null);
@@ -37,7 +39,7 @@ export function useProjectEditingController(id:string,record:RecordState,initial
     if(!active.current)return false;
     drafts.acceptSaved(candidate,current.body,current.revision);
     submitted.current=null;
-    setServerBlockers([]);setSaveOutcomeUnknown(false);setBlocked(false);
+    setServerBlockers([]);setWorkflowGate(null);setSaveOutcomeUnknown(false);setBlocked(false);
     const newer=local.current&&!projectBodiesEqual(local.current,current.body);
     setMessage(`Submitted work-plan changes saved.${newer?' Newer edits remain in your private draft.':''}${warning?` ${warning}`:!cleared?' The private draft could not be cleared; refresh draft status before continuing.':''}`);
     try{refreshProjectSurfaces(id,router);}catch{setMessage('Submitted changes saved. Refresh saved views to update their display.');}
@@ -83,7 +85,7 @@ export function useProjectEditingController(id:string,record:RecordState,initial
       if(!active.current)return false;
       if(outcome.kind==='saved')return await adoptSaved(attempt.body,{body:outcome.body??normalizeWorkplanBodyForSave(attempt.body),revision:outcome.revision},outcome.refreshWarning);
       if(outcome.kind==='revision_conflict'){await reconcileLatest(await readSavedProject(id));return false;}
-      if(outcome.kind==='validation_rejected'){submitted.current=null;setServerBlockers(outcome.blockers as Blocker[]);setMessage(outcome.error);return false;}
+      if(outcome.kind==='validation_rejected'){submitted.current=null;setServerBlockers(outcome.blockers as Blocker[]);setWorkflowGate(outcome.workflowGate??null);setMessage(outcome.error);return false;}
       if(outcome.kind==='unknown')throw new Error(outcome.error);
       submitted.current=null;setMessage(outcome.error);return false;
     }catch(cause){
@@ -102,7 +104,7 @@ export function useProjectEditingController(id:string,record:RecordState,initial
   async function discard(){
     if(pending.current||busy)return false;
     pending.current=true;setBusy(true);
-    try{const ok=await drafts.discardDraft();if(ok&&active.current){setServerBlockers([]);setSaveOutcomeUnknown(false);setBlocked(false);setMessage('Private draft discarded. The latest saved project is loaded.');}return ok;}
+    try{const ok=await drafts.discardDraft();if(ok&&active.current){setServerBlockers([]);setWorkflowGate(null);setSaveOutcomeUnknown(false);setBlocked(false);setMessage('Private draft discarded. The latest saved project is loaded.');}return ok;}
     finally{pending.current=false;if(active.current)setBusy(false);}
   }
   // Sidecar events request a canonical read/rebase, never just a newer revision token.
@@ -111,6 +113,6 @@ export function useProjectEditingController(id:string,record:RecordState,initial
     window.addEventListener(projectMutationEvent,changed);return()=>window.removeEventListener(projectMutationEvent,changed);
   });
   return {body:bodyState,savedBody:savedState,savedRevision:revisionState,setBody,setSavedBody,setSavedRevision,
-    busy,setBusy,blocked,setBlocked,message,setMessage,saveOutcomeUnknown,setSaveOutcomeUnknown,serverBlockers,setServerBlockers,
+    busy,setBusy,blocked,setBlocked,message,setMessage,saveOutcomeUnknown,setSaveOutcomeUnknown,serverBlockers,setServerBlockers,workflowGate,setWorkflowGate,
     dirty,drafts,save,discard,checkUncertainSave,advanced,setAdvanced};
 }

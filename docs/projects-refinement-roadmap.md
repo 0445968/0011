@@ -158,6 +158,20 @@ The dedicated Phases page, shared formal phase indicators, Tasks & Milestones sl
 - Local focused database tests, typecheck, platform verification and build are part of R8 delivery. Live authenticated acceptance remains pending for transition UX, cross-account authorization, dependency refresh and two-session conflict checks.
 - Inactive and Completed remain explicitly discoverable in the directory. My Tasks and Calendar default to operational work and expose explicit Inactive, Completed and All scopes.
 
+### R8 follow-up 1 — task-status validation and reasoned admin workflow overrides
+- Validate submitted task candidates against the saved baseline. An unchanged historical completed client task must not block an unrelated task edit or status change.
+- Completion-review freshness is tied to that task's submitted work and completion-relevant control snapshot, not unrelated project metadata, priority, assignment or project-wide revision churn. Ownership, phase, dependency and blocker changes remain gated.
+- Return a structured task gate with the affected task, unmet requirement, corrective actions and whether a designated workflow admin can override it.
+- The only supported override gate in this slice is the current Bivi review requirement for an explicit transition of one client task to Done. It requires a reason and a transactional task/project revision check. It does not create client/Bivi approval evidence or bypass task dependencies, subtasks, closed phases, RLS, project boundaries, invalid references or conflicts.
+- Override evidence is immutable and scoped to the task work revision and exact Done transition. Reopening or materially changing that task makes the old override inapplicable while retaining its audit record.
+- The repository currently has active/inactive staff membership, but no Bivi admin role. A separate workflow-override capability is service-managed, defaults to nobody and cannot be granted by staff or clients. Account provisioning remains an explicit deployment administration step; do not infer an admin from being the only active staff member.
+- Validation, UI and delivery details: [R8 task-status follow-up](./projects-r8-task-status-overrides.md).
+
+### Requests / Publishing / client portal — pending follow-up slices
+- **A. Manual inbound and outbound Requests:** Never create requests automatically from task changes. Admin-created outbound requests select incomplete client tasks. Admins can record externally received inbound requests with provenance. Requests support subject, description, links, permission-bounded files and project contacts; can be added to My Tasks, assigned to a team member or linked to existing work without removing existing authorized request access. Prevent duplicate task creation. Define explicit completion/review policy and reasoned admin override.
+- **B. Publishing integration:** Publish/send one request or explicitly include requests in a project update. Publishing lists included requests and linked tasks, previews exact client-visible text and attachments, preserves published versions, prevents duplicate publication/notifications, and distinguishes publication from verified delivery.
+- **C. Client portal follow-up:** Add manual request submission, responses, attachments and review decisions, a client approval-required preference for inbound requests, portal visibility and notifications. Do not synthesize requests to fill empty lists.
+
 ## R7G — compact Projects frontend and reusable visual blueprint
 
 - Implemented on `bivi-dashboard-overhaul`: shared staff Projects visual primitives and documented design/layout rules in `docs/projects-r7g-visual-blueprint.md`.

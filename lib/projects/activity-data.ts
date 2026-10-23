@@ -7,7 +7,7 @@ import {operationalStatusLabels,type OperationalStatus} from './operational-stat
 type Row = Record<string, unknown>;
 type AuditSource =
   | 'project' | 'tasks' | 'milestones' | 'phases' | 'members'
-  | 'files' | 'discussion' | 'clients' | 'brief' | 'access' | 'delivery' | 'forms' | 'meetings' | 'communications';
+  | 'files' | 'discussion' | 'clients' | 'brief' | 'access' | 'delivery' | 'forms' | 'meetings' | 'communications' | 'task_overrides';
 
 export interface ProjectActivityEvent {
   id: string;
@@ -285,6 +285,13 @@ export async function getProjectActivity(client: SupabaseClient, requestId: stri
   for(const row of bySource.publication_reviews??[])events.push({...auditEvent('project',`publication-review:${row.version}:${row.user_id}`,row,`Project update ${display(row.decision)}`,`Version ${row.version}`,base,'user_id'),href:`${base}/publish`});
   for(const row of bySource.domain??[]){
     const source=text(row.source) as AuditSource,details=object(row.details);
+    if(source==='task_overrides'){
+      const task=text(row.item_id);
+      events.push({...auditEvent('tasks','workflow-override',row,'Admin workflow override: client completion review',
+        `${taskName(task)} · ${display(details.fromStatus)} → ${display(details.toStatus)} · ${text(details.reason)}`,base,'actor','created_at',task),
+        href:`${base}?tab=plan&task=${encodeURIComponent(task)}`,provenance:'project_task_workflow_overrides'});
+      continue;
+    }
     events.push({...auditEvent(source,'domain',row,`${source==='communications'?'Communication':source==='meetings'?'Meeting':'Delivery record'} ${text(row.action).replaceAll('_',' ')}`,
       [text(details.title),text(details.kind),details.attempt?`Attempt ${details.attempt}`:'',text(details.status)].filter(Boolean).join(' · '),base,'actor','created_at',text(row.item_id)),
       provenance:source==='communications'?'project_communication_outbox':'project_event_history',recipients:Array.isArray(row.recipients)?row.recipients.filter((value):value is string=>typeof value==='string'):[]});
