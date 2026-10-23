@@ -30,7 +30,7 @@ test('Phases keeps phase controls and sends task work back to the canonical Task
 test('Open task clears transient board filters and resolves legacy phase task links to Tasks',()=>{
  const board=read('components/admin/projects/ProjectMilestoneBoardV2.tsx');
  const page=read('app/admin/(workspace)/projects/[id]/page.tsx');
- assert.match(board,/setFilters\(\{\.\.\.emptyWorkplanFilters\}\); setTagFilter\(''\); setView\('tasks'\); setGrouping\('none'\)/);
+ assert.match(board,/setFilters\(\{\.\.\.emptyWorkplanFilters\}\); setTagFilter\(''\); setView\('table'\); setGrouping\('none'\)/);
  assert.match(board,/taskDomId\(selectedTaskId\)/);
  assert.match(board,/focusTaskId/);
  assert.match(page,/legacyTaskRoute[\s\S]*\? 'plan'/);
