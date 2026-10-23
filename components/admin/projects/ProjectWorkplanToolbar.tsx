@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { Activity, CalendarDays, Columns3, Filter, ListFilter, Menu, PanelRightClose, PanelRightOpen, Plus, Search, SlidersHorizontal, X } from 'lucide-react';
+import { Activity, Columns3, Filter, ListFilter, Menu, PanelRightClose, PanelRightOpen, Plus, Search, SlidersHorizontal, X } from 'lucide-react';
 import { projectPhaseLabels, projectPhaseOrder } from '@/lib/projects/lifecycle-schema';
 import type { WorkplanFilters, TaskGrouping } from '@/lib/projects/workplan-filters';
 
@@ -49,7 +49,7 @@ export function ProjectWorkplanToolbar({projectId,filters,onChange,view,onView,g
         <details className="relative"><summary className={`${control} cursor-pointer list-none [&::-webkit-details-marker]:hidden`} aria-label="Add task or milestone"><Plus size={16}/><Menu size={13}/></summary>
           <div className="absolute right-0 z-30 mt-1 w-48 space-y-1 rounded-xl border border-border bg-popover p-2 text-popover-foreground shadow-lg">
             <button type="button" disabled={disabled} onClick={onAddTask} className="w-full rounded-md px-3 py-2 text-left text-xs hover:bg-muted disabled:opacity-50">Add task</button>
-            <button type="button" disabled={disabled} onClick={onAddMilestone} className="w-full rounded-md px-3 py-2 text-left text-xs hover:bg-muted disabled:opacity-50">Add milestone</button>
+            <Link href={`/projects/${projectId}?tab=phases&newMilestone=1`} className="block w-full rounded-md px-3 py-2 text-left text-xs hover:bg-muted">Add milestone in Lifecycle</Link>
           </div>
         </details>
       </div>
