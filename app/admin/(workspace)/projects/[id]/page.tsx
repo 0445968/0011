@@ -111,7 +111,7 @@ export default async function ProjectPage({
   searchParams = {},
 }: {
   params: { id: string };
-  searchParams?: { tab?: string;task?:string;focus?:string;milestone?:string;view?:string;request?:string;meeting?:string };
+  searchParams?: { tab?: string;task?:string;focus?:string;milestone?:string;view?:string;request?:string;meeting?:string;newMilestone?:string };
 }) {
   /* =======================================================
      AUTHENTICATION
@@ -454,6 +454,8 @@ export default async function ProjectPage({
 
       {tab === 'phases' && record && lifecycle?.lifecycle && calendarExtras && scheduleRows && (
         <ProjectPhasesPage
+          record={record}
+          createMilestone={searchParams.newMilestone==='1'}
           completionIssues={completionIssueRows}
           key={params.id}
           id={params.id}
