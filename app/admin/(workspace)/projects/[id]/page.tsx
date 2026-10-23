@@ -1,6 +1,6 @@
 import {ApprovalFocus} from '@/components/admin/approvals/ApprovalFocus';
 
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { z } from 'zod';
 
 
@@ -274,6 +274,7 @@ export default async function ProjectPage({
   const requestedTask=searchParams.task;const selectedTask=requestedTask&&record?.body.tasks.some(task=>task.id===requestedTask)?requestedTask:undefined;
   const requestedMilestone = searchParams.milestone;
   const selectedMilestone = requestedMilestone && record?.body.milestones.some(item => item.id === requestedMilestone) ? requestedMilestone : undefined;
+  if (selectedMilestone && searchParams.tab === 'plan' && !selectedTask) redirect(`/projects/${params.id}?tab=phases&milestone=${encodeURIComponent(selectedMilestone)}`);
   const requestedTab =
     searchParams.tab;
 
