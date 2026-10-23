@@ -38,7 +38,9 @@ export function ProjectLifecycleMilestones({id,record,createOnOpen=false}:{
     const id=crypto.randomUUID();
     setBody(previous=>previous?{...previous,milestones:[...previous.milestones,{id,title:'New milestone',dueOn:null,status:'planned'}]}:previous);
     setExpanded(id);
-  },[createOnOpen,body,readonly,drafts.ready,drafts.recoverable,setBody]);
+    // Consume this one-time action so refreshes cannot create another unsaved milestone.
+    window.history.replaceState(window.history.state,'',`/projects/${id}?tab=phases`);
+  },[createOnOpen,body,readonly,drafts.ready,drafts.recoverable,setBody,id]);
   function updateMilestone(id:string,changes:Partial<Milestone>){
     setBody(previous=>previous?{...previous,milestones:previous.milestones.map(item=>item.id===id?{...item,...changes}:item)}:previous);
   }
