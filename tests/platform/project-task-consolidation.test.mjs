@@ -20,7 +20,8 @@ test('normal task cards own grouped editing and use shared task controls, produc
 test('Phases keeps phase controls and sends task work back to the canonical Tasks section',()=>{
  const phases=read('components/admin/projects/ProjectPhasesPage.tsx');
  const lifecycle=read('components/admin/ProjectLifecycleControls.tsx');
- assert.match(phases,/Open Tasks &amp; Milestones/);
+ assert.match(phases,/Open Tasks/);
+ assert.match(phases,/<ProjectLifecycleMilestones/);
  assert.match(phases,/showTaskManagement=\{false\}/);
  assert.match(lifecycle,/taskOnlyTaskId\?/);
  assert.match(lifecycle,/showTaskManagement && events\.length/);
