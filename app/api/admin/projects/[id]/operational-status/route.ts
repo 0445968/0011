@@ -5,6 +5,17 @@ import {revalidateProjectSurfaces} from '@/lib/projects/revalidate';
 
 export const dynamic='force-dynamic';
 const commandSchema=z.object({status:z.enum(['active','on_hold','waiting_on_client','inactive']),reason:z.string().max(2000).optional().default(''),sourceKind:z.string().max(40).optional(),sourceId:z.string().max(200).optional(),expectedRevision:z.number().int().min(0),expectedProjectRevision:z.number().int().min(0)}).strict();
+export async function GET(request:Request,{params}:{params:{id:string}}){
+ const access=await getStaffAccess();if(!access.allowed)return adminReply({error:'Staff access is required.'},access.status);
+ if(!z.string().uuid().safeParse(params.id).success)return adminReply({error:'Project not found.'},404);
+ if(new URL(request.url).searchParams.get('view')!=='waiting-sources')return adminReply({error:'Unknown operational status view.'},400);
+ const {data,error}=await access.client.rpc('project_operational_waiting_sources',{p_request:params.id});
+ if(error){if(error.code==='42501')return adminReply({error:'Staff access is required to load client dependencies.'},403);return adminReply({error:'Dependency list could not load. Retry the check.'},503);}
+ if(data?.result==='not_found')return adminReply({error:'Project not found.'},404);
+ if(data?.result!=='ok'||!Array.isArray(data.sources)||!Array.isArray(data.diagnostics))return adminReply({error:'Dependency list could not load. Retry the check.'},503);
+ return adminReply({result:'ok',sources:data.sources,diagnostics:data.diagnostics});
+}
+
 export async function POST(request:Request,{params}:{params:{id:string}}){
  if(!isSameOrigin(request))return adminReply({error:'Use the Bivi workspace to change project status.'},403);
  const access=await getStaffAccess();if(!access.allowed)return adminReply({error:'Staff access is required.'},access.status);

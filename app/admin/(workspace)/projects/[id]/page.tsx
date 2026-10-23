@@ -456,6 +456,7 @@ export default async function ProjectPage({
           completionIssues={completionIssueRows}
           key={params.id}
           id={params.id}
+          selectedTask={searchParams.task}
           revision={record.revision}
           body={record.body}
           lifecycle={lifecycle.lifecycle}

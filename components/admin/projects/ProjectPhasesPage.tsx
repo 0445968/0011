@@ -17,8 +17,8 @@ type Lifecycle = { requestId:string; phase:ProjectPhase; revision:number; update
 type Event = { id:number; task_id:string; action:string; snapshot:Record<string,unknown>; created_at:string };
 type PhaseLinkCommand = Extract<Parameters<ReturnType<typeof useProjectHierarchy>['save']>[0],{action:'set_milestone_phases'}>;
 
-export function ProjectPhasesPage({id,revision,body,lifecycle,controls,events,phaseStates,phaseColors,readOnly,completionIssues}: {
-  id:string; revision:number; body:ProjectBody; lifecycle:Lifecycle; controls:ProjectTaskControl[]; events:Event[];
+export function ProjectPhasesPage({id,revision,body,lifecycle,controls,events,phaseStates,phaseColors,readOnly,completionIssues,selectedTask}: {
+  id:string; revision:number; body:ProjectBody; lifecycle:Lifecycle; controls:ProjectTaskControl[]; events:Event[]; selectedTask?:string;
   phaseStates:ProjectPhaseState[]; phaseColors:ProjectPhaseColor[];
   readOnly:boolean; completionIssues:string[];
 }) {
@@ -49,10 +49,10 @@ export function ProjectPhasesPage({id,revision,body,lifecycle,controls,events,ph
       onAssignMilestone={assign}
     />}
     <ProjectPanel title="Lifecycle, dependencies and approvals" description="Revision-checked task and phase controls">
-      <details className="group">
+      <details className="group" open={Boolean(selectedTask)}>
       <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Open lifecycle controls</summary>
       <div className="border-t border-border p-3">
-        <ProjectLifecycleControls key={id} id={id} lifecycle={lifecycle} controls={controls} tasks={body.tasks} events={events}/>
+        <ProjectLifecycleControls key={id} id={id} lifecycle={lifecycle} controls={controls} tasks={body.tasks} events={events} selectedTask={selectedTask}/>
       </div>
       </details>
     </ProjectPanel>
