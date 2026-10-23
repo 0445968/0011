@@ -1,6 +1,7 @@
 
 'use client';
 import { guardWorkspaceNavigation } from './WorkspaceNavigationGuard';
+import { projectRecordSections, projectSectionHref } from '@/lib/admin/workspace/project-sections';
 
 import {
   useEffect,
@@ -151,13 +152,6 @@ const MENU_LABELS = [
 type MenuName =
   (typeof MENU_LABELS)[number];
 
-const PROJECT_SECTIONS = [
-  { label: 'Overview', value: 'overview' },
-  { label: 'Tasks & Milestones', value: 'plan' },
-  { label: 'Lifecycle', value: 'lifecycle' },
-  { label: 'Brief', value: 'brief' },
-  { label: 'Delivery', value: 'delivery' },
-] as const;
 
 const MAX_RECENT_FILES = 10;
 
@@ -1124,20 +1118,15 @@ export function WorkspaceMenuBar({
         disabled={!activeTab}
       >
         {isProject ? (
-          PROJECT_SECTIONS.map(
-            (section) => (
-              <MenuItem
-                key={section.value}
-                onSelect={() =>
-                  navigate(
-                    `${projectBase}?tab=${section.value}`
-                  )
-                }
-              >
-                {section.label}
+          projectRecordSections.map(section => {
+            const href = projectBase ? projectSectionHref(projectBase, section) : null;
+            return (
+              <MenuItem key={section.id} disabled={!href}
+                onSelect={() => { if (href) navigate(href); }}>
+                {section.label}{!href ? ' (coming soon)' : ''}
               </MenuItem>
-            )
-          )
+            );
+          })
         ) : isInquiry ? (
           <>
             {routeItem(
@@ -1172,29 +1161,7 @@ export function WorkspaceMenuBar({
         )}
       </MenuSubmenu>
 
-      {projectBase && (
-        <MenuSubmenu label="Project workspaces">
-          {routeItem(
-            'Files',
-            `${projectBase}/files`
-          )}
 
-          {routeItem(
-            'Discussion',
-            `${projectBase}/discussion`
-          )}
-
-          {routeItem(
-            'Publishing',
-            `${projectBase}/publish`
-          )}
-
-          {routeItem(
-            'Client access',
-            `${projectBase}/access`
-          )}
-        </MenuSubmenu>
-      )}
 
       <MenuDivider />
 

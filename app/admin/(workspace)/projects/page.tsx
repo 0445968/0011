@@ -1,7 +1,8 @@
-
-import {
-  FolderKanban,
-} from 'lucide-react';
+import { getProjectDirectoryContext } from '@/lib/projects/directory-context';
+import { projectPhaseOrder, projectPhaseSchema, type ProjectPhase } from '@/lib/projects/lifecycle-schema';
+import type { ProjectPhaseColorMap } from '@/lib/projects/phase-colors';
+import type { ProjectPhaseState } from '@/lib/projects/phase-status';
+import { validDirectoryMode } from '@/lib/projects/directory-types';
 
 import {
   requireStaff,
@@ -9,13 +10,13 @@ import {
 
 import {
   listProjects,
-  projectStateSchema,
+  projectDirectoryStatusSchema,
   projectSortSchema,
   projectSortDirectionSchema,
   projectOwnerFilterSchema,
   projectTaskFilterSchema,
   projectMilestoneFilterSchema,
-  type ProjectState,
+  type ProjectDirectoryStatus,
   type ProjectSortKey,
   type ProjectSortDirection,
   type ProjectOwnerFilter,
@@ -27,6 +28,7 @@ import {
   ProjectDirectory,
   type ProjectDirectoryViewFilters,
 } from '@/components/admin/ProjectDirectory';
+import {ProjectPageHeader} from '@/components/admin/projects/ProjectVisuals';
 
 /* =========================================================
    SEARCH PARAMETERS
@@ -41,6 +43,7 @@ interface ProjectsSearchParams {
   sort?: string;
   direction?: string;
   page?: string;
+  view?: string;
 }
 
 /* =========================================================
@@ -55,11 +58,11 @@ function getFilters(
      ------------------------------------------------------- */
 
   const parsedState =
-    projectStateSchema.safeParse(
+    projectDirectoryStatusSchema.safeParse(
       params.state
     );
 
-  const state: ProjectState | null =
+  const state: ProjectDirectoryStatus | null =
     parsedState.success
       ? parsedState.data
       : null;
@@ -223,6 +226,40 @@ export default async function ProjectsPage({
     }
   );
 
+  const context = await getProjectDirectoryContext(client, projects.map(project => project.request_id));
+  const phaseColorsByProject: Record<string, ProjectPhaseColorMap> = {};
+  const phaseStatesByProject: Record<string, ProjectPhaseState[]> = {};
+  if (projects.length) {
+    const [colors,states]=await Promise.all([
+      client.from('project_phase_colors').select('request_id,phase,color').in('request_id',projects.map(project=>project.request_id)),
+      client.from('project_phase_states').select('request_id,phase,status,revision,activated_at,completed_at').in('request_id',projects.map(project=>project.request_id)),
+    ]);
+    if (colors.error) throw new Error('Project phase colors could not load. Check the phase color migration.');
+    if (states.error) throw new Error('Saved project phase statuses could not load. Check migration 035.');
+    for (const row of colors.data ?? []) {
+      const phase = projectPhaseSchema.safeParse(row.phase);
+      if (phase.success && typeof row.color === 'string' && /^#[0-9A-Fa-f]{6}$/.test(row.color)) {
+        const byProject = phaseColorsByProject[row.request_id] ??= {};
+        byProject[phase.data as ProjectPhase] = row.color.toUpperCase();
+      }
+    }
+    const stateRows=new Map<string,Map<ProjectPhase,{status:ProjectPhaseState['status'];revision:number;activated_at:string|null;completed_at:string|null}>>();
+    for(const row of states.data??[]){
+      const phase=projectPhaseSchema.safeParse(row.phase);
+      if(!phase.success||!['planning','active','completed'].includes(String(row.status)))continue;
+      const byProject=stateRows.get(row.request_id)??new Map();
+      byProject.set(phase.data,{status:row.status as ProjectPhaseState['status'],revision:row.revision,activated_at:row.activated_at,completed_at:row.completed_at});
+      stateRows.set(row.request_id,byProject);
+    }
+    for(const project of projects){
+      const byPhase=stateRows.get(project.request_id)??new Map();
+      phaseStatesByProject[project.request_id]=projectPhaseOrder.map(phase=>{
+        const saved=byPhase.get(phase);
+        return {phase,status:saved?.status??'planning',revision:saved?.revision??0,everActive:Boolean(saved?.activated_at),activatedAt:saved?.activated_at??null,completedAt:saved?.completed_at??null};
+      });
+    }
+  }
+
   /* -------------------------------------------------------
      PAGE CONTENT
      ------------------------------------------------------- */
@@ -232,67 +269,16 @@ export default async function ProjectsPage({
 
       {/* PAGE HEADER */}
 
-      <header
-        className="
-          flex
-          flex-wrap
-          items-center
-          justify-between
-          gap-4
-        "
-      >
-        <div>
-          <h1
-            className="
-              font-heading
-              text-2xl
-              font-semibold
-              tracking-tight
-              sm:text-3xl
-            "
-          >
-            Projects
-          </h1>
-
-          <p
-            className="
-              mt-1.5
-              text-xs
-              text-muted-foreground
-              sm:text-sm
-            "
-          >
-            Manage project work, milestones,
-            and client collaboration.
-          </p>
-        </div>
-
-        <div
-          className="
-            flex
-            h-10
-            w-10
-            items-center
-            justify-center
-            rounded-xl
-            border
-            border-border
-            bg-card
-            text-foreground
-          "
-        >
-          <FolderKanban
-            size={19}
-            strokeWidth={1.8}
-            aria-hidden="true"
-          />
-        </div>
-      </header>
+      <ProjectPageHeader eyebrow="Workspace" title="Projects" description="Project work, milestones and client collaboration." />
 
       {/* INTERACTIVE PROJECT DIRECTORY */}
 
       <ProjectDirectory
         projects={projects}
+        context={context}
+        phaseColorsByProject={phaseColorsByProject}
+        phaseStatesByProject={phaseStatesByProject}
+        mode={validDirectoryMode(searchParams.view)}
         total={total}
         page={page}
         filters={filters}

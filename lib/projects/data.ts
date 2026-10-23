@@ -38,6 +38,8 @@ export const projectStateSchema = z.enum([
   'on_hold',
   'completed',
 ]);
+export const projectDirectoryStatusSchema = z.enum(['active','on_hold','waiting_on_client','inactive','completed']);
+export type ProjectDirectoryStatus = z.infer<typeof projectDirectoryStatusSchema>;
 
 export const projectSortSchema = z.enum([
   'updated',
@@ -114,6 +116,7 @@ const summarySchema = z.object({
   state: projectStateSchema,
   body: projectBodySchema,
   updated_at: z.string(),
+  operational_status: projectDirectoryStatusSchema.optional(),
 });
 
 export type ProjectSummary = z.infer<
@@ -176,7 +179,7 @@ const SORT_COLUMNS: Record<
   updated: 'updated_at',
   title: 'body->>title',
   owner: 'body->>owner',
-  state: 'state',
+  state: 'operational_status',
 };
 
 /* =========================================================
@@ -247,7 +250,7 @@ export async function listProjects(
      ------------------------------------------------------- */
 
   let query = client
-    .from('inquiry_projects')
+    .from('staff_project_directory')
     .select(
       'request_id,state,body,updated_at',
       {
@@ -259,12 +262,11 @@ export async function listProjects(
      PROJECT STATUS
      ------------------------------------------------------- */
 
-  const parsedState =
-    projectStateSchema.safeParse(state);
+  const parsedState = projectDirectoryStatusSchema.safeParse(state);
 
   if (parsedState.success) {
     query = query.eq(
-      'state',
+      'operational_status',
       parsedState.data
     );
   }

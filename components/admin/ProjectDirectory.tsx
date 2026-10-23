@@ -12,6 +12,11 @@ import {
 } from 'react';
 
 import Link from 'next/link';
+import { DirectoryIdentity, DirectoryProgress, DirectoryPhases, DirectoryStatus } from '@/components/admin/projects/DirectoryIndicators';
+import {ProjectMetric} from '@/components/admin/projects/ProjectVisuals';
+import { validDirectoryMode, type ProjectDirectoryContext, type ProjectDirectoryMode } from '@/lib/projects/directory-types';
+import type { ProjectPhaseColorMap } from '@/lib/projects/phase-colors';
+import type { ProjectPhaseState } from '@/lib/projects/phase-status';
 
 import {
   usePathname,
@@ -42,12 +47,11 @@ import {
 
 import {
   projectProgress,
-  projectStates,
 } from '@/lib/projects/schema';
 
 import type {
   ProjectSummary,
-  ProjectState,
+  ProjectDirectoryStatus,
   ProjectOwnerFilter,
   ProjectTaskFilter,
   ProjectMilestoneFilter,
@@ -55,9 +59,6 @@ import type {
   ProjectSortDirection,
 } from '@/lib/projects/data';
 
-import {
-  WorkspaceStatusBadge,
-} from '@/components/admin/WorkspaceStatusBadge';
 
 import {
   DropdownMenu,
@@ -73,7 +74,7 @@ import {
    ========================================================= */
 
 export interface ProjectDirectoryViewFilters {
-  state: ProjectState | null;
+  state: ProjectDirectoryStatus | null;
   search: string;
   owner: ProjectOwnerFilter;
   taskStatus: ProjectTaskFilter;
@@ -84,6 +85,10 @@ export interface ProjectDirectoryViewFilters {
 
 interface ProjectDirectoryProps {
   projects: ProjectSummary[];
+  context?: Record<string, ProjectDirectoryContext>;
+  phaseColorsByProject?: Record<string, ProjectPhaseColorMap>;
+  phaseStatesByProject?: Record<string, ProjectPhaseState[]>;
+  mode: ProjectDirectoryMode;
   total: number;
   page: number;
   filters: ProjectDirectoryViewFilters;
@@ -97,7 +102,8 @@ const columnOptions = [
   { id: 'project', label: 'Project' },
   { id: 'owner', label: 'Owner' },
   { id: 'status', label: 'Status' },
-  { id: 'progress', label: 'Progress' },
+  { id: 'progress', label: 'Task progress' },
+  { id: 'phases', label: 'Phase activity' },
   { id: 'tasks', label: 'Tasks' },
   { id: 'milestones', label: 'Milestones' },
   { id: 'updated', label: 'Updated' },
@@ -113,6 +119,7 @@ const DEFAULT_COLUMNS: ColumnKey[] = [
   'owner',
   'status',
   'progress',
+  'phases',
   'updated',
   'actions',
 ];
@@ -152,12 +159,14 @@ const EMPTY_FILTERS: ProjectDirectoryViewFilters = {
 };
 
 const STATUS_OPTIONS: {
-  value: ProjectState | null;
+  value: ProjectDirectoryStatus | null;
   label: string;
 }[] = [
-  { value: null, label: 'All' },
+  { value: null, label: 'All operational statuses' },
   { value: 'active', label: 'Active' },
   { value: 'on_hold', label: 'On hold' },
+  { value: 'waiting_on_client', label: 'Waiting on client' },
+  { value: 'inactive', label: 'Inactive' },
   { value: 'completed', label: 'Completed' },
 ];
 
@@ -200,6 +209,7 @@ interface SavedView {
   name: string;
   filters: ProjectDirectoryViewFilters;
   columns: ColumnKey[];
+  mode?: ProjectDirectoryMode;
 }
 
 const COLUMN_STORAGE_KEY = 'bivi-project-columns-v1';
@@ -244,6 +254,8 @@ function validSavedView(
       filters!.state === null ||
       filters!.state === 'active' ||
       filters!.state === 'on_hold' ||
+      filters!.state === 'waiting_on_client' ||
+      filters!.state === 'inactive' ||
       filters!.state === 'completed'
     ) &&
     OWNER_OPTIONS.some(
@@ -432,52 +444,13 @@ function ProjectPreview({
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* PROJECT SUMMARY */}
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-lg border border-border bg-card p-3">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-            Task progress
-          </p>
-
-          <p className="mt-1 text-lg font-semibold">
-            {progress.percent}%
-          </p>
-
-          <p className="mt-1 text-xs text-muted-foreground">
-            {progress.done} of {progress.total} complete
-          </p>
-        </div>
-
-        <div className="rounded-lg border border-border bg-card p-3">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-            Open tasks
-          </p>
-
-          <p className="mt-1 text-lg font-semibold">
-            {openTasks.length}
-          </p>
-
-          <p className="mt-1 text-xs text-muted-foreground">
-            {blockedTasks.length} blocked
-          </p>
-        </div>
-
-        <div className="rounded-lg border border-border bg-card p-3">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-            Milestones
-          </p>
-
-          <p className="mt-1 text-lg font-semibold">
-            {completedMilestones}/
-            {project.body.milestones.length}
-          </p>
-
-          <p className="mt-1 text-xs text-muted-foreground">
-            Completed milestones
-          </p>
-        </div>
+      <div className="grid gap-2 sm:grid-cols-3">
+        <ProjectMetric label="Task progress" value={progress.total ? `${progress.percent}%` : 'No tasks'} detail={`${progress.done} of ${progress.total} complete`}/>
+        <ProjectMetric label="Open tasks" value={openTasks.length} detail={`${blockedTasks.length} blocked`}/>
+        <ProjectMetric label="Milestones" value={`${completedMilestones}/${project.body.milestones.length}`} detail="Completed / total"/>
       </div>
 
       {/* TASKS AND MILESTONES */}
@@ -488,14 +461,14 @@ function ProjectPreview({
             Upcoming and open tasks
           </h3>
 
-          <div className="mt-2 divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
+          <div className="mt-1.5 divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
             {openTasks.slice(0, 5).map((task) => (
               <div
                 key={task.id}
                 className="flex items-center justify-between gap-3 px-3 py-2.5"
               >
                 <div className="min-w-0">
-                  <p className="truncate text-xs font-medium">
+                  <p className="break-words text-xs font-medium">
                     {task.title}
                   </p>
 
@@ -539,7 +512,7 @@ function ProjectPreview({
             Milestones
           </h3>
 
-          <div className="mt-2 divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
+        <div className="mt-1.5 divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
             {project.body.milestones
               .slice(0, 5)
               .map((milestone) => (
@@ -630,6 +603,10 @@ function ProjectPreview({
 
 export function ProjectDirectory({
   projects,
+  context = {},
+  phaseColorsByProject = {},
+  phaseStatesByProject = {},
+  mode,
   total,
   page,
   filters,
@@ -776,9 +753,11 @@ export function ProjectDirectory({
   function navigate(
     next: ProjectDirectoryViewFilters,
     nextPage = 1,
-    presetId = ''
+    presetId = '',
+    nextMode: ProjectDirectoryMode = mode
   ) {
     const params = new URLSearchParams();
+    if (nextMode !== 'table') params.set('view', nextMode);
 
     if (next.state) {
       params.set('state', next.state);
@@ -898,6 +877,7 @@ export function ProjectDirectory({
       name,
       filters,
       columns,
+      mode,
     };
 
     persistViews([...presets, saved]);
@@ -919,7 +899,7 @@ export function ProjectDirectory({
 
     setVisibleColumns(view.columns);
 
-    navigate(view.filters, 1, view.id);
+    navigate(view.filters, 1, view.id, validDirectoryMode(view.mode));
   }
 
   function deleteView() {
@@ -1020,18 +1000,7 @@ export function ProjectDirectory({
               />
             </button>
 
-            <div className="min-w-0">
-              <Link
-                href={base}
-                className="block max-w-[260px] truncate font-semibold text-foreground hover:underline hover:underline-offset-4"
-              >
-                {project.body.title}
-              </Link>
-
-              <p className="mt-1 text-[11px] text-muted-foreground">
-                {project.body.tasks.length} tasks
-              </p>
-            </div>
+            <DirectoryIdentity project={project} context={context[project.request_id]} />
           </div>
         );
       }
@@ -1040,43 +1009,11 @@ export function ProjectDirectory({
         return project.body.owner || 'Unassigned';
 
       case 'status':
-        return (
-          <WorkspaceStatusBadge
-            kind="project"
-            status={project.state}
-          />
-        );
-
+        return <DirectoryStatus state={project.state} operationalStatus={project.operational_status} />;
       case 'progress':
-        return (
-          <div className="min-w-[110px]">
-            <div className="flex justify-between gap-2 text-[11px]">
-              <span className="font-semibold">
-                {progress.percent}%
-              </span>
-
-              <span className="text-muted-foreground">
-                {progress.done}/{progress.total}
-              </span>
-            </div>
-
-            <div
-              role="progressbar"
-              aria-label={`${project.body.title} progress`}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={progress.percent}
-              className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted"
-            >
-              <div
-                className="h-full rounded-full bg-foreground"
-                style={{
-                  width: `${progress.percent}%`,
-                }}
-              />
-            </div>
-          </div>
-        );
+        return <DirectoryProgress project={project} />;
+      case 'phases':
+        return <DirectoryPhases project={project} context={context[project.request_id]} phaseColors={phaseColorsByProject[project.request_id]} formalStates={phaseStatesByProject[project.request_id]??[]} />;
 
       case 'tasks': {
         const blocked =
@@ -1152,12 +1089,39 @@ export function ProjectDirectory({
     }
   }
 
+  function renderCard(project: ProjectSummary) {
+    return <article key={project.request_id} className="min-w-0 self-start rounded-xl border border-border bg-card p-3">
+      <DirectoryIdentity project={project} context={context[project.request_id]} />
+      <div className="my-2 flex flex-wrap items-center justify-between gap-2"><DirectoryStatus state={project.state} operationalStatus={project.operational_status} /><span className="text-[10px] text-muted-foreground" title="Legacy free-text owner label; this is not a verified account">{project.body.owner ? `Owner label: ${project.body.owner}` : 'No legacy owner label'}</span></div>
+      <div className="border-y border-border py-3"><DirectoryPhases project={project} context={context[project.request_id]} phaseColors={phaseColorsByProject[project.request_id]} formalStates={phaseStatesByProject[project.request_id]??[]} /></div>
+      <div className="mt-2"><DirectoryProgress project={project} /></div>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">{renderCell(project, 'actions')}<span className="text-[10px] text-muted-foreground">{formatDate(project.updated_at)}</span></div>
+      <details className="mt-3 border-t border-border pt-3"><summary className="cursor-pointer text-xs font-medium">Tasks, milestones & actions</summary><div className="mt-3"><ProjectPreview project={project} /></div></details>
+    </article>;
+  }
+
   /* =======================================================
      RENDER
      ======================================================= */
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" aria-busy={isPending}>
+      <section aria-label="Current page summary" className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+        <ProjectMetric label="Matching projects" value={total} detail="All pages matching filters"/>
+        <ProjectMetric label="Active work" value={projects.filter(project => project.operational_status === 'active').length} detail="On this page · operational status"/>
+        <ProjectMetric label="Waiting on client" value={projects.filter(project => project.operational_status === 'waiting_on_client').length} detail="On this page · operational status"/>
+        <ProjectMetric label="Blocked tasks" value={projects.reduce((count, project) => count + project.body.tasks.filter(task => task.status === 'blocked').length, 0)} detail="On this page · blocked is part of open"/>
+      </section>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div role="group" aria-label="Directory layout" className="inline-flex flex-wrap gap-1 rounded-lg border border-border bg-card p-1">
+          {(['table', 'cards', 'grouped'] as const).map(value => <button key={value} type="button" disabled={isPending} aria-pressed={mode === value} onClick={() => navigate(filters, page, selectedPreset, value)} className={`min-h-[36px] rounded-md px-3 text-xs font-medium capitalize focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring ${mode === value ? 'bg-foreground text-background' : 'hover:bg-muted'}`}>{value}</button>)}
+        </div>
+        <div className="flex items-center gap-2">
+          <label htmlFor="project-sort" className="text-xs text-muted-foreground">Sort</label>
+          <select id="project-sort" value={filters.sort} disabled={isPending} onChange={event => changeSort(event.target.value as ProjectSortKey)} className="h-9 rounded-lg border border-border bg-card px-2 text-xs">{SORT_KEYS.map(key => <option key={key} value={key}>{key === 'title' ? 'Project title' : key === 'state' ? 'Status' : key === 'owner' ? 'Owner' : 'Updated'}</option>)}</select>
+          <button type="button" disabled={isPending} onClick={() => changeSort(filters.sort)} className="h-9 rounded-lg border border-border bg-card px-3 text-xs" aria-label={`Sort direction: ${filters.direction === 'asc' ? 'ascending' : 'descending'}. Reverse sort`}>{filters.direction === 'asc' ? 'Ascending' : 'Descending'}</button>
+        </div>
+      </div>
 
       {/* ===================================================
           FILTER TOOLBAR
@@ -1509,7 +1473,7 @@ export function ProjectDirectory({
           </p>
         </div>
 
-        <div className="max-h-[calc(100dvh-360px)] min-h-[180px] overflow-auto scrollbar-transparent">
+        {mode === 'table' ? <div className="max-h-[calc(100dvh-360px)] min-h-[180px] overflow-auto scrollbar-transparent">
           <table className="w-full min-w-max border-collapse text-left text-xs">
             <thead className="sticky top-0 z-10 bg-muted text-muted-foreground">
               <tr>
@@ -1629,6 +1593,16 @@ export function ProjectDirectory({
             </div>
           )}
         </div>
+
+        : <div className="p-3">
+          <p className="mb-3 text-[11px] text-muted-foreground">Showing {projects.length} of {total} matching projects. Groups and counts use this page only.</p>
+          {mode === 'cards' ? <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{projects.map(renderCard)}</div>
+            : <div className="grid gap-3 xl:grid-cols-3">{(['active', 'on_hold', 'waiting_on_client', 'inactive', 'completed'] as const).map(state => {
+              const group = projects.filter(project => project.operational_status === state);
+              return <section key={state} aria-label={`${state} projects`} className="min-w-0 rounded-xl bg-muted/40 p-2"><div className="mb-3 flex items-center justify-between px-1"><DirectoryStatus state={state==='completed'?'completed':state==='on_hold'?'on_hold':'active'} operationalStatus={state} /><span className="text-xs text-muted-foreground">{group.length}</span></div><div className="space-y-3">{group.map(renderCard)}</div>{!group.length && <p className="px-2 py-6 text-xs text-muted-foreground">No projects in this group on this page.</p>}</section>;
+            })}</div>}
+          {!projects.length && <p className="px-3 py-8 text-center text-sm text-muted-foreground">No matching projects. Try changing your search or filters.</p>}
+        </div>}
 
         {/* PAGINATION */}
 

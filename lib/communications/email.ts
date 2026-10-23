@@ -1,10 +1,11 @@
 import 'server-only';
 
+import {processCommunicationAttempt} from './transport';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 
 import { privilegedClient } from '@/lib/access/server';
-import { clientOrigin, publicOrigin } from '@/lib/site/origins';
+import { clientOrigin, publicOrigin,staffOrigin } from '@/lib/site/origins';
 
 const rowSchema = z.object({
   id: z.string().uuid(),
@@ -13,7 +14,7 @@ const rowSchema = z.object({
   kind: z.string(),
   subject: z.string(),
   body_text: z.string(),
-  action_surface: z.enum(['public', 'client']),
+  action_surface: z.enum(['public', 'client','staff']),
   action_path: z.string(),
   attempts: z.number().int().positive(),
 });
@@ -59,10 +60,10 @@ export async function queueDirectProjectCommunication(input: QueueDirectInput) {
   }
 }
 
-function actionUrl(surface: 'public' | 'client', value: string) {
-  const base = surface === 'public' ? publicOrigin() : clientOrigin();
+function actionUrl(surface: 'public' | 'client' | 'staff', value: string) {
+  const base = surface === 'public' ? publicOrigin() : surface==='staff'?staffOrigin():clientOrigin();
   const target = value.startsWith('/') ? new URL(value, base) : new URL(value);
-  const allowed = new Set([publicOrigin(), clientOrigin()]);
+  const allowed = new Set([base]);
   if (target.protocol !== 'https:' || !allowed.has(target.origin)) throw new Error('Invalid communication action URL.');
   return target.toString();
 }
@@ -78,9 +79,11 @@ function htmlEmail(body: string, url: string) {
   return `<div style="font-family:Inter,Arial,sans-serif;background:#f7f7f5;padding:32px 16px;color:#111"><div style="max-width:600px;margin:0 auto;background:#fff;border:1px solid #e7e7e3;border-radius:20px;padding:32px"><div style="font-weight:800;font-size:24px;margin-bottom:24px">Bivi</div>${paragraphs}<p style="margin:24px 0 0"><a href="${escapeHtml(url)}" style="display:inline-block;background:#111;color:#fff;text-decoration:none;border-radius:999px;padding:12px 18px;font-weight:700">Open Bivi</a></p><p style="margin:24px 0 0;color:#777;font-size:12px;line-height:1.5">This is a transactional message about your Bivi project.</p></div></div>`;
 }
 
-async function sendOne(row: z.infer<typeof rowSchema>) {
-  const service = privilegedClient();
-  try {
+async function sendOne(row:z.infer<typeof rowSchema>){
+  const service=privilegedClient();
+  return processCommunicationAttempt(row,{
+    authorize:async()=>{const result=await service.rpc('authorize_project_communication_attempt',{p_id:row.id,p_attempt:row.attempts});if(result.error)throw new Error('Communication authorization unavailable.');return result.data===true;},
+    deliver:async idempotencyKey=>{
     const url = actionUrl(row.action_surface, row.action_path);
     const replyTo = process.env.BIVI_EMAIL_REPLY_TO?.trim();
     const response = await fetch('https://api.resend.com/emails', {
@@ -88,7 +91,7 @@ async function sendOne(row: z.infer<typeof rowSchema>) {
       headers: {
         Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
         'Content-Type': 'application/json',
-        'Idempotency-Key': row.id,
+        'Idempotency-Key': idempotencyKey,
       },
       body: JSON.stringify({
         from: process.env.BIVI_EMAIL_FROM,
@@ -111,13 +114,11 @@ async function sendOne(row: z.infer<typeof rowSchema>) {
     } catch {
       // A successful response without a JSON ID is still treated as sent.
     }
-    await service.rpc('finish_project_communication', { p_id: row.id, p_provider_id: providerId || null, p_error: null });
-    return true;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Email send failed.';
-    await service.rpc('finish_project_communication', { p_id: row.id, p_provider_id: null, p_error: message.slice(0, 1800) });
-    return false;
-  }
+
+      return providerId||null;
+    },
+    finish:async(providerId,error)=>{const result=await service.rpc('finish_project_communication_attempt',{p_id:row.id,p_attempt:row.attempts,p_provider_id:providerId,p_error:error});if(result.error)throw new Error('Communication outcome could not be recorded.');return result.data;},
+  });
 }
 
 export async function dispatchProjectCommunications(options: {
@@ -137,14 +138,14 @@ export async function dispatchProjectCommunications(options: {
     p_limit: Math.max(1, Math.min(options.limit ?? 20, 50)),
     p_request_id: options.requestId ?? null,
   });
-  if (error) return { configured: true, claimed: 0, sent: 0 };
+  if (error) return { configured: true, claimed: 0, sent: 0,error:'Communication queue unavailable.' };
 
   const rows = z.array(rowSchema).safeParse(data ?? []);
-  if (!rows.success) return { configured: true, claimed: 0, sent: 0 };
-  let sent = 0;
-  for (const row of rows.data) if (await sendOne(row)) sent += 1;
-  return { configured: true, claimed: rows.data.length, sent };
+  if (!rows.success) return { configured: true, claimed: 0, sent: 0,error:'Communication queue data invalid.' };
+  const outcomes={sent:0,retry:0,skipped:0,unknown:0};
+  for (const row of rows.data)outcomes[await sendOne(row)]+=1;
+  return { configured: true, claimed: rows.data.length, ...outcomes };
   } catch {
-    return { configured: communicationConfigured(), claimed: 0, sent: 0 };
+    return { configured: communicationConfigured(), claimed: 0, sent: 0,error:'Communication dispatch unavailable.' };
   }
 }

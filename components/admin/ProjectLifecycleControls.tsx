@@ -1,4 +1,6 @@
 'use client';
+import {useRouter} from 'next/navigation';
+import {refreshProjectSurfaces} from '@/lib/projects/refresh';
 import {TaskAssignee} from './tasks/TaskAssignee';
 import {taskDomId} from '@/lib/tasks/links';
 import { useWorkspaceUnsavedChanges } from './workspace/WorkspaceNavigationGuard';
@@ -108,6 +110,7 @@ function TaskControlRow({
   task,
   control,
   allTasks,
+  externallyDisabled = false,
   expanded,
   onToggle,
 }: {
@@ -115,9 +118,13 @@ function TaskControlRow({
   task: ProjectTask;
   control: ProjectTaskControl;
   allTasks: ProjectTask[];
+  externallyDisabled?:boolean;
   expanded: boolean;
-  onToggle: () => void;
+  onToggle?: () => void;
 }) {
+  const router=useRouter();
+  const [expectedRevision,setExpectedRevision]=useState(control.revision);
+  useEffect(()=>{if(control.revision>expectedRevision)setBlocked(true);},[control.revision,expectedRevision]);
   const [ownerType, setOwnerType] = useState(control.ownerType);
   const [phase, setPhase] = useState(control.phase);
   const [serviceId, setServiceId] = useState(control.serviceId ?? '');
@@ -142,7 +149,7 @@ function TaskControlRow({
   );
 
   async function save() {
-    if (!dirty || busy || blocked) return;
+    if (!dirty || externallyDisabled || busy || blocked) return;
     setBusy(true);
     setMessage('');
 
@@ -155,7 +162,7 @@ function TaskControlRow({
           body: JSON.stringify({
             action: 'update_task',
             taskId: task.id,
-            expectedRevision: control.revision,
+            expectedRevision,
             ownerType,
             phase,
             serviceId: serviceId.trim() || null,
@@ -175,7 +182,8 @@ function TaskControlRow({
       if (!response.ok || result?.saved !== true) {
         throw new Error(result?.error || 'Task controls could not be saved.');
       }
-      markWorkspaceSaved(); window.location.reload();
+      setExpectedRevision(result.revision);setBlocked(false);setMessage('Task settings saved.');
+      markWorkspaceSaved(); refreshProjectSurfaces(id,router);
     } catch (error) {
       if (error instanceof Error &&
           ['TimeoutError', 'TypeError', 'SyntaxError'].includes(error.name)) {
@@ -195,26 +203,14 @@ function TaskControlRow({
     <Fragment>
       <tr id={taskDomId(task.id,'lifecycle')} tabIndex={-1} style={{scrollMarginTop:'6rem'}} className={expanded ? 'bg-muted/50' : 'hover:bg-muted/30'}>
         <td className="max-w-[290px] px-3 py-2.5 align-middle">
-          <p className="truncate text-xs font-semibold" title={task.title}>
-            {task.title}
-          </p>
-          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
-            <span className="capitalize">{task.status.replace('_', ' ')}</span>
-            <span aria-hidden="true">·</span>
-            <span>{task.dueOn || 'No due date'}</span>
-            {task.status === 'blocked' && (
-              <span className="font-medium text-red-600 dark:text-red-400">
-                · Blocked
-              </span>
-            )}
-          </div>
+          <span className="text-[11px] text-muted-foreground">{onToggle?task.title:'Responsibility'}</span>
         </td>
 
         <td className="px-3 py-2.5 align-middle">
           <CompactSelect
             label={`Responsibility for ${task.title}`}
             value={ownerType}
-            disabled={busy || blocked}
+            disabled={externallyDisabled || busy || blocked}
             onChange={(value) => setOwnerType(value as 'bivi' | 'client')}
           >
             <option value="bivi">Bivi</option>
@@ -222,12 +218,12 @@ function TaskControlRow({
           </CompactSelect>
         </td>
 
-        <td className="px-3 py-2.5 align-middle"><TaskAssignee projectId={id} taskId={task.id} revision={control.revision} assignedId={control.assignedStaffId} label={control.assignedStaffLabel} disabled={control.ownerType==='client'||busy||blocked}/></td>
+        <td className="px-3 py-2.5 align-middle"><TaskAssignee projectId={id} taskId={task.id} revision={control.revision} assignedId={control.assignedStaffId} label={control.assignedStaffLabel} disabled={externallyDisabled||control.ownerType==='client'||busy||blocked}/></td>
         <td className="px-3 py-2.5 align-middle">
           <CompactSelect
             label={`Lifecycle phase for ${task.title}`}
             value={phase}
-            disabled={busy || blocked}
+            disabled={externallyDisabled || busy || blocked}
             onChange={(value) => setPhase(value as ProjectPhase)}
           >
             {projectPhaseOrder.map((value) => (
@@ -248,7 +244,7 @@ function TaskControlRow({
             <button
               type="button"
               onClick={() => void save()}
-              disabled={!dirty || busy || blocked}
+              disabled={!dirty || externallyDisabled || busy || blocked}
               className={`inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                 dirty
                   ? 'bg-foreground text-background hover:opacity-85'
@@ -264,6 +260,7 @@ function TaskControlRow({
               aria-label={`${expanded ? 'Hide' : 'Show'} settings for ${task.title}`}
               aria-expanded={expanded}
               aria-controls={`lifecycle-task-${task.id}`}
+              hidden={!onToggle}
               onClick={onToggle}
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground hover:bg-accent"
             >
@@ -291,7 +288,7 @@ function TaskControlRow({
                   <CompactSelect
                     label={`Task dependency for ${task.title}`}
                     value={dependsOn}
-                    disabled={busy || blocked}
+                    disabled={externallyDisabled || busy || blocked}
                     onChange={setDependsOn}
                   >
                     <option value="">No task dependency</option>
@@ -312,7 +309,7 @@ function TaskControlRow({
                   <CompactSelect
                     label={`Waiting on for ${task.title}`}
                     value={blockerOwner}
-                    disabled={busy || blocked}
+                    disabled={externallyDisabled || busy || blocked}
                     onChange={setBlockerOwner}
                   >
                     <option value="">No explicit blocker</option>
@@ -323,17 +320,7 @@ function TaskControlRow({
                 </div>
               </label>
 
-              <label className="block min-w-0 text-[11px] font-medium text-muted-foreground">
-                Service ID
-                <Input
-                  maxLength={100}
-                  value={serviceId}
-                  disabled={busy || blocked}
-                  onChange={(event) => setServiceId(event.target.value)}
-                  placeholder="Optional service link"
-                  className={`${fieldClass} mt-1.5`}
-                />
-              </label>
+
             </div>
 
             {control.clientNote && (
@@ -354,11 +341,12 @@ function TaskControlRow({
                 {message}
               </p>
             )}
+            {blocked&&<div className="mt-2 space-y-2 text-xs"><p>Latest saved settings (revision {control.revision}): {control.ownerType}, {control.phase}, dependency {control.dependsOn??'none'}, blocker {control.blockerOwner??'none'}. Your local fields are retained.</p><button type="button" className={subtleButton} onClick={()=>{setOwnerType(control.ownerType);setPhase(control.phase);setServiceId(control.serviceId??'');setDependsOn(control.dependsOn??'');setBlockerOwner(control.blockerOwner??'');setExpectedRevision(control.revision);setBlocked(false);}}>Use latest saved settings</button>{control.revision>expectedRevision&&<button type="button" className={subtleButton} onClick={()=>{setExpectedRevision(control.revision);setBlocked(false);setMessage('Local settings retained against the displayed saved revision. Review and save explicitly.');}}>Keep my settings after review</button>}</div>}
             {blocked && (
               <button
                 type="button"
                 className={`${subtleButton} mt-3`}
-                onClick={() => window.location.reload()}
+                onClick={() => refreshProjectSurfaces(id,router)}
               >
                 <RotateCcw size={14} /> Reload latest task
               </button>
@@ -375,7 +363,7 @@ function TaskControlRow({
               <button
                 type="button"
                 className="underline underline-offset-4"
-                onClick={() => window.location.reload()}
+                onClick={() => refreshProjectSurfaces(id,router)}
               >
                 Reload
               </button>
@@ -393,19 +381,30 @@ function TaskControlRow({
 
 export function ProjectLifecycleControls({
   id,
-  lifecycle,
+  lifecycle = { requestId: '', phase: 'discovery', revision: 1, updatedAt: '' },
   controls,
   tasks,
   events,
   selectedTask,
+  taskOnlyTaskId,
+  taskOnlyDisabled = false,
+  showTaskManagement = true,
 }: {
   id: string;
-  lifecycle: Lifecycle;
+  lifecycle?: Lifecycle;
   controls: ProjectTaskControl[];
   tasks: ProjectTask[];
   events: Event[];
   selectedTask?:string;
+  /** Render the shared task-control editor for a single task inside its task menu. */
+  taskOnlyTaskId?:string;
+  taskOnlyDisabled?:boolean;
+  /** Phases keeps phase lifecycle here; task ownership/blockers live in Tasks. */
+  showTaskManagement?:boolean;
 }) {
+  const router=useRouter();
+  const [expectedRevision,setExpectedRevision]=useState(lifecycle.revision);
+  useEffect(()=>{if(lifecycle.revision>expectedRevision)setBlocked(true);},[lifecycle.revision,expectedRevision]);
   const [phase, setPhase] = useState<ProjectPhase>(lifecycle.phase);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
@@ -455,6 +454,7 @@ export function ProjectLifecycleControls({
   useEffect(()=>{if(selectedTask&&expandedId===selectedTask){const row=document.getElementById(taskDomId(selectedTask,'lifecycle'));row?.focus({preventScroll:true});row?.scrollIntoView({block:'start'});}},[selectedTask,expandedId,page]);
   const phaseIndex = projectPhaseOrder.indexOf(lifecycle.phase);
   const phaseChanged = phase !== lifecycle.phase;
+  useWorkspaceUnsavedChanges(phaseChanged||Boolean(reason),'Project lifecycle',savePhase);
 
   async function savePhase() {
     if (!phaseChanged || !reason.trim() || busy || blocked) {
@@ -470,7 +470,7 @@ export function ProjectLifecycleControls({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'set_phase',
-          expectedRevision: lifecycle.revision,
+          expectedRevision,
           phase,
           reason,
         }),
@@ -485,7 +485,8 @@ export function ProjectLifecycleControls({
       if (!response.ok || result?.saved !== true) {
         throw new Error(result?.error || 'The project phase could not be saved.');
       }
-      window.location.reload();
+      setExpectedRevision(result.revision);setReason('');setBlocked(false);setMessage('Lifecycle phase saved.');
+      refreshProjectSurfaces(id,router);
     } catch (error) {
       if (error instanceof Error &&
           ['TimeoutError', 'TypeError', 'SyntaxError'].includes(error.name)) {
@@ -503,6 +504,18 @@ export function ProjectLifecycleControls({
     fn();
     setPage(1);
     setExpandedId(null);
+  }
+
+  if (taskOnlyTaskId) {
+    const entry = entries.find(item => item.task.id === taskOnlyTaskId);
+    if (!entry) return <p role="status" className="text-xs text-muted-foreground">Task ownership settings are unavailable until this task is saved.</p>;
+    return <section aria-label={`Ownership, blockers and dependencies for ${entry.task.title}`} className="task-ownership rounded-lg bg-muted/20">
+      <h4 className="px-3 py-2 text-xs font-semibold">Ownership, blockers and dependencies</h4>
+      <table className="w-full table-fixed text-left text-xs"><thead className="sr-only"><tr><th>Task</th><th>Responsibility</th><th>Assigned staff</th><th>Phase</th><th>Waiting on</th><th>Actions</th></tr></thead><tbody>
+        <TaskControlRow id={id} task={entry.task} control={entry.control} allTasks={tasks} externallyDisabled={taskOnlyDisabled} expanded onToggle={undefined}/>
+      </tbody></table>
+      <style jsx global>{`.task-ownership table, .task-ownership tbody, .task-ownership tr, .task-ownership td { display: block; } .task-ownership tbody > tr:first-child { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); align-items: center; } .task-ownership td { min-width: 0; } .task-ownership tbody > tr:first-child > td:last-child { grid-column: 1 / -1; }`}</style>
+    </section>;
   }
 
   return (
@@ -605,11 +618,12 @@ export function ProjectLifecycleControls({
             {message}
           </p>
         )}
+        {blocked&&<div className="mt-2 text-xs"><p>Latest saved lifecycle: {lifecycle.phase} (revision {lifecycle.revision}). Review it before retrying your local phase choice.</p><button type="button" className={subtleButton} onClick={()=>{setPhase(lifecycle.phase);setReason('');setExpectedRevision(lifecycle.revision);setBlocked(false);}}>Use saved lifecycle</button>{lifecycle.revision>expectedRevision&&<button type="button" className={subtleButton} onClick={()=>{setExpectedRevision(lifecycle.revision);setBlocked(false);}}>Keep my phase choice after review</button>}</div>}
         {blocked && (
           <button
             type="button"
             className={`${subtleButton} mt-2`}
-            onClick={() => window.location.reload()}
+            onClick={() => refreshProjectSurfaces(id,router)}
           >
             <RotateCcw size={14} /> Reload latest phase
           </button>
@@ -617,6 +631,7 @@ export function ProjectLifecycleControls({
       </section>
 
       {/* COMPACT TASK CONTROLS */}
+      {showTaskManagement && <>
       <section className="overflow-hidden rounded-xl bg-card shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
           <div>
@@ -737,9 +752,10 @@ export function ProjectLifecycleControls({
           </div>
         </div>
       </section>
+      </>}
 
       {/* HISTORY - COLLAPSED BY DEFAULT */}
-      {events.length > 0 && (
+      {showTaskManagement && events.length > 0 && (
         <details className="rounded-xl bg-card shadow-sm">
           <summary className="flex cursor-pointer items-center gap-2 px-4 py-3 text-sm font-semibold">
             <History size={15} /> Task-control history
