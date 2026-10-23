@@ -982,78 +982,9 @@ export function ProjectWorkspace({
         </div>
       </section>
 
-      <section className="min-w-0 rounded-xl border border-border bg-card">
-        <SectionTitle title="Milestones" detail={`${body.milestones.length}/20`} action={
-          <button type="button" className={controlClass} disabled={locked || body.milestones.length >= 20} onClick={addMilestone}><Plus size={14} aria-hidden />Add milestone</button>
-        } />
-        <div className="divide-y divide-border">
-          {visibleMilestones.map(({milestone, index}) => {
-            const linked = body.tasks.filter(task => task.milestoneId === milestone.id).length;
-            return <div key={milestone.id} id={milestoneDomId(milestone.id)} tabIndex={-1} style={{scrollMarginTop:'6rem'}} className="space-y-2 p-3 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-ring">
-              <div className="flex items-center gap-2">
-                <input aria-label={`Milestone ${index + 1} title`} className={inputClass} value={milestone.title} maxLength={300} disabled={locked} onChange={event => editMilestone(index,{title:event.target.value})} />
-                <button type="button" disabled={locked || linked > 0} onClick={() => removeMilestone(index,milestone.id)} title={linked ? 'Reassign linked tasks before removing' : 'Remove milestone'} aria-label={`Remove ${milestone.title}`} className="shrink-0 rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-destructive disabled:cursor-not-allowed disabled:opacity-30"><Trash2 size={14} aria-hidden /></button>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="min-w-0 text-[10px] text-muted-foreground">Status
-                  <CompactSelect status label={`Status for ${milestone.title}`} value={milestone.status} disabled={locked} onChange={value => editMilestone(index,{status:value as Milestone['status']})}><option value="planned">Planned</option><option value="in_progress">In progress</option><option value="done">Done</option></CompactSelect>
-                </div>
-                <label className="min-w-0 text-[10px] text-muted-foreground">Due
-                  <input type="date" aria-label={`Due date for ${milestone.title}`} className={inputClass} value={milestone.dueOn ?? ''} disabled={locked} onChange={event => editMilestone(index,{dueOn:event.target.value || null})} />
-                </label>
-              </div>
-
-              <p className="text-[10px] text-muted-foreground">{linked} linked {linked === 1 ? 'task' : 'tasks'}{linked > 0 ? ' · Reassign tasks before removing' : ''}</p>
-            </div>;
-          })}
-          {!body.milestones.length && <p className="px-4 py-5 text-xs text-muted-foreground">No milestones yet.</p>}
-        </div>
-        {/* MILESTONE PAGINATION */}
-
-        {milestonePages > 1 && (
-          <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-2 text-xs">
-
-            <span className="text-muted-foreground">
-              Page {visibleMilestonePage} of{' '}
-              {milestonePages}
-            </span>
-
-            <div className="flex gap-1">
-              <button
-                type="button"
-                className={controlClass}
-                disabled={
-                  visibleMilestonePage === 1
-                }
-                onClick={() =>
-                  setMilestonePage(
-                    visibleMilestonePage - 1
-                  )
-                }
-                aria-label="Previous milestones"
-              >
-                <ChevronLeft size={14} />
-              </button>
-
-              <button
-                type="button"
-                className={controlClass}
-                disabled={
-                  visibleMilestonePage ===
-                  milestonePages
-                }
-                onClick={() =>
-                  setMilestonePage(
-                    visibleMilestonePage + 1
-                  )
-                }
-                aria-label="Next milestones"
-              >
-                <ChevronRight size={14} />
-              </button>
-            </div>
-          </div>
-        )}
+      <section className="rounded-xl border border-border bg-card p-4">
+        <p className="text-xs font-medium">Milestone editing is now in Lifecycle.</p>
+        <Link href={`/projects/${id}?tab=phases`} className="mt-2 inline-flex rounded-lg border border-border px-3 py-2 text-xs font-medium hover:bg-muted">Open Lifecycle milestones</Link>
       </section>
 
         </div>
