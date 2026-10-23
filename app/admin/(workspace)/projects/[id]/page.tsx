@@ -56,6 +56,8 @@ import {
   getProjectLifecycle,
 } from '@/lib/projects/lifecycle-data';
 
+import {ProjectMeetings} from '@/components/admin/projects/ProjectMeetings';
+import {getProjectMeetings} from '@/lib/projects/meeting-data';
 import { ProjectOverview } from '@/components/admin/projects/ProjectOverview';
 import { ProjectCalendar } from '@/components/admin/projects/ProjectCalendar';
 import { ProjectPhasesPage } from '@/components/admin/projects/ProjectPhasesPage';
@@ -81,6 +83,7 @@ import {
 type Tab =
   | 'overview'
   | 'plan'
+  | 'requests'
   | 'phases'
   | 'calendar'
   | 'brief'
@@ -89,6 +92,7 @@ type Tab =
 const ALL_TABS: Tab[] = [
   'overview',
   'plan',
+  'requests',
   'phases',
   'calendar',
   'brief',
@@ -104,7 +108,7 @@ export default async function ProjectPage({
   searchParams = {},
 }: {
   params: { id: string };
-  searchParams?: { tab?: string;task?:string;focus?:string;milestone?:string;view?:string };
+  searchParams?: { tab?: string;task?:string;focus?:string;milestone?:string;view?:string;request?:string;meeting?:string };
 }) {
   /* =======================================================
      AUTHENTICATION
@@ -271,7 +275,7 @@ export default async function ProjectPage({
     searchParams.tab;
 
   const legacyPhaseView = requestedTab === 'calendar' && searchParams.view === 'phases';
-  const canonicalRequestedTab = requestedTab === 'lifecycle' || legacyPhaseView ? 'phases' : requestedTab;
+  const canonicalRequestedTab = requestedTab === 'lifecycle' || legacyPhaseView ? 'phases' : requestedTab === 'responses' || (requestedTab==='plan'&&searchParams.request) ? 'requests' : requestedTab;
   const requested =
     ALL_TABS.find(
       (item) =>
@@ -294,7 +298,7 @@ export default async function ProjectPage({
 
   const lifecycle =
     record &&
-    (tab === 'overview' || tab === 'phases' || tab === 'calendar' || tab === 'plan')
+    (tab === 'requests' || tab === 'overview' || tab === 'phases' || tab === 'calendar' || tab === 'plan')
       ? await getProjectLifecycle(
           client,
           params.id
@@ -315,7 +319,7 @@ export default async function ProjectPage({
   const completionIssues=record&&tab==='phases' ? await client.rpc('staff_project_completion_issues',{p_request:params.id}) : null;
   if(completionIssues?.error)throw new Error('Project completion checks could not load.');
   const completionIssueRows=completionIssues?z.array(z.string()).parse(completionIssues.data):[];
-  const workPreferences=record&&['calendar','phases','plan'].includes(tab)
+  const workPreferences=record&&['calendar','phases','plan','requests'].includes(tab)
     ? await client.from('staff_notification_preferences').select('timezone').eq('user_id',user.id).maybeSingle() : null;
   if(workPreferences?.error)throw new Error('Project timezone preferences could not load.');
   const calendarToday=taskToday(workPreferences?.data?.timezone||'America/Chicago').today;
@@ -342,7 +346,7 @@ export default async function ProjectPage({
   // source data, keys, revision checks and action handlers.
   let overview = null;
   if (record && tab === 'overview') {
-    const [contexts, preferences, extras, formalPhasesResult, formalColors, content, activityResult] = await Promise.all([
+    const [contexts, preferences, extras, formalPhasesResult, formalColors, content, activityResult, meetings] = await Promise.all([
       getProjectDirectoryContext(client, [params.id]),
       client.from('staff_notification_preferences').select('timezone').eq('user_id', user.id).maybeSingle(),
       getProjectOverviewExtras(client, params.id),
@@ -350,12 +354,13 @@ export default async function ProjectPage({
       getProjectPhaseColors(client, params.id),
       getProjectOverviewContent(client, params.id),
       getProjectActivity(client,params.id,record.body).then(data=>({data,error:null})).catch(()=>({data:null,error:'Recent activity unavailable. Retry saved data.'})),
+      getProjectMeetings(client,params.id,{upcoming:true,limit:5}).catch(()=>({rows:null,total:null})),
     ]);
     if (preferences.error) throw new Error('Project timezone preferences could not load.');
     if (formalPhasesResult.error) throw new Error('Saved project phase statuses could not load. Check migration 035.');
     const formalPhases = projectPhaseStatesSchema.parse(formalPhasesResult.data).states;
     const day = taskToday(preferences.data?.timezone || 'America/Chicago');
-    overview = { content, activityResult, context: contexts[params.id], ...day, ...extras, phaseStates: formalPhases, phaseColors: phaseColorMap(formalColors.colors) };
+    overview = { meetings, content, activityResult, context: contexts[params.id], ...day, ...extras, phaseStates: formalPhases, phaseColors: phaseColorMap(formalColors.colors) };
   }
 
   /* =======================================================
@@ -389,6 +394,7 @@ export default async function ProjectPage({
           savedToday={overview.today} taskControls={lifecycle?.controls??[]}
           overview={<ProjectOverview
           record={record}
+          meetings={overview.meetings}
           content={overview.content}
           activityResult={overview.activityResult}
           context={overview.context}
@@ -430,13 +436,16 @@ export default async function ProjectPage({
             selectedMilestone={selectedMilestone}
             taskControls={lifecycle?.controls ?? []}
           />
-          {record && <ProjectTaskResponseReview id={params.id} tasks={record.body.tasks.map(task => ({ id:task.id, title:task.title }))} />}
+          {record && <a href={`/projects/${params.id}?tab=requests`} className="text-xs underline">Client requests and decline policies are in Requests</a>}
         </div>
       )}
 
       {/* ===================================================
           LIFECYCLE
           =================================================== */}
+
+      {tab === 'requests' && record && <ProjectWorkspace id={params.id} userId={user.id} record={record} history={data.history} gateReady={gateReady} savedToday={calendarToday} taskControls={lifecycle?.controls??[]}
+        overview={<ProjectTaskResponseReview id={params.id} focusRequestId={searchParams.request} tasks={record.body.tasks.map(task=>({id:task.id,title:task.title}))}/>}/>}
 
       {tab === 'phases' && record && lifecycle?.lifecycle && calendarExtras && scheduleRows && (
         <ProjectPhasesPage
@@ -455,7 +464,7 @@ export default async function ProjectPage({
       )}
 
       {tab === 'calendar' && record && calendarExtras && scheduleRows && (
-        <ProjectCalendar
+        <><ProjectMeetings id={params.id} readOnly={record.state==='completed'} focusId={searchParams.meeting}/><ProjectCalendar
           id={params.id}
           body={record.body}
           projectRevision={record.revision}
@@ -465,7 +474,7 @@ export default async function ProjectPage({
           members={calendarExtras.members}
           milestonePhases={calendarExtras.milestonePhases}
           today={calendarToday}
-        />
+        /></>
       )}
 
       {/* ===================================================

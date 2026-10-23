@@ -15,5 +15,6 @@ export async function GET(request: Request) {
   if (!result.configured) {
     return NextResponse.json({ error: 'Email delivery is not configured.' }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
   }
+  if('error' in result)return NextResponse.json(result,{status:503,headers:{'Cache-Control':'no-store'}});
   return NextResponse.json(result, { headers: { 'Cache-Control': 'no-store' } });
 }

@@ -113,6 +113,7 @@ const sections = staffGroups.map(group => ({ ...group, links: sidebarItems.filte
    ========================================================= */
 
 const projectSectionIcons: Record<(typeof projectRecordSections)[number]['id'], LucideIcon> = {
+  requests: ClipboardList,
   overview: LayoutDashboard,
   plan: ClipboardList,
   phases: Layers,

@@ -6,16 +6,17 @@ const read = file => readFileSync(file,'utf8');
 test('R5b activity is staff-only and serves existing authoritative audit sources',()=>{
   const page = read('app/admin/(workspace)/projects/[id]/activity/page.tsx');
   const data = read('lib/projects/activity-data.ts');
+  const sql=read('supabase/migrations/20261023150000_r7e_project_events_requests_notifications.sql');
   assert.match(page,/await requireStaff\(\)/);
   assert.match(data,/import 'server-only'/);
   for(const source of ['inquiry_project_history','project_phase_status_history','project_hierarchy_history',
     'project_assignment_events','project_task_history','project_file_history','project_comment_history',
     'project_access_history','project_client_task_responses','project_brief_versions']){
-    assert.ok(data.includes(source),`Missing audit source: ${source}`);
+    assert.ok(sql.includes(source),`Missing audit source: ${source}`);
   }
   assert.match(data,/previous = snapshot/);
   assert.match(data,/Other project details updated/);
-  assert.match(data,/limit\(key === 'project' \? 100 : 65\)/);
+  assert.match(data,/staff_project_activity_page/);assert.match(sql,/lag\(snapshot\) over/);
 });
 
 test('R5b actor lookup stays staff-gated and project-scoped',()=>{

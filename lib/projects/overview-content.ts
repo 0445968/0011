@@ -4,6 +4,7 @@ import { suggestedTaskPriority } from './workplan-views';
 
 export type OverviewSource<T> = { rows: T[]; error: null } | { rows: null; error: string };
 export type OverviewContent = {
+  communications?:OverviewSource<{id:string;task_id:string;status:string}>;
   files: OverviewSource<{id:string}>;
   links: OverviewSource<{task_id:string;file_id:string}>;
   notes: OverviewSource<{id:string;task_id:string}>;
@@ -40,6 +41,7 @@ export function milestoneContent(body:ProjectBody,milestoneId:string,content:Ove
   const accessibleFiles=new Set(content.files.rows?.map(file=>file.id));
   const files=content.files.rows===null||content.links.rows===null?null:
     new Set(content.links.rows.filter(row=>ids.has(row.task_id)&&accessibleFiles.has(row.file_id)).map(row=>row.file_id)).size;
+  const communications=content.communications?count(content.communications):null;
   const taskContent=tasks.map(task=>{
     const control=content.priorities.rows?.find(row=>row.task_id===task.id);
     const dependency=body.tasks.find(item=>item.id===control?.depends_on);
@@ -50,6 +52,8 @@ export function milestoneContent(body:ProjectBody,milestoneId:string,content:Ove
       files:content.files.rows===null||content.links.rows===null?null:new Set(content.links.rows.filter(row=>row.task_id===task.id&&accessibleFiles.has(row.file_id)).map(row=>row.file_id)).size,
       notes:content.notes.rows===null?null:new Set(content.notes.rows.filter(row=>row.task_id===task.id).map(row=>row.id)).size,
       comments:content.comments.rows===null?null:new Set(content.comments.rows.filter(row=>row.task_id===task.id).map(row=>row.id)).size,
+      communications:content.communications?.rows?new Set(content.communications.rows.filter(row=>row.task_id===task.id).map(row=>row.id)).size:null,
+      communicationStates:content.communications?.rows?.filter(row=>row.task_id===task.id).reduce<Record<string,number>>((states,row)=>{states[row.status]=(states[row.status]??0)+1;return states;},{})??{},
       manual:control?.priority??null,
       suggestion:content.schedule.rows===null||content.priorities.rows===null?null:suggestedTaskPriority(start,task.dueOn,today,paused),
       priorityAvailable:content.priorities.rows!==null&&!!control,
@@ -57,7 +61,7 @@ export function milestoneContent(body:ProjectBody,milestoneId:string,content:Ove
   });
   const order={low:1,medium:2,high:3};
   const suggestions=taskContent.flatMap(task=>task.suggestion?[task.suggestion]:[]).sort((a,b)=>order[b]-order[a]);
-  return {files,notes:count(content.notes),comments:count(content.comments),tasks:taskContent,
+  return {files,communications,notes:count(content.notes),comments:count(content.comments),tasks:taskContent,
     priorityAvailable:content.priorities.rows!==null&&taskContent.every(task=>task.priorityAvailable),
     suggestion:content.schedule.rows===null||content.priorities.rows===null||taskContent.some(task=>!task.priorityAvailable)?'Unavailable':suggestions[0]??'Not calculated',
     manual:taskContent.filter(task=>task.manual!==null),

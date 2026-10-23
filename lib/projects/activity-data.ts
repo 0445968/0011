@@ -1,11 +1,12 @@
 import 'server-only';
+import {activityCursor,encodeActivityCursor} from './activity-pagination';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ProjectBody } from './schema';
 
 type Row = Record<string, unknown>;
 type AuditSource =
   | 'project' | 'tasks' | 'milestones' | 'phases' | 'members'
-  | 'files' | 'discussion' | 'clients' | 'brief' | 'access';
+  | 'files' | 'discussion' | 'clients' | 'brief' | 'access' | 'delivery' | 'forms' | 'meetings' | 'communications';
 
 export interface ProjectActivityEvent {
   id: string;
@@ -15,7 +16,11 @@ export interface ProjectActivityEvent {
   actorId: string | null;
   createdAt: string;
   href: string;
+  taskId?:string;
+  orderKey?:string;
   technical?: boolean;
+  provenance?:string;
+  recipients?:string[];
 }
 
 export interface ProjectActivityActor {
@@ -37,7 +42,11 @@ const link = (base: string, source: AuditSource, itemId?: string): string => {
   if (source === 'access' || source === 'members') return `${base}/access`;
   if (source === 'brief') return `${base}?tab=brief`;
   if (source === 'phases') return `${base}?tab=phases`;
-  if (source === 'clients') return `${base}?tab=plan`;
+  if (source === 'clients') return `${base}?tab=requests${itemId?`&request=${encodeURIComponent(itemId)}`:''}`;
+  if(source==='meetings')return `${base}?tab=calendar${itemId?`&meeting=${encodeURIComponent(itemId)}`:''}`;
+  if(source==='delivery')return `${base}?tab=delivery`;
+  if(source==='forms')return base.replace('/projects/','/leads/')+'/onboarding';
+  if(source==='communications')return `${base}/activity?type=communications`;
   if ((source === 'tasks' || source === 'milestones') && itemId) {
     const key = source === 'tasks' ? 'task' : 'milestone';
     return `${base}?tab=plan&${key}=${encodeURIComponent(itemId)}`;
@@ -48,7 +57,7 @@ const link = (base: string, source: AuditSource, itemId?: string): string => {
 function auditEvent(source: AuditSource, prefix: string, row: Row, title: string, detail: string | null, base: string, actorKey = 'actor', timeKey = 'created_at', focusId?: string): ProjectActivityEvent {
   return {
     id: `${prefix}:${String(row.id ?? row.version ?? row.phase ?? '')}`,
-    source, title, detail: detail?.trim().slice(0, 350) || null,
+    taskId:text(row.task_id)||text(object(row.details).taskId)||(source==='tasks'?focusId:undefined),orderKey:text(row.__key),source, title, detail: detail?.trim().slice(0, 350) || null,
     actorId: id(row[actorKey]), createdAt: date(row[timeKey]),
     href: link(base, source, focusId),
   };
@@ -65,10 +74,10 @@ export function snapshots(history: Row[], base: string): ProjectActivityEvent[] 
     const snapshot = object(row.snapshot);
     const body = object(snapshot.body);
     const action = text(row.action);
-    const common = { actorId: id(row.actor), createdAt: date(row.created_at) };
+    const common = { orderKey:text(row.__key),actorId: id(row.actor), createdAt: date(row.created_at) };
     const create = (source: AuditSource, slug: string, title: string, detail: string | null, itemId?: string) => {
       events.push({ id: `project:${String(row.id)}:${slug}`, source, title, detail,
-        href: link(base, source, itemId), technical:slug==='revision'||slug==='baseline', ...common });
+        href: link(base, source, itemId),taskId:source==='tasks'?itemId:undefined, technical:slug==='revision'||slug==='baseline', ...common });
     };
     if (action !== 'save') {
       const labels: Record<string, string> = {
@@ -94,6 +103,9 @@ export function snapshots(history: Row[], base: string): ProjectActivityEvent[] 
       for (const [kind, source] of [['tasks','tasks'],['milestones','milestones']] as const) {
         const oldItems = getCollection(before, kind);
         const newItems = getCollection(body, kind);
+        if(oldItems.size===newItems.size&&[...oldItems.keys()].every(key=>newItems.has(key))&&JSON.stringify([...oldItems.keys()])!==JSON.stringify([...newItems.keys()])){
+          create(source,`${kind}:order`,`${kind==='tasks'?'Task':'Milestone'} order changed`,null);count++;
+        }
         for (const [itemId, item] of newItems) {
           const earlier = oldItems.get(itemId);
           const name = display(item.title, `Untitled ${kind === 'tasks' ? 'task' : 'milestone'}`);
@@ -101,7 +113,7 @@ export function snapshots(history: Row[], base: string): ProjectActivityEvent[] 
             create(source, `${kind}:${itemId}:new`, `${kind === 'tasks' ? 'Task' : 'Milestone'} created`, name, itemId);
             count++;
           } else {
-            for (const [field, label] of [['title','title'],['status','status'],['dueOn','deadline']] as const) {
+            for (const [field, label] of [['title','title'],['status','status'],['dueOn','deadline'],['owner','owner label']] as const) {
               if (earlier[field] === item[field]) continue;
               create(source, `${kind}:${itemId}:${field}`, `${kind === 'tasks' ? 'Task' : 'Milestone'} ${label} changed`,
                 `${name}: ${display(earlier[field])} → ${display(item[field])}`, itemId);
@@ -135,51 +147,17 @@ export function snapshots(history: Row[], base: string): ProjectActivityEvent[] 
 }
 
 /** Read-only, staff/RLS-scoped. Never generates synthetic history entries. */
-export async function getProjectActivity(client: SupabaseClient, requestId: string, body: ProjectBody) {
+export async function getProjectActivity(client: SupabaseClient, requestId: string, body: ProjectBody, cursor?:string, taskId?:string) {
   const base = `/projects/${requestId}`;
-  const sources = [
-    ['project', 'inquiry_project_history', 'id,action,reason,snapshot,actor,created_at'],
-    ['phases', 'project_phase_status_history', 'id,phase,previous_status,next_status,reason,actor,created_at'],
-    ['phase_colors', 'project_phase_color_history', 'id,phase,previous_color,next_color,revision,reason,actor,created_at'],
-    ['hierarchy', 'project_hierarchy_history', 'id,action,details,actor,created_at'],
-    ['members', 'project_assignment_events', 'id,task_id,action,before_state,after_state,actor,created_at'],
-    ['tasks', 'project_task_history', 'id,task_id,action,snapshot,actor,created_at'],
-    ['files', 'project_file_history', 'id,file_id,action,reason,actor_id,created_at'],
-    ['discussion', 'project_comment_history', 'id,action,snapshot,actor_id,created_at'],
-    ['task_notes', 'project_task_note_history', 'id,task_id,action,snapshot,actor_id,created_at'],
-    ['task_files', 'project_task_file_history', 'id,task_id,file_id,action,actor_id,created_at'],
-    ['access', 'project_access_history', 'id,user_id,active,can_review,actor_id,created_at'],
-    ['clients', 'project_client_task_responses', 'id,task_id,kind,status,submitted_by,submitted_at,reviewed_by,reviewed_at'],
-    ['brief', 'project_brief_versions', 'version,status,published_at,published_by,decided_at,decided_by'],
-    ['policies', 'project_task_client_policy_history', 'id,task_id,next_policy,actor,created_at'],
-  ] as const;
-
-  // Short and bounded source queries. RLS remains enforced by the authenticated
-  // staff Supabase client, and no client portal endpoint exposes this feed.
-  const response = await Promise.all(sources.map(async ([key, table, fields]) => {
-    const ordering = key === 'clients' ? 'submitted_at' : key === 'brief' ? 'published_at' : 'id';
-    // The table names have different generated Supabase row types. Widen only
-    // this read-only query builder to avoid an unrepresentable union of schemas.
-    const historyClient = client as unknown as {
-      from: (name: string) => {
-        select: (columns: string) => {
-          eq: (column: string, value: string) => {
-            order: (column: string, options: { ascending: boolean }) => {
-              limit: (count: number) => PromiseLike<{ data: unknown; error: unknown }>;
-            };
-          };
-        };
-      };
-    };
-    const result = await historyClient.from(table).select(fields).eq('request_id', requestId)
-      .order(ordering, { ascending: false }).limit(key === 'project' ? 100 : 65);
-    if (result.error) throw new Error(`Project activity could not load ${key} history. Check prior migrations and staff permissions.`);
-    return [key, (result.data ?? []) as unknown as Row[]] as const;
-  }));
-  const bySource = Object.fromEntries(response) as Record<string, Row[]>;
+  const before=activityCursor(cursor);
+  const response=await client.rpc('staff_project_activity_page',{p_request:requestId,p_before_at:before?.at??null,p_before_key:before?.key??null,p_limit:25,p_task:taskId??null});
+  if(response.error||!response.data||!Array.isArray(response.data.rows))throw new Error('Project activity could not load its audited page.');
+  const page=response.data as {rows:{source:string;key:string;at:string;payload:Row}[];actors:unknown;next:unknown};
+  const bySource:Record<string,Row[]>={};
+  for(const row of page.rows)(bySource[row.source]??=[]).push({...row.payload,__key:row.key});
   const titles = new Map(body.tasks.map(task => [task.id, task.title]));
   const taskName = (task: unknown) => titles.get(text(task)) ?? 'Task';
-  const events = snapshots(bySource.project ?? [], base);
+  const events = (bySource.project??[]).flatMap(row=>snapshots(row.previous_snapshot?[row,{id:'predecessor',action:'save',snapshot:row.previous_snapshot}]:[row],base));
 
   for (const row of bySource.phases ?? []) {
     events.push(auditEvent('phases', 'phase', row, `Phase ${display(row.phase)}: ${display(row.previous_status)} → ${display(row.next_status)}`,
@@ -235,14 +213,14 @@ export async function getProjectActivity(client: SupabaseClient, requestId: stri
   }
   const files = new Map<string,string>();
   if ((bySource.files ?? []).length || (bySource.task_files ?? []).length) {
-    const result = await client.from('project_files').select('id,filename').eq('request_id',requestId).limit(500);
+    const result = await client.from('project_files').select('id,filename').eq('request_id',requestId).in('id',[...new Set([...(bySource.files??[]),...(bySource.task_files??[])].map(row=>text(row.file_id)))]);
     if (result.error) throw new Error('Project activity could not load file names.');
     for (const file of result.data ?? []) files.set(String(file.id), String(file.filename));
   }
   for (const row of bySource.files ?? []) {
     const action = text(row.action);
-    events.push(auditEvent('files', 'file', row, `Project file ${action.replaceAll('_',' ')}`,
-      [files.get(text(row.file_id)) ?? 'File', text(row.reason)].filter(Boolean).join(' · '), base, 'actor_id'));
+    events.push({...auditEvent('files', 'file', row, `Project file ${action.replaceAll('_',' ')}`,
+      [files.get(text(row.file_id)) ?? 'File', text(row.reason),row.action==='share'&&row.recipient_ids===null?'Historical recipients not recorded':''].filter(Boolean).join(' · '), base, 'actor_id'),provenance:'project_file_history',recipients:Array.isArray(row.recipient_ids)?row.recipient_ids as string[]:[]});
   }
   for (const row of bySource.task_files ?? []) {
     const action=text(row.action);
@@ -265,16 +243,16 @@ export async function getProjectActivity(client: SupabaseClient, requestId: stri
   for (const row of bySource.clients ?? []) {
     const task = text(row.task_id);
     const kind = display(row.kind).replaceAll('_',' ');
-    events.push({ id:`client:${row.id}:submitted`, source:'clients', title:`Client submitted ${kind} request`,
-      detail:taskName(task), actorId:id(row.submitted_by), createdAt:date(row.submitted_at), href:link(base,'clients',task) });
-    if (row.reviewed_at) events.push({ id:`client:${row.id}:reviewed`, source:'clients',
+    events.push({ id:`client:${row.id}:submitted`, orderKey:text(row.__key),taskId:task,source:'clients', title:`Client submitted ${kind} request`,
+      detail:taskName(task), actorId:id(row.submitted_by), createdAt:date(row.submitted_at), href:link(base,'clients',text(row.id)) });
+    if (row.reviewed_at) events.push({ id:`client:${row.id}:reviewed`, orderKey:text(row.__key),taskId:task,source:'clients',
       title:`Client ${kind} request ${row.status === 'accepted' ? 'accepted' : row.status === 'rejected' ? 'rejected' : 'reviewed'}`,
-      detail:taskName(task), actorId:id(row.reviewed_by), createdAt:date(row.reviewed_at), href:link(base,'clients',task) });
+      detail:taskName(task), actorId:id(row.reviewed_by), createdAt:date(row.reviewed_at), href:link(base,'clients',text(row.id)) });
   }
   for (const row of bySource.brief ?? []) {
-    events.push({ id:`brief:${row.version}:published`, source:'brief', title:'Project brief version published',
+    events.push({ id:`brief:${row.version}:published`, orderKey:text(row.__key),source:'brief', title:'Project brief version published',
       detail:`Version ${row.version}`, actorId:id(row.published_by), createdAt:date(row.published_at), href:link(base,'brief') });
-    if (row.decided_at) events.push({ id:`brief:${row.version}:decision`, source:'brief',
+    if (row.decided_at) events.push({ id:`brief:${row.version}:decision`, orderKey:text(row.__key),source:'brief',
       title:`Project brief ${display(row.status).replaceAll('_',' ')}`, detail:`Version ${row.version}`,
       actorId:id(row.decided_by), createdAt:date(row.decided_at), href:link(base,'brief') });
   }
@@ -284,9 +262,28 @@ export async function getProjectActivity(client: SupabaseClient, requestId: stri
       `${taskName(row.task_id)} · ${policy.allowDecline === true ? 'Allowed' : 'Not allowed'}`,base));
   }
 
-  const result = await client.rpc('staff_project_activity_actors', { p_request: requestId });
-  if (result.error) throw new Error('Project activity actor names could not load. Apply migration 039.');
-  const actorRows = array(result.data);
+  for(const row of bySource.schedule??[])events.push(auditEvent('tasks','schedule',row,'Task schedule changed',taskName(row.task_id),base,'actor','created_at',text(row.task_id)));
+  for(const row of bySource.lifecycle??[])events.push(auditEvent('phases','lifecycle',row,'Project lifecycle updated',text(row.action),base));
+  for(const row of bySource.readiness??[])events.push(auditEvent('forms','readiness',row,'Agreement/readiness evidence updated',`${text(row.action)} · recorded evidence, not an electronic signature receipt`,base));
+  for(const row of bySource.onboarding??[])events.push(auditEvent('forms','onboarding',row,'Onboarding form or requirement updated',text(row.action),base));
+  for(const row of bySource.changes??[])events.push(auditEvent('delivery','change',row,`Project change ${text(row.action)}`,null,base));
+  for(const row of bySource.deliverables??[]){
+    if(row.created_at)events.push(auditEvent('delivery',`deliverable:${row.deliverable_id}:${row.version}:created`,row,'Deliverable version published',`Version ${row.version}`,base,'created_by'));
+    if(row.decided_at)events.push(auditEvent('delivery',`deliverable:${row.deliverable_id}:${row.version}:decision`,row,`Deliverable ${display(row.status)}`,`Version ${row.version}`,base,'decided_by','decided_at'));
+  }
+  for(const row of bySource.publishing??[]){
+    if(row.created_at)events.push(auditEvent('project','publication',row,'Project update published',`Version ${row.version}`,base,'created_by'));
+    if(row.withdrawn_at)events.push(auditEvent('project','publication-withdrawal',row,'Project update withdrawn',`Version ${row.version}`,base,'withdrawn_by','withdrawn_at'));
+  }
+  for(const row of bySource.publication_reviews??[])events.push({...auditEvent('project',`publication-review:${row.version}:${row.user_id}`,row,`Project update ${display(row.decision)}`,`Version ${row.version}`,base,'user_id'),href:`${base}/publish`});
+  for(const row of bySource.domain??[]){
+    const source=text(row.source) as AuditSource,details=object(row.details);
+    events.push({...auditEvent(source,'domain',row,`${source==='communications'?'Communication':source==='meetings'?'Meeting':'Delivery record'} ${text(row.action).replaceAll('_',' ')}`,
+      [text(details.title),text(details.kind),details.attempt?`Attempt ${details.attempt}`:'',text(details.status)].filter(Boolean).join(' · '),base,'actor','created_at',text(row.item_id)),
+      provenance:source==='communications'?'project_communication_outbox':'project_event_history',recipients:Array.isArray(row.recipients)?row.recipients.filter((value):value is string=>typeof value==='string'):[]});
+  }
+  for(const row of bySource.legacy_queue??[])events.push({...auditEvent('communications','outbox-evidence',row,`Communication ${text(row.status)}`,text(row.kind),base),provenance:'project_communication_outbox',recipients:row.recipient?[text(row.recipient)]:[]});
+  const actorRows = array(page.actors);
   const actors: Record<string,ProjectActivityActor> = {};
   for (const row of actorRows) {
     const personId = id(row.id);
@@ -297,14 +294,14 @@ export async function getProjectActivity(client: SupabaseClient, requestId: stri
       avatarPath:id(row.avatarPath),
     };
   }
-  return { events: domainActivity(events), actors };
+  return { events: domainActivity(events).filter(event=>!taskId||event.taskId===taskId), actors, nextCursor:encodeActivityCursor(page.next) };
 }
 
 /** Stable identities deduplicate repeat audit rows; distinct audit sources remain
  * distinct evidence. Technical snapshots are retained in storage/history readers. */
 export function domainActivity(events:ProjectActivityEvent[]) {
   return [...new Map(events.filter(event=>event.createdAt&&!event.technical).map(event=>[event.id,event])).values()]
-    .sort((a,b)=>b.createdAt.localeCompare(a.createdAt)||a.id.localeCompare(b.id)).slice(0,250);
+    .sort((a,b)=>b.createdAt.localeCompare(a.createdAt)||(b.orderKey??'').localeCompare(a.orderKey??'')||a.id.localeCompare(b.id));
 }
 
 export type ProjectActivity = Awaited<ReturnType<typeof getProjectActivity>>;

@@ -1,5 +1,7 @@
 'use client';
 import Link from 'next/link';
+import {ProjectUpcomingMeetings} from './ProjectUpcomingMeetings';
+import type {ProjectMeeting} from '@/lib/projects/meeting-schema';
 import type { ReactNode } from 'react';
 import { ArrowUpRight, CalendarDays } from 'lucide-react';
 import { ProfileImage } from '@/components/profile-images/ProfileImage';
@@ -45,10 +47,11 @@ function Metric({label, value, detail}: {label:string; value:string; detail:stri
   return <div className="min-w-0 rounded-xl border border-border bg-card px-4 py-3"><p className="text-[11px] text-muted-foreground">{label}</p><p className="mt-1 text-xl font-semibold tabular-nums">{value}</p><p className="mt-1 text-[11px] text-muted-foreground">{detail}</p></div>;
 }
 
-export function ProjectOverview({record, activityResult, content, context, today, timezone, members, milestonePhases, phaseStates, phaseColors}: {
+export function ProjectOverview({record, activityResult, content, meetings, context, today, timezone, members, milestonePhases, phaseStates, phaseColors}: {
   record: OverviewRecord;
   activityResult:{data:ProjectActivity|null;error:string|null};
   content:OverviewContent;
+  meetings:{rows:ProjectMeeting[]|null;total:number|null};
   context?: ProjectDirectoryContext;
   today: string;
   timezone: string;
@@ -87,6 +90,7 @@ export function ProjectOverview({record, activityResult, content, context, today
       phaseStates={phaseStates} milestonePhases={milestonePhases} content={content} today={today} />
 
 
+    <ProjectUpcomingMeetings id={record.request_id} rows={meetings.rows} total={meetings.total} timezone={timezone}/>
     <div className="grid items-start gap-3 xl:grid-cols-[minmax(0,2fr)_minmax(260px,1fr)]">
       <div className="min-w-0 space-y-3 xl:order-2">
         <Panel title="Open tasks" action={<Link href={`${base}?tab=plan`} className={linkClass}>All tasks & milestones<ArrowUpRight size={13} aria-hidden /></Link>}>

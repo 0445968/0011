@@ -331,8 +331,8 @@ export function ProjectWorkspace({
     busy || blocked || completed;
 
   useEffect(() => {
-    window.dispatchEvent(new CustomEvent('bivi:project-workplan-dirty', { detail: { projectId: id, dirty, ready: drafts.ready } }));
-  }, [id, dirty, drafts.ready]);
+    window.dispatchEvent(new CustomEvent('bivi:project-workplan-dirty', { detail: { projectId: id, dirty, ready: drafts.ready&&!drafts.recoverable&&!drafts.conflict } }));
+  }, [id, dirty, drafts.ready,drafts.recoverable,drafts.conflict]);
 
   const markWorkspaceSaved = useWorkspaceUnsavedChanges(dirty, 'Project work plan', async () => {
     const saved = await command('save');

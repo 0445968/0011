@@ -30,6 +30,8 @@ export const staffTaskResponseCommandSchema = z.discriminatedUnion('action', [
 
 export const taskResponseWorkspaceSchema = z.object({
   projectRevision: z.number().int().positive(),
+  total:z.number().optional(), pendingTotal:z.number().optional(), timezone:z.string().optional(),
+  actors:z.record(z.object({id:z.string(),label:z.string(),kind:z.string().nullable(),avatarPath:z.string().nullable()})).optional(),
   policies: z.array(z.object({
     taskId: z.string(),
     allowed: z.boolean(),
@@ -47,6 +49,7 @@ export const taskResponseWorkspaceSchema = z.object({
     submittedBy: z.string().uuid().nullable(),
     reviewNote: z.string(),
     reviewedAt: z.string().nullable(),
+    reviewedBy:z.string().nullable().optional(), legacyBaseline:z.boolean().optional(),
   })),
 });
 export type TaskResponseWorkspace = z.infer<typeof taskResponseWorkspaceSchema>;

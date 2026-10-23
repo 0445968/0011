@@ -107,9 +107,10 @@ test('R7D verified staff/client assignments use same assignment model and no fre
   client.rpc=async()=>({error:'denied',data:null});await assert.rejects(()=>getProjectOverviewExtras(client,'p'),/could not load/);
 });
 test('R7D Activity reader uses scoped audits and actor identities, and fails honestly when source unavailable',async()=>{
-  const client=clientFor({project_phase_status_history:[{id:1,request_id:'p',phase:'discovery',previous_status:'planning',next_status:'active',actor:'staff',created_at:'2026-10-22T00:00:00Z'},{id:2,request_id:'other',phase:'production',created_at:'2026-10-23T00:00:00Z'}]},async()=>({data:[{id:'staff',label:'Verified staff',kind:'staff',avatarPath:null}],error:null}));
-  const result=await getProjectActivity(client,'p',body);assert.equal(result.events.length,1);assert.equal(result.actors.staff.label,'Verified staff');assert.ok(client.calls.every(c=>c.filters.some(([k,v])=>k==='request_id'&&v==='p')));
-  client.rpc=async()=>({error:'permission denied'});await assert.rejects(()=>getProjectActivity(client,'p',body),/actor names could not load/);
+  const calls=[];
+  const client={rpc:async(name,args)=>{calls.push({name,args});return {data:{rows:[{source:'phases',key:'phase:1',payload:{id:1,phase:'discovery',previous_status:'planning',next_status:'active',actor:'staff',created_at:'2026-10-22T00:00:00Z'}}],actors:[{id:'staff',label:'Verified staff',kind:'staff',avatarPath:null}],next:null},error:null};}};
+  const result=await getProjectActivity(client,'p',body);assert.equal(result.events.length,1);assert.equal(result.actors.staff.label,'Verified staff');assert.equal(calls[0].args.p_request,'p');assert.equal(calls[0].name,'staff_project_activity_page');
+  client.rpc=async()=>({error:'permission denied'});await assert.rejects(()=>getProjectActivity(client,'p',body),/audited page/);
 });
 test('R7D Overview and Activity use shared rendering, saved metrics, existing editor and recoverable missing-item context',()=>{
   const overview=readFileSync('components/admin/projects/ProjectOverview.tsx','utf8'),activity=readFileSync('app/admin/(workspace)/projects/[id]/activity/page.tsx','utf8'),workspace=readFileSync('components/admin/ProjectWorkspace.tsx','utf8');

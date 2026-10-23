@@ -2,5 +2,6 @@
 export const projectMutationEvent='bivi:project-mutation';
 export function refreshProjectSurfaces(id:string,router:{refresh:()=>void}){
   window.dispatchEvent(new CustomEvent(projectMutationEvent,{detail:{projectId:id}}));
+  window.dispatchEvent(new Event('bivi:notifications-changed'));
   router.refresh();
 }
