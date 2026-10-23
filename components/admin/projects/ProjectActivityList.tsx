@@ -2,16 +2,14 @@ import Link from 'next/link';
 import {Clock3,ArrowUpRight} from 'lucide-react';
 import {ProfileImage} from '@/components/profile-images/ProfileImage';
 import type {ProjectActivity} from '@/lib/projects/activity-data';
+import {formatSafeDateTime} from '@/lib/date-format';
 
 /** Shared actor, timestamp and event presentation for Overview and Activity. */
 export function ProjectActivityList({activity,timezone='America/Chicago'}:{activity:Pick<ProjectActivity,'events'|'actors'>;timezone?:string}) {
   return <ol className="divide-y divide-border">{activity.events.map(event=>{
     const actor=event.actorId?activity.actors[event.actorId]:null;
     const actorLabel=actor?.label??(event.actorId?`Account ${event.actorId.slice(0,8)}`:'Actor not recorded');
-    const date=new Date(event.createdAt);
-    const timestamp=Number.isNaN(date.getTime())?'Unknown time':new Intl.DateTimeFormat('en-US',{
-      year:'numeric',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZone:timezone,timeZoneName:'short',
-    }).format(date);
+    const timestamp=formatSafeDateTime(event.createdAt,timezone,{absent:'Unknown time',invalid:'Unknown time'});
     return <li key={event.id} className="flex items-start gap-3 px-4 py-3">
       <div className="mt-0.5 shrink-0">{actor?.kind?<ProfileImage kind={actor.kind} subject={actor.id} name={actor.label} path={actor.avatarPath} size="h-8 w-8"/>:
         <span className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground"><Clock3 size={15} aria-hidden/></span>}</div>
