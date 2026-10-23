@@ -69,7 +69,6 @@ type TaskFilter = 'all' | Task['status'];
 
 type Props = {
   overview?: ReactNode;
-  titleOnly?: boolean;
   savedToday: string;
   selectedTask?:string;
   selectedMilestone?:string;
@@ -235,7 +234,6 @@ function SectionTitle({
 
 export function ProjectWorkspace({
   overview,
-  titleOnly=false,
   savedToday,
   id,
   userId,
@@ -825,20 +823,6 @@ export function ProjectWorkspace({
         )}
       </section>
     );
-  }
-
-  if (titleOnly) {
-    return <section aria-label="Project name" className="rounded-xl border border-border bg-card p-3 sm:p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-sm font-semibold">Project name</h2><p className="mt-0.5 text-[11px] text-muted-foreground">Uses the shared work-plan draft and revision checks.</p></div>
-        <span className={`rounded-full px-2 py-1 text-[10px] ${dirty?'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-100':'bg-muted text-muted-foreground'}`}>{dirty?'Private draft':'Saved name'}</span>
-      </div>
-      {drafts.recoverable&&<p role="status" className="mt-2 text-[11px] text-amber-800 dark:text-amber-200">A private work-plan draft needs reconciliation. <Link className="underline" href={`/projects/${id}?tab=plan`}>Open Tasks &amp; Milestones</Link> to restore or resolve the full draft.</p>}
-      {drafts.rebase&&<p role="alert" className="mt-2 text-[11px] text-amber-800 dark:text-amber-200">The project changed elsewhere. Reconcile the full work-plan draft in <Link className="underline" href={`/projects/${id}?tab=plan`}>Tasks &amp; Milestones</Link> before saving.</p>}
-      <Input aria-label="Project name" maxLength={200} className={`${inputClass} mt-2 max-w-2xl`} value={body.title} disabled={locked||blocked||Boolean(drafts.recoverable)||Boolean(drafts.conflict)||Boolean(drafts.rebase)} onChange={event=>field('title',event.target.value)}/>
-      <div className="mt-2 flex flex-wrap items-center gap-2"><Button type="button" size="sm" disabled={!dirty||locked||busy||blocked||Boolean(drafts.recoverable)||Boolean(drafts.conflict)||!drafts.ready} onClick={()=>void command('save')}>{busy?'Saving…':'Apply work-plan changes'}</Button>{dirty&&!busy&&<Button type="button" size="sm" variant="outline" onClick={()=>{if(window.confirm('Discard all work-plan edits, remove the private draft, and load the latest saved project?'))void controller.discard();}}>Discard work-plan edits</Button>}
-        <p role="status" className="text-[10px] text-muted-foreground">{drafts.state==='saving'?'Private draft saving…':drafts.state==='saved'?'Private draft saved; the project is unchanged until you apply it.':dirty?'Private draft only · Apply saves all current task, milestone and project-name edits.':'Name matches the saved project.'}</p></div>
-      {message&&<p role="alert" className="mt-2 text-xs text-destructive">{message}{(blocked||saveOutcomeUnknown)&&<button type="button" className="ml-2 underline" onClick={()=>void controller.checkUncertainSave()}>Check saved data</button>}</p>}
-    </section>;
   }
 
   /* =======================================================

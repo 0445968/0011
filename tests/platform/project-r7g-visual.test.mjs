@@ -46,8 +46,12 @@ test('R7G Brief owns editable project identity and verified owner controls', () 
   const page = read('app/admin/(workspace)/projects/[id]/page.tsx');
   const identity = read('components/admin/projects/ProjectBriefIdentity.tsx');
   const workspace = read('components/admin/ProjectWorkspace.tsx');
+  const rename = read('components/admin/projects/ProjectBriefRename.tsx');
   assert.match(page, /tab === 'brief'[\s\S]*ProjectBriefIdentity/);
   assert.match(identity, /ProjectOrganizationOwnerButton/);
-  assert.match(workspace, /titleOnly/);
+  assert.match(identity, /ProjectBriefRename/);
+  assert.match(rename, /expectedRevision:\s*revision/);
+  assert.match(rename, /Saving…/);
+  assert.doesNotMatch(page, /ProjectWorkspace titleOnly/);
   assert.match(workspace, /useProjectEditingController/);
 });

@@ -478,8 +478,7 @@ export default async function ProjectPage({
 
       {tab === 'brief' && record && (
           brief ? (
-            <div className="space-y-3"><ProjectBriefIdentity id={params.id} state={record.state} activatedAt={record.activated_at} proposalVersion={record.proposal_version} revision={record.revision} timezone={calendarPreference.timezone}/>
-            <ProjectWorkspace titleOnly id={params.id} userId={user.id} record={record} history={data.history} gateReady={gateReady} savedToday={calendarToday}/>
+            <div className="space-y-3"><ProjectBriefIdentity id={params.id} state={record.state} activatedAt={record.activated_at} proposalVersion={record.proposal_version} revision={record.revision} title={record.body.title} timezone={calendarPreference.timezone}/>
             <ApprovalFocus focus={searchParams.focus}/><ProjectBriefEditor
               id={params.id}
               draft={brief.draft}
