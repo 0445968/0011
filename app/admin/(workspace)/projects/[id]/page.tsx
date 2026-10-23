@@ -279,7 +279,7 @@ export default async function ProjectPage({
 
   const legacyPhaseView = requestedTab === 'calendar' && searchParams.view === 'phases';
   const legacyTaskRoute = Boolean(searchParams.task) && (requestedTab === 'lifecycle' || requestedTab === 'phases' || legacyPhaseView);
-  const canonicalRequestedTab = legacyTaskRoute ? 'plan' : requestedTab === 'lifecycle' || legacyPhaseView ? 'phases' : requestedTab === 'responses' || (requestedTab==='plan'&&searchParams.request) ? 'requests' : requestedTab;
+  const canonicalRequestedTab = legacyTaskRoute ? 'plan' : requestedTab === 'plan' && Boolean(selectedMilestone) && !selectedTask ? 'phases' : requestedTab === 'lifecycle' || legacyPhaseView ? 'phases' : requestedTab === 'responses' || (requestedTab==='plan'&&searchParams.request) ? 'requests' : requestedTab;
   const requested =
     ALL_TABS.find(
       (item) =>
@@ -456,6 +456,7 @@ export default async function ProjectPage({
         <ProjectPhasesPage
           record={record}
           createMilestone={searchParams.newMilestone==='1'}
+          focusMilestone={selectedMilestone}
           completionIssues={completionIssueRows}
           key={params.id}
           id={params.id}
