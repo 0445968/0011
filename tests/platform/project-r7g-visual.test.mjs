@@ -14,18 +14,22 @@ test('R7G shared visual primitives stay within staff Projects surfaces', () => {
   assert.match(files, /staff\?'mt-3 space-y-3':'mt-8 space-y-6'/);
 });
 
-test('R7G work plan keeps all columns and filters with responsive wrapping', () => {
+test('R7G task work plan keeps configurable columns and real view choices', () => {
   const toolbar = read('components/admin/projects/ProjectWorkplanToolbar.tsx');
   const board = read('components/admin/projects/ProjectMilestoneBoardV2.tsx');
   const workspace = read('components/admin/ProjectWorkspace.tsx');
-  assert.match(toolbar, /\[1,2,3\] as const/);
-  assert.match(toolbar, /aria-label=\{`\$\{value\} column/);
-  for (const filter of ['Phase', 'Responsible side', 'Assignee', 'Status', 'Deadline']) assert.ok(toolbar.includes(`label="${filter}"`), `missing ${filter} filter`);
+  for(const view of ['overview','kanban','gantt','list','calendar','table','timeline']) assert.ok(toolbar.includes(`value:'${view}'`));
+  for(const column of ['priority','status','milestone','due','assignee']) assert.ok(toolbar.includes(`value:'${column}'`));
+  for (const filter of ['Phase', 'Responsibility', 'Assignee', 'Status', 'Deadline']) assert.ok(toolbar.includes(`label="${filter}"`), `missing ${filter} filter`);
   assert.match(toolbar, /Clear filters/);
+  assert.match(toolbar, /Add milestone in Lifecycle/);
+  assert.match(toolbar, /Group tasks/);
+  assert.match(toolbar, /Sort tasks/);
   assert.match(board, /break-words/);
   assert.match(board, /flex flex-wrap/);
   assert.match(workspace, /Advanced work-plan editor/);
-  assert.match(workspace, /Back to tasks &amp; milestones/);
+  assert.match(workspace, /Back to tasks/);
+  assert.doesNotMatch(workspace, /Saved task progress|Open tasks',body\.tasks/);
 });
 
 test('R7G month grids have navigation, event overflow and project/workspace calendar use', () => {
