@@ -10,7 +10,7 @@ export function safeTimeZone(timezone:string|undefined|null):string {
   }
 }
 
-export function formatSafeDateTime(value:string|undefined|null,timezone?:string|null,labels:{absent?:string;invalid?:string}={}) {
+export function formatSafeDateTime(value:string|undefined|null,timezone?:string|null,labels:{absent?:string;invalid?:string;showTimeZone?:boolean}={}) {
   if(!value)return labels.absent??'—';
   const date=new Date(value);
   if(!Number.isFinite(date.getTime()))return labels.invalid??'—';
@@ -21,6 +21,6 @@ export function formatSafeDateTime(value:string|undefined|null,timezone?:string|
     hour:'numeric',
     minute:'2-digit',
     timeZone:safeTimeZone(timezone),
-    timeZoneName:'short',
+    ...(labels.showTimeZone?{timeZoneName:'short' as const}:{}),
   }).format(date);
 }
