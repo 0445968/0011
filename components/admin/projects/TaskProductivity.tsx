@@ -11,7 +11,8 @@ import { MessageSquareText, Paperclip, StickyNote } from 'lucide-react';
 
 type Note = { id:string; body:string; author_id:string|null; revision:number; created_at:string; updated_at:string };
 type FileRow = { id:string; filename:string };
-type TaskContext = { projectRevision:number; priority:string|null; notes:Note[]; comments:{id:string}[]; files:FileRow[]; noteCount:number;commentCount:number;fileCount:number;linkedFileIds?:string[]; availableFiles:FileRow[] };
+type TaskComment = { id:string; body:string; author_id:string|null; created_at:string; updated_at:string; revision:number };
+type TaskContext = { projectRevision:number; priority:string|null; notes:Note[]; comments:TaskComment[]; files:FileRow[]; noteCount:number;commentCount:number;fileCount:number;linkedFileIds?:string[]; availableFiles:FileRow[] };
 
 export function TaskProductivity({projectId,taskId,taskTitle,revision,disabled,userId,onPriority}: {
   projectId:string;taskId:string;taskTitle:string;revision:number;disabled:boolean;userId:string;
@@ -30,11 +31,19 @@ export function TaskProductivity({projectId,taskId,taskTitle,revision,disabled,u
   const loadGeneration=useRef(0);
   const latestData=useRef<TaskContext|null>(null);
   const noteCreateId=useRef<string|null>(null);
+  const [commentDraft,setCommentDraft]=useState('');
+  const [commentBusy,setCommentBusy]=useState(false);
+  const [commentError,setCommentError]=useState('');
+  const [commentMessage,setCommentMessage]=useState('');
+  const pendingComment=useRef<{id:string;body:string;taskId:string;expectedProjectRevision:number}|null>(null);
   const noteDirty=editId ? draft!==(data?.notes.find(note=>note.id===editId)?.body??'') : Boolean(draft);
   useWorkspaceUnsavedChanges(noteDirty,`Task note: ${taskTitle}`,async()=>{
     const note=data?.notes.find(item=>item.id===editId);
     const saved=note?await editNote(note):await addNote();
     if(!saved)throw new Error('Task note was not saved. Save the work plan first if it has other edits.');
+  });
+  useWorkspaceUnsavedChanges(Boolean(commentDraft.trim()),`Task comment: ${taskTitle}`,async()=>{
+    if(!await submitComment())throw new Error('Task comment could not be saved.');
   });
   const endpoint=`/api/admin/projects/${projectId}/task-productivity`;
   async function load(){
@@ -68,6 +77,29 @@ export function TaskProductivity({projectId,taskId,taskTitle,revision,disabled,u
   async function addNote(){if(!draft.trim())return false;const id=noteCreateId.current??crypto.randomUUID();noteCreateId.current=id;const saved=await save({action:'note_create',taskId,noteId:id,body:draft.trim()});if(saved){noteCreateId.current=null;setDraft('');}return saved;}
   async function editNote(note:Note){if(!draft.trim())return false;const saved=await save({action:'note_edit',taskId,noteId:note.id,expectedNoteRevision:note.revision,body:draft.trim()});if(saved){setDraft('');setEditId(null);}return saved;}
   async function removeNote(note:Note){await save({action:'note_remove',taskId,noteId:note.id,expectedNoteRevision:note.revision});}
+  async function submitComment(){
+    const trimmed=commentDraft.trim();
+    if(!trimmed||disabled||commentBusy||busy||loading||trimmed.length>4000)return false;
+    if(!pendingComment.current||pendingComment.current.body!==trimmed||pendingComment.current.taskId!==taskId||pendingComment.current.expectedProjectRevision!==revision){
+      pendingComment.current={id:crypto.randomUUID(),body:trimmed,taskId,expectedProjectRevision:revision};
+    }
+    const submitted=pendingComment.current;
+    setCommentBusy(true);setCommentError('');setCommentMessage('');
+    try{
+      const response=await fetch(`/api/admin/projects/${projectId}/comments`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'create',...submitted}),signal:AbortSignal.timeout(20000)});
+      const result=await response.json();
+      if(!response.ok||!result.saved)throw new Error(result.error||'Comment could not be saved.');
+      pendingComment.current=null;setCommentDraft('');setCommentMessage('Comment posted.');
+      await load();refreshProjectSurfaces(projectId,router);return true;
+    }catch(cause){
+      const refreshed=await load();
+      if(refreshed&&latestData.current?.comments.some(comment=>comment.id===submitted.id&&comment.body===submitted.body)){
+        pendingComment.current=null;setCommentDraft('');setCommentMessage('Comment saved and verified.');refreshProjectSurfaces(projectId,router);return true;
+      }
+      setCommentError(cause instanceof Error?cause.message:'Comment result is uncertain. Refresh before retrying.');
+      return false;
+    }finally{setCommentBusy(false);}
+  }
   async function preview(file:FileRow){
     if(busy||loading)return;setBusy(true);setBusyLabel('Opening file preview…');setError('');
     try{const response=await fetch(`/api/admin/projects/${projectId}/files/${file.id}/preview`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}',signal:AbortSignal.timeout(20000)});const result=await response.json();if(!response.ok||typeof result.url!=='string')throw new Error(result.error||'File preview could not be opened.');window.open(result.url,'_blank','noopener,noreferrer');}
@@ -77,7 +109,7 @@ export function TaskProductivity({projectId,taskId,taskTitle,revision,disabled,u
   <details className="mt-2 pt-2" onToggle={event=>{const next=event.currentTarget.open;setOpen(next);if(next)void load();}}>
     <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 text-[11px] text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring">
       <span title="Notes" aria-label={`Notes: ${data?.noteCount??'loading'}`} className="inline-flex items-center gap-1"><StickyNote size={13} aria-hidden/>{data?.noteCount??'…'}</span>
-      <Link title="Comments" aria-label={`Comments: ${data?.commentCount??'loading'}`} href={`/projects/${projectId}/discussion?task=${encodeURIComponent(taskId)}`} onClick={event=>event.stopPropagation()} className="inline-flex items-center gap-1"><MessageSquareText size={13} aria-hidden/>{data?.commentCount??'…'}</Link>
+      <span title="Comments" aria-label={`Comments: ${data?.commentCount??'loading'}`} className="inline-flex items-center gap-1"><MessageSquareText size={13} aria-hidden/>{data?.commentCount??'…'}</span>
       <span title="Files" aria-label={`Files: ${data?.fileCount??'loading'}`} className="inline-flex items-center gap-1"><Paperclip size={13} aria-hidden/>{data?.fileCount??'…'}</span>
     </summary>
     {open&&<div className="mt-3 space-y-4 rounded-lg bg-muted/30 p-3">
@@ -87,6 +119,26 @@ export function TaskProductivity({projectId,taskId,taskTitle,revision,disabled,u
 
         <section aria-label={`Notes for ${taskTitle}`}><h4 className="text-xs font-semibold">Task notes</h4><ul className="mt-2 space-y-2">{data.notes.map(note=><li key={note.id} className="rounded-md border border-border bg-background p-2"><p className="whitespace-pre-wrap break-words text-xs">{note.body}</p><p className="mt-1 text-[10px] text-muted-foreground">{new Date(note.updated_at).toLocaleString('en-US',{timeZone:'America/Chicago'})}</p>{note.author_id===userId&&!disabled&&<div className="mt-2 flex gap-3 text-[11px]"><button type="button" className="underline" onClick={()=>{setEditId(note.id);setDraft(note.body);}}>Edit</button><button type="button" disabled={busy} className="underline" onClick={()=>void removeNote(note)}>Remove</button></div>}</li>)}</ul><label className="mt-2 block text-[11px]" htmlFor={`note-${taskId}`}>{editId?'Edit note':'Add a task note'}<textarea id={`note-${taskId}`} maxLength={4000} disabled={disabled||busy||loading} value={draft} onChange={event=>setDraft(event.target.value)} className="mt-1 min-h-20 w-full rounded-md border border-input bg-background p-2 text-xs"/></label><div className="mt-2 flex gap-2"><button type="button" disabled={disabled||busy||loading||!draft.trim()} className="rounded-md bg-foreground px-3 py-1.5 text-xs text-background disabled:opacity-50" onClick={()=>{const note=data.notes.find(item=>item.id===editId);if(note)void editNote(note);else void addNote();}}>{busy?'Saving…':editId?'Save note':'Add note'}</button>{(editId||draft)&&<button type="button" className="rounded-md border px-3 py-1.5 text-xs" onClick={()=>{setEditId(null);setDraft('');}}>Cancel note draft</button>}</div></section>
         <section aria-label={`Files attached to ${taskTitle}`}><h4 className="text-xs font-semibold">Task files</h4>{data.files.map(file=><div key={file.id} className="mt-2 flex items-center justify-between gap-2 rounded-md border border-border bg-background p-2 text-xs"><Link className="min-w-0 truncate underline" href={`/projects/${projectId}/files`}>{file.filename}</Link><button type="button" className="shrink-0 underline" disabled={disabled||busy||loading} onClick={()=>void preview(file)}>Preview</button><button type="button" className="shrink-0 underline" disabled={disabled||busy||loading} onClick={()=>void save({action:'file_unlink',taskId,fileId:file.id})}>Unlink</button></div>)}{data.availableFiles.length>0&&<label className="mt-2 block text-[11px]">Attach a verified project file<select className="mt-1 w-full rounded-md border border-input bg-background p-2 text-xs" disabled={disabled||busy||loading} value="" onChange={event=>{if(event.target.value)void save({action:'file_link',taskId,fileId:event.target.value});}}><option value="">Choose a project file…</option>{data.availableFiles.map(file=><option key={file.id} value={file.id}>{file.filename}</option>)}</select></label>}{!data.files.length&&!data.availableFiles.length&&<p className="mt-1 text-[11px] text-muted-foreground">No verified project files are available.</p>}</section>
+        <section aria-label={`Comments for ${taskTitle}`} className="space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <h4 className="text-xs font-semibold">Comments ({data.commentCount})</h4>
+            <Link href={`/projects/${projectId}/discussion?task=${encodeURIComponent(taskId)}`} className="text-[11px] font-medium underline">Full discussion</Link>
+          </div>
+          <ol className="max-h-56 space-y-2 overflow-y-auto">
+            {data.comments.map(comment=><li key={comment.id} className="rounded-lg border border-border bg-background p-2">
+              <p className="whitespace-pre-wrap break-words text-xs">{comment.body}</p>
+              <p className="mt-1 text-[10px] text-muted-foreground">{comment.author_id===userId?'You':'Team member'} · {new Date(comment.created_at).toLocaleString('en-US',{dateStyle:'medium',timeStyle:'short'})}</p>
+            </li>)}
+            {!data.comments.length&&<li className="text-[11px] text-muted-foreground">No comments on this task yet.</li>}
+          </ol>
+          {data.commentCount>data.comments.length&&<p className="text-[11px] text-muted-foreground">Showing recent comments. Open the full discussion to view older comments.</p>}
+          <label className="block text-[11px] font-medium">Write a comment
+            <textarea className="mt-1 min-h-20 w-full rounded-lg border border-input bg-background p-2 text-xs" value={commentDraft} maxLength={4000} disabled={disabled||busy||commentBusy||loading||data.projectRevision!==revision} onChange={event=>setCommentDraft(event.target.value)} placeholder="Add an update or mention a review…"/>
+          </label>
+          <button type="button" disabled={disabled||busy||commentBusy||loading||!commentDraft.trim()||data.projectRevision!==revision} onClick={()=>{void submitComment();}} className="rounded-lg bg-foreground px-3 py-1.5 text-xs font-medium text-background disabled:opacity-50">{commentBusy?'Posting…':'Post comment'}</button>
+          {commentMessage&&<p role="status" className="text-[11px] text-emerald-700 dark:text-emerald-300">{commentMessage}</p>}
+          {commentError&&<p role="alert" className="text-[11px] text-destructive">{commentError}</p>}
+        </section>
       </>}
     </div>}
   </details>
