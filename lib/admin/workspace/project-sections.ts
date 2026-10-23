@@ -1,7 +1,7 @@
 /** Record-specific workspace navigation. Disabled sections never resolve to a live URL. */
 export const projectRecordSections = [
   { id: 'overview', label: 'Overview', href: '' },
-  { id: 'plan', label: 'Tasks & Milestones', href: '?tab=plan' },
+  { id: 'plan', label: 'Tasks', href: '?tab=plan' },
   { id: 'requests', label: 'Requests', href: '?tab=requests' },
   { id: 'phases', label: 'Lifecycle', href: '?tab=phases' },
   { id: 'calendar', label: 'Calendar', href: '?tab=calendar' },
