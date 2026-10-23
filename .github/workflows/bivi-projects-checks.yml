@@ -9,6 +9,10 @@ on:
       - restore
   workflow_dispatch:
 
+concurrency:
+  group: bivi-projects-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
