@@ -35,7 +35,7 @@ export function ProjectPhasesPage({id,revision,body,lifecycle,controls,events,ph
   },[hierarchy,links]);
 
   return <div className="space-y-3">
-    <ProjectPageHeader eyebrow="Project settings" title="Phases" description="Saved status, configured colors, deadlines and linked work."
+    <ProjectPageHeader eyebrow="Project settings" title="Lifecycle" description="Saved status, configured colors, deadlines and linked work."
       action={<button type="button" disabled={hierarchy.busy} onClick={()=>{void hierarchy.load();void colors.refresh().catch(()=>undefined);}} className={projectControlClass}><RefreshCcw size={13} aria-hidden/>Refresh</button>}/>
     {completionIssues.length>0&&<div role="alert" className="rounded-lg border border-amber-300 p-3 text-xs"><p className="font-semibold">Completion evidence needs review</p><ul className="mt-2 list-disc pl-4">{completionIssues.map((issue,index)=><li key={index}>{issue}</li>)}</ul></div>}
     {colors.loadError&&<p role="alert" className="rounded-lg border border-red-300 p-3 text-xs text-red-700 dark:text-red-300">{colors.loadError}<button type="button" onClick={()=>{void colors.refresh().catch(()=>undefined);}} className="ml-2 underline">Refresh colors</button></p>}

@@ -85,7 +85,7 @@ function SideLogo({ side, data }: {side: Side; data: ProjectAssignmentWorkspace}
 
 function Faces({ ids, options, side, max = 4 }: { ids: string[]; options: Person[]; side: Side; max?: number }) {
   const people = ids.flatMap(id => { const found = options.find(person => person.id === id); return found ? [found] : []; });
-  if (!people.length) return <span className="text-[11px] text-muted-foreground">Unassigned</span>;
+  if (!people.length) return <span title="Assign members" aria-label="Assign members"><UserRoundPlus size={16} aria-hidden/></span>;
   return <div className="flex items-center" aria-label={`${side === 'bivi' ? 'Bivi' : 'Client'} assignees`}>
     {people.slice(0, max).map(person => <span key={person.id} title={person.label} className="-ml-1.5 first:ml-0 rounded-full border-2 border-card">
       <ProfileImage kind={side === 'bivi' ? 'staff' : 'client'} subject={person.id} name={person.label} path={person.avatar_path} size="h-7 w-7" />

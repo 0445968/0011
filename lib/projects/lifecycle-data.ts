@@ -35,7 +35,7 @@ export async function getProjectLifecycle(client: SupabaseClient, requestId: str
       .maybeSingle(),
     client
       .from('project_task_controls')
-      .select('request_id,task_id,revision,owner_type,phase,service_id,depends_on,blocker_owner,client_note,updated_at,assigned_staff_id')
+      .select('request_id,task_id,revision,owner_type,phase,service_id,depends_on,blocker_owner,client_note,updated_at,assigned_staff_id,priority')
       .eq('request_id', requestId)
       .order('task_id', { ascending: true }),
     client

@@ -27,9 +27,9 @@ export async function GET(request: Request, { params }: { params: { id: string }
   const [project, control, notes, comments, links, files] = await Promise.all([
     access.client.from('inquiry_projects').select('revision').eq('request_id', params.id).maybeSingle(),
     access.client.from('project_task_controls').select('priority').eq('request_id', params.id).eq('task_id', taskId).maybeSingle(),
-    access.client.from('project_task_notes').select('id,task_id,body,author_id,revision,removed,created_at,updated_at').eq('request_id', params.id).eq('task_id', taskId).eq('removed', false).order('created_at', { ascending: false }).limit(50),
-    access.client.from('project_comments').select('id,body,author_id,revision,created_at,updated_at').eq('request_id', params.id).eq('task_id', taskId).eq('removed', false).order('created_at', { ascending: false }).limit(50),
-    access.client.from('project_task_file_links').select('file_id,created_at').eq('request_id', params.id).eq('task_id', taskId).order('created_at', { ascending: false }),
+    access.client.from('project_task_notes').select('id,task_id,body,author_id,revision,removed,created_at,updated_at',{count:'exact'}).eq('request_id', params.id).eq('task_id', taskId).eq('removed', false).order('created_at', { ascending: false }).limit(50),
+    access.client.from('project_comments').select('id,body,author_id,revision,created_at,updated_at',{count:'exact'}).eq('request_id', params.id).eq('task_id', taskId).eq('removed', false).order('created_at', { ascending: false }).limit(50),
+    access.client.from('project_task_file_links').select('file_id,created_at,project_files!inner(state)').eq('project_files.state','ready').eq('request_id', params.id).eq('task_id', taskId).order('created_at', { ascending: false }),
     access.client.from('project_files').select('id,filename,state,shared,revision').eq('request_id', params.id).eq('state', 'ready').order('filename').limit(200),
   ]);
   if (project.error || !project.data) return adminReply({ error: 'Project not found.' }, project.error ? 503 : 404);
@@ -39,6 +39,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
   return adminReply({
     projectRevision: project.data.revision,
     priority: control.data.priority,
+    noteCount:notes.count??0, commentCount:comments.count??0, fileCount:linkedIds.size,
     notes: notes.data ?? [], comments: comments.data ?? [],
     files: (files.data ?? []).filter(file => linkedIds.has(file.id)),
     linkedFileIds:[...linkedIds],

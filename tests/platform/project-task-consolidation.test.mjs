@@ -7,8 +7,8 @@ const read=path=>readFileSync(new URL(`../../${path}`,import.meta.url),'utf8');
 test('normal task cards own grouped editing and use shared task controls, productivity, hierarchy, and completion override',()=>{
  const board=read('components/admin/projects/ProjectMilestoneBoardV2.tsx');
  assert.match(board,/<details key=\{task\.id\} id=\{taskDomId\(task\.id\)\}/);
- assert.match(board,/Task settings &amp; actions/);
- assert.match(board,/Save all · sidecar commands save immediately/);
+ assert.match(board,/open=\{Boolean\(openTasks\[task\.id\]\)\}/);
+ assert.equal((board.match(/<ProjectLifecycleControls/g)||[]).length,1);
  assert.match(board,/<ProjectLifecycleControls[\s\S]*taskOnlyTaskId=\{task\.id\}/);
  assert.match(board,/<TaskProductivity[\s\S]*taskId=\{task\.id\}/);
  assert.match(board,/Subtasks \(\{hierarchy\.data\?children\.length/);
@@ -29,7 +29,7 @@ test('Phases keeps phase controls and sends task work back to the canonical Task
 test('Open task clears transient board filters and resolves legacy phase task links to Tasks',()=>{
  const board=read('components/admin/projects/ProjectMilestoneBoardV2.tsx');
  const page=read('app/admin/(workspace)/projects/[id]/page.tsx');
- assert.match(board,/setFilters\(\{\.\.\.emptyWorkplanFilters\}\); setView\('tasks'\); setGrouping\('none'\)/);
+ assert.match(board,/setFilters\(\{\.\.\.emptyWorkplanFilters\}\); setTagFilter\(''\); setView\('tasks'\); setGrouping\('none'\)/);
  assert.match(board,/taskDomId\(selectedTaskId\)/);
  assert.match(board,/focusTaskId/);
  assert.match(page,/legacyTaskRoute[\s\S]*\? 'plan'/);

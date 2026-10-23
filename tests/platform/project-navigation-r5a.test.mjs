@@ -13,7 +13,7 @@ test('R5a uses one record section configuration for the bar and View menu', () =
   }
   assert.match(config, /id: 'activity', label: 'Activity', href: '\/activity'/);
   assert.match(config, /id: 'calendar', label: 'Calendar', href: '\?tab=calendar'/);
-  assert.match(config, /id: 'phases', label: 'Phases', href: '\?tab=phases'/);
+  assert.match(config, /id: 'phases', label: 'Lifecycle', href: '\?tab=phases'/);
   assert.doesNotMatch(config, /id: 'lifecycle'/);
   assert.match(shell, /projectRecordSections\.map/);
   assert.match(menu, /projectRecordSections\.map/);

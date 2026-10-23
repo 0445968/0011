@@ -120,7 +120,7 @@ function TaskControlRow({
   allTasks: ProjectTask[];
   externallyDisabled?:boolean;
   expanded: boolean;
-  onToggle: () => void;
+  onToggle?: () => void;
 }) {
   const router=useRouter();
   const [expectedRevision,setExpectedRevision]=useState(control.revision);
@@ -203,19 +203,7 @@ function TaskControlRow({
     <Fragment>
       <tr id={taskDomId(task.id,'lifecycle')} tabIndex={-1} style={{scrollMarginTop:'6rem'}} className={expanded ? 'bg-muted/50' : 'hover:bg-muted/30'}>
         <td className="max-w-[290px] px-3 py-2.5 align-middle">
-          <p className="truncate text-xs font-semibold" title={task.title}>
-            {task.title}
-          </p>
-          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
-            <span className="capitalize">{task.status.replace('_', ' ')}</span>
-            <span aria-hidden="true">·</span>
-            <span>{task.dueOn || 'No due date'}</span>
-            {task.status === 'blocked' && (
-              <span className="font-medium text-red-600 dark:text-red-400">
-                · Blocked
-              </span>
-            )}
-          </div>
+          <span className="text-[11px] text-muted-foreground">{onToggle?task.title:'Responsibility'}</span>
         </td>
 
         <td className="px-3 py-2.5 align-middle">
@@ -272,6 +260,7 @@ function TaskControlRow({
               aria-label={`${expanded ? 'Hide' : 'Show'} settings for ${task.title}`}
               aria-expanded={expanded}
               aria-controls={`lifecycle-task-${task.id}`}
+              hidden={!onToggle}
               onClick={onToggle}
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground hover:bg-accent"
             >
@@ -331,17 +320,7 @@ function TaskControlRow({
                 </div>
               </label>
 
-              <label className="block min-w-0 text-[11px] font-medium text-muted-foreground">
-                Service ID
-                <Input
-                  maxLength={100}
-                  value={serviceId}
-                  disabled={externallyDisabled || busy || blocked}
-                  onChange={(event) => setServiceId(event.target.value)}
-                  placeholder="Optional service link"
-                  className={`${fieldClass} mt-1.5`}
-                />
-              </label>
+
             </div>
 
             {control.clientNote && (
@@ -530,11 +509,12 @@ export function ProjectLifecycleControls({
   if (taskOnlyTaskId) {
     const entry = entries.find(item => item.task.id === taskOnlyTaskId);
     if (!entry) return <p role="status" className="text-xs text-muted-foreground">Task ownership settings are unavailable until this task is saved.</p>;
-    return <section aria-label={`Ownership, blockers and dependencies for ${entry.task.title}`} className="overflow-x-auto rounded-lg border border-border">
+    return <section aria-label={`Ownership, blockers and dependencies for ${entry.task.title}`} className="task-ownership rounded-lg bg-muted/20">
       <h4 className="px-3 py-2 text-xs font-semibold">Ownership, blockers and dependencies</h4>
-      <table className="w-full min-w-[680px] table-fixed text-left text-xs"><thead className="sr-only"><tr><th>Task</th><th>Responsibility</th><th>Assigned staff</th><th>Phase</th><th>Waiting on</th><th>Actions</th></tr></thead><tbody>
-        <TaskControlRow id={id} task={entry.task} control={entry.control} allTasks={tasks} externallyDisabled={taskOnlyDisabled} expanded onToggle={()=>undefined}/>
+      <table className="w-full table-fixed text-left text-xs"><thead className="sr-only"><tr><th>Task</th><th>Responsibility</th><th>Assigned staff</th><th>Phase</th><th>Waiting on</th><th>Actions</th></tr></thead><tbody>
+        <TaskControlRow id={id} task={entry.task} control={entry.control} allTasks={tasks} externallyDisabled={taskOnlyDisabled} expanded onToggle={undefined}/>
       </tbody></table>
+      <style jsx global>{`.task-ownership table, .task-ownership tbody, .task-ownership tr, .task-ownership td { display: block; } .task-ownership tbody > tr:first-child { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); align-items: center; } .task-ownership td { min-width: 0; } .task-ownership tbody > tr:first-child > td:last-child { grid-column: 1 / -1; }`}</style>
     </section>;
   }
 

@@ -205,7 +205,7 @@ export async function getProjectActivity(client: SupabaseClient, requestId: stri
       seed:'Task controls initialized', metadata:'Task responsibility or dependency updated',
       client_update:'Client task update recorded', brief_review:'Brief task review recorded',
     };
-    const changeLabels:Record<string,string>={priority:'Task priority changed',start_date:'Task start date changed',bulk_status:'Task statuses changed in bulk',staff_assignment:'Task staff assignment changed',staff_deactivated:'Inactive staff assignment removed'};
+    const changeLabels:Record<string,string>={tags:'Task tags changed',priority:'Task priority changed',start_date:'Task start date changed',bulk_status:'Task statuses changed in bulk',staff_assignment:'Task staff assignment changed',staff_deactivated:'Inactive staff assignment removed'};
     const before=detail.before,after=detail.after;
     const detailText=change==='priority'||change==='start_date'?`${taskName(task)} · ${display(before,'Not set')} → ${display(after,'Not set')}`:
       change==='bulk_status'&&before&&after?`${taskName(task)} · ${display(object(before).status)} → ${display(object(after).status)}`:
