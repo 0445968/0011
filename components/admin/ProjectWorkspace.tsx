@@ -3,13 +3,13 @@
 import {milestoneDomId} from '@/lib/calendar/links';
 import Link from 'next/link';
 import {taskDomId} from '@/lib/tasks/links';
-import { DirectoryProgress, DirectoryStatus, ProjectTaskStateIcon } from './projects/DirectoryIndicators';
+import { DirectoryStatus, ProjectTaskStateIcon } from './projects/DirectoryIndicators';
 import { ProjectMilestoneBoard } from './projects/ProjectMilestoneBoardV2';
 import type { ProjectTaskControl } from '@/lib/projects/lifecycle-schema';
 import { useProjectEditingController } from './projects/useProjectEditingController';
 import {postProjectCommand} from '@/lib/projects/immediate-command';
 import {refreshProjectSurfaces} from '@/lib/projects/refresh';
-import {ProjectMetric,ProjectPageHeader} from './projects/ProjectVisuals';
+import {ProjectPageHeader} from './projects/ProjectVisuals';
 import { useWorkspaceUnsavedChanges } from './workspace/WorkspaceNavigationGuard';
 
 import {
@@ -864,15 +864,15 @@ export function ProjectWorkspace({
     <>
     {overview}
     {((selectedTask&&!record.body.tasks.some(task=>task.id===selectedTask))||(selectedMilestone&&!record.body.milestones.some(item=>item.id===selectedMilestone)))&&<p role="status" className="text-xs text-amber-800 dark:text-amber-200">The linked item is no longer in the saved project. Browse Tasks &amp; Milestones below; any private draft remains recoverable.</p>}
-    {overview&&<Link className="inline-flex rounded-lg border border-border px-3 py-2 text-xs font-medium hover:bg-muted" href={`/projects/${id}?tab=plan`}>Open Tasks &amp; Milestones</Link>}
-    <div hidden={Boolean(overview)} className="space-y-3 pb-4">
+    {overview&&<Link className="inline-flex rounded-lg border border-border px-3 py-2 text-xs font-medium hover:bg-muted" href={`/projects/${id}?tab=plan`}>Open Tasks</Link>}
+    <div hidden={Boolean(overview)} className="space-y-3 rounded-xl bg-white p-3 text-slate-950 dark:bg-background dark:text-foreground sm:p-4">
 
       {/* ===============================================
           COMPACT SUMMARY
           =============================================== */}
 
-      <ProjectPageHeader compact title={advanced ? 'Advanced work-plan editor' : 'Tasks & Milestones'} description={completed ? 'Read-only until reopened' : 'Work-plan edits stay private until you apply them.'}
-        action={<><button type="button" className={controlClass} onClick={()=>advanced ? returnToWorkplan() : openAdvanced()}>{advanced ? 'Back to tasks & milestones' : 'Advanced editor'}</button><DirectoryStatus state={record.state} operationalStatus={operationalStatus} />{dirty && <span className="rounded-md bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200">Draft changed</span>}</>}/>
+      <ProjectPageHeader compact title={advanced ? 'Advanced work-plan editor' : 'Tasks'} description={completed ? 'Read-only until reopened' : 'Work-plan edits stay private until you apply them.'}
+        action={<><button type="button" className={controlClass} onClick={()=>advanced ? returnToWorkplan() : openAdvanced()}>{advanced ? 'Back to tasks' : 'Advanced editor'}</button><DirectoryStatus state={record.state} operationalStatus={operationalStatus} />{dirty && <span className="rounded-md bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200">Draft changed</span>}</>}/>
       {!gateReady && <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">Prerequisites need review before resuming or completing this project.</p>}
       {drafts.recoverable && (
         <section role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-violet-300 bg-violet-50 p-3 text-xs text-violet-900 dark:border-violet-800 dark:bg-violet-950 dark:text-violet-100">
@@ -890,14 +890,7 @@ export function ProjectWorkspace({
         <ul className="ml-4 list-disc">{workflowGate.correctiveActions.map(action=><li key={action}>{action}</li>)}</ul>
         {!workflowGate.overrideAvailable&&<p className="font-medium">This action is available only to a designated project workflow admin, and only for a new client-task completion transition.</p>}
       </section>}
-      <section aria-label="Work plan summary" className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-        <div className="min-w-0 rounded-lg border border-border bg-card px-3 py-2"><p className="mb-1 text-[10px] text-muted-foreground">{dirty ? 'Draft task progress' : 'Saved task progress'}</p><DirectoryProgress project={{...record,body}} /></div>
-        {[
-          ['Open tasks',body.tasks.filter(task => task.status !== 'done').length],
-          ['Blocked tasks',body.tasks.filter(task => task.status === 'blocked').length],
-          ['Milestones completed',`${body.milestones.filter(item => item.status === 'done').length}/${body.milestones.length}`],
-        ].map(([label,value]) => <ProjectMetric key={label} label={String(label)} value={String(value)} />)}
-      </section>
+
 
       <div id="project-workplan-cards" tabIndex={-1} className="scroll-mt-24 focus:outline-none">
       <ProjectMilestoneBoard
