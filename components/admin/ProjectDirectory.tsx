@@ -13,6 +13,7 @@ import {
 
 import Link from 'next/link';
 import { DirectoryIdentity, DirectoryProgress, DirectoryPhases, DirectoryStatus } from '@/components/admin/projects/DirectoryIndicators';
+import {ProjectMetric} from '@/components/admin/projects/ProjectVisuals';
 import { validDirectoryMode, type ProjectDirectoryContext, type ProjectDirectoryMode } from '@/lib/projects/directory-types';
 import type { ProjectPhaseColorMap } from '@/lib/projects/phase-colors';
 import type { ProjectPhaseState } from '@/lib/projects/phase-status';
@@ -439,52 +440,13 @@ function ProjectPreview({
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* PROJECT SUMMARY */}
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-lg border border-border bg-card p-3">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-            Task progress
-          </p>
-
-          <p className="mt-1 text-lg font-semibold">
-            {progress.total ? `${progress.percent}%` : 'Not enough data'}
-          </p>
-
-          <p className="mt-1 text-xs text-muted-foreground">
-            {progress.done} of {progress.total} complete
-          </p>
-        </div>
-
-        <div className="rounded-lg border border-border bg-card p-3">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-            Open tasks
-          </p>
-
-          <p className="mt-1 text-lg font-semibold">
-            {openTasks.length}
-          </p>
-
-          <p className="mt-1 text-xs text-muted-foreground">
-            {blockedTasks.length} blocked
-          </p>
-        </div>
-
-        <div className="rounded-lg border border-border bg-card p-3">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-            Milestones
-          </p>
-
-          <p className="mt-1 text-lg font-semibold">
-            {completedMilestones}/
-            {project.body.milestones.length}
-          </p>
-
-          <p className="mt-1 text-xs text-muted-foreground">
-            Completed milestones
-          </p>
-        </div>
+      <div className="grid gap-2 sm:grid-cols-3">
+        <ProjectMetric label="Task progress" value={progress.total ? `${progress.percent}%` : 'No tasks'} detail={`${progress.done} of ${progress.total} complete`}/>
+        <ProjectMetric label="Open tasks" value={openTasks.length} detail={`${blockedTasks.length} blocked`}/>
+        <ProjectMetric label="Milestones" value={`${completedMilestones}/${project.body.milestones.length}`} detail="Completed / total"/>
       </div>
 
       {/* TASKS AND MILESTONES */}
@@ -495,14 +457,14 @@ function ProjectPreview({
             Upcoming and open tasks
           </h3>
 
-          <div className="mt-2 divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
+          <div className="mt-1.5 divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
             {openTasks.slice(0, 5).map((task) => (
               <div
                 key={task.id}
                 className="flex items-center justify-between gap-3 px-3 py-2.5"
               >
                 <div className="min-w-0">
-                  <p className="truncate text-xs font-medium">
+                  <p className="break-words text-xs font-medium">
                     {task.title}
                   </p>
 
@@ -546,7 +508,7 @@ function ProjectPreview({
             Milestones
           </h3>
 
-          <div className="mt-2 divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
+        <div className="mt-1.5 divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
             {project.body.milestones
               .slice(0, 5)
               .map((milestone) => (
@@ -1124,11 +1086,11 @@ export function ProjectDirectory({
   }
 
   function renderCard(project: ProjectSummary) {
-    return <article key={project.request_id} className="min-w-0 rounded-xl border border-border bg-card p-4">
+    return <article key={project.request_id} className="min-w-0 self-start rounded-xl border border-border bg-card p-3">
       <DirectoryIdentity project={project} context={context[project.request_id]} />
-      <div className="my-3 flex flex-wrap items-center justify-between gap-2"><DirectoryStatus state={project.state} /><span className="text-[11px] text-muted-foreground">{project.body.owner || 'Unassigned'}</span></div>
+      <div className="my-2 flex flex-wrap items-center justify-between gap-2"><DirectoryStatus state={project.state} /><span className="text-[10px] text-muted-foreground" title="Legacy free-text owner label; this is not a verified account">{project.body.owner ? `Owner label: ${project.body.owner}` : 'No legacy owner label'}</span></div>
       <div className="border-y border-border py-3"><DirectoryPhases project={project} context={context[project.request_id]} phaseColors={phaseColorsByProject[project.request_id]} formalStates={phaseStatesByProject[project.request_id]??[]} /></div>
-      <div className="mt-3"><DirectoryProgress project={project} /></div>
+      <div className="mt-2"><DirectoryProgress project={project} /></div>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2">{renderCell(project, 'actions')}<span className="text-[10px] text-muted-foreground">{formatDate(project.updated_at)}</span></div>
       <details className="mt-3 border-t border-border pt-3"><summary className="cursor-pointer text-xs font-medium">Tasks, milestones & actions</summary><div className="mt-3"><ProjectPreview project={project} /></div></details>
     </article>;
@@ -1141,12 +1103,10 @@ export function ProjectDirectory({
   return (
     <div className="space-y-3" aria-busy={isPending}>
       <section aria-label="Current page summary" className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-        {[
-          ['Matching projects', total],
-          ['In progress on this page', projects.filter(project => project.state === 'active').length],
-          ['On hold on this page', projects.filter(project => project.state === 'on_hold').length],
-          ['Blocked tasks on this page', projects.reduce((count, project) => count + project.body.tasks.filter(task => task.status === 'blocked').length, 0)],
-        ].map(([label, value]) => <div key={label} className="rounded-xl border border-border bg-card px-4 py-3"><p className="text-[11px] text-muted-foreground">{label}</p><p className="mt-1 text-xl font-semibold tabular-nums">{value}</p></div>)}
+        <ProjectMetric label="Matching projects" value={total} detail="All pages matching filters"/>
+        <ProjectMetric label="In progress" value={projects.filter(project => project.state === 'active').length} detail="On this page"/>
+        <ProjectMetric label="On hold" value={projects.filter(project => project.state === 'on_hold').length} detail="On this page"/>
+        <ProjectMetric label="Blocked tasks" value={projects.reduce((count, project) => count + project.body.tasks.filter(task => task.status === 'blocked').length, 0)} detail="On this page · blocked is part of open"/>
       </section>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div role="group" aria-label="Directory layout" className="inline-flex flex-wrap gap-1 rounded-lg border border-border bg-card p-1">

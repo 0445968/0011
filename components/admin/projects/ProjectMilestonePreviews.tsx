@@ -45,9 +45,9 @@ export function ProjectMilestonePreviews({ id, body, phaseStates, milestonePhase
   };
 
   return <section aria-label="Active-phase milestone carousel" className="min-w-0 space-y-3">
-    <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="flex flex-wrap items-center justify-between gap-2">
       <div><h2 className="text-sm font-semibold">Active-phase milestones</h2>
-        <p className="mt-0.5 text-xs text-muted-foreground">{visible.length} saved milestones · completed at the end</p>
+        <p className="mt-0.5 text-[11px] text-muted-foreground">{visible.length} saved · completed last</p>
         <label className="text-xs">Scope <select value={scope} onChange={event=>setScope(event.target.value)} className="rounded border border-border bg-background p-1"><option value="active">Active phases</option><option value="all">All milestones (including history)</option><option value="unassigned">No linked phase</option></select></label></div>
       <div className="flex items-center gap-1.5">
         <button type="button" aria-label="Previous milestones" onClick={() => move(-1)}
@@ -70,7 +70,7 @@ export function ProjectMilestonePreviews({ id, body, phaseStates, milestonePhase
         const taskIds = new Set(body.tasks.filter(task => task.milestoneId === milestone.id).map(task => task.id));
         const assigned = members.filter(member => member.assignedTaskIds.some(taskId => taskIds.has(taskId)));
         return <article key={milestone.id} role="listitem"
-          className={`flex w-[270px] min-w-[270px] max-w-[85vw] shrink-0 snap-start flex-col justify-between rounded-2xl border border-border p-4 shadow-sm sm:w-[305px] sm:min-w-[305px] ${milestone.status === 'done' ? 'bg-muted/70' : 'bg-card'}`}>
+          className={`w-[260px] min-w-[260px] max-w-[85vw] shrink-0 snap-start rounded-xl border border-border p-3 ${milestone.status === 'done' ? 'bg-muted/70' : 'bg-card'}`}>
           <div>
             <div className="flex items-start justify-between gap-3">
               <Link href={href} className="min-w-0 break-words text-base font-semibold leading-snug hover:underline">{milestone.title}</Link>
@@ -84,17 +84,17 @@ export function ProjectMilestonePreviews({ id, body, phaseStates, milestonePhase
                 <ProjectTaskStateIcon status={milestone.status}/>{milestone.status === 'done' ? 'Completed' : milestone.status === 'in_progress' ? 'In progress' : 'Planned'}
               </span>
             </div>
-            <p className="mt-4 text-xs text-muted-foreground">{progress.total ? `${progress.total - progress.done} remaining tasks` : 'No tasks assigned yet'}</p>
+            <p className="mt-2 text-[11px] text-muted-foreground">{progress.total ? `${progress.done}/${progress.total} tasks done · ${progress.total-progress.done} open` : 'No tasks assigned yet'}</p>
           </div>
-          <div className="mt-5">
-            <div className="flex items-center justify-between text-sm"><span className="font-medium">Milestone progress</span><span className="tabular-nums">{progress.percent === null ? '—' : `${progress.percent}%`}</span></div>
+          <div className="mt-3">
+            <div className="flex items-center justify-between text-xs"><span className="font-medium">Task completion</span><span className="tabular-nums">{progress.percent === null ? '—' : `${progress.percent}%`}</span></div>
             <div className="mt-2 h-1.5 overflow-hidden rounded-full border border-border bg-background"
               role={progress.percent === null ? undefined : 'progressbar'} aria-label={`${milestone.title}: task completion`}
               aria-valuemin={progress.percent === null ? undefined : 0} aria-valuemax={progress.percent === null ? undefined : 100} aria-valuenow={progress.percent ?? undefined}>
               <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-green-500 to-teal-600" style={{width:`${progress.percent ?? 0}%`}} />
             </div>
-            <div className="mt-3">{assigned.length?<ProjectMemberStack members={assigned} max={5} size="h-7 w-7"/>:<p className="text-xs text-muted-foreground">No verified task assignees</p>}</div>
-            <div className="mt-3 space-y-1 text-xs">
+            <div className="mt-2">{assigned.length?<ProjectMemberStack members={assigned} max={5} size="h-6 w-6"/>:<p className="text-[11px] text-muted-foreground">No verified task assignees</p>}</div>
+            <div className="mt-2 space-y-1 text-[11px]">
               {(['files','notes','comments','communications'] as const).map(kind=><details key={kind}><summary className="cursor-pointer">{kind==='files'?'Linked files':kind==='notes'?'Authored task notes':kind==='communications'?'Task notification records':'Task discussion comments'}: {contents[kind]===null?'Unavailable':contents[kind]}</summary>
                 <p className="text-[11px] text-muted-foreground">Distinct accessible {kind==='files'?'ready files linked to saved tasks (shared files count once)':kind==='notes'?'nonremoved authored task notes; excludes private work-plan text':kind==='communications'?'outbox IDs per recipient linked explicitly to these tasks; processing events are not a delivery receipt':'nonremoved task discussion comments; excludes project-wide discussion'}. Open a task for its content.</p>
                 {contents.tasks.filter(task=>task[kind]!==0).map(task=><div key={task.id} className="py-1"><Link className="underline" href={kind==='communications'?`/projects/${id}/activity?type=communications&task=${encodeURIComponent(task.id)}`:kind==='comments'?`/projects/${id}/discussion?task=${encodeURIComponent(task.id)}`:`/projects/${id}?tab=plan&task=${encodeURIComponent(task.id)}`}>{task.title} ({task[kind]??'Unavailable'})</Link>{kind==='communications'&&<p>{Object.entries(task.communicationStates).map(([state,count])=>`${state}: ${count}`).join(' · ')}</p>}{editing&&kind!=='communications'&&<button type="button" className="ml-2 underline" onClick={()=>editing.editTask(task.id)}>Open task {kind}</button>}</div>)}
@@ -105,7 +105,7 @@ export function ProjectMilestonePreviews({ id, body, phaseStates, milestonePhase
               </details>
 
             </div>
-            <div className="mt-4 flex items-center justify-between border-t border-border pt-3 text-xs text-muted-foreground">
+            <div className="mt-2 flex items-center justify-between border-t border-border pt-2 text-[11px] text-muted-foreground">
               <span className="inline-flex items-center gap-1.5"><ListChecks size={15} aria-hidden />{progress.total} tasks</span>
               <span className="inline-flex items-center gap-1.5"><CheckCheck size={15} aria-hidden />{progress.done}/{progress.total} done</span>
             </div>

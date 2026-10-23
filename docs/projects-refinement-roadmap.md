@@ -154,3 +154,12 @@ The dedicated Phases page, shared formal phase indicators, Tasks & Milestones sl
 ## R8 — verified project operational status and closeout
 - Support Active, On hold, Waiting on client, and Inactive as distinct operational states. Waiting on client requires explicit verified dependency/status evidence; a client-owned task alone is not evidence.
 - Make Inactive a deliberate, authorized staff closeout after the final stage, with an audit entry and a lifecycle concept distinct from publication/completion. Review portal/API behavior and migrate completed records only through an explicit reviewed migration; never relabel them implicitly.
+
+## R7G — compact Projects frontend and reusable visual blueprint
+
+- Implemented on `bivi-dashboard-overhaul`: shared staff Projects visual primitives and documented design/layout rules in `docs/projects-r7g-visual-blueprint.md`.
+- Tightened Overview, Tasks & Milestones, Phases, directory, Brief, Activity, Requests/review, Files, Discussion, Access, Publishing and both project/workspace Calendar surfaces. Work-plan editing, filters, navigation, phase colors, permissions and existing save controller remain in place.
+- Workspace and project Calendar now render a navigable month grid with a preserved agenda/day-list option and overflow access. Brief now owns project name editing, verified organization owner controls and activation/proposal snapshot.
+- No database migration was required. No R7F implementation was found in local history/notes; R7F remains unverified rather than assumed delivered.
+- Automated checks are recorded in the R7G delivery notes. Rendered viewport/theme comparisons and authenticated live UI acceptance remain pending because this environment has no browser automation runtime or live authenticated session.
+- R7G is implementation-complete for the scoped presentation changes, pending user visual acceptance. Do not start R8 or redesign other dashboard pages without a new request.

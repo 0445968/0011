@@ -5,10 +5,6 @@ import type { ProjectPhaseState } from '@/lib/projects/phase-status';
 import { validDirectoryMode } from '@/lib/projects/directory-types';
 
 import {
-  FolderKanban,
-} from 'lucide-react';
-
-import {
   requireStaff,
 } from '@/lib/admin/auth';
 
@@ -32,6 +28,7 @@ import {
   ProjectDirectory,
   type ProjectDirectoryViewFilters,
 } from '@/components/admin/ProjectDirectory';
+import {ProjectPageHeader} from '@/components/admin/projects/ProjectVisuals';
 
 /* =========================================================
    SEARCH PARAMETERS
@@ -272,62 +269,7 @@ export default async function ProjectsPage({
 
       {/* PAGE HEADER */}
 
-      <header
-        className="
-          flex
-          flex-wrap
-          items-center
-          justify-between
-          gap-4
-        "
-      >
-        <div>
-          <h1
-            className="
-              font-heading
-              text-xl
-              font-semibold
-              tracking-tight
-              sm:text-2xl
-            "
-          >
-            Projects
-          </h1>
-
-          <p
-            className="
-              mt-1.5
-              text-xs
-              text-muted-foreground
-              sm:text-sm
-            "
-          >
-            Manage project work, milestones,
-            and client collaboration.
-          </p>
-        </div>
-
-        <div
-          className="
-            flex
-            h-10
-            w-10
-            items-center
-            justify-center
-            rounded-xl
-            border
-            border-border
-            bg-card
-            text-foreground
-          "
-        >
-          <FolderKanban
-            size={19}
-            strokeWidth={1.8}
-            aria-hidden="true"
-          />
-        </div>
-      </header>
+      <ProjectPageHeader eyebrow="Workspace" title="Projects" description="Project work, milestones and client collaboration." />
 
       {/* INTERACTIVE PROJECT DIRECTORY */}
 

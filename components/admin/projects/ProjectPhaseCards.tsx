@@ -18,6 +18,7 @@ import { useProjectPhaseStatuses } from './useProjectPhaseStatuses';
 import {useWorkspaceUnsavedChanges} from '../workspace/WorkspaceNavigationGuard';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {ProjectMetric} from './ProjectVisuals';
 
 const statuses: {status:PhaseStatus;label:string}[] = [
   { status:'planning',label:'Inactive' }, { status:'active',label:'Active' }, { status:'completed',label:'Completed' },
@@ -101,10 +102,10 @@ export function ProjectPhaseCards({id,body,links,initialStates,colorRows,colorFe
   const totals=taskMetrics(body.tasks);
   return <section aria-label="Project phase management" className="space-y-3">
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-      <div className="rounded-lg border border-border bg-card px-3 py-2"><p className="text-[10px] text-muted-foreground">Phases</p><p className="text-sm font-semibold tabular-nums">{projectPhaseOrder.length}</p></div>
-      <div className="rounded-lg border border-border bg-card px-3 py-2"><p className="text-[10px] text-muted-foreground">Active phases</p><p className="text-sm font-semibold tabular-nums">{activeCount}</p></div>
-      <div className="rounded-lg border border-border bg-card px-3 py-2"><p className="text-[10px] text-muted-foreground">Completed phases</p><p className="text-sm font-semibold tabular-nums">{completedCount}</p></div>
-      <div className="rounded-lg border border-border bg-card px-3 py-2"><p className="text-[10px] text-muted-foreground">Project work</p><p className="text-sm font-semibold tabular-nums">{body.milestones.length} milestones · {totals.total} tasks</p><p className="text-[10px] text-muted-foreground">{subtasks.length} subtasks, counted separately</p></div>
+      <ProjectMetric label="Phases" value={projectPhaseOrder.length}/>
+      <ProjectMetric label="Active phases" value={activeCount}/>
+      <ProjectMetric label="Completed phases" value={completedCount}/>
+      <ProjectMetric label="Project work" value={<span className="text-sm">{body.milestones.length} milestones · {totals.total} tasks</span>} detail={`${subtasks.length} subtasks · counted separately`}/>
     </div>
     {issues.length>0&&<details className="rounded-lg border border-amber-300 p-3 text-xs"><summary>Association checks · {issues.length} item(s) to review</summary><ul className="mt-2 list-disc pl-4">{issues.map((issue,index)=><li key={index}>{issue}</li>)}</ul></details>}
     <p className="text-[11px] text-muted-foreground">Phase date ranges are derived from linked task and milestone due dates only. A phase with no saved due dates remains unscheduled.</p>

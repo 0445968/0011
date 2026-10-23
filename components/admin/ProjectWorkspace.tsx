@@ -1,6 +1,7 @@
 
 'use client';
 import {milestoneDomId} from '@/lib/calendar/links';
+import Link from 'next/link';
 import {taskDomId} from '@/lib/tasks/links';
 import { DirectoryProgress, DirectoryStatus, ProjectTaskStateIcon } from './projects/DirectoryIndicators';
 import { ProjectMilestoneBoard } from './projects/ProjectMilestoneBoardV2';
@@ -9,6 +10,7 @@ import { useProjectEditingController } from './projects/useProjectEditingControl
 import {postProjectCommand} from '@/lib/projects/immediate-command';
 import {refreshProjectSurfaces} from '@/lib/projects/refresh';
 import { ProjectEditingContext } from './projects/ProjectEditingContext';
+import {ProjectMetric,ProjectPageHeader} from './projects/ProjectVisuals';
 import { useWorkspaceUnsavedChanges } from './workspace/WorkspaceNavigationGuard';
 
 import {
@@ -67,6 +69,7 @@ type TaskFilter = 'all' | Task['status'];
 
 type Props = {
   overview?: ReactNode;
+  titleOnly?: boolean;
   savedToday: string;
   selectedTask?:string;
   selectedMilestone?:string;
@@ -232,6 +235,7 @@ function SectionTitle({
 
 export function ProjectWorkspace({
   overview,
+  titleOnly=false,
   savedToday,
   id,
   userId,
@@ -823,6 +827,20 @@ export function ProjectWorkspace({
     );
   }
 
+  if (titleOnly) {
+    return <section aria-label="Project name" className="rounded-xl border border-border bg-card p-3 sm:p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-sm font-semibold">Project name</h2><p className="mt-0.5 text-[11px] text-muted-foreground">Uses the shared work-plan draft and revision checks.</p></div>
+        <span className={`rounded-full px-2 py-1 text-[10px] ${dirty?'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-100':'bg-muted text-muted-foreground'}`}>{dirty?'Private draft':'Saved name'}</span>
+      </div>
+      {drafts.recoverable&&<p role="status" className="mt-2 text-[11px] text-amber-800 dark:text-amber-200">A private work-plan draft needs reconciliation. <Link className="underline" href={`/projects/${id}?tab=plan`}>Open Tasks &amp; Milestones</Link> to restore or resolve the full draft.</p>}
+      {drafts.rebase&&<p role="alert" className="mt-2 text-[11px] text-amber-800 dark:text-amber-200">The project changed elsewhere. Reconcile the full work-plan draft in <Link className="underline" href={`/projects/${id}?tab=plan`}>Tasks &amp; Milestones</Link> before saving.</p>}
+      <Input aria-label="Project name" maxLength={200} className={`${inputClass} mt-2 max-w-2xl`} value={body.title} disabled={locked||blocked||Boolean(drafts.recoverable)||Boolean(drafts.conflict)||Boolean(drafts.rebase)} onChange={event=>field('title',event.target.value)}/>
+      <div className="mt-2 flex flex-wrap items-center gap-2"><Button type="button" size="sm" disabled={!dirty||locked||busy||blocked||Boolean(drafts.recoverable)||Boolean(drafts.conflict)||!drafts.ready} onClick={()=>void command('save')}>{busy?'Saving…':'Apply work-plan changes'}</Button>{dirty&&!busy&&<Button type="button" size="sm" variant="outline" onClick={()=>{if(window.confirm('Discard all work-plan edits, remove the private draft, and load the latest saved project?'))void controller.discard();}}>Discard work-plan edits</Button>}
+        <p role="status" className="text-[10px] text-muted-foreground">{drafts.state==='saving'?'Private draft saving…':drafts.state==='saved'?'Private draft saved; the project is unchanged until you apply it.':dirty?'Private draft only · Apply saves all current task, milestone and project-name edits.':'Name matches the saved project.'}</p></div>
+      {message&&<p role="alert" className="mt-2 text-xs text-destructive">{message}{(blocked||saveOutcomeUnknown)&&<button type="button" className="ml-2 underline" onClick={()=>void controller.checkUncertainSave()}>Check saved data</button>}</p>}
+    </section>;
+  }
+
   /* =======================================================
      MAIN EDITOR
      ======================================================= */
@@ -839,10 +857,8 @@ export function ProjectWorkspace({
           COMPACT SUMMARY
           =============================================== */}
 
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div><h1 className="text-xl font-semibold tracking-tight">{advanced ? 'Advanced work-plan editor' : 'Tasks & Milestones'}</h1><p className="mt-1 text-xs text-muted-foreground">{completed ? 'Read-only until reopened' : 'Edit the work plan, then save changes together.'}</p></div>
-        <div className="flex flex-wrap items-center gap-2"><button type="button" className={controlClass} onClick={()=>advanced ? returnToWorkplan() : openAdvanced()}>{advanced ? 'Back to tasks & milestones' : 'Advanced work-plan editor'}</button><DirectoryStatus state={record.state} />{dirty && <span className="rounded-md bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200">Unsaved changes</span>}</div>
-      </header>
+      <ProjectPageHeader eyebrow="Project work" title={advanced ? 'Advanced work-plan editor' : 'Tasks & Milestones'} description={completed ? 'Read-only until reopened' : 'Work-plan edits stay private until you apply them.'}
+        action={<><button type="button" className={controlClass} onClick={()=>advanced ? returnToWorkplan() : openAdvanced()}>{advanced ? 'Back to tasks & milestones' : 'Advanced editor'}</button><DirectoryStatus state={record.state} />{dirty && <span className="rounded-md bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200">Draft changed</span>}</>}/>
       {!gateReady && <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">Prerequisites need review before resuming or completing this project.</p>}
       {drafts.recoverable && (
         <section role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-violet-300 bg-violet-50 p-3 text-xs text-violet-900 dark:border-violet-800 dark:bg-violet-950 dark:text-violet-100">
@@ -855,12 +871,12 @@ export function ProjectWorkspace({
       {drafts.error && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-100"><p>Draft reconciliation unavailable: {drafts.error}. Your edits remain in the editor until a discard is confirmed.</p><button type="button" className={controlClass} disabled={busy} onClick={() => { if (window.confirm('Discard the private draft and load the latest saved project?')) void controller.discard().then(ok => { if (ok) setMessage('The private draft was discarded. The latest saved project is loaded.'); }); }}>Discard draft and load latest</button></div>}
       {serverBlockers.length > 0 && <section role="alert" className="space-y-2 rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-950 dark:border-red-800 dark:bg-red-950 dark:text-red-100"><p className="font-semibold">Complete these tasks before completing this milestone.</p>{serverBlockers.map(milestone => <div key={milestone.milestoneId}><p className="font-medium">{milestone.milestoneTitle}{milestone.needsTask ? ' — add at least one linked task' : ''}</p><ul className="ml-4 mt-1 list-disc">{milestone.tasks.map(task => <li key={task.taskId}><a className="underline" href={`#${taskDomId(task.taskId)}`} onClick={event=>{event.preventDefault();openAdvanced(task.taskId);}}>{task.title}</a>{task.taskIncomplete ? ' — task is not completed' : ''}{task.subtasks.map(subtask => <span key={subtask.id}>; unfinished subtask: {subtask.title}</span>)}</li>)}</ul></div>)}</section>}
       <section aria-label="Work plan summary" className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-border bg-card p-3"><p className="mb-2 text-[11px] text-muted-foreground">{dirty ? 'Draft task completion' : 'Task completion'}</p><DirectoryProgress project={{...record,body}} /></div>
+        <div className="min-w-0 rounded-lg border border-border bg-card px-3 py-2"><p className="mb-1 text-[10px] text-muted-foreground">{dirty ? 'Draft task progress' : 'Saved task progress'}</p><DirectoryProgress project={{...record,body}} /></div>
         {[
           ['Open tasks',body.tasks.filter(task => task.status !== 'done').length],
           ['Blocked tasks',body.tasks.filter(task => task.status === 'blocked').length],
           ['Milestones completed',`${body.milestones.filter(item => item.status === 'done').length}/${body.milestones.length}`],
-        ].map(([label,value]) => <div key={label} className="rounded-xl border border-border bg-card p-3"><p className="text-[11px] text-muted-foreground">{label}</p><p className="mt-1 text-xl font-semibold tabular-nums">{value}</p></div>)}
+        ].map(([label,value]) => <ProjectMetric key={label} label={String(label)} value={String(value)} />)}
       </section>
 
       <div id="project-workplan-cards" tabIndex={-1} hidden={advanced} className="scroll-mt-24 focus:outline-none">
@@ -1331,30 +1347,14 @@ export function ProjectWorkspace({
       <section className="min-w-0 rounded-xl border border-border bg-card">
         <SectionTitle
           title="Project details"
-          detail="Name, owner and internal notes"
+          detail="Legacy owner label and internal notes"
+          action={<Link className="text-[11px] font-medium underline" href={`/projects/${id}?tab=brief`}>Name and verified owner in Brief</Link>}
         />
 
         <div className="grid gap-3 px-4 py-3 sm:grid-cols-2 xl:grid-cols-1">
 
           <label className="block min-w-0 text-[11px] font-medium text-muted-foreground">
-            Project title
-
-            <Input
-              className={`${inputClass} mt-1`}
-              maxLength={200}
-              value={body.title}
-              disabled={locked}
-              onChange={(event) =>
-                field(
-                  'title',
-                  event.target.value
-                )
-              }
-            />
-          </label>
-
-          <label className="block min-w-0 text-[11px] font-medium text-muted-foreground">
-            Project owner
+            Legacy owner label · not verified
 
             <Input
               className={`${inputClass} mt-1`}
