@@ -19,6 +19,7 @@ import {
 import { WorkspaceStatusBadge } from '@/components/admin/WorkspaceStatusBadge';
 
 import { listProjects } from '@/lib/projects/data';
+import {DirectoryStatus} from '@/components/admin/projects/DirectoryIndicators';
 
 import {
   projectProgress,
@@ -548,10 +549,7 @@ export default async function StaffDashboardPage() {
                           </p>
                         </div>
 
-<WorkspaceStatusBadge
-  kind="project"
-  status={project.state}
-/>
+<DirectoryStatus state={project.state} operationalStatus={project.operational_status} />
                       </div>
 
                       {/* Existing task progress */}

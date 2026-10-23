@@ -63,6 +63,8 @@ import { ProjectCalendar } from '@/components/admin/projects/ProjectCalendar';
 import { ProjectPhasesPage } from '@/components/admin/projects/ProjectPhasesPage';
 import { ProjectTaskResponseReview } from '@/components/admin/projects/ProjectTaskResponseReview';
 import {ProjectBriefIdentity} from '@/components/admin/projects/ProjectBriefIdentity';
+import {ProjectOperationalStatus} from '@/components/admin/projects/ProjectOperationalStatus';
+import type {OperationalStatus} from '@/lib/projects/operational-status';
 import { getProjectDirectoryContext } from '@/lib/projects/directory-context';
 import {getProjectOverviewContent} from '@/lib/projects/overview-content-data';
 import {getProjectActivity} from '@/lib/projects/activity-data';
@@ -288,6 +290,11 @@ export default async function ProjectPage({
       ? defaultTab
       : requested;
 
+  const operationalStatusResult=record?await client.rpc('get_project_operational_status',{p_request:params.id}):null;
+  if(operationalStatusResult?.error)throw new Error('Project operational status could not load. Check the R8 migration.');
+  const operationalStatusData=operationalStatusResult?.data?.result==='ok'?operationalStatusResult.data:null;
+  const operationalStatus=(operationalStatusData?.status??(record?.state==='completed'?'completed':record?.state==='on_hold'?'on_hold':'active')) as OperationalStatus;
+
   /* =======================================================
      LOAD ACTIVE SECTION DATA
      ======================================================= */
@@ -382,7 +389,7 @@ export default async function ProjectPage({
         title={companyName}
         recordType={record?.body.title || projectType}
         status={
-          record?.state ??
+          operationalStatus ??
           'Not activated'
         }
       />
@@ -392,7 +399,7 @@ export default async function ProjectPage({
           =================================================== */}
 
       {tab === 'overview' && record && overview && (
-        <ProjectWorkspace id={params.id} userId={user.id} record={record} history={data.history} gateReady={gateReady}
+        <ProjectWorkspace id={params.id} userId={user.id} record={record} history={data.history} gateReady={gateReady} operationalStatus={operationalStatus}
           savedToday={overview.today} taskControls={lifecycle?.controls??[]}
           overview={<ProjectOverview
           record={record}
@@ -406,6 +413,7 @@ export default async function ProjectPage({
           milestonePhases={overview.milestonePhases}
           phaseStates={overview.phaseStates}
           phaseColors={overview.phaseColors}
+          operationalStatus={operationalStatus}
         />} />
       )}
 
@@ -427,6 +435,7 @@ export default async function ProjectPage({
             record={record}
             history={data.history}
             gateReady={gateReady}
+            operationalStatus={operationalStatus}
             selectedTask={selectedTask}
             selectedMilestone={selectedMilestone}
             taskControls={lifecycle?.controls ?? []}
@@ -439,7 +448,7 @@ export default async function ProjectPage({
           LIFECYCLE
           =================================================== */}
 
-      {tab === 'requests' && record && <ProjectWorkspace id={params.id} userId={user.id} record={record} history={data.history} gateReady={gateReady} savedToday={calendarToday} taskControls={lifecycle?.controls??[]}
+      {tab === 'requests' && record && <ProjectWorkspace id={params.id} userId={user.id} record={record} history={data.history} gateReady={gateReady} operationalStatus={operationalStatus} savedToday={calendarToday} taskControls={lifecycle?.controls??[]}
         overview={<ProjectTaskResponseReview id={params.id} focusRequestId={searchParams.request} tasks={record.body.tasks.map(task=>({id:task.id,title:task.title}))}/>}/>}
 
       {tab === 'phases' && record && lifecycle?.lifecycle && calendarExtras && scheduleRows && (
@@ -479,6 +488,7 @@ export default async function ProjectPage({
       {tab === 'brief' && record && (
           brief ? (
             <div className="space-y-3"><ProjectBriefIdentity id={params.id} state={record.state} activatedAt={record.activated_at} proposalVersion={record.proposal_version} revision={record.revision} title={record.body.title} timezone={calendarPreference.timezone}/>
+            {operationalStatusData&&<ProjectOperationalStatus id={params.id} initial={operationalStatusData}/>}
             <ApprovalFocus focus={searchParams.focus}/><ProjectBriefEditor
               id={params.id}
               draft={brief.draft}

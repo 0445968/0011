@@ -13,6 +13,7 @@ export interface CalendarItem {
   project_title: string;
   project_public_id: string;
   project_state: 'active' | 'on_hold' | 'completed';
+  operational_status: 'active' | 'on_hold' | 'waiting_on_client' | 'inactive' | 'completed';
   assigned_staff_id: string | null;
   owner_type: string | null;
   starts_at?:string|null;ends_at?:string|null;meeting_timezone?:string|null;

@@ -4,6 +4,7 @@ import { listMyTasks } from '@/lib/tasks/data';
 import { taskHref } from '@/lib/tasks/links';
 import { projectPhaseLabels } from '@/lib/projects/lifecycle-schema';
 import { suggestedTaskPriority } from '@/lib/projects/workplan-views';
+import {operationalStatusLabels,type OperationalStatus} from '@/lib/projects/operational-status';
 
 const taskLabels = { todo: 'To do', doing: 'In progress', blocked: 'Blocked', done: 'Done' };
 
@@ -29,7 +30,7 @@ export default async function MyTasksPage({ searchParams: p }: { searchParams: R
       <input name="q" aria-label="Search my tasks" defaultValue={p.q} placeholder="Task, project or project ID" className="h-11 min-w-[220px] flex-1 rounded border bg-background px-3" />
       <select aria-label="Task status" name="status" defaultValue={p.status || 'open'} className="rounded border bg-background px-3"><option value="open">Open tasks</option><option value="todo">To do</option><option value="doing">In progress</option><option value="blocked">Blocked or waiting</option><option value="done">Done</option><option value="all">All tasks</option></select>
       <select aria-label="Due date" name="due" defaultValue={p.due || ''} className="rounded border bg-background px-3"><option value="">All due dates</option><option value="overdue">Overdue</option><option value="today">Due today</option><option value="upcoming">Upcoming</option><option value="none">No due date</option></select>
-      <select aria-label="Project state" name="project" defaultValue={p.project || ''} className="rounded border bg-background px-3"><option value="">Active / on-hold projects</option><option value="active">Active projects</option><option value="on_hold">On-hold projects</option><option value="completed">Completed projects</option><option value="all">All project states</option></select>
+      <select aria-label="Project operational status" name="project" defaultValue={p.project || ''} className="rounded border bg-background px-3"><option value="">Operational work (excludes inactive/completed)</option>{(['active','on_hold','waiting_on_client','inactive','completed'] as const).map(status=><option key={status} value={status}>{operationalStatusLabels[status]}</option>)}<option value="all">All operational statuses</option></select>
       <select aria-label="Lifecycle phase" name="phase" defaultValue={p.phase || ''} className="rounded border bg-background px-3"><option value="">All phases</option>{Object.entries(projectPhaseLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
       <select aria-label="Timezone for due filters" name="tz" defaultValue={result.timezone} className="rounded border bg-background px-3">{zones.map(zone => <option key={zone}>{zone}</option>)}</select>
       <select aria-label="Sort tasks" name="sort" defaultValue={p.sort || 'due'} className="rounded border bg-background px-3"><option value="due">Due date</option><option value="project">Project</option><option value="title">Task title</option><option value="updated">Last modified</option></select>
@@ -44,7 +45,7 @@ export default async function MyTasksPage({ searchParams: p }: { searchParams: R
           const suggested = suggestedTaskPriority(task.start_on, task.due_on, result.today, task.task_status === 'blocked');
           return <tr key={`${task.request_id}:${task.task_id}`} className="border-b last:border-0">
             <td className="p-4"><Link className="font-semibold hover:underline" href={taskHref(task.request_id, task.task_id)}>{task.title}</Link>{task.is_blocked && <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">{task.blocker_owner ? `Waiting on ${task.blocker_owner}` : task.depends_on ? 'Waiting on a task dependency' : 'Blocked'}</p>}</td>
-            <td className="p-4"><Link href={`/projects/${task.request_id}`} className="underline">{task.project_title}</Link><p className="mt-1 font-mono text-xs text-muted-foreground">{task.project_public_id} · {task.project_state.replaceAll('_', ' ')}</p></td>
+            <td className="p-4"><Link href={`/projects/${task.request_id}`} className="underline">{task.project_title}</Link><p className="mt-1 font-mono text-xs text-muted-foreground">{task.project_public_id} · {operationalStatusLabels[task.operational_status as OperationalStatus]}</p></td>
             <td className="p-4">{taskLabels[task.task_status]}</td>
             <td className="p-4">{task.priority ? <span className={`rounded-full border px-2 py-1 text-xs capitalize ${task.priority==='urgent'?'border-red-300 bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200':task.priority==='high'?'border-orange-300 bg-orange-50 text-orange-800 dark:bg-orange-950 dark:text-orange-200':'border-border bg-muted/40'}`}>{task.priority}</span> : suggested ? <span className="rounded-full border border-border px-2 py-1 text-xs capitalize">Suggested {suggested}</span> : <span className="text-muted-foreground">Not set</span>}</td>
             <td className="p-4">{task.start_on || 'Not scheduled'}</td>

@@ -78,6 +78,7 @@ type Props = {
   record: ProjectRecord | null;
   history: ProjectEvent[];
   gateReady: boolean;
+  operationalStatus?: import('@/lib/projects/operational-status').OperationalStatus;
 };
 
 /* =========================================================
@@ -240,6 +241,7 @@ export function ProjectWorkspace({
   record,
   history,
   gateReady,
+  operationalStatus,
   selectedTask,
   selectedMilestone,
   taskControls = [],
@@ -328,9 +330,10 @@ export function ProjectWorkspace({
 
   const completed =
     record?.state === 'completed';
+  const inactive = operationalStatus === 'inactive';
 
   const locked =
-    busy || blocked || completed;
+    busy || blocked || completed || inactive;
 
   useEffect(() => {
     window.dispatchEvent(new CustomEvent('bivi:project-workplan-dirty', { detail: { projectId: id, dirty, ready: drafts.ready&&!drafts.recoverable&&!drafts.conflict } }));
@@ -842,7 +845,7 @@ export function ProjectWorkspace({
           =============================================== */}
 
       <ProjectPageHeader eyebrow="Project work" title={advanced ? 'Advanced work-plan editor' : 'Tasks & Milestones'} description={completed ? 'Read-only until reopened' : 'Work-plan edits stay private until you apply them.'}
-        action={<><button type="button" className={controlClass} onClick={()=>advanced ? returnToWorkplan() : openAdvanced()}>{advanced ? 'Back to tasks & milestones' : 'Advanced editor'}</button><DirectoryStatus state={record.state} />{dirty && <span className="rounded-md bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200">Draft changed</span>}</>}/>
+        action={<><button type="button" className={controlClass} onClick={()=>advanced ? returnToWorkplan() : openAdvanced()}>{advanced ? 'Back to tasks & milestones' : 'Advanced editor'}</button><DirectoryStatus state={record.state} operationalStatus={operationalStatus} />{dirty && <span className="rounded-md bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200">Draft changed</span>}</>}/>
       {!gateReady && <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">Prerequisites need review before resuming or completing this project.</p>}
       {drafts.recoverable && (
         <section role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-violet-300 bg-violet-50 p-3 text-xs text-violet-900 dark:border-violet-800 dark:bg-violet-950 dark:text-violet-100">
@@ -1505,21 +1508,7 @@ export function ProjectWorkspace({
 
             {record.state === 'active' && (
               <>
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={
-                    busy ||
-                    blocked ||
-                    dirty ||
-                    !reason.trim()
-                  }
-                  onClick={() =>
-                    void command('hold')
-                  }
-                >
-                  Place on hold
-                </Button>
+                <Link href={`/projects/${id}?tab=brief`} className="inline-flex min-h-9 items-center rounded-md border border-border px-3 text-xs font-medium hover:bg-muted">Change operational status in Brief</Link>
 
                 <Button
                   type="button"
@@ -1550,23 +1539,7 @@ export function ProjectWorkspace({
               </>
             )}
 
-            {record.state === 'on_hold' && (
-              <Button
-                type="button"
-                disabled={
-                  busy ||
-                  blocked ||
-                  dirty ||
-                  !reason.trim() ||
-                  !gateReady
-                }
-                onClick={() =>
-                  void command('resume')
-                }
-              >
-                Resume project
-              </Button>
-            )}
+            {record.state === 'on_hold' && <Link href={`/projects/${id}?tab=brief`} className="inline-flex min-h-9 items-center rounded-md border border-border px-3 text-xs font-medium hover:bg-muted">Resume through operational status in Brief</Link>}
 
             {record.state === 'completed' && (
               <Button

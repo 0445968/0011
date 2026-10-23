@@ -2,6 +2,7 @@ import 'server-only';
 import {activityCursor,encodeActivityCursor} from './activity-pagination';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ProjectBody } from './schema';
+import {operationalStatusLabels,type OperationalStatus} from './operational-status';
 
 type Row = Record<string, unknown>;
 type AuditSource =
@@ -157,7 +158,13 @@ export async function getProjectActivity(client: SupabaseClient, requestId: stri
   for(const row of page.rows)(bySource[row.source]??=[]).push({...row.payload,__key:row.key});
   const titles = new Map(body.tasks.map(task => [task.id, task.title]));
   const taskName = (task: unknown) => titles.get(text(task)) ?? 'Task';
-  const events = (bySource.project??[]).flatMap(row=>snapshots(row.previous_snapshot?[row,{id:'predecessor',action:'save',snapshot:row.previous_snapshot}]:[row],base));
+  const projectRows=bySource.project??[];
+  const hasOperationalTransition=projectRows.some(row=>row.action==='operational_status_changed');
+  const events = projectRows.filter(row=>row.action!=='operational_status_changed'&&!(hasOperationalTransition&&['hold','resume','reopen'].includes(text(row.action)))).flatMap(row=>snapshots(row.previous_snapshot?[row,{id:'predecessor',action:'save',snapshot:row.previous_snapshot}]:[row],base));
+  for(const row of projectRows.filter(item=>item.action==='operational_status_changed')){
+    const detail=object(row.details);const previous=text(detail.oldStatus) as OperationalStatus;const next=text(detail.newStatus) as OperationalStatus;
+    events.push({id:`project-status:${text(row.id)}`,orderKey:text(row.__key),source:'project',title:`Operational status changed: ${operationalStatusLabels[previous]??display(previous)} → ${operationalStatusLabels[next]??display(next)}`,detail:text(detail.reason)||null,actorId:id(row.actor),createdAt:date(row.created_at),href:`${base}?tab=brief`});
+  }
 
   for (const row of bySource.phases ?? []) {
     events.push(auditEvent('phases', 'phase', row, `Phase ${display(row.phase)}: ${display(row.previous_status)} → ${display(row.next_status)}`,

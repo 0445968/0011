@@ -10,13 +10,13 @@ import {
 
 import {
   listProjects,
-  projectStateSchema,
+  projectDirectoryStatusSchema,
   projectSortSchema,
   projectSortDirectionSchema,
   projectOwnerFilterSchema,
   projectTaskFilterSchema,
   projectMilestoneFilterSchema,
-  type ProjectState,
+  type ProjectDirectoryStatus,
   type ProjectSortKey,
   type ProjectSortDirection,
   type ProjectOwnerFilter,
@@ -58,11 +58,11 @@ function getFilters(
      ------------------------------------------------------- */
 
   const parsedState =
-    projectStateSchema.safeParse(
+    projectDirectoryStatusSchema.safeParse(
       params.state
     );
 
-  const state: ProjectState | null =
+  const state: ProjectDirectoryStatus | null =
     parsedState.success
       ? parsedState.data
       : null;

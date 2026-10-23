@@ -152,8 +152,11 @@ The dedicated Phases page, shared formal phase indicators, Tasks & Milestones sl
 - Extend the audited timeline with supported task assignment, task creation, comment, file, client request/review, and notification events. Preserve provenance, recipient privacy, actor identity, timestamps, ordering, and deduplication; add no synthetic events. Use the existing communications queue for notifications when that integration is scheduled and verified.
 
 ## R8 — verified project operational status and closeout
-- Support Active, On hold, Waiting on client, and Inactive as distinct operational states. Waiting on client requires explicit verified dependency/status evidence; a client-owned task alone is not evidence.
-- Make Inactive a deliberate, authorized staff closeout after the final stage, with an audit entry and a lifecycle concept distinct from publication/completion. Review portal/API behavior and migrate completed records only through an explicit reviewed migration; never relabel them implicitly.
+- Implemented on `bivi-dashboard-overhaul` in `docs/projects-r8-operational-status-closeout.md` and migrations `20261023153830_r8_project_operational_status.sql` and `20261023154210_r8_reopen_status_compatibility.sql`.
+- Operational state is a revisioned, staff-only sidecar. Existing execution states and historical Completed rows are preserved; no historical mapping/backfill was performed. On hold reuses existing hold/resume behavior; Waiting on client requires a verified open approval/request; Inactive requires the explicit closeout checklist and remains distinct from publishing/completion.
+- Added consistent operational status labels and directory/My Tasks/Calendar filters, Brief transition controls and closeout links, Activity entries, and database guards against operational edits while Inactive.
+- Local focused database tests, typecheck, platform verification and build are part of R8 delivery. Live authenticated acceptance remains pending for transition UX, cross-account authorization, dependency refresh and two-session conflict checks.
+- Inactive and Completed remain explicitly discoverable in the directory. My Tasks and Calendar default to operational work and expose explicit Inactive, Completed and All scopes.
 
 ## R7G — compact Projects frontend and reusable visual blueprint
 

@@ -10,8 +10,8 @@ function calendarQuery(client:SupabaseClient,userId:string,p:Record<string,strin
   if(p.kind==='task')query=query.in('event_type',['task','task_start']);
   else if(p.kind==='milestone'||p.kind==='meeting')query=query.eq('event_type',p.kind);
   if(p.scope==='mine')query=query.contains('assignee_ids',[userId]);
-  if(['active','on_hold','completed'].includes(p.project||''))query=query.eq('project_state',p.project!);
-  else if(p.project!=='all')query=query.neq('project_state','completed');
+  if(['active','on_hold','waiting_on_client','inactive','completed'].includes(p.project||''))query=query.eq('operational_status',p.project!);
+  else if(p.project!=='all')query=query.not('operational_status','in','(inactive,completed)');
   if(p.status==='done')query=query.eq('is_done',true);
   else if(p.status!=='all')query=query.eq('is_done',false);
   return query.gte('due_on',from).lte('due_on',to);

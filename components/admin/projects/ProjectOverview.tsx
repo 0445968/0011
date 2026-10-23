@@ -12,6 +12,7 @@ import { taskHref } from '@/lib/tasks/links';
 import {useRouter} from 'next/navigation';
 import {ProjectActivityList} from './ProjectActivityList';
 import type {ProjectActivity} from '@/lib/projects/activity-data';
+import type {OperationalStatus} from '@/lib/projects/operational-status';
 import type {OverviewContent} from '@/lib/projects/overview-content';
 import {distinctById} from '@/lib/projects/metrics';
 import type { MilestonePhaseLink, ProjectRosterMember } from '@/lib/projects/overview-data';
@@ -37,7 +38,7 @@ const statusLabels = {todo:'To do',planned:'Planned',doing:'In progress',in_prog
 function WorkStatus({status}: {status: keyof typeof statusStyles}) {
   return <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium ${statusStyles[status]}`}><ProjectTaskStateIcon status={status} />{statusLabels[status]}</span>;
 }
-export function ProjectOverview({record, activityResult, content, meetings, context, today, timezone, members, milestonePhases, phaseStates, phaseColors}: {
+export function ProjectOverview({record, activityResult, content, meetings, context, today, timezone, members, milestonePhases, phaseStates, phaseColors, operationalStatus}: {
   record: OverviewRecord;
   activityResult:{data:ProjectActivity|null;error:string|null};
   content:OverviewContent;
@@ -49,6 +50,7 @@ export function ProjectOverview({record, activityResult, content, meetings, cont
   milestonePhases: MilestonePhaseLink[];
   phaseStates: ProjectPhaseState[];
   phaseColors: ProjectPhaseColorMap;
+  operationalStatus: OperationalStatus;
 }) {
   const editing=useProjectEditingActions();
   const router=useRouter();
@@ -64,7 +66,7 @@ export function ProjectOverview({record, activityResult, content, meetings, cont
         </div>
       </div>
       <div className="flex flex-col items-start gap-2 self-start lg:items-end">
-        <DirectoryStatus state={record.state} />
+        <DirectoryStatus state={record.state} operationalStatus={operationalStatus} />
         <ProjectMemberStack members={members} />
       </div>
     </header>

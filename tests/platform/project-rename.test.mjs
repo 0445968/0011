@@ -5,7 +5,7 @@ import { PGlite } from '@electric-sql/pglite';
 import { loadProjectTs } from './load-project-ts.mjs';
 
 const read = path => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
-const migration = read('supabase/migrations/20261023160000_project_targeted_rename.sql');
+const migration = read('supabase/migrations/20261023150424_project_targeted_rename.sql');
 const integrityMigration = read('supabase/migrations/20261023130000_r7b_project_integrity.sql');
 const extract = (file, name) => read(file).match(new RegExp(`create (?:or replace )?function public\\.${name}\\([\\s\\S]*?\\$\\$;`))[0];
 const id = '00000000-0000-0000-0000-000000000010';

@@ -10,12 +10,7 @@ import { projectPhaseLabels, projectPhaseOrder } from '@/lib/projects/lifecycle-
 import type { ProjectPhaseState } from '@/lib/projects/phase-status';
 import type { ProjectPhaseColorMap } from '@/lib/projects/phase-colors';
 import { activePhaseFill, phaseColorFor, phaseTextColor } from '@/lib/projects/phase-colors';
-
-const projectStatusStyles = {
-  active: 'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200',
-  on_hold: 'border-orange-300 bg-orange-50 text-orange-800 dark:border-orange-700 dark:bg-orange-950 dark:text-orange-200',
-  completed: 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-200',
-};
+import {operationalStatusFor,operationalStatusLabels,operationalStatusStyles,type OperationalStatus} from '@/lib/projects/operational-status';
 
 /** A visual state, not a measured percentage of completion. */
 export function ProjectTaskStateIcon({
@@ -43,19 +38,22 @@ export function ProjectTaskStateIcon({
   return <span role="img" aria-label="Not started" className={`inline-block shrink-0 rounded-full border-2 border-dashed border-slate-400 bg-transparent dark:border-slate-500 ${size}`} />;
 }
 
-function ProjectStatusIcon({ state }: { state: ProjectSummary['state'] }) {
+function ProjectStatusIcon({ state }: { state: OperationalStatus }) {
   if (state === 'completed') return <ProjectTaskStateIcon status="done" />;
   if (state === 'on_hold') return <span aria-hidden="true" className="flex h-4 w-4 items-center justify-center rounded-full border-2 border-orange-500"><Minus size={10} strokeWidth={3} /></span>;
+  if (state === 'waiting_on_client') return <span aria-hidden="true" className="h-3 w-3 rounded-full border-2 border-blue-600 bg-blue-100 dark:border-blue-300 dark:bg-blue-950" />;
+  if (state === 'inactive') return <span aria-hidden="true" className="h-3 w-3 rounded-sm border border-muted-foreground bg-muted" />;
   return <svg aria-hidden="true" viewBox="0 0 20 20" className="h-4 w-4 shrink-0 text-amber-500">
     <circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="2" />
     <path d="M10 10 V2 A8 8 0 0 1 18 10 Z" fill="currentColor" />
   </svg>;
 }
 
-export function DirectoryStatus({ state }: { state: ProjectSummary['state'] }) {
-  return <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-1 text-[11px] font-medium ${projectStatusStyles[state]}`}>
-    <ProjectStatusIcon state={state} />
-    {state === 'active' ? 'In progress' : state === 'on_hold' ? 'On hold' : 'Completed'}
+export function DirectoryStatus({ state, operationalStatus }: { state: ProjectSummary['state']; operationalStatus?: OperationalStatus }) {
+  const status=operationalStatusFor(state,operationalStatus);
+  return <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-1 text-[11px] font-medium ${operationalStatusStyles[status]}`}>
+    <ProjectStatusIcon state={status} />
+    {operationalStatusLabels[status]}
   </span>;
 }
 

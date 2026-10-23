@@ -51,7 +51,7 @@ import {
 
 import type {
   ProjectSummary,
-  ProjectState,
+  ProjectDirectoryStatus,
   ProjectOwnerFilter,
   ProjectTaskFilter,
   ProjectMilestoneFilter,
@@ -74,7 +74,7 @@ import {
    ========================================================= */
 
 export interface ProjectDirectoryViewFilters {
-  state: ProjectState | null;
+  state: ProjectDirectoryStatus | null;
   search: string;
   owner: ProjectOwnerFilter;
   taskStatus: ProjectTaskFilter;
@@ -159,12 +159,14 @@ const EMPTY_FILTERS: ProjectDirectoryViewFilters = {
 };
 
 const STATUS_OPTIONS: {
-  value: ProjectState | null;
+  value: ProjectDirectoryStatus | null;
   label: string;
 }[] = [
-  { value: null, label: 'All' },
-  { value: 'active', label: 'In progress' },
+  { value: null, label: 'All operational statuses' },
+  { value: 'active', label: 'Active' },
   { value: 'on_hold', label: 'On hold' },
+  { value: 'waiting_on_client', label: 'Waiting on client' },
+  { value: 'inactive', label: 'Inactive' },
   { value: 'completed', label: 'Completed' },
 ];
 
@@ -252,6 +254,8 @@ function validSavedView(
       filters!.state === null ||
       filters!.state === 'active' ||
       filters!.state === 'on_hold' ||
+      filters!.state === 'waiting_on_client' ||
+      filters!.state === 'inactive' ||
       filters!.state === 'completed'
     ) &&
     OWNER_OPTIONS.some(
@@ -1005,7 +1009,7 @@ export function ProjectDirectory({
         return project.body.owner || 'Unassigned';
 
       case 'status':
-        return <DirectoryStatus state={project.state} />;
+        return <DirectoryStatus state={project.state} operationalStatus={project.operational_status} />;
       case 'progress':
         return <DirectoryProgress project={project} />;
       case 'phases':
@@ -1088,7 +1092,7 @@ export function ProjectDirectory({
   function renderCard(project: ProjectSummary) {
     return <article key={project.request_id} className="min-w-0 self-start rounded-xl border border-border bg-card p-3">
       <DirectoryIdentity project={project} context={context[project.request_id]} />
-      <div className="my-2 flex flex-wrap items-center justify-between gap-2"><DirectoryStatus state={project.state} /><span className="text-[10px] text-muted-foreground" title="Legacy free-text owner label; this is not a verified account">{project.body.owner ? `Owner label: ${project.body.owner}` : 'No legacy owner label'}</span></div>
+      <div className="my-2 flex flex-wrap items-center justify-between gap-2"><DirectoryStatus state={project.state} operationalStatus={project.operational_status} /><span className="text-[10px] text-muted-foreground" title="Legacy free-text owner label; this is not a verified account">{project.body.owner ? `Owner label: ${project.body.owner}` : 'No legacy owner label'}</span></div>
       <div className="border-y border-border py-3"><DirectoryPhases project={project} context={context[project.request_id]} phaseColors={phaseColorsByProject[project.request_id]} formalStates={phaseStatesByProject[project.request_id]??[]} /></div>
       <div className="mt-2"><DirectoryProgress project={project} /></div>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2">{renderCell(project, 'actions')}<span className="text-[10px] text-muted-foreground">{formatDate(project.updated_at)}</span></div>
@@ -1104,8 +1108,8 @@ export function ProjectDirectory({
     <div className="space-y-3" aria-busy={isPending}>
       <section aria-label="Current page summary" className="grid grid-cols-2 gap-2 lg:grid-cols-4">
         <ProjectMetric label="Matching projects" value={total} detail="All pages matching filters"/>
-        <ProjectMetric label="In progress" value={projects.filter(project => project.state === 'active').length} detail="On this page"/>
-        <ProjectMetric label="On hold" value={projects.filter(project => project.state === 'on_hold').length} detail="On this page"/>
+        <ProjectMetric label="Active work" value={projects.filter(project => project.operational_status === 'active').length} detail="On this page · operational status"/>
+        <ProjectMetric label="Waiting on client" value={projects.filter(project => project.operational_status === 'waiting_on_client').length} detail="On this page · operational status"/>
         <ProjectMetric label="Blocked tasks" value={projects.reduce((count, project) => count + project.body.tasks.filter(task => task.status === 'blocked').length, 0)} detail="On this page · blocked is part of open"/>
       </section>
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1593,9 +1597,9 @@ export function ProjectDirectory({
         : <div className="p-3">
           <p className="mb-3 text-[11px] text-muted-foreground">Showing {projects.length} of {total} matching projects. Groups and counts use this page only.</p>
           {mode === 'cards' ? <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{projects.map(renderCard)}</div>
-            : <div className="grid gap-3 xl:grid-cols-3">{(['active', 'on_hold', 'completed'] as const).map(state => {
-              const group = projects.filter(project => project.state === state);
-              return <section key={state} aria-label={`${state === 'active' ? 'In progress' : state === 'on_hold' ? 'On hold' : 'Completed'} projects`} className="min-w-0 rounded-xl bg-muted/40 p-2"><div className="mb-3 flex items-center justify-between px-1"><DirectoryStatus state={state} /><span className="text-xs text-muted-foreground">{group.length}</span></div><div className="space-y-3">{group.map(renderCard)}</div>{!group.length && <p className="px-2 py-6 text-xs text-muted-foreground">No projects in this group on this page.</p>}</section>;
+            : <div className="grid gap-3 xl:grid-cols-3">{(['active', 'on_hold', 'waiting_on_client', 'inactive', 'completed'] as const).map(state => {
+              const group = projects.filter(project => project.operational_status === state);
+              return <section key={state} aria-label={`${state} projects`} className="min-w-0 rounded-xl bg-muted/40 p-2"><div className="mb-3 flex items-center justify-between px-1"><DirectoryStatus state={state==='completed'?'completed':state==='on_hold'?'on_hold':'active'} operationalStatus={state} /><span className="text-xs text-muted-foreground">{group.length}</span></div><div className="space-y-3">{group.map(renderCard)}</div>{!group.length && <p className="px-2 py-6 text-xs text-muted-foreground">No projects in this group on this page.</p>}</section>;
             })}</div>}
           {!projects.length && <p className="px-3 py-8 text-center text-sm text-muted-foreground">No matching projects. Try changing your search or filters.</p>}
         </div>}
