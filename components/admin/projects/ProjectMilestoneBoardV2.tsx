@@ -286,10 +286,12 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
       {tasks.map(compactRow)}
     </div>
   </section>;
-  const viewTaskButton=(task:Task)=><button key={task.id} type="button" onClick={()=>setQuickTaskId(task.id)} className="flex w-full min-w-0 items-start gap-2 rounded-lg border border-border/60 bg-white p-3 text-left text-xs transition-colors hover:border-border hover:bg-slate-50 dark:bg-card dark:hover:bg-muted/60">
-    <ProjectTaskStateIcon status={task.status}/><span className="min-w-0 flex-1"><span className="block break-words font-medium">{task.title}</span><span className="mt-1 block text-[11px] text-muted-foreground">{task.dueOn?`Due ${task.dueOn}`:'No due date'}</span></span><span className="shrink-0">{taskPeople(task)}</span>
-    <span className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-muted" role="button" tabIndex={0} aria-label={`Edit task ${task.title}`} onClick={event=>{event.stopPropagation();openFullEditor(task.id);}} onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();openFullEditor(task.id);}}}><Pencil size={14} aria-hidden/></span>
-  </button>;
+  const viewTaskButton=(task:Task)=><div key={task.id} className="flex min-w-0 items-center gap-2 rounded-lg border border-border/60 bg-white p-2 text-xs transition-colors hover:border-border hover:bg-slate-50 dark:bg-card dark:hover:bg-muted/60">
+    <button type="button" onClick={()=>setQuickTaskId(task.id)} className="flex min-w-0 flex-1 items-start gap-2 p-1 text-left">
+      <ProjectTaskStateIcon status={task.status}/><span className="min-w-0 flex-1"><span className="block break-words font-medium">{task.title}</span><span className="mt-1 block text-[11px] text-muted-foreground">{task.dueOn?`Due ${task.dueOn}`:'No due date'}</span></span><span className="shrink-0">{taskPeople(task)}</span>
+    </button>
+    <button type="button" title={`Open full editor for ${task.title}`} aria-label={`Edit task ${task.title}`} className={miniButton} onClick={()=>openFullEditor(task.id)}><Pencil size={14}/></button>
+  </div>;
   const dateTasks=orderedTasks.filter(task=>task.dueOn).sort((a,b)=>(a.dueOn??'').localeCompare(b.dueOn??''));
   const intervals=orderedTasks.map(task=>({task,start:schedule.rows.get(task.id)?.start_on??null,end:task.dueOn})).filter(item=>item.start&&item.end&&item.start<=item.end);
   const firstStart=intervals.map(item=>item.start!).sort()[0];
