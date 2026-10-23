@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useWorkspaceUnsavedChanges } from '../workspace/WorkspaceNavigationGuard';
 import { MessageSquareText, Paperclip, StickyNote } from 'lucide-react';
+import { TaskActivityPreview } from './TaskActivityPreview';
 
 type Note = { id:string; body:string; author_id:string|null; revision:number; created_at:string; updated_at:string };
 type FileRow = { id:string; filename:string };
@@ -139,6 +140,7 @@ export function TaskProductivity({projectId,taskId,taskTitle,revision,disabled,u
           {commentMessage&&<p role="status" className="text-[11px] text-emerald-700 dark:text-emerald-300">{commentMessage}</p>}
           {commentError&&<p role="alert" className="text-[11px] text-destructive">{commentError}</p>}
         </section>
+        <TaskActivityPreview projectId={projectId} taskId={taskId}/>
       </>}
     </div>}
   </details>
