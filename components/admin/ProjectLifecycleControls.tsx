@@ -110,6 +110,7 @@ function TaskControlRow({
   task,
   control,
   allTasks,
+  externallyDisabled = false,
   expanded,
   onToggle,
 }: {
@@ -117,6 +118,7 @@ function TaskControlRow({
   task: ProjectTask;
   control: ProjectTaskControl;
   allTasks: ProjectTask[];
+  externallyDisabled?:boolean;
   expanded: boolean;
   onToggle: () => void;
 }) {
@@ -147,7 +149,7 @@ function TaskControlRow({
   );
 
   async function save() {
-    if (!dirty || busy || blocked) return;
+    if (!dirty || externallyDisabled || busy || blocked) return;
     setBusy(true);
     setMessage('');
 
@@ -220,7 +222,7 @@ function TaskControlRow({
           <CompactSelect
             label={`Responsibility for ${task.title}`}
             value={ownerType}
-            disabled={busy || blocked}
+            disabled={externallyDisabled || busy || blocked}
             onChange={(value) => setOwnerType(value as 'bivi' | 'client')}
           >
             <option value="bivi">Bivi</option>
@@ -228,12 +230,12 @@ function TaskControlRow({
           </CompactSelect>
         </td>
 
-        <td className="px-3 py-2.5 align-middle"><TaskAssignee projectId={id} taskId={task.id} revision={control.revision} assignedId={control.assignedStaffId} label={control.assignedStaffLabel} disabled={control.ownerType==='client'||busy||blocked}/></td>
+        <td className="px-3 py-2.5 align-middle"><TaskAssignee projectId={id} taskId={task.id} revision={control.revision} assignedId={control.assignedStaffId} label={control.assignedStaffLabel} disabled={externallyDisabled||control.ownerType==='client'||busy||blocked}/></td>
         <td className="px-3 py-2.5 align-middle">
           <CompactSelect
             label={`Lifecycle phase for ${task.title}`}
             value={phase}
-            disabled={busy || blocked}
+            disabled={externallyDisabled || busy || blocked}
             onChange={(value) => setPhase(value as ProjectPhase)}
           >
             {projectPhaseOrder.map((value) => (
@@ -254,7 +256,7 @@ function TaskControlRow({
             <button
               type="button"
               onClick={() => void save()}
-              disabled={!dirty || busy || blocked}
+              disabled={!dirty || externallyDisabled || busy || blocked}
               className={`inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                 dirty
                   ? 'bg-foreground text-background hover:opacity-85'
@@ -297,7 +299,7 @@ function TaskControlRow({
                   <CompactSelect
                     label={`Task dependency for ${task.title}`}
                     value={dependsOn}
-                    disabled={busy || blocked}
+                    disabled={externallyDisabled || busy || blocked}
                     onChange={setDependsOn}
                   >
                     <option value="">No task dependency</option>
@@ -318,7 +320,7 @@ function TaskControlRow({
                   <CompactSelect
                     label={`Waiting on for ${task.title}`}
                     value={blockerOwner}
-                    disabled={busy || blocked}
+                    disabled={externallyDisabled || busy || blocked}
                     onChange={setBlockerOwner}
                   >
                     <option value="">No explicit blocker</option>
@@ -334,7 +336,7 @@ function TaskControlRow({
                 <Input
                   maxLength={100}
                   value={serviceId}
-                  disabled={busy || blocked}
+                  disabled={externallyDisabled || busy || blocked}
                   onChange={(event) => setServiceId(event.target.value)}
                   placeholder="Optional service link"
                   className={`${fieldClass} mt-1.5`}
@@ -400,18 +402,26 @@ function TaskControlRow({
 
 export function ProjectLifecycleControls({
   id,
-  lifecycle,
+  lifecycle = { requestId: '', phase: 'discovery', revision: 1, updatedAt: '' },
   controls,
   tasks,
   events,
   selectedTask,
+  taskOnlyTaskId,
+  taskOnlyDisabled = false,
+  showTaskManagement = true,
 }: {
   id: string;
-  lifecycle: Lifecycle;
+  lifecycle?: Lifecycle;
   controls: ProjectTaskControl[];
   tasks: ProjectTask[];
   events: Event[];
   selectedTask?:string;
+  /** Render the shared task-control editor for a single task inside its task menu. */
+  taskOnlyTaskId?:string;
+  taskOnlyDisabled?:boolean;
+  /** Phases keeps phase lifecycle here; task ownership/blockers live in Tasks. */
+  showTaskManagement?:boolean;
 }) {
   const router=useRouter();
   const [expectedRevision,setExpectedRevision]=useState(lifecycle.revision);
@@ -515,6 +525,17 @@ export function ProjectLifecycleControls({
     fn();
     setPage(1);
     setExpandedId(null);
+  }
+
+  if (taskOnlyTaskId) {
+    const entry = entries.find(item => item.task.id === taskOnlyTaskId);
+    if (!entry) return <p role="status" className="text-xs text-muted-foreground">Task ownership settings are unavailable until this task is saved.</p>;
+    return <section aria-label={`Ownership, blockers and dependencies for ${entry.task.title}`} className="overflow-x-auto rounded-lg border border-border">
+      <h4 className="px-3 py-2 text-xs font-semibold">Ownership, blockers and dependencies</h4>
+      <table className="w-full min-w-[680px] table-fixed text-left text-xs"><thead className="sr-only"><tr><th>Task</th><th>Responsibility</th><th>Assigned staff</th><th>Phase</th><th>Waiting on</th><th>Actions</th></tr></thead><tbody>
+        <TaskControlRow id={id} task={entry.task} control={entry.control} allTasks={tasks} externallyDisabled={taskOnlyDisabled} expanded onToggle={()=>undefined}/>
+      </tbody></table>
+    </section>;
   }
 
   return (
@@ -630,6 +651,7 @@ export function ProjectLifecycleControls({
       </section>
 
       {/* COMPACT TASK CONTROLS */}
+      {showTaskManagement && <>
       <section className="overflow-hidden rounded-xl bg-card shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
           <div>
@@ -750,9 +772,10 @@ export function ProjectLifecycleControls({
           </div>
         </div>
       </section>
+      </>}
 
       {/* HISTORY - COLLAPSED BY DEFAULT */}
-      {events.length > 0 && (
+      {showTaskManagement && events.length > 0 && (
         <details className="rounded-xl bg-card shadow-sm">
           <summary className="flex cursor-pointer items-center gap-2 px-4 py-3 text-sm font-semibold">
             <History size={15} /> Task-control history

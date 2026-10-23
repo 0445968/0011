@@ -114,7 +114,7 @@ test('R7D Activity reader uses scoped audits and actor identities, and fails hon
 });
 test('R7D Overview and Activity use shared rendering, saved metrics, existing editor and recoverable missing-item context',()=>{
   const overview=readFileSync('components/admin/projects/ProjectOverview.tsx','utf8'),activity=readFileSync('app/admin/(workspace)/projects/[id]/activity/page.tsx','utf8'),workspace=readFileSync('components/admin/ProjectWorkspace.tsx','utf8');
-  assert.match(overview,/projectOverviewSummary\(record.body, today\)/);assert.match(overview,/ProjectActivityList/);assert.match(activity,/ProjectActivityList/);assert.match(overview,/editing.editTask/);
+  assert.match(overview,/projectOverviewSummary\(record.body, today\)/);assert.match(overview,/ProjectActivityList/);assert.match(activity,/ProjectActivityList/);assert.doesNotMatch(overview,/editing\.editTask/);assert.match(overview,/taskHref\(record.request_id,task.id\)/);
   assert.match(workspace,/focusTaskId=\{overviewTaskId\}/);assert.match(workspace,/linked item is no longer/);assert.match(workspace,/useProjectEditingController/);
   assert.match(workspace,/setTaskFocusRequest\(value=>value\+1\)/);
   assert.match(readFileSync('components/admin/projects/ProjectMilestoneBoardV2.tsx','utf8'),/\[focusTaskId,focusTaskRequest\]/);

@@ -7,6 +7,7 @@ const read=path=>readFileSync(new URL(`../../${path}`,import.meta.url),'utf8');
 const extract=(file,name)=>read(file).match(new RegExp(`create (?:or replace )?function public\\.${name}\\([\\s\\S]*?\\$\\$;`))[0];
 const migration=read('supabase/migrations/20261023181806_r8_task_status_validation_overrides.sql');
 const freshnessMigration=read('supabase/migrations/20261023182352_r8_relevant_review_freshness.sql');
+const removalMigration=read('supabase/migrations/20261023192405_project_task_removal_integrity.sql');
 const integrity='supabase/migrations/20261023130000_r7b_project_integrity.sql';
 const workspace='supabase/migrations/202610140024_my_tasks.sql';
 const projectId='00000000-0000-0000-0000-000000000010';
@@ -67,6 +68,7 @@ async function setup(initialTasks=[task('legacy-client','done'),task('bivi-task'
   create trigger project_milestone_status_sync before update of body on inquiry_projects for each row execute function project_sync_milestone_statuses();`);
  await db.exec(migration);
  await db.exec(freshnessMigration);
+ await db.exec(removalMigration);
  await db.query(`select set_config('app.test_uid',$1,false)`,[admin]);
  return db;
 }
@@ -93,6 +95,28 @@ test('new client completion still requires a fresh accepted review baseline',asy
   await db.query(`insert into project_client_task_responses values($1,$2,'client-new','completion','accepted',now())`,[response,projectId]);
   await db.query(`insert into project_request_baselines values($1,$2,$3,1)`,[response,projectId,task('client-new')]);
   assert.equal((await save(db,body([task('client-new','done')]),1)).rows[0].result.result,'saved');
+ }finally{await db.close();}
+});
+
+test('removing a completed client task is not treated as completion and preserves its historical review state',async()=>{
+ const db=await setup([task('client-legacy','done'),task('bivi-remains')]);try{
+  const current=(await savedBody(db)).body;
+  const candidate=body(current.tasks.filter(item=>item.id!=='client-legacy'));
+  const saved=(await save(db,candidate,1)).rows[0].result;
+  assert.equal(saved.result,'saved');
+  assert.equal((await savedBody(db)).revision,2);
+  assert.deepEqual((await savedBody(db)).body.tasks.map(item=>item.id),['bivi-remains']);
+  assert.equal((await db.query(`select count(*)::int n from project_client_task_responses where task_id='client-legacy'`)).rows[0].n,0,'removal does not manufacture completion approval');
+ }finally{await db.close();}
+});
+
+test('task removal is blocked transactionally while child work remains',async()=>{
+ const db=await setup([task('client-parent'),task('bivi-remains')]);try{
+  await db.query(`insert into project_subtasks values('child',$1,'client-parent','todo')`,[projectId]);
+  await assert.rejects(save(db,body([task('bivi-remains')]),1),/task_removal_blocked\|subtasks=client-parent/);
+  assert.equal((await savedBody(db)).revision,1,'a rejected removal does not increment the project revision');
+  assert.deepEqual((await savedBody(db)).body.tasks.map(item=>item.id),['client-parent','bivi-remains']);
+  assert.equal((await db.query(`select count(*)::int n from project_subtasks where task_id='client-parent'`)).rows[0].n,1,'child work remains intact');
  }finally{await db.close();}
 });
 

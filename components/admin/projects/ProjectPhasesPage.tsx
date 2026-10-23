@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback } from 'react';
+import Link from 'next/link';
 import { RefreshCcw } from 'lucide-react';
 import type { ProjectBody } from '@/lib/projects/schema';
 import type { ProjectPhase, ProjectTaskControl } from '@/lib/projects/lifecycle-schema';
@@ -48,11 +49,12 @@ export function ProjectPhasesPage({id,revision,body,lifecycle,controls,events,ph
       disabled={readOnly||hierarchy.busy||hierarchy.conflict||hierarchy.data.projectRevision!==revision}
       onAssignMilestone={assign}
     />}
-    <ProjectPanel title="Lifecycle, dependencies and approvals" description="Revision-checked task and phase controls">
+    <ProjectPanel title="Lifecycle, dependencies and approvals" description="Phase lifecycle and approvals. Task ownership, blockers and dependencies are managed with each task in Tasks & Milestones.">
+      <Link href={`/projects/${id}?tab=plan`} className="mb-3 inline-flex rounded-lg border border-border px-3 py-2 text-xs font-medium hover:bg-muted">Open Tasks &amp; Milestones</Link>
       <details className="group" open={Boolean(selectedTask)}>
       <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Open lifecycle controls</summary>
       <div className="border-t border-border p-3">
-        <ProjectLifecycleControls key={id} id={id} lifecycle={lifecycle} controls={controls} tasks={body.tasks} events={events} selectedTask={selectedTask}/>
+        <ProjectLifecycleControls key={id} id={id} lifecycle={lifecycle} controls={controls} tasks={body.tasks} events={events} selectedTask={selectedTask} showTaskManagement={false}/>
       </div>
       </details>
     </ProjectPanel>

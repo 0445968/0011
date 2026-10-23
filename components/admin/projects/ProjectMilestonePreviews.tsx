@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import {useProjectEditingActions} from './ProjectEditingContext';
 import { useRef, useState } from 'react';
 import {useRouter} from 'next/navigation';
 import type {ProjectPhaseState} from '@/lib/projects/phase-status';
@@ -29,7 +28,6 @@ export function ProjectMilestonePreviews({ id, body, phaseStates, milestonePhase
   members: ProjectRosterMember[];
   phaseColors: ProjectPhaseColorMap;
 }) {
-  const editing=useProjectEditingActions();
   const carousel = useRef<HTMLDivElement>(null);
   const router=useRouter();
   const [scope,setScope]=useState('active');
@@ -60,7 +58,7 @@ export function ProjectMilestonePreviews({ id, body, phaseStates, milestonePhase
       </div>
     </div>
     {!!errors.length&&<div role="alert" className="text-xs text-red-700 dark:text-red-400">{errors.join(' ')} <button type="button" className="underline" onClick={()=>router.refresh()}>Retry saved data</button></div>}
-    <details className="text-xs"><summary className="cursor-pointer">Work without a milestone ({unassignedTasks.length})</summary>{unassignedTasks.map(task=><div key={task.id} className="py-1"><Link className="underline" href={`/projects/${id}?tab=plan&task=${encodeURIComponent(task.id)}`}>{task.title}</Link>{editing&&<button type="button" className="ml-2 underline" onClick={()=>editing.editTask(task.id)}>Edit task &amp; subtasks</button>}</div>)}</details>
+    <details className="text-xs"><summary className="cursor-pointer">Work without a milestone ({unassignedTasks.length})</summary>{unassignedTasks.map(task=><div key={task.id} className="py-1"><Link className="underline" href={`/projects/${id}?tab=plan&task=${encodeURIComponent(task.id)}`}>{task.title}</Link></div>)}</details>
     {visible.length ? <div ref={carousel} className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3" role="list">
       {visible.map(milestone => {
         const progress = milestoneStats(body, milestone.id);
@@ -76,7 +74,7 @@ export function ProjectMilestonePreviews({ id, body, phaseStates, milestonePhase
               <Link href={href} className="min-w-0 break-words text-base font-semibold leading-snug hover:underline">{milestone.title}</Link>
               <Link href={href} aria-label={`Open ${milestone.title}`} className="rounded-full border border-border p-1.5 text-muted-foreground hover:bg-muted"><ArrowUpRight size={14} aria-hidden /></Link>
             </div>
-            {editing&&<button type="button" className="mt-2 text-xs underline" onClick={()=>editing.editMilestone(milestone.id)}>Edit milestone</button>}
+            <Link className="mt-2 inline-block text-xs underline" href={`/projects/${id}?tab=plan&milestone=${encodeURIComponent(milestone.id)}`}>Open in Tasks &amp; Milestones</Link>
             <div className="mt-2 flex flex-wrap gap-x-2 gap-y-1">{phases.map(phase=><span key={phase} className="inline-flex items-center gap-1 text-[11px] font-medium text-foreground"><span aria-hidden className="h-2.5 w-2.5 rounded-sm border border-black/15 dark:border-white/20" style={{backgroundColor:phaseColorFor(phase,phaseColors)}}/>{projectPhaseLabels[phase]}</span>)}</div>
             <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <CalendarDays size={15} aria-hidden /><span>{milestone.dueOn ? `Due ${milestone.dueOn}${milestone.status!=='done'?` · ${remainingLabel(daysRemaining(milestone.dueOn,today))}`:''}` : 'Unscheduled'}</span>
@@ -97,7 +95,7 @@ export function ProjectMilestonePreviews({ id, body, phaseStates, milestonePhase
             <div className="mt-2 space-y-1 text-[11px]">
               {(['files','notes','comments','communications'] as const).map(kind=><details key={kind}><summary className="cursor-pointer">{kind==='files'?'Linked files':kind==='notes'?'Authored task notes':kind==='communications'?'Task notification records':'Task discussion comments'}: {contents[kind]===null?'Unavailable':contents[kind]}</summary>
                 <p className="text-[11px] text-muted-foreground">Distinct accessible {kind==='files'?'ready files linked to saved tasks (shared files count once)':kind==='notes'?'nonremoved authored task notes; excludes private work-plan text':kind==='communications'?'outbox IDs per recipient linked explicitly to these tasks; processing events are not a delivery receipt':'nonremoved task discussion comments; excludes project-wide discussion'}. Open a task for its content.</p>
-                {contents.tasks.filter(task=>task[kind]!==0).map(task=><div key={task.id} className="py-1"><Link className="underline" href={kind==='communications'?`/projects/${id}/activity?type=communications&task=${encodeURIComponent(task.id)}`:kind==='comments'?`/projects/${id}/discussion?task=${encodeURIComponent(task.id)}`:`/projects/${id}?tab=plan&task=${encodeURIComponent(task.id)}`}>{task.title} ({task[kind]??'Unavailable'})</Link>{kind==='communications'&&<p>{Object.entries(task.communicationStates).map(([state,count])=>`${state}: ${count}`).join(' · ')}</p>}{editing&&kind!=='communications'&&<button type="button" className="ml-2 underline" onClick={()=>editing.editTask(task.id)}>Open task {kind}</button>}</div>)}
+                {contents.tasks.filter(task=>task[kind]!==0).map(task=><div key={task.id} className="py-1"><Link className="underline" href={kind==='communications'?`/projects/${id}/activity?type=communications&task=${encodeURIComponent(task.id)}`:kind==='comments'?`/projects/${id}/discussion?task=${encodeURIComponent(task.id)}`:`/projects/${id}?tab=plan&task=${encodeURIComponent(task.id)}`}>{task.title} ({task[kind]??'Unavailable'})</Link>{kind==='communications'&&<p>{Object.entries(task.communicationStates).map(([state,count])=>`${state}: ${count}`).join(' · ')}</p>}</div>)}
               </details>)}
               <details><summary className="cursor-pointer">Highest task suggestion: {contents.suggestion} · {contents.priorityAvailable?contents.manual.length:'Unavailable'} manual task priorities</summary>
                 <p className="text-[11px] text-muted-foreground">Suggestions use saved task start/deadline intervals, excluding completed, blocked and dependency-waiting work. No milestone start date or milestone priority is inferred.</p>

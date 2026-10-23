@@ -24,6 +24,8 @@ import { useProjectPhaseColors } from './useProjectPhaseColors';
 import { ProjectWorkplanToolbar } from './ProjectWorkplanToolbar';
 import { emptyWorkplanFilters, groupWorkplanTasks, workplanMilestoneMatches, workplanTaskMatches, workplanTaskPhases, type WorkplanFilters, type TaskGrouping } from '@/lib/projects/workplan-filters';
 import { ProfileImage } from '@/components/profile-images/ProfileImage';
+import { ProjectLifecycleControls } from '@/components/admin/ProjectLifecycleControls';
+import type { ProjectWorkflowGate } from '@/lib/projects/workplan-save-outcome';
 
 type Task = ProjectBody['tasks'][number];
 type Milestone = ProjectBody['milestones'][number];
@@ -84,7 +86,7 @@ function SubtaskEditor({item,disabled,update,requestRemove,today}: {
   </li>;
 }
 
-export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarReady,onTaskChange,onMilestoneChange,onAddTask,onAddMilestone,onEditTask,onEditMilestone,taskControls,onBulkTasks,userId,today,focusTaskId,focusTaskRequest}: {
+export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarReady,onTaskChange,onMilestoneChange,onAddTask,onAddMilestone,onEditTask,onEditMilestone,taskControls,onBulkTasks,userId,today,focusTaskId,focusTaskRequest,workflowGate,workflowOverrideReason,onWorkflowOverrideReason,onOverrideTaskStatus,overrideReady,busy,onRemoveTask}: {
   id:string;revision:number;body:ProjectBody;disabled:boolean;dirty:boolean;sidecarReady:boolean;today:string;focusTaskId?:string|null;focusTaskRequest?:number;
   onTaskChange:(index:number,changes:Partial<Task>)=>void;
   onMilestoneChange:(index:number,changes:Partial<Milestone>)=>void;
@@ -93,6 +95,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   taskControls:ProjectTaskControl[];
   onBulkTasks:(milestoneId:string,status:'done'|'todo')=>void;
   userId:string;
+  workflowGate?:ProjectWorkflowGate|null;workflowOverrideReason:string;onWorkflowOverrideReason:(reason:string)=>void;onOverrideTaskStatus:()=>void;overrideReady:boolean;busy:boolean;onRemoveTask:(taskId:string)=>void;
 }) {
   const hierarchy=useProjectHierarchy(id,revision,true);
   const assignments=useProjectAssignments(id,revision);
@@ -100,11 +103,13 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const [filters,setFilters]=useState<WorkplanFilters>({...emptyWorkplanFilters});
   const [columns,setColumns]=useState<1|2|3>(2);
   const [grouping,setGrouping]=useState<TaskGrouping>('milestone');
-  const [detailTask,setDetailTask]=useState<string|null>(null);
-  const [visitedTasks,setVisitedTasks]=useState<string[]>([]);
-  function openTask(taskId:string) {setVisitedTasks(previous=>previous.includes(taskId)?previous:[...previous,taskId]);setDetailTask(taskId);}
+  const [selectedTaskId,setSelectedTaskId]=useState<string|null>(null);
+  function openTask(taskId:string) {
+    setFilters({...emptyWorkplanFilters}); setView('tasks'); setGrouping('none');
+    setSelectedTaskId(taskId);
+  }
   useEffect(()=>{if(focusTaskId)openTask(focusTaskId);},[focusTaskId,focusTaskRequest]);
-  useEffect(()=>{if(detailTask){const row=document.getElementById(`workplan-task-${detailTask}`);row?.focus({preventScroll:true});row?.scrollIntoView({block:'start'});}},[detailTask,focusTaskRequest]);
+  useEffect(()=>{if(selectedTaskId){const row=document.getElementById(taskDomId(selectedTaskId));row?.focus({preventScroll:true});row?.scrollIntoView({block:'center',behavior:'smooth'});}},[selectedTaskId,focusTaskRequest,view,filters]);
   const [prompt,setPrompt]=useState<Prompt|null>(null);
   const [newSubtaskFor,setNewSubtaskFor]=useState<string|null>(null);
   const [newSubtaskTitle,setNewSubtaskTitle]=useState('');
@@ -152,8 +157,9 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     const children=subtasks.filter(item=>item.taskId===task.id);
     const startOn=schedule.rows.get(task.id)?.start_on??null;
     const suggested=suggestedTaskPriority(startOn,task.dueOn,today,task.status==='blocked');
-    return <div key={task.id} hidden={detailTask!==task.id} id={`workplan-task-${task.id}`} tabIndex={-1} className="scroll-mt-24 space-y-3 rounded-xl border border-border bg-card p-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2"><div><h3 className="text-sm font-semibold">Task details</h3><p className="mt-1 text-[10px] text-muted-foreground">Task fields use Save all. Assignments, start dates, priority, notes, files and subtasks save through their own controls.</p></div><div className="flex gap-2"><button type="button" className="rounded-lg border border-border px-2 py-1.5 text-xs hover:bg-muted" onClick={()=>onEditTask(task.id)}>Edit in advanced editor</button><button type="button" className="rounded-lg border border-border px-2 py-1.5 text-xs hover:bg-muted" onClick={()=>setDetailTask(null)}>Close details</button></div></div>
+    return <details key={task.id} id={taskDomId(task.id)} tabIndex={-1} open={selectedTaskId===task.id} onToggle={event=>{if(!(event.currentTarget as HTMLDetailsElement).open&&selectedTaskId===task.id)setSelectedTaskId(null);}} className={`scroll-mt-24 rounded-lg border border-border bg-background/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${selectedTaskId===task.id?'border-primary ring-2 ring-primary/50 bg-primary/5':''}`}>
+      <summary className="flex min-h-10 cursor-pointer items-center justify-between gap-2 px-3 py-2 text-xs font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"><span>Task settings &amp; actions</span><span className="font-normal text-muted-foreground">Draft fields use Save all · sidecar commands save immediately</span></summary>
+      <div className="space-y-3 border-t border-border p-3 sm:p-4">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <button type="button" disabled={disabled} title="Change task status" aria-label={`Change status of ${task.title}`} className="rounded-full focus-visible:ring-2" onClick={()=>updateTask(task,{status:nextStatus(task.status,workStatusOrder)})}><ProjectTaskStateIcon status={task.status}/></button>
         <div className="min-w-[160px] flex-[2] basis-48"><NameField title={task.title} completed={task.status==='done'} disabled={disabled} onChange={title=>updateTask(task,{title})}/></div>
@@ -161,17 +167,22 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
         <div className="shrink-0">{assignment(task)}</div>
         <TaskMemberPicker taskId={task.id} controls={assignments} disabled={disabled||dirty||!sidecarReady} />
         <Remaining dueOn={task.dueOn} today={today} completed={task.status==='done'}/>
-        <label className="text-[10px] text-muted-foreground">Start <input type="date" className={dateClass} aria-label={`Start date for ${task.title}`} disabled={disabled||dirty||schedule.busy!==null} value={startOn??''} onChange={event=>void schedule.save(task.id,event.target.value||null,task.dueOn,dirty)}/></label>
+        <label className="text-[10px] text-muted-foreground">Start <input type="date" className={dateClass} aria-label={`Start date for ${task.title}`} disabled={disabled||dirty||!sidecarReady||schedule.busy!==null} value={startOn??''} onChange={event=>void schedule.save(task.id,event.target.value||null,task.dueOn,dirty)}/></label>
         <input type="date" className={dateClass} aria-label={`Due date for ${task.title}`} disabled={disabled} value={task.dueOn??''} onChange={event=>updateTask(task,{dueOn:event.target.value||null})}/>
         {suggested&&<span className="rounded-full border border-border px-2 py-1 text-[10px] text-muted-foreground" title="Suggested from the saved start date, deadline, and today">Suggested {suggested} priority</span>}
       </div>
-      <div className="grid gap-3 sm:grid-cols-2"><label className="text-[11px] font-medium">Task notes<textarea aria-label={`Work-plan notes for ${task.title}`} className="mt-1 min-h-20 w-full rounded-lg border border-input bg-background p-2 text-xs" maxLength={2000} disabled={disabled} value={task.notes} onChange={event=>updateTask(task,{notes:event.target.value})}/></label><div className="space-y-2 text-[11px] text-muted-foreground"><p>Task phase: {taskControls.find(control=>control.taskId===task.id) ? projectPhaseLabels[taskControls.find(control=>control.taskId===task.id)!.phase] : 'Not saved yet'}</p><p>Milestone phases: {phaseLinks.filter(link=>link.milestoneId===task.milestoneId).map(link=>projectPhaseLabels[link.phase]).join(', ')||'None'}</p>{(()=>{const dependency=taskControls.find(control=>control.taskId===task.id)?.dependsOn;return dependency?<p>Depends on {body.tasks.some(item=>item.id===dependency)?<button type="button" className="underline" onClick={()=>openTask(dependency)}>{body.tasks.find(item=>item.id===dependency)?.title}</button>:<span>a task removed from this draft. Review the saved dependency in Phases.</span>}</p>:<p>No saved dependency.</p>;})()}<Link className="inline-block underline" href={`/projects/${id}?tab=phases`}>Manage dependencies and approvals in Phases</Link></div></div>
-      <TaskProductivity projectId={id} taskId={task.id} taskTitle={task.title} revision={revision} disabled={disabled||dirty} userId={userId} />
+      <div className="grid gap-3 sm:grid-cols-2"><label className="text-[11px] font-medium">Task notes / description<textarea aria-label={`Task notes and description for ${task.title}`} className="mt-1 min-h-20 w-full rounded-lg border border-input bg-background p-2 text-xs" maxLength={2000} disabled={disabled} value={task.notes} onChange={event=>updateTask(task,{notes:event.target.value})}/></label><div className="space-y-2 text-[11px] text-muted-foreground"><p>Milestone phases: {phaseLinks.filter(link=>link.milestoneId===task.milestoneId).map(link=>projectPhaseLabels[link.phase]).join(', ')||'None'}</p><ProjectLifecycleControls id={id} controls={taskControls} tasks={body.tasks} events={[]} taskOnlyTaskId={task.id} showTaskManagement={false}/></div></div>
+      <TaskProductivity projectId={id} taskId={task.id} taskTitle={task.title} revision={revision} disabled={disabled||dirty||!sidecarReady} userId={userId} />
+      {workflowGate?.taskId===task.id&&<section role="alert" className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100"><p className="font-semibold">{workflowGate.requirement}</p>{workflowGate.correctiveActions.map(action=><p key={action}>{action}</p>)}{workflowGate.overrideAvailable&&<><label className="block font-medium">Reason for overriding this completion review<textarea className="mt-1 min-h-16 w-full rounded-md border border-input bg-background p-2 text-xs" maxLength={2000} value={workflowOverrideReason} onChange={event=>onWorkflowOverrideReason(event.target.value)} disabled={busy}/></label><button type="button" className="min-h-9 rounded-lg bg-foreground px-3 text-xs font-medium text-background disabled:opacity-50" disabled={busy||!overrideReady||!workflowOverrideReason.trim()} onClick={onOverrideTaskStatus}>Override and change status</button></>}</section>}
+      {(dirty||!sidecarReady)&&<p role="status" className="text-[11px] text-amber-800 dark:text-amber-200">Save or discard the work-plan draft before changing ownership, blockers or dependencies.</p>}
+      <ProjectLifecycleControls id={id} controls={taskControls} tasks={body.tasks} events={[]} taskOnlyTaskId={task.id} taskOnlyDisabled={disabled||dirty||!sidecarReady} showTaskManagement={false}/>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-2"><span className="text-[10px] text-muted-foreground">Remove is a draft change; dependent work must be reassigned first.{hierarchy.data&&children.length?` Remove the ${children.length} subtask${children.length===1?'':'s'} explicitly before removing this task.`:''}{!hierarchy.data?' Removal is unavailable until the hierarchy loads.':''}</span><button type="button" disabled={disabled||!hierarchy.data||children.length>0} onClick={()=>onRemoveTask(task.id)} className="inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-destructive/40 px-2.5 text-xs text-destructive hover:bg-destructive/5 disabled:opacity-50"><Trash2 size={13} aria-hidden/>Remove task</button></div>
       <details className="mt-1 pl-6 text-xs"><summary className="cursor-pointer py-1 text-muted-foreground">Subtasks ({hierarchy.data?children.length:'loading'})</summary>
         <ul>{children.map(item=><SubtaskEditor key={item.id} item={item} disabled={!canEditSidecar} update={updateSubtask} requestRemove={removeSubtask} today={today}/>)}</ul>
         {newSubtaskFor===task.id?<div className="flex flex-wrap items-center gap-2 py-2"><input autoFocus className={nameInput} aria-label="New subtask title" maxLength={300} disabled={!canEditSidecar} value={newSubtaskTitle} onChange={e=>setNewSubtaskTitle(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();void addSubtask(task.id);}}}/>{btn('Save subtask',<Check size={15}/>,()=>{void addSubtask(task.id);},!canEditSidecar||!newSubtaskTitle.trim())}{btn('Cancel',<RotateCcw size={15}/>,()=>setNewSubtaskFor(null))}</div>:<div>{btn('Add subtask',<Plus size={15}/>,()=>{setNewSubtaskFor(task.id);setNewSubtaskTitle('');},!canEditSidecar||children.length>=50||Boolean(newSubtaskTitle.trim()&&newSubtaskFor!==task.id))}</div>}
       </details>
-    </div>;
+      </div>
+    </details>;
   };
   const reviewMilestoneCompletion=(milestone:Milestone)=>{
     if(!hierarchy.data||hierarchy.data.projectRevision!==revision){
@@ -195,6 +206,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
       <p className="mt-2 truncate text-[10px] text-muted-foreground">Milestone: {body.milestones.find(item=>item.id===task.milestoneId)?.title??'Unassigned'} · {hierarchy.data?`${children.length} subtasks`:'Loading subtasks…'}</p>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2"><span className="text-[10px] text-muted-foreground">{assigned ? assigned.side==='bivi'?'Bivi':'Client' : assignments.data?'Responsibility not saved':'Loading members…'}</span><div className="flex items-center -space-x-1">{assigned?.assignees.slice(0,3).map(personId=>{const person=people.find(item=>item.id===personId);return person?<span key={personId} title={person.label} className="rounded-full border border-card"><ProfileImage kind={assigned.side==='bivi'?'staff':'client'} subject={person.id} name={person.label} path={person.avatar_path} size="h-6 w-6"/></span>:null;})}{assigned&&!assigned.assignees.length&&<span className="text-[10px] text-muted-foreground">No assignees</span>}{assigned&&assigned.assignees.length>3&&<span className="pl-2 text-[10px]">+{assigned.assignees.length-3}</span>}</div></div>
       <div className="mt-2 flex items-center justify-between gap-2"><span role="img" className="flex gap-1" aria-label={phases.map(phase=>projectPhaseLabels[phase]).join(', ')||'No phase association'}>{phases.map(phase=><span key={phase} title={projectPhaseLabels[phase]} aria-hidden className="h-2 w-3 rounded-sm border border-black/15 dark:border-white/20" style={{backgroundColor:phaseColorFor(phase,phaseColors.rows)}}/>)}</span><span className="min-w-0 flex-1 truncate text-[10px] text-muted-foreground" title={phases.map(phase=>projectPhaseLabels[phase]).join(', ')}>{phases.length?`${projectPhaseLabels[phases[0]]}${phases.length>1?` +${phases.length-1}`:''}`:'No phase'}</span><button type="button" onClick={()=>openTask(task.id)} className="min-h-8 text-[11px] font-medium underline underline-offset-2">Open task</button></div>
+      {taskRow(task)}
     </article>;
   };
   const milestoneCard=(milestone:Milestone)=>{
@@ -233,7 +245,6 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     {dirty&&<p className="rounded-lg bg-amber-50 px-3 py-2 text-[11px] text-amber-900 dark:bg-amber-950 dark:text-amber-200">Task and milestone edits are in your private draft. Save all before changing saved assignments, schedules, priorities or subtasks.</p>}
     {newSubtaskFor&&newSubtaskTitle.trim()&&<p role="status" className="text-xs text-amber-800 dark:text-amber-200">New subtask draft for {body.tasks.find(task=>task.id===newSubtaskFor)?.title}. <button type="button" className="underline" onClick={()=>openTask(newSubtaskFor)}>Return to its task to save or cancel</button>.</p>}
     {/* Keep visited detail editors mounted across filters and internal view changes. */}
-    {body.tasks.filter(task=>visitedTasks.includes(task.id)).map(taskRow)}
     <div className="flex flex-wrap items-center justify-between gap-2"><p role="status" className="text-[11px] text-muted-foreground">{matchingTasks.length} / {body.tasks.length} tasks · {matchingMilestones.length} / {body.milestones.length} milestones match · {hierarchy.data?`${subtasks.length} saved subtasks counted separately`:'Subtasks loading…'}</p>{view==='tasks'&&<label className="flex items-center gap-2 text-[11px] text-muted-foreground">Group tasks<select aria-label="Group tasks" className="rounded-lg border border-input bg-background px-2 py-1.5 text-xs text-foreground" value={grouping} onChange={event=>setGrouping(event.target.value as TaskGrouping)}><option value="none">No grouping</option><option value="milestone">Milestone</option><option value="status">Status</option><option value="side">Responsible side</option></select></label>}</div>
     {view==='milestones'&&<div className="space-y-3"><div className={cardGrid}>{matchingMilestones.map(milestoneCard)}</div>{!matchingMilestones.length&&<p className="rounded-xl border border-dashed border-border p-5 text-xs text-muted-foreground">{body.milestones.length?'No milestones match. Clear or adjust the filters to see more work.':'No milestones yet. Choose Add milestone to create one in the advanced editor.'}</p>}{body.tasks.some(task=>!task.milestoneId)&&<section className="rounded-xl border border-dashed border-border bg-muted/20 p-3"><h3 className="mb-3 text-xs font-semibold">Unassigned tasks · {body.tasks.filter(task=>!task.milestoneId).length} total</h3><div className={cardGrid}>{matchingTasks.filter(task=>!task.milestoneId).map(taskCard)}</div>{!matchingTasks.some(task=>!task.milestoneId)&&<p className="text-xs text-muted-foreground">Unassigned tasks are hidden by the current filters.</p>}</section>}</div>}
     {view==='tasks'&&<div className="space-y-4">{groupWorkplanTasks(matchingTasks,grouping,context).map(group=><section key={group.key} aria-label={group.label}><h3 className="mb-2 text-xs font-semibold">{group.label} <span className="font-normal text-muted-foreground">· {group.tasks.length}</span></h3><div className={cardGrid}>{group.tasks.map(taskCard)}</div></section>)}{!matchingTasks.length&&<p className="rounded-xl border border-dashed border-border p-5 text-xs text-muted-foreground">{body.tasks.length?'No tasks match. Clear or adjust the filters to see more work.':'No tasks yet. Choose Add task to get started.'}</p>}</div>}

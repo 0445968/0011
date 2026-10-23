@@ -11,6 +11,14 @@ export type ProjectSaveDomainError = {
 export function classifyProjectSaveDatabaseError(code: string | undefined, message: string | undefined): ProjectSaveDomainError | null {
   if (code !== '23514') return null;
   const detail = (message ?? '').toLowerCase();
+  if (detail.includes('task_removal_blocked|subtasks=')) {
+    const taskId=(message??'').match(/task_removal_blocked\|subtasks=([^\s|]+)/i)?.[1];
+    return {code:'task_removal_subtasks',error:`Remove or reassign the subtasks${taskId?` of task ${taskId}`:''} explicitly before removing the parent task.`};
+  }
+  if (detail.includes('task_removal_blocked|dependency=')) {
+    const taskId=(message??'').match(/task_removal_blocked\|dependency=([^\s|]+)/i)?.[1];
+    return {code:'task_removal_dependency',error:`Another task${taskId?` (${taskId})`:''} depends on this task. Change that dependency before removing it.`};
+  }
   if (detail.includes('parent task') || detail.includes('unfinished subtasks')) {
     return {code:'task_subtasks_incomplete',error:'Complete unfinished subtasks before completing the parent task. Reopen the parent task before adding or reopening subtasks.'};
   }

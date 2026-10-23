@@ -19,7 +19,6 @@ import type { MilestonePhaseLink, ProjectRosterMember } from '@/lib/projects/ove
 import type { ProjectPhaseState } from '@/lib/projects/phase-status';
 import type { ProjectPhaseColorMap } from '@/lib/projects/phase-colors';
 import { ProjectMemberStack } from './ProjectMemberStack';
-import {useProjectEditingActions} from './ProjectEditingContext';
 import { ProjectMilestonePreviews } from './ProjectMilestonePreviews';
 import {ProjectMetric,ProjectPanel} from './ProjectVisuals';
 
@@ -52,7 +51,6 @@ export function ProjectOverview({record, activityResult, content, meetings, cont
   phaseColors: ProjectPhaseColorMap;
   operationalStatus: OperationalStatus;
 }) {
-  const editing=useProjectEditingActions();
   const router=useRouter();
   const base = `/projects/${record.request_id}`;
   const summary = projectOverviewSummary(record.body, today);
@@ -93,7 +91,7 @@ export function ProjectOverview({record, activityResult, content, meetings, cont
             </div>
           </div>
           <ul className="divide-y divide-border">{summary.openTasks.slice(0,5).map(task => <li key={task.id} className="flex flex-wrap items-start justify-between gap-2 px-3 py-2">
-            <div className="min-w-0 flex-1 basis-40"><Link href={taskHref(record.request_id,task.id)} className="break-words text-xs font-medium hover:underline">{task.title}</Link><p className="mt-1 break-words text-[11px] text-muted-foreground">{task.owner || 'Unassigned'}</p>{editing&&<button type="button" className="mt-1 text-xs underline" onClick={()=>editing.editTask(task.id)}>Edit task &amp; subtasks</button>}</div>
+            <div className="min-w-0 flex-1 basis-40"><Link href={taskHref(record.request_id,task.id)} className="break-words text-xs font-medium hover:underline">{task.title}</Link><p className="mt-1 break-words text-[11px] text-muted-foreground">{task.owner || 'Unassigned'}</p></div>
             <div className="text-right"><WorkStatus status={task.status} /><p className={`mt-1 text-[11px] ${task.dueOn && task.dueOn < today ? 'font-medium text-red-700 dark:text-red-400' : 'text-muted-foreground'}`}>{task.dueOn ? `${task.dueOn}${task.dueOn < today ? ' · Past due' : task.dueOn === today ? ' · Today' : ''}` : 'No due date'}</p></div>
           </li>)}</ul>
           {!summary.openTasks.length && <p className="px-4 py-5 text-xs text-muted-foreground">No open tasks. Add or review work in Tasks & Milestones.</p>}

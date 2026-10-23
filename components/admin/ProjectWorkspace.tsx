@@ -9,7 +9,6 @@ import type { ProjectTaskControl } from '@/lib/projects/lifecycle-schema';
 import { useProjectEditingController } from './projects/useProjectEditingController';
 import {postProjectCommand} from '@/lib/projects/immediate-command';
 import {refreshProjectSurfaces} from '@/lib/projects/refresh';
-import { ProjectEditingContext } from './projects/ProjectEditingContext';
 import {ProjectMetric,ProjectPageHeader} from './projects/ProjectVisuals';
 import { useWorkspaceUnsavedChanges } from './workspace/WorkspaceNavigationGuard';
 
@@ -257,12 +256,12 @@ export function ProjectWorkspace({
     message,setMessage,saveOutcomeUnknown,setSaveOutcomeUnknown,serverBlockers,setServerBlockers,workflowGate,setWorkflowGate,dirty,drafts,advanced,setAdvanced}=controller;
   const [reason,setReason]=useState('');
   const [workflowOverrideReason,setWorkflowOverrideReason]=useState('');
-  const [overviewEditing,setOverviewEditing]=useState(false);
   const [overviewTaskId,setOverviewTaskId]=useState<string|null>(selectedTask??null);
   const [taskFocusRequest,setTaskFocusRequest]=useState(0);
   useEffect(()=>{if(selectedTask){setOverviewTaskId(selectedTask);setTaskFocusRequest(value=>value+1);}},[selectedTask]);
+  useEffect(()=>{if(workflowGate){setAdvanced(false);setOverviewTaskId(workflowGate.taskId);setTaskFocusRequest(value=>value+1);}},[workflowGate?.taskId]);
   function focusTaskDetails(taskId:string) {
-    setOverviewEditing(true);setAdvanced(false);setOverviewTaskId(taskId);
+    setAdvanced(false);setOverviewTaskId(taskId);
     setTaskFocusRequest(value=>value+1);
   }
   /* =======================================================
@@ -592,10 +591,17 @@ export function ProjectWorkspace({
      REMOVE TASK
      ======================================================= */
 
-  function removeTask(index: number) {
+  function removeTask(taskId: string) {
+    const task = body?.tasks.find(item=>item.id===taskId);
+    if (!task) return;
+    const dependent = taskControls.find(control=>control.dependsOn===task.id);
+    if (dependent) {
+      setMessage(`Cannot remove “${task.title}” while “${body?.tasks.find(item=>item.id===dependent.taskId)?.title ?? dependent.taskId}” depends on it. Change that dependency first in Tasks & Milestones.`);
+      return;
+    }
     if (
       !window.confirm(
-        'Remove this task? Its previous saved state remains in history.'
+        `Remove “${task.title}” from the work plan? Existing activity, notes, files and discussion history stay recorded. Save changes to confirm removal.`
       )
     ) {
       return;
@@ -605,9 +611,7 @@ export function ProjectWorkspace({
       previous
         ? {
             ...previous,
-            tasks: previous.tasks.filter(
-              (_, i) => i !== index
-            ),
+            tasks: previous.tasks.filter(item=>item.id!==taskId),
           }
         : previous
     );
@@ -857,12 +861,11 @@ export function ProjectWorkspace({
      ======================================================= */
 
   return (
-    <ProjectEditingContext.Provider value={{editTask:focusTaskDetails,editMilestone:milestoneId=>{setOverviewEditing(true);openAdvanced(undefined,milestoneId);}}}>
+    <>
     {overview}
     {((selectedTask&&!record.body.tasks.some(task=>task.id===selectedTask))||(selectedMilestone&&!record.body.milestones.some(item=>item.id===selectedMilestone)))&&<p role="status" className="text-xs text-amber-800 dark:text-amber-200">The linked item is no longer in the saved project. Browse Tasks &amp; Milestones below; any private draft remains recoverable.</p>}
-    {overview&&(drafts.recoverable||dirty||drafts.error)&&<p role="status" className="text-xs text-amber-800 dark:text-amber-200">A private work-plan draft needs attention. Open the shared project editor to restore, reconcile, save or discard it. Saved Overview totals do not include private edits.</p>}
-    {overview&&<button type="button" className={controlClass} onClick={()=>setOverviewEditing(value=>!value)}>{overviewEditing?'Hide project editor':'Open shared project editor'}</button>}
-    <div hidden={Boolean(overview&&!overviewEditing)} className="space-y-3 pb-4">
+    {overview&&<Link className="inline-flex rounded-lg border border-border px-3 py-2 text-xs font-medium hover:bg-muted" href={`/projects/${id}?tab=plan`}>Open Tasks &amp; Milestones</Link>}
+    <div hidden={Boolean(overview)} className="space-y-3 pb-4">
 
       {/* ===============================================
           COMPACT SUMMARY
@@ -883,12 +886,9 @@ export function ProjectWorkspace({
       {serverBlockers.length > 0 && <section role="alert" className="space-y-2 rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-950 dark:border-red-800 dark:bg-red-950 dark:text-red-100"><p className="font-semibold">Complete these tasks before completing this milestone.</p>{serverBlockers.map(milestone => <div key={milestone.milestoneId}><p className="font-medium">{milestone.milestoneTitle}{milestone.needsTask ? ' — add at least one linked task' : ''}</p><ul className="ml-4 mt-1 list-disc">{milestone.tasks.map(task => <li key={task.taskId}><a className="underline" href={`#${taskDomId(task.taskId)}`} onClick={event=>{event.preventDefault();openAdvanced(task.taskId);}}>{task.title}</a>{task.taskIncomplete ? ' — task is not completed' : ''}{task.subtasks.map(subtask => <span key={subtask.id}>; unfinished subtask: {subtask.title}</span>)}</li>)}</ul></div>)}</section>}
       {workflowGate && <section role="alert" aria-label="Task workflow requirement" className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
         <p className="font-semibold">{workflowGate.title}: {workflowGate.requirement}</p>
-        <p>The status change is still a private draft. <button type="button" className="underline" onClick={()=>openAdvanced(workflowGate.taskId)}>Open this task</button> to review its saved and draft values.</p>
+        <p>The status change is still a private draft. <button type="button" className="underline" onClick={()=>focusTaskDetails(workflowGate.taskId)}>Open the highlighted task settings</button> to review its saved and draft values.</p>
         <ul className="ml-4 list-disc">{workflowGate.correctiveActions.map(action=><li key={action}>{action}</li>)}</ul>
-        {workflowGate.overrideAvailable ? <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-          <label className="text-[11px] font-medium">Reason for overriding the completion review<textarea className="mt-1 min-h-16 w-full rounded-md border border-input bg-background p-2 text-xs" maxLength={2000} value={workflowOverrideReason} onChange={event=>setWorkflowOverrideReason(event.target.value)} disabled={busy} /></label>
-          <button type="button" className={controlClass} disabled={busy||!workflowOverrideReason.trim()||!drafts.ready||drafts.recoverable!==null||drafts.conflict} onClick={()=>void overrideTaskStatus()}>Override and change status</button>
-        </div> : <p className="font-medium">This action is available only to a designated project workflow admin, and only for a new client-task completion transition.</p>}
+        {!workflowGate.overrideAvailable&&<p className="font-medium">This action is available only to a designated project workflow admin, and only for a new client-task completion transition.</p>}
       </section>}
       <section aria-label="Work plan summary" className="grid grid-cols-2 gap-2 lg:grid-cols-4">
         <div className="min-w-0 rounded-lg border border-border bg-card px-3 py-2"><p className="mb-1 text-[10px] text-muted-foreground">{dirty ? 'Draft task progress' : 'Saved task progress'}</p><DirectoryProgress project={{...record,body}} /></div>
@@ -913,11 +913,18 @@ export function ProjectWorkspace({
         sidecarReady={drafts.ready && !drafts.recoverable && !drafts.conflict}
         onTaskChange={editTask}
         onMilestoneChange={editMilestone}
-        onAddTask={milestoneId=>{const taskId=addTask(milestoneId);if(taskId)openAdvanced(taskId);}}
+        onAddTask={milestoneId=>{const taskId=addTask(milestoneId);if(taskId)focusTaskDetails(taskId);}}
         onAddMilestone={()=>{const milestoneId=addMilestone();if(milestoneId)openAdvanced(undefined,milestoneId);}}
-        onEditTask={taskId=>openAdvanced(taskId)}
+        onEditTask={taskId=>focusTaskDetails(taskId)}
         onEditMilestone={milestoneId=>openAdvanced(undefined,milestoneId)}
         taskControls={taskControls}
+        workflowGate={workflowGate}
+        workflowOverrideReason={workflowOverrideReason}
+        onWorkflowOverrideReason={setWorkflowOverrideReason}
+        onOverrideTaskStatus={()=>void overrideTaskStatus()}
+        overrideReady={drafts.ready&&drafts.recoverable===null&&!drafts.conflict}
+        busy={busy}
+        onRemoveTask={removeTask}
         onBulkTasks={bulkMilestoneTasks}
       />
       </div>
@@ -1277,15 +1284,15 @@ export function ProjectWorkspace({
                               <button
                                 type="button"
                                 disabled={locked}
-                                onClick={() =>
-                                  removeTask(index)
-                                }
+                                onClick={() => removeTask(task.id)}
                                 className="inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-card px-3 text-xs font-medium text-destructive hover:bg-muted disabled:opacity-50"
                               >
                                 <Trash2 size={14} />
                                 Remove task
                               </button>
                             </div>
+
+                            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border px-3 py-2"><p className="text-xs text-muted-foreground">Ownership, blockers, assignments, subtasks, files and discussion use this task’s shared settings menu.</p><button type="button" className="min-h-8 rounded-lg border border-border px-3 text-xs hover:bg-muted" onClick={()=>focusTaskDetails(task.id)}>Open shared task settings</button></div>
 
                             {overdue && (
                               <p className="mt-2 text-[11px] text-red-600 dark:text-red-400">
@@ -1439,6 +1446,7 @@ export function ProjectWorkspace({
                   <input type="date" aria-label={`Due date for ${milestone.title}`} className={inputClass} value={milestone.dueOn ?? ''} disabled={locked} onChange={event => editMilestone(index,{dueOn:event.target.value || null})} />
                 </label>
               </div>
+
               <p className="text-[10px] text-muted-foreground">{linked} linked {linked === 1 ? 'task' : 'tasks'}{linked > 0 ? ' · Reassign tasks before removing' : ''}</p>
             </div>;
           })}
@@ -1944,6 +1952,6 @@ export function ProjectWorkspace({
         </div>
       </div>
     </div>
-    </ProjectEditingContext.Provider>
+    </>
   );
 }

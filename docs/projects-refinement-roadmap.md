@@ -2,6 +2,20 @@
 
 Baseline: `0445968/0011`, `bivi-dashboard-overhaul`, following D1a–D1c. Preserve the shared shell and working projects, permissions, history, and revision checks.
 
+## R8 task-editing consolidation — current follow-up
+
+The canonical task-editing location is **Tasks & Milestones → Tasks**. Each task owns one accessible, grouped settings menu/inline disclosure for title and notes, status and authorized completion override, responsibility and eligible assignees, ownership/blockers/dependencies, milestone and phase associations, start/deadline/priority, subtasks, files/links/discussion, removal and existing task actions. Draft fields use the shared work-plan controller and explicit Save all. Existing immediate sidecar commands keep their own clear save feedback and revision/permission rules. Do not create another task store, editor, preview, drawer or task-detail page.
+
+The Advanced work-plan editor is an alternate view of the same body, draft, baseline, validation and save controller. Equivalent settings use shared command/components. Switching views preserves the task draft and filters/view when practical. Task settings in Overview, milestone previews, Phases, Calendar, Requests and Activity are concise summaries; links resolve to the stable task ID in Tasks & Milestones. Open task clears/relaxes transient filters, reveals, scrolls to, focuses and highlights the row; missing/removed/inaccessible items get a useful explanation. Preserve legacy task links through the shared resolver. General Calendar links remain Calendar links.
+
+Phases owns phase status/color, lifecycle and approval controls. Remove task ownership/blocker/dependency editors from Phases and task-specific preview/editor controls from all other project surfaces. Those pages link back to Tasks & Milestones while retaining useful counts/context.
+
+Client task Done still requires current Bivi review unless an explicitly authorized workflow admin chooses **Override and change status** with a required reason. Keep that targeted override auditable and distinct from approval; it applies only to one task transition and cannot bypass project boundaries, revisions, dependencies, subtasks or integrity rules. Task removal is a separate authorization/integrity path: it is not completion, keeps audit/history, blocks dependent tasks and outstanding subtasks with corrective steps, and never silently deletes related work. Requests/Publishing/client portal remain separate pending roadmap work; do not create synthetic requests.
+
+New-task visibility is scoped: newly created tasks appear immediately in the current draft task list; linked tasks appear in their milestone and unassigned tasks in Unassigned work. Saved lists and project metrics update only after confirmed Save all. My Tasks requires eligible assignment/scope; Calendar requires an applicable date. Active filters and navigation can hide a record, so report the actual scope checked rather than claiming every record appears everywhere.
+
+Implementation and acceptance notes: [R8 task-editing consolidation](./projects-task-editing-consolidation.md). Requests/Publishing expansion remains pending until this slice is accepted.
+
 ## Revised Projects follow-up requirements — 2026-10-21
 
 The dedicated Phases page, shared formal phase indicators, Tasks & Milestones slice, and R7B/R7C/R7D technical work are implemented with authenticated UI acceptance pending. R7E technical implementation is delivered in code and its additive migration is applied; external email/cron setup and authenticated UI acceptance remain pending. Keep remaining revised scope explicitly pending until its own implementation and verification are complete.

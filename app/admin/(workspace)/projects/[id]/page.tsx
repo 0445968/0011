@@ -278,7 +278,8 @@ export default async function ProjectPage({
     searchParams.tab;
 
   const legacyPhaseView = requestedTab === 'calendar' && searchParams.view === 'phases';
-  const canonicalRequestedTab = requestedTab === 'lifecycle' || legacyPhaseView ? 'phases' : requestedTab === 'responses' || (requestedTab==='plan'&&searchParams.request) ? 'requests' : requestedTab;
+  const legacyTaskRoute = Boolean(searchParams.task) && (requestedTab === 'lifecycle' || requestedTab === 'phases' || legacyPhaseView);
+  const canonicalRequestedTab = legacyTaskRoute ? 'plan' : requestedTab === 'lifecycle' || legacyPhaseView ? 'phases' : requestedTab === 'responses' || (requestedTab==='plan'&&searchParams.request) ? 'requests' : requestedTab;
   const requested =
     ALL_TABS.find(
       (item) =>

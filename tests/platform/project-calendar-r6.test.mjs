@@ -18,7 +18,8 @@ test('R6 project calendar retains schedule views and links while Lifecycle moves
   assert.match(read('components/admin/projects/ProjectMilestoneBoardV2.tsx'), /Suggested \{suggested\} priority/);
   assert.match(read('lib/tasks/data.ts'), /start_on:string\|null/);
   assert.match(read('lib/projects/activity-data.ts'), /start_date:'Task start date changed'/);
-  assert.match(page, /canonicalRequestedTab = requestedTab === 'lifecycle' \|\| legacyPhaseView \? 'phases'/);
+  assert.match(page, /requestedTab === 'lifecycle' \|\| legacyPhaseView \? 'phases'/);
+  assert.match(page, /Boolean\(searchParams\.task\).*requestedTab === 'lifecycle'.*requestedTab === 'phases'/);
   assert.match(page, /searchParams\.view === 'phases'/);
   assert.match(page, /tab === 'calendar' && record && calendarExtras && scheduleRows/);
   assert.match(page, /ProjectPhasesPage/);

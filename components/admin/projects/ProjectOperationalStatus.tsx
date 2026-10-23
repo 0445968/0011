@@ -103,7 +103,7 @@ export function ProjectOperationalStatus({id,initial}:{id:string;initial:any;}) 
           {sourceLoad==='empty'&&<div className="space-y-2 text-xs"><p>No eligible client dependencies currently block required work.</p>
             {diagnostics.map(item=><p key={item.kind+item.source_id} role="status" className="text-amber-800 dark:text-amber-200">{item.message} <Link className="underline" href={item.kind==='client_task_dependency'?`/projects/${id}?tab=phases&task=${encodeURIComponent(item.source_id)}`:item.href}>Open the saved controls</Link></p>)}
             <p className="text-muted-foreground">For a client task, assign it to Client, clear its own blocker and unfinished prerequisite, keep its phase active, and link an unfinished Bivi task to it.</p>
-            <Link className="underline" href={`/projects/${id}?tab=phases`}>Manage task dependencies in Phases</Link>
+            <Link className="underline" href={`/projects/${id}?tab=plan`}>Manage task dependencies in Tasks &amp; Milestones</Link>
           </div>}
           {sourceLoad==='ready'&&<p className="text-xs text-muted-foreground">Options are current client approvals, pending client task actions, and actionable client tasks linked from unfinished Bivi work.</p>}
           {current==='on_hold'&&<p className="text-xs text-blue-800 dark:text-blue-200">Setting Waiting on client explicitly resumes the held execution through the existing activation checks, so assigned client members can act.</p>}
