@@ -252,7 +252,7 @@ export function ProjectWorkspace({
      ======================================================= */
 
   const controller=useProjectEditingController(id,record,Boolean(selectedMilestone));
-  const {body,savedRevision,setBody,busy,setBusy,blocked,setBlocked,
+  const {body,savedBody,savedRevision,setBody,busy,setBusy,blocked,setBlocked,
     message,setMessage,saveOutcomeUnknown,setSaveOutcomeUnknown,serverBlockers,setServerBlockers,workflowGate,setWorkflowGate,dirty,drafts,advanced,setAdvanced}=controller;
   const [reason,setReason]=useState('');
   const [workflowOverrideReason,setWorkflowOverrideReason]=useState('');
@@ -898,6 +898,7 @@ export function ProjectWorkspace({
         disabled={locked || drafts.conflict}
         dirty={dirty}
         sidecarReady={drafts.ready && !drafts.recoverable && !drafts.conflict}
+        dirtyTaskIds={body.tasks.filter(task=>!savedBody?.tasks.some(saved=>saved.id===task.id&&JSON.stringify(saved)===JSON.stringify(task))).map(task=>task.id)}
         onTaskChange={editTask}
         onMilestoneChange={editMilestone}
         onAddTask={milestoneId=>{const taskId=addTask(milestoneId);if(taskId)focusTaskDetails(taskId);}}
