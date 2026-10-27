@@ -785,7 +785,9 @@ export function StaffWorkspaceShell({
     useState(initialCollapsed);
   const [preferencesReady, setPreferencesReady] = useState(false);
   const [showTabs, setShowTabs] = useState(true);
+  const [showFileMenu, setShowFileMenu] = useState(true);
   const tabBarStorageKey = `bivi-staff-tab-bar:${workspaceId}`;
+  const fileMenuStorageKey = `bivi-staff-file-menu:${workspaceId}`;
   const [sidebarAnimated, setSidebarAnimated] = useState(false);
 
   const [openSections, setOpenSections] =
@@ -928,6 +930,7 @@ useEffect(() => {
   useEffect(() => {
     try {
       setShowTabs(localStorage.getItem(tabBarStorageKey) !== 'false');
+      setShowFileMenu(localStorage.getItem(fileMenuStorageKey) !== 'false');
       const storedCollapsed = localStorage.getItem(SIDEBAR_STORAGE_KEY);
       const restored = storedCollapsed === null ? initialCollapsed : storedCollapsed === 'true';
       setCollapsed(restored);
@@ -949,7 +952,7 @@ useEffect(() => {
     } catch {
       // Default preferences remain active.
     } finally { setPreferencesReady(true); }
-  }, [initialCollapsed, tabBarStorageKey]);
+  }, [initialCollapsed, tabBarStorageKey, fileMenuStorageKey]);
 
   const toggleSidebar =
     useCallback(() => {
@@ -989,6 +992,14 @@ useEffect(() => {
     },
     []
   );
+
+  const toggleFileMenu = useCallback(() => {
+    setShowFileMenu(previous=>{
+      const next=!previous;
+      try { localStorage.setItem(fileMenuStorageKey,String(next)); } catch { /* Session only */ }
+      return next;
+    });
+  },[fileMenuStorageKey]);
 
   const changeShowTabs = useCallback((next: boolean) => {
     setShowTabs(next);
@@ -1890,6 +1901,8 @@ useEffect(() => {
             closeUnpinnedTabs={closeUnpinnedTabs}
             density={density}
             onDensityChange={changeDensity}
+            showFileMenu={showFileMenu}
+            onToggleFileMenu={toggleFileMenu}
             sidebarCollapsed={collapsed}
             onToggleSidebar={toggleSidebar}
           />
