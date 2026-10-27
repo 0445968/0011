@@ -131,6 +131,8 @@ interface WorkspaceMenuBarProps {
 
   sidebarCollapsed?: boolean;
   onToggleSidebar?: () => void;
+  showFileMenu?: boolean;
+  onToggleFileMenu?: () => void;
 }
 
 /* =========================================================
@@ -382,6 +384,8 @@ export function WorkspaceMenuBar({
   onDensityChange,
   sidebarCollapsed = false,
   onToggleSidebar,
+  showFileMenu = true,
+  onToggleFileMenu,
 }: WorkspaceMenuBarProps) {
   const router = useRouter();
 
@@ -1092,6 +1096,10 @@ export function WorkspaceMenuBar({
 
       <MenuDivider />
 
+      <MenuItem disabled={!onToggleFileMenu} onSelect={onToggleFileMenu}>
+        {showFileMenu ? '✓ File menu visible (hide)' : 'Show File menu'}
+      </MenuItem>
+
       <MenuItem
         disabled={!onToggleSidebar}
         onSelect={onToggleSidebar}
@@ -1669,7 +1677,7 @@ export function WorkspaceMenuBar({
           scrollbar-hide
         "
       >
-        {MENU_LABELS.map((label) => (
+        {MENU_LABELS.filter(label=>showFileMenu||label!=='File').map((label) => (
           <DropdownMenu
             key={label}
 
