@@ -87,8 +87,8 @@ function SubtaskEditor({item,disabled,update,requestRemove,today}: {
   </li>;
 }
 
-export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarReady,onTaskChange,onMilestoneChange,onAddTask,onAddMilestone,onEditTask,onEditMilestone,taskControls,onBulkTasks,userId,today,focusTaskId,focusTaskRequest,workflowGate,workflowOverrideReason,onWorkflowOverrideReason,onOverrideTaskStatus,overrideReady,busy,onRemoveTask,advanced=false,onAdvancedToggle}: {
-  onAdvancedToggle?:()=>void;advanced?:boolean;id:string;revision:number;body:ProjectBody;disabled:boolean;dirty:boolean;sidecarReady:boolean;today:string;focusTaskId?:string|null;focusTaskRequest?:number;
+export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarReady,onTaskChange,onMilestoneChange,onAddTask,onAddMilestone,onEditTask,onEditMilestone,taskControls,onBulkTasks,userId,today,focusTaskId,focusTaskRequest,workflowGate,workflowOverrideReason,onWorkflowOverrideReason,onOverrideTaskStatus,overrideReady,busy,onRemoveTask,advanced=false,onAdvancedToggle,dirtyTaskIds=[]}: {
+  onAdvancedToggle?:()=>void;dirtyTaskIds?:string[];advanced?:boolean;id:string;revision:number;body:ProjectBody;disabled:boolean;dirty:boolean;sidecarReady:boolean;today:string;focusTaskId?:string|null;focusTaskRequest?:number;
   onTaskChange:(index:number,changes:Partial<Task>)=>void;
   onMilestoneChange:(index:number,changes:Partial<Milestone>)=>void;
   onAddTask:(milestoneId:string|null)=>void;
@@ -106,7 +106,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const [view,setView]=useState<TasksDisplayView>('overview');
   const [sort,setSort]=useState<TaskSort>('default');
   const [visibleColumns,setVisibleColumns]=useState<TaskColumn[]>(['priority','status','milestone','due','assignee']);
-  const [quickTaskId,setQuickTaskId]=useState<string|null>(null);
+
   const [showEditor,setShowEditor]=useState(false);
   const [calendarMonth,setCalendarMonth]=useState(today.slice(0,7));
   const [filters,setFilters]=useState<WorkplanFilters>({...emptyWorkplanFilters});
@@ -117,7 +117,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const [visitedTasks,setVisitedTasks]=useState<Record<string,boolean>>({});
   function openTask(taskId:string) {
     setFilters({...emptyWorkplanFilters}); setTagFilter(''); setView('overview'); setGrouping('none'); setShowEditor(true);
-    setSelectedTaskId(taskId); setVisitedTasks(previous=>({...previous,[taskId]:true})); setOpenTasks(previous=>({...previous,[taskId]:true}));
+    setSelectedTaskId(taskId); setVisitedTasks({[taskId]:true}); setOpenTasks({[taskId]:true});
   }
   useEffect(()=>{if(focusTaskId)openTask(focusTaskId);},[focusTaskId,focusTaskRequest]);
   useEffect(()=>{if(selectedTaskId&&showEditor){const row=document.getElementById(taskDomId(selectedTaskId));row?.focus({preventScroll:true});row?.scrollIntoView({block:'center',behavior:'smooth'});}},[selectedTaskId,focusTaskRequest,showEditor]);
@@ -168,7 +168,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     const children=subtasks.filter(item=>item.taskId===task.id);
     const startOn=schedule.rows.get(task.id)?.start_on??null;
     const suggested=suggestedTaskPriority(startOn,task.dueOn,today,task.status==='blocked');
-    return <details key={task.id} id={taskDomId(task.id)} tabIndex={-1} open={Boolean(openTasks[task.id])} onToggle={event=>{const open=event.currentTarget.open;if(open)setVisitedTasks(previous=>previous[task.id]?previous:{...previous,[task.id]:true});setOpenTasks(previous=>previous[task.id]===open?previous:{...previous,[task.id]:open});}} className={`group scroll-mt-24 min-w-0 rounded-lg transition-colors hover:bg-muted/35 focus-visible:ring-2 focus-visible:ring-ring ${selectedTaskId===task.id?'bg-primary/5':'open:bg-muted/20'}`}>
+    return <details key={task.id} id={taskDomId(task.id)} tabIndex={-1} open={Boolean(openTasks[task.id])} onToggle={event=>{const open=event.currentTarget.open;if(open){setVisitedTasks({[task.id]:true});setOpenTasks({[task.id]:true});setSelectedTaskId(task.id);}else setOpenTasks(previous=>({...previous,[task.id]:false}));}} className={`group scroll-mt-24 min-w-0 rounded-lg transition-colors hover:bg-muted/35 focus-visible:ring-2 focus-visible:ring-ring ${selectedTaskId===task.id?'bg-primary/5':'open:bg-muted/20'}`}>
       <summary className="flex min-h-12 cursor-pointer list-none flex-wrap items-center gap-3 px-3 py-2 text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring">
         <ChevronRight size={14} className="shrink-0 transition-transform group-open:rotate-90" aria-hidden/>
         <ProjectTaskStateIcon status={task.status}/>
@@ -260,7 +260,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     if(sort==='priority')return (priorityOrder[taskControls.find(row=>row.taskId===a.id)?.priority??'']??4)-(priorityOrder[taskControls.find(row=>row.taskId===b.id)?.priority??'']??4);
     return body.tasks.findIndex(row=>row.id===a.id)-body.tasks.findIndex(row=>row.id===b.id);
   });
-  const quickTask=body.tasks.find(task=>task.id===quickTaskId);
+
   const columnWidths='minmax(220px,3fr) '+visibleColumns.map(column=>column==='assignee'?'minmax(100px,1.2fr)':'minmax(105px,1fr)').join(' ')+' 42px';
   const labelForColumn:Record<TaskColumn,string>={priority:'Priority',status:'Status',milestone:'Milestone',due:'Due date',assignee:'Assignees'};
   const columnValue=(task:Task,column:TaskColumn):ReactNode=>{
@@ -270,9 +270,9 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     if(column==='due')return <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground"><Flag size={12} aria-hidden/>{task.dueOn??'Add date'}</span>;
     return taskPeople(task);
   };
-  const openFullEditor=(taskId:string)=>{openTask(taskId);setQuickTaskId(null);onEditTask(taskId);};
+  const openFullEditor=(taskId:string)=>{openTask(taskId);};
   const compactRow=(task:Task)=><div role="row" key={task.id} style={{gridTemplateColumns:columnWidths}} className={`grid min-h-12 items-center gap-3 px-3 py-1.5 text-xs transition-colors hover:bg-slate-50 focus-within:bg-slate-50 dark:hover:bg-muted/50 dark:focus-within:bg-muted/50 ${selectedTaskId===task.id?'bg-blue-50/60 dark:bg-primary/10':''}`}>
-    <div role="cell" className="flex min-w-0 items-center gap-2"><ProjectTaskStateIcon status={task.status}/><span className="w-14 shrink-0 font-mono text-[10px] text-muted-foreground">{presentation.rows.find(row=>row.task_id===task.id)?.code??'Draft'}</span><button type="button" onClick={()=>setQuickTaskId(task.id)} className="min-w-0 flex-1 truncate text-left font-medium hover:underline" title={task.title}>{task.title}</button></div>
+    <div role="cell" className="flex min-w-0 items-center gap-2"><ProjectTaskStateIcon status={task.status}/><span className="w-14 shrink-0 font-mono text-[10px] text-muted-foreground">{presentation.rows.find(row=>row.task_id===task.id)?.code??'Draft'}</span><button type="button" onClick={()=>openTask(task.id)} className="min-w-0 flex-1 truncate text-left font-medium hover:underline" title={task.title}>{task.title}</button>{dirtyTaskIds.includes(task.id)&&<span role="status" title="Task changes awaiting autosave" aria-label="Unsaved task changes" className="h-2 w-2 shrink-0 rounded-full bg-blue-600"/>}</div>
     {visibleColumns.map(column=><div key={column} role="cell" className="min-w-0 truncate">{columnValue(task,column)}</div>)}
     <div role="cell"><button type="button" className={miniButton} title={`Full editor for ${task.title}`} aria-label={`Edit task ${task.title}`} onClick={()=>openFullEditor(task.id)}><Pencil size={15}/></button></div>
   </div>;
@@ -287,7 +287,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     </div>
   </section>;
   const viewTaskButton=(task:Task)=><div key={task.id} className="flex min-w-0 items-center gap-2 rounded-lg border border-border/60 bg-white p-2 text-xs transition-colors hover:border-border hover:bg-slate-50 dark:bg-card dark:hover:bg-muted/60">
-    <button type="button" onClick={()=>setQuickTaskId(task.id)} className="flex min-w-0 flex-1 items-start gap-2 p-1 text-left">
+    <button type="button" onClick={()=>openTask(task.id)} className="flex min-w-0 flex-1 items-start gap-2 p-1 text-left">
       <ProjectTaskStateIcon status={task.status}/><span className="min-w-0 flex-1"><span className="block break-words font-medium">{task.title}</span><span className="mt-1 block text-[11px] text-muted-foreground">{task.dueOn?`Due ${task.dueOn}`:'No due date'}</span></span><span className="shrink-0">{taskPeople(task)}</span>
     </button>
     <button type="button" title={`Open full editor for ${task.title}`} aria-label={`Edit task ${task.title}`} className={miniButton} onClick={()=>openFullEditor(task.id)}><Pencil size={14}/></button>
@@ -327,6 +327,26 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
       <div className="min-w-0 space-y-3">
         <p role="status" className="text-[11px] text-muted-foreground">{orderedTasks.length} of {body.tasks.length} tasks · {subtasks.length} saved subtasks</p>
         {view==='overview'&&<div className="space-y-3">{(grouping==='none'?[{key:'all',label:'Tasks',tasks:orderedTasks}]:sectionGroups).map(group=>rowTable(group.tasks,group.key,grouping==='none'?undefined:group.label))}</div>}
+        {view==='milestone'&&<div className="grid items-start gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {matchingMilestones.map(milestone=>{
+            const items=orderedTasks.filter(task=>task.milestoneId===milestone.id);
+            const stats=milestoneStats(body,milestone.id);
+            return <section key={milestone.id} className="min-w-0 overflow-hidden rounded-xl bg-slate-50 dark:bg-muted/30">
+              <div className="flex items-start justify-between gap-2 px-3 py-3">
+                <div className="min-w-0">
+                  <h2 className="truncate text-sm font-semibold" title={milestone.title}>{milestone.title}</h2>
+                  <p className="mt-1 text-[11px] text-muted-foreground">{stats.done} of {stats.total} completed</p>
+                </div>
+                <button type="button" className={miniButton} title={'Add task to '+milestone.title} disabled={disabled} onClick={()=>onAddTask(milestone.id)}><Plus size={15}/></button>
+              </div>
+              <div className="max-h-[65vh] space-y-1 overflow-y-auto px-2 pb-3">
+                {items.map(task=><div key={task.id} className="rounded-lg bg-white dark:bg-card">{taskPreview(task)}{dirtyTaskIds.includes(task.id)&&<span className="ml-3 inline-block h-2 w-2 rounded-full bg-blue-600" title="Unsaved task changes"/>}</div>)}
+                {!items.length&&<p className="px-2 py-3 text-xs text-muted-foreground">No matching tasks</p>}
+              </div>
+            </section>;
+          })}
+          {orderedTasks.some(task=>!task.milestoneId)&&<section className="rounded-xl bg-slate-50 p-3 dark:bg-muted/30"><h2 className="mb-3 text-sm font-semibold">No milestone</h2>{orderedTasks.filter(task=>!task.milestoneId).map(task=><div key={task.id} className="mb-1 rounded-lg bg-white dark:bg-card">{taskPreview(task)}</div>)}</section>}
+        </div>}
         {view==='list'&&<div className="space-y-3">{(grouping==='none'?[{key:'all',label:'Tasks',tasks:orderedTasks}]:sectionGroups).map(group=><section key={group.key} className="space-y-1">{grouping!=='none'&&<h2 className="text-xs font-semibold">{group.label} <span className="text-muted-foreground">{group.tasks.length}</span></h2>}{group.tasks.map(viewTaskButton)}</section>)}</div>}
         
         {view==='kanban'&&<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{(['todo','doing','blocked','done'] as const).map(status=><section key={status} className="min-w-0 rounded-xl bg-slate-50 p-2 dark:bg-muted/30"><h2 className="mb-2 px-2 text-xs font-semibold capitalize">{status==='todo'?'Backlog':status==='doing'?'In progress':status==='done'?'Completed':'Blocked'} <span className="text-muted-foreground">{orderedTasks.filter(task=>task.status===status).length}</span></h2><div className="space-y-2">{orderedTasks.filter(task=>task.status===status).map(viewTaskButton)}</div></section>)}</div>}
@@ -343,7 +363,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
             const left=offset/rangeDays*100;
             const width=Math.max(0,Math.min(100-left,duration/rangeDays*100));
             return <div key={task.id} className="grid gap-2 border-b border-border/40 py-2 sm:grid-cols-[minmax(150px,1fr)_minmax(180px,2fr)]">
-              <button type="button" className="text-left text-xs font-medium hover:underline" onClick={()=>setQuickTaskId(task.id)}>{task.title}</button>
+              <button type="button" className="text-left text-xs font-medium hover:underline" onClick={()=>openTask(task.id)}>{task.title}</button>
               <div className="min-w-0">
                 <p className="mb-1 text-[10px] text-muted-foreground">{start??'Start not set'} → {end??'Due not set'}</p>
                 {valid?<div className="relative h-4 w-full overflow-hidden rounded bg-slate-100 dark:bg-muted"><div className="absolute inset-y-0 rounded bg-blue-500/80" style={{left:`${left}%`,width:`${width}%`}} title={`${duration} calendar days from ${start} through ${end}`}/></div>:<span className="text-[10px] text-muted-foreground">Set start and due dates to display the schedule bar.</span>}
@@ -351,15 +371,24 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
             </div>;
           })}
         </div>}
-        {view==='calendar'&&<div className="rounded-xl border border-border"><div className="flex items-center justify-between border-b border-border p-3"><button type="button" className={miniButton} aria-label="Previous month" onClick={()=>shiftMonth(-1)}><ChevronRight size={16} className="rotate-180"/></button><h2 className="text-sm font-semibold">{new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric',timeZone:'UTC'}).format(monthDate)}</h2><button type="button" className={miniButton} aria-label="Next month" onClick={()=>shiftMonth(1)}><ChevronRight size={16}/></button></div><div className="grid grid-cols-7 border-b border-border text-center text-[10px] font-medium text-muted-foreground">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(day=><div key={day} className="py-2">{day}</div>)}</div><div className="grid grid-cols-7">{dates.map((date,index)=><div key={index} className="min-h-20 border-b border-r border-border/40 p-1 text-[10px]"><span className="text-muted-foreground">{date?.slice(-2)??''}</span>{dateTasks.filter(task=>task.dueOn===date).map(task=><button type="button" key={task.id} title={task.title} onClick={()=>setQuickTaskId(task.id)} className="mt-1 block w-full truncate rounded bg-blue-50 px-1 py-0.5 text-left text-[10px] text-blue-950 hover:bg-blue-100 dark:bg-blue-950 dark:text-blue-100">{task.title}</button>)}</div>)}</div><p className="p-2 text-[11px] text-muted-foreground">{undatedTasks.length} tasks without a due date are excluded from this calendar, not deleted.</p></div>}
+        {view==='calendar'&&<div className="rounded-xl border border-border"><div className="flex items-center justify-between border-b border-border p-3"><button type="button" className={miniButton} aria-label="Previous month" onClick={()=>shiftMonth(-1)}><ChevronRight size={16} className="rotate-180"/></button><h2 className="text-sm font-semibold">{new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric',timeZone:'UTC'}).format(monthDate)}</h2><button type="button" className={miniButton} aria-label="Next month" onClick={()=>shiftMonth(1)}><ChevronRight size={16}/></button></div><div className="grid grid-cols-7 border-b border-border text-center text-[10px] font-medium text-muted-foreground">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(day=><div key={day} className="py-2">{day}</div>)}</div><div className="grid grid-cols-7">{dates.map((date,index)=><div key={index} className="min-h-20 border-b border-r border-border/40 p-1 text-[10px]"><span className="text-muted-foreground">{date?.slice(-2)??''}</span>{dateTasks.filter(task=>task.dueOn===date).map(task=><button type="button" key={task.id} title={task.title} onClick={()=>openTask(task.id)} className="mt-1 block w-full truncate rounded bg-blue-50 px-1 py-0.5 text-left text-[10px] text-blue-950 hover:bg-blue-100 dark:bg-blue-950 dark:text-blue-100">{task.title}</button>)}</div>)}</div><p className="p-2 text-[11px] text-muted-foreground">{undatedTasks.length} tasks without a due date are excluded from this calendar, not deleted.</p></div>}
         {!orderedTasks.length&&<p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">{body.tasks.length?'No tasks match the current filters.':'No tasks yet. Use + to create one.'}</p>}
       </div>
       <aside hidden={!showEditor} aria-label="Full task editor" className="min-w-0 self-start rounded-xl border border-border bg-slate-50/50 dark:bg-card xl:sticky xl:top-5">
         <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2"><h2 className="min-w-0 truncate text-sm font-semibold">Edit task{selectedTaskId?`: ${body.tasks.find(task=>task.id===selectedTaskId)?.title??''}`:''}</h2><button type="button" className={miniButton} aria-label="Hide task editor" onClick={()=>setShowEditor(false)}><ChevronRight size={16}/></button></div>
-        <div className="max-h-[75vh] overflow-y-auto p-2">{Object.keys(visitedTasks).filter(taskId=>visitedTasks[taskId]).map(taskId=>{const task=body.tasks.find(row=>row.id===taskId);return task?<div key={taskId} hidden={!openTasks[taskId]}><div className="flex items-center justify-between gap-2 rounded-lg px-2 py-1"><span className="truncate text-[11px] font-medium">{task.title}</span><button type="button" className={miniButton} title={`Close ${task.title} editor`} aria-label={`Close ${task.title} editor`} onClick={()=>{setOpenTasks(previous=>({...previous,[taskId]:false}));if(selectedTaskId===taskId)setSelectedTaskId(null);}}><ChevronRight size={14}/></button></div>{taskRow(task)}{dependencyPreview(task)}<Link href={`/projects/${id}/activity?task=${encodeURIComponent(taskId)}`} className="mt-3 inline-flex items-center gap-1 px-3 text-xs font-medium underline">Task activity log</Link></div>:null;})}{!Object.values(openTasks).some(Boolean)&&<p className="p-3 text-xs text-muted-foreground">Select a task and choose Edit to open its full editor. Several task editors can stay open simultaneously.</p>}</div>
+        <div className="max-h-[75vh] overflow-y-auto p-2">
+          {selectedTaskId&&openTasks[selectedTaskId]&&(()=>{
+            const task=body.tasks.find(row=>row.id===selectedTaskId);
+            return task?<div key={task.id}>
+              {taskRow(task)}
+              {dependencyPreview(task)}
+              <Link href={'/projects/'+id+'/activity?task='+encodeURIComponent(task.id)} className="mt-3 inline-flex items-center gap-1 px-3 text-xs font-medium underline">View all task activity</Link>
+            </div>:null;
+          })()}
+          {(!selectedTaskId||!openTasks[selectedTaskId])&&<p className="p-3 text-xs text-muted-foreground">Select a task to edit its details.</p>}
+        </div>
       </aside>
     </div>
-    <Dialog open={quickTask!==undefined} onOpenChange={open=>{if(!open)setQuickTaskId(null);}}><DialogContent className="bivi-staff-surface sm:max-w-lg"><DialogTitle>Quick edit task</DialogTitle><DialogDescription>Changes to task fields remain in your private draft until Save all.</DialogDescription>{quickTask&&<div className="space-y-3 text-xs"><label className="block font-medium">Task name<input className={nameInput} maxLength={300} value={quickTask.title} disabled={disabled} onChange={e=>updateTask(quickTask,{title:e.target.value})}/></label><div className="grid grid-cols-2 gap-2"><label className="font-medium">Status<select className={nameInput} value={quickTask.status} disabled={disabled} onChange={e=>updateTask(quickTask,{status:e.target.value as Task['status']})}><option value="todo">Backlog</option><option value="doing">In progress</option><option value="blocked">Blocked</option><option value="done">Completed</option></select></label><label className="font-medium">Due date<input className={nameInput} type="date" value={quickTask.dueOn??''} disabled={disabled} onChange={e=>updateTask(quickTask,{dueOn:e.target.value||null})}/></label></div><label className="block font-medium">Description<textarea className="mt-1 min-h-24 w-full rounded-lg border border-input bg-background p-2 text-xs" maxLength={2000} disabled={disabled} value={quickTask.notes} onChange={e=>updateTask(quickTask,{notes:e.target.value})}/></label><div className="flex items-center justify-between gap-2"><button type="button" className="rounded-lg border border-border px-3 py-2 hover:bg-muted" onClick={()=>setQuickTaskId(null)}>Close</button><button type="button" className="rounded-lg bg-foreground px-3 py-2 font-medium text-background" onClick={()=>openFullEditor(quickTask.id)}>Full editor →</button></div></div>}</DialogContent></Dialog>
     <style jsx global>{`.bivi-workplan input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0; width: 0; padding: 0; }`}</style>
     <Dialog open={prompt!==null} onOpenChange={open=>{if(!open)setPrompt(null);}}><DialogContent className="bivi-staff-surface"><DialogTitle>{prompt?.title}</DialogTitle><DialogDescription>{prompt?.description}</DialogDescription>{prompt?.blockers&&hasMilestoneCompletionBlockers(prompt.blockers)&&<div className="max-h-56 overflow-auto rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100"><p className="font-semibold">Complete these tasks before completing this milestone.</p>{prompt.blockers.needsTask&&<p className="mt-2">Add at least one task to {prompt.blockers.milestoneTitle}.</p>}<ul className="ml-4 mt-2 list-disc space-y-1">{prompt.blockers.tasks.map(task=><li key={task.taskId}><a className="underline" href={`#${taskDomId(task.taskId)}`} onClick={event=>{event.preventDefault();navigateToTask(task.taskId);}}>{task.title}</a>{task.taskIncomplete?' — task is not completed':''}{task.subtasks.map(subtask=><span key={subtask.id}>; unfinished subtask: {subtask.title}</span>)}</li>)}</ul></div>}{prompt?.unavailable&&<p role="alert" className="rounded border border-red-300 p-2 text-xs">Completion is unavailable until the task hierarchy loads.</p>}<DialogFooter><button type="button" className="rounded-lg border border-border px-4 py-2 text-xs font-medium hover:bg-muted" onClick={()=>setPrompt(null)}>{prompt?.blockers?'Continue editing':'Cancel'}</button>{(!prompt?.blockers||!hasMilestoneCompletionBlockers(prompt.blockers))&&<button type="button" className="rounded-lg bg-foreground px-4 py-2 text-xs font-medium text-background" onClick={()=>{const action=prompt?.confirm;setPrompt(null);action?.();}}>{prompt?.unavailable?'Refresh hierarchy':'Confirm'}</button>}</DialogFooter></DialogContent></Dialog>
   </section>;
