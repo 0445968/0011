@@ -103,7 +103,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const tagCatalog=[...new Set(presentation.rows.flatMap(row=>row.tags))].sort();
   const hierarchy=useProjectHierarchy(id,revision,true);
   const assignments=useProjectAssignments(id,revision);
-  const [view,setView]=useState<TasksDisplayView>('table');
+  const [view,setView]=useState<TasksDisplayView>('overview');
   const [sort,setSort]=useState<TaskSort>('default');
   const [visibleColumns,setVisibleColumns]=useState<TaskColumn[]>(['priority','status','milestone','due','assignee']);
   const [quickTaskId,setQuickTaskId]=useState<string|null>(null);
@@ -116,7 +116,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const [openTasks,setOpenTasks]=useState<Record<string,boolean>>({});
   const [visitedTasks,setVisitedTasks]=useState<Record<string,boolean>>({});
   function openTask(taskId:string) {
-    setFilters({...emptyWorkplanFilters}); setTagFilter(''); setView('table'); setGrouping('none'); setShowEditor(true);
+    setFilters({...emptyWorkplanFilters}); setTagFilter(''); setView('overview'); setGrouping('none'); setShowEditor(true);
     setSelectedTaskId(taskId); setVisitedTasks(previous=>({...previous,[taskId]:true})); setOpenTasks(previous=>({...previous,[taskId]:true}));
   }
   useEffect(()=>{if(focusTaskId)openTask(focusTaskId);},[focusTaskId,focusTaskRequest]);
@@ -271,14 +271,14 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     return taskPeople(task);
   };
   const openFullEditor=(taskId:string)=>{openTask(taskId);setQuickTaskId(null);onEditTask(taskId);};
-  const compactRow=(task:Task)=><div role="row" key={task.id} style={{gridTemplateColumns:columnWidths}} className={`grid min-h-12 items-center gap-3 border-b border-border/40 px-3 py-1.5 text-xs transition-colors hover:bg-slate-50 focus-within:bg-slate-50 dark:hover:bg-muted/50 dark:focus-within:bg-muted/50 ${selectedTaskId===task.id?'bg-blue-50/60 dark:bg-primary/10':''}`}>
+  const compactRow=(task:Task)=><div role="row" key={task.id} style={{gridTemplateColumns:columnWidths}} className={`grid min-h-12 items-center gap-3 px-3 py-1.5 text-xs transition-colors hover:bg-slate-50 focus-within:bg-slate-50 dark:hover:bg-muted/50 dark:focus-within:bg-muted/50 ${selectedTaskId===task.id?'bg-blue-50/60 dark:bg-primary/10':''}`}>
     <div role="cell" className="flex min-w-0 items-center gap-2"><ProjectTaskStateIcon status={task.status}/><span className="w-14 shrink-0 font-mono text-[10px] text-muted-foreground">{presentation.rows.find(row=>row.task_id===task.id)?.code??'Draft'}</span><button type="button" onClick={()=>setQuickTaskId(task.id)} className="min-w-0 flex-1 truncate text-left font-medium hover:underline" title={task.title}>{task.title}</button></div>
     {visibleColumns.map(column=><div key={column} role="cell" className="min-w-0 truncate">{columnValue(task,column)}</div>)}
     <div role="cell"><button type="button" className={miniButton} title={`Full editor for ${task.title}`} aria-label={`Edit task ${task.title}`} onClick={()=>openFullEditor(task.id)}><Pencil size={15}/></button></div>
   </div>;
   const sectionGroups=groupWorkplanTasks(orderedTasks,grouping,context).filter(group=>group.tasks.length>0);
-  const rowTable=(tasks:Task[],key:string,title?:string)=><section key={key} className="overflow-x-auto rounded-lg border border-border/70 bg-white dark:bg-card">
-    {title&&<h2 className="border-b border-border/50 bg-slate-50 px-3 py-2 text-xs font-semibold dark:bg-muted/40">{title} <span className="ml-1 font-normal text-muted-foreground">{tasks.length}</span></h2>}
+  const rowTable=(tasks:Task[],key:string,title?:string)=><section key={key} className="overflow-x-auto bg-white dark:bg-card">
+    {title&&<h2 className="bg-slate-50 px-3 py-2 text-xs font-semibold dark:bg-muted/40">{title} <span className="ml-1 font-normal text-muted-foreground">{tasks.length}</span></h2>}
     <div role="table" aria-label={title??'Tasks'} className="w-full min-w-[640px]">
       <div role="row" style={{gridTemplateColumns:columnWidths}} className="grid min-h-9 items-center gap-3 border-b border-border/70 px-3 text-[11px] font-medium text-muted-foreground">
         <div role="columnheader">Name</div>{visibleColumns.map(column=><div role="columnheader" key={column}>{labelForColumn[column]}</div>)}<div role="columnheader"><span className="sr-only">Edit</span></div>
@@ -326,9 +326,9 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     <div className={showEditor?'grid min-w-0 gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(330px,380px)]':'min-w-0'}>
       <div className="min-w-0 space-y-3">
         <p role="status" className="text-[11px] text-muted-foreground">{orderedTasks.length} of {body.tasks.length} tasks · {subtasks.length} saved subtasks</p>
-        {view==='table'&&<div className="space-y-3">{(grouping==='none'?[{key:'all',label:'Tasks',tasks:orderedTasks}]:sectionGroups).map(group=>rowTable(group.tasks,group.key,grouping==='none'?undefined:group.label))}</div>}
+        {view==='overview'&&<div className="space-y-3">{(grouping==='none'?[{key:'all',label:'Tasks',tasks:orderedTasks}]:sectionGroups).map(group=>rowTable(group.tasks,group.key,grouping==='none'?undefined:group.label))}</div>}
         {view==='list'&&<div className="space-y-3">{(grouping==='none'?[{key:'all',label:'Tasks',tasks:orderedTasks}]:sectionGroups).map(group=><section key={group.key} className="space-y-1">{grouping!=='none'&&<h2 className="text-xs font-semibold">{group.label} <span className="text-muted-foreground">{group.tasks.length}</span></h2>}{group.tasks.map(viewTaskButton)}</section>)}</div>}
-        {view==='overview'&&<div className="space-y-3">{(['todo','doing','blocked','done'] as const).map(status=><section key={status}><h2 className="mb-2 border-b border-border pb-2 text-sm font-semibold capitalize">{status==='todo'?'Backlog':status==='doing'?'In progress':status==='done'?'Completed':'Blocked'} · {orderedTasks.filter(task=>task.status===status).length}</h2><div className="space-y-1">{orderedTasks.filter(task=>task.status===status).map(viewTaskButton)}</div></section>)}</div>}
+        
         {view==='kanban'&&<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{(['todo','doing','blocked','done'] as const).map(status=><section key={status} className="min-w-0 rounded-xl bg-slate-50 p-2 dark:bg-muted/30"><h2 className="mb-2 px-2 text-xs font-semibold capitalize">{status==='todo'?'Backlog':status==='doing'?'In progress':status==='done'?'Completed':'Blocked'} <span className="text-muted-foreground">{orderedTasks.filter(task=>task.status===status).length}</span></h2><div className="space-y-2">{orderedTasks.filter(task=>task.status===status).map(viewTaskButton)}</div></section>)}</div>}
         {view==='timeline'&&<div className="space-y-3">{[...new Set(dateTasks.map(task=>task.dueOn))].map(date=><section key={date!}><h2 className="mb-2 border-b border-border pb-1 text-xs font-semibold"><Flag size={13} className="mr-1 inline" aria-hidden/>Due {date}</h2><div className="space-y-1">{dateTasks.filter(task=>task.dueOn===date).map(viewTaskButton)}</div></section>)}{undatedTasks.length>0&&<section><h2 className="mb-2 text-xs font-semibold">Without deadlines</h2><div className="space-y-1">{undatedTasks.map(viewTaskButton)}</div></section>}</div>}
         {view==='gantt'&&<div className="space-y-2 rounded-xl border border-border p-3">
