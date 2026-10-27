@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { Activity, Columns3, Filter, ListFilter, Menu, PanelRightClose, PanelRightOpen, Plus, Search, SlidersHorizontal, X } from 'lucide-react';
+import { Activity, Columns3, Filter, ListFilter, Menu, PanelRightClose, PanelRightOpen, Plus, Search, SlidersHorizontal, X, Table2, KanbanSquare, GanttChart, List, CalendarDays, Clock3, Settings2 } from 'lucide-react';
 import { projectPhaseLabels, projectPhaseOrder } from '@/lib/projects/lifecycle-schema';
 import type { WorkplanFilters, TaskGrouping } from '@/lib/projects/workplan-filters';
 
@@ -12,9 +12,9 @@ export type TaskColumn = 'priority' | 'status' | 'milestone' | 'due' | 'assignee
 
 const field = 'min-h-9 w-full min-w-0 rounded-md border border-input bg-background px-2.5 py-1.5 text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50';
 const control = 'inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50';
-const views: {value:TasksDisplayView;label:string}[] = [
-  {value:'overview',label:'Overview'}, {value:'kanban',label:'Kanban'}, {value:'gantt',label:'Gantt'},
-  {value:'list',label:'List'}, {value:'calendar',label:'Calendar'}, {value:'timeline',label:'Timeline'},
+const views: {value:TasksDisplayView;label:string;icon:typeof Table2}[] = [
+  {value:'overview',label:'Table',icon:Table2}, {value:'kanban',label:'Kanban',icon:KanbanSquare}, {value:'gantt',label:'Gantt',icon:GanttChart},
+  {value:'list',label:'List',icon:List}, {value:'calendar',label:'Calendar',icon:CalendarDays}, {value:'timeline',label:'Timeline',icon:Clock3},
 ];
 const tableColumns: {value:TaskColumn;label:string}[] = [
   {value:'priority',label:'Priority'}, {value:'status',label:'Status'}, {value:'milestone',label:'Milestone'},
@@ -25,8 +25,8 @@ function Field({label,children}:{label:string;children:ReactNode}) {
   return <label className="min-w-0 space-y-1 text-[11px] font-medium text-muted-foreground"><span>{label}</span>{children}</label>;
 }
 export function ProjectWorkplanToolbar({projectId,filters,onChange,view,onView,grouping,onGrouping,sort,onSort,columns,onColumns,assignees,phasesReady,assignmentsReady,
-  tagFilter,onTagFilter,tags,showEditor,onToggleEditor,onAddTask,onAddMilestone,disabled=false}: {
-  projectId:string;filters:WorkplanFilters;onChange:(changes:Partial<WorkplanFilters>)=>void;
+  tagFilter,onTagFilter,tags,showEditor,onToggleEditor,onAddTask,onAddMilestone,disabled=false,onAdvancedToggle,advanced=false}: {
+  onAdvancedToggle?:()=>void;advanced?:boolean;projectId:string;filters:WorkplanFilters;onChange:(changes:Partial<WorkplanFilters>)=>void;
   view:TasksDisplayView;onView:(view:TasksDisplayView)=>void;grouping:TaskGrouping;onGrouping:(value:TaskGrouping)=>void;
   sort:TaskSort;onSort:(value:TaskSort)=>void;columns:TaskColumn[];onColumns:(values:TaskColumn[])=>void;
   assignees:{id:string;label:string}[];phasesReady:boolean;assignmentsReady:boolean;
@@ -40,9 +40,10 @@ export function ProjectWorkplanToolbar({projectId,filters,onChange,view,onView,g
     <div className="flex flex-wrap items-center justify-between gap-2">
       <nav className="flex min-w-0 flex-wrap gap-1" aria-label="Task view">
         {views.map(item=><button key={item.value} type="button" aria-pressed={view===item.value} onClick={()=>onView(item.value)}
-          className={`min-h-9 rounded-lg px-2.5 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${view===item.value?'bg-slate-100 text-slate-950 shadow-sm dark:bg-muted dark:text-foreground':'text-muted-foreground hover:bg-muted'}`}>{item.label}</button>)}
+          className={`inline-flex min-h-9 items-center gap-2 rounded-lg px-3 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${view===item.value?'bg-slate-100 text-slate-950 shadow-sm dark:bg-muted dark:text-foreground':'text-muted-foreground hover:bg-muted'}`}><item.icon size={15} aria-hidden/>{item.label}</button>)}
       </nav>
       <div className="flex flex-wrap items-center gap-1.5">
+        {onAdvancedToggle&&<button type="button" className={control} onClick={onAdvancedToggle}><Settings2 size={15}/>{advanced?'Back to tasks':'Advanced editor'}</button>}
         <button type="button" title="Search tasks" aria-label="Search tasks" aria-expanded={searchOpen} className={control} onClick={()=>setSearchOpen(value=>!value)}><Search size={15}/></button>
         <Link className={control} href={`/projects/${projectId}/activity?type=tasks`} title="Task activity log"><Activity size={15}/><span className="hidden sm:inline">Activity</span></Link>
         <button type="button" className={control} title={showEditor?'Hide task editor':'Show task editor'} aria-label={showEditor?'Hide task editor':'Show task editor'} aria-pressed={showEditor} onClick={onToggleEditor}>{showEditor?<PanelRightClose size={15}/>:<PanelRightOpen size={15}/>}</button>
@@ -72,8 +73,8 @@ export function ProjectWorkplanToolbar({projectId,filters,onChange,view,onView,g
           <button type="button" disabled={!applied} onClick={clear} className="mt-3 rounded-lg border border-border px-3 py-2 text-xs hover:bg-muted disabled:opacity-50">Clear filters</button>
         </div>
       </details>
-      <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"><ListFilter size={14}/>Group by<select aria-label="Group tasks" className="min-h-9 rounded-md border border-input bg-background px-2 text-xs text-foreground" value={grouping} onChange={e=>onGrouping(e.target.value as TaskGrouping)}><option value="status">Status</option><option value="milestone">Milestone</option><option value="side">Responsibility</option><option value="none">None</option></select></label>
-      <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"><SlidersHorizontal size={14}/>Sort by<select aria-label="Sort tasks" className="min-h-9 rounded-md border border-input bg-background px-2 text-xs text-foreground" value={sort} onChange={e=>onSort(e.target.value as TaskSort)}><option value="default">Manual order</option><option value="due">Due date</option><option value="priority">Priority</option><option value="title">Name</option></select></label>
+      <label className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-border bg-white px-3 text-xs text-foreground dark:bg-card"><ListFilter size={14}/>Group by<select aria-label="Group tasks" className="min-h-8 rounded-md bg-transparent px-2 text-xs text-foreground" value={grouping} onChange={e=>onGrouping(e.target.value as TaskGrouping)}><option value="status">Status</option><option value="milestone">Milestone</option><option value="side">Responsibility</option><option value="none">None</option></select></label>
+      <label className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-border bg-white px-3 text-xs text-foreground dark:bg-card"><SlidersHorizontal size={14}/>Sort by<select aria-label="Sort tasks" className="min-h-8 rounded-md bg-transparent px-2 text-xs text-foreground" value={sort} onChange={e=>onSort(e.target.value as TaskSort)}><option value="default">Manual order</option><option value="due">Due date</option><option value="priority">Priority</option><option value="title">Name</option></select></label>
       <details className="relative"><summary className={`${control} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}><Columns3 size={14}/>Columns</summary><fieldset className="absolute right-0 z-30 mt-1 min-w-40 space-y-2 rounded-xl border border-border bg-popover p-3 text-xs shadow-lg"><legend className="sr-only">Visible task columns</legend>{tableColumns.map(col=><label key={col.value} className="flex items-center gap-2"><input type="checkbox" checked={columns.includes(col.value)} onChange={e=>onColumns(e.target.checked?[...columns,col.value]:columns.filter(x=>x!==col.value))}/>{col.label}</label>)}</fieldset></details>
       {applied>0&&<button type="button" onClick={clear} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"><X size={12}/>Clear {applied}</button>}
     </div>
