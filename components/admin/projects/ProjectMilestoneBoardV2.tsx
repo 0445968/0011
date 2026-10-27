@@ -153,6 +153,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const [visibleColumns,setVisibleColumns]=useState<TaskColumn[]>(['priority','status','milestone','due','assignee']);
 
   const [showEditor,setShowEditor]=useState(false);
+  const [pendingStartDates,setPendingStartDates]=useState<Record<string,string>>({});
   const [calendarMonth,setCalendarMonth]=useState(today.slice(0,7));
   const [filters,setFilters]=useState<WorkplanFilters>({...emptyWorkplanFilters});
 
@@ -173,6 +174,23 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const schedule=useProjectTaskSchedule(id,revision);
   const phaseColors=useProjectPhaseColors(id,[]);
   const canEditSidecar=!disabled&&!dirty&&sidecarReady&&!hierarchy.busy&&!hierarchy.conflict&&hierarchy.data?.projectRevision===revision;
+  // Record the actual transition date after the revision-checked task autosave
+  // completes, not before (which could invalidate the workplan revision).
+  useEffect(()=>{
+    if(!canEditSidecar||schedule.busy!==null)return;
+    const pending=Object.entries(pendingStartDates)[0];
+    if(!pending)return;
+    const [taskId,startDate]=pending;
+    const task=body.tasks.find(item=>item.id===taskId);
+    const existing=schedule.rows.get(taskId)?.start_on;
+    if(!task||!['doing','done'].includes(task.status)||existing){
+      setPendingStartDates(previous=>{const next={...previous};delete next[taskId];return next;});return;
+    }
+    // Capture the transition once. A failed schedule update is reported in the
+    // task editor and must not be retried automatically against a stale revision.
+    setPendingStartDates(previous=>{const next={...previous};delete next[taskId];return next;});
+    void schedule.save(taskId,startDate,task.dueOn,false);
+  },[canEditSidecar,schedule.busy,schedule.rows,revision,pendingStartDates,body.tasks]);
   const phaseLinks=hierarchy.data?.milestonePhases??[];
   const subtasks=hierarchy.data?.subtasks??[];
   const context={body,links:phaseLinks,controls:taskControls,assignments:assignments.data?.tasks??[],today};
@@ -185,6 +203,9 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const updateMilestone=(milestone:Milestone,changes:Partial<Milestone>)=>{const index=body.milestones.findIndex(item=>item.id===milestone.id);if(index>=0)onMilestoneChange(index,changes);};
   const updateTask=(task:Task,changes:Partial<Task>)=>{
     const index=body.tasks.findIndex(item=>item.id===task.id);if(index<0)return;
+    if(changes.status&&['doing','done'].includes(changes.status)&&!['doing','done'].includes(task.status)&&!schedule.rows.get(task.id)?.start_on){
+      setPendingStartDates(previous=>({...previous,[task.id]:today}));
+    }
     onTaskChange(index,changes);
     // Synchronize both old and newly assigned milestones in the draft.
     const nextBody={...body,tasks:body.tasks.map(item=>item.id===task.id?{...item,...changes}:item)};
@@ -234,7 +255,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
         {suggested&&<span className="rounded-full border border-border px-2 py-1 text-[10px] text-muted-foreground" title="Suggested from the saved start date, deadline, and today">Suggested {suggested} priority</span>}
       </div>
       <TaskTags projectId={id} projectRevision={revision} row={presentation.rows.find(row=>row.task_id===task.id)} catalog={tagCatalog} disabled={disabled||dirty||!sidecarReady} reload={presentation.load}/>
-      <TaskProductivity projectId={id} taskId={task.id} taskTitle={task.title} revision={revision} disabled={disabled||dirty||!sidecarReady} userId={userId} hidePriority workplanDescription={task.notes} onWorkplanDescriptionChange={value=>updateTask(task,{notes:value})}/>
+      <TaskProductivity projectId={id} taskId={task.id} taskTitle={task.title} revision={revision} disabled={disabled||dirty||!sidecarReady} userId={userId} hidePriority workplanEditable={!disabled} workplanDescription={task.notes} onWorkplanDescriptionChange={value=>updateTask(task,{notes:value})}/>
       {workflowGate?.taskId===task.id&&<section role="alert" className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100"><p className="font-semibold">{workflowGate.requirement}</p>{workflowGate.correctiveActions.map(action=><p key={action}>{action}</p>)}{workflowGate.overrideAvailable&&<><label className="block font-medium">Reason for overriding this completion review<textarea className="mt-1 min-h-16 w-full rounded-md border border-input bg-background p-2 text-xs" maxLength={2000} value={workflowOverrideReason} onChange={event=>onWorkflowOverrideReason(event.target.value)} disabled={busy}/></label><button type="button" className="min-h-9 rounded-lg bg-foreground px-3 text-xs font-medium text-background disabled:opacity-50" disabled={busy||!overrideReady||!workflowOverrideReason.trim()} onClick={onOverrideTaskStatus}>Override and change status</button></>}</section>}
       {(dirty||!sidecarReady)&&<p role="status" className="text-[11px] text-amber-800 dark:text-amber-200">Save or discard the work-plan draft before changing ownership, blockers or dependencies.</p>}
       <details className="rounded-lg bg-muted/20 px-3 py-2">
