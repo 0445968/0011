@@ -865,7 +865,7 @@ export function ProjectWorkspace({
     {overview}
     {((selectedTask&&!record.body.tasks.some(task=>task.id===selectedTask))||(selectedMilestone&&!record.body.milestones.some(item=>item.id===selectedMilestone)))&&<p role="status" className="text-xs text-amber-800 dark:text-amber-200">The linked item is no longer in the saved project. Browse Tasks &amp; Milestones below; any private draft remains recoverable.</p>}
     {overview&&<Link className="inline-flex rounded-lg border border-border px-3 py-2 text-xs font-medium hover:bg-muted" href={`/projects/${id}?tab=plan`}>Open Tasks</Link>}
-    <div hidden={Boolean(overview)} className="space-y-3 rounded-xl bg-white p-3 text-slate-950 dark:bg-background dark:text-foreground sm:p-4">
+    <div hidden={Boolean(overview)} className="space-y-3 bg-white p-0 text-slate-950 dark:bg-background dark:text-foreground">
 
       {/* ===============================================
           COMPACT SUMMARY
