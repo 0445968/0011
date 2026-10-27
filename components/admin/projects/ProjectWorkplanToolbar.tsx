@@ -2,18 +2,18 @@
 
 import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { Activity, Columns3, Filter, ListFilter, Menu, PanelRightClose, PanelRightOpen, Plus, Search, SlidersHorizontal, X, Table2, KanbanSquare, GanttChart, List, CalendarDays, Clock3, Settings2 } from 'lucide-react';
+import { Activity, Columns3, Filter, ListFilter, Menu, PanelRightClose, PanelRightOpen, Plus, Search, SlidersHorizontal, X, Table2, KanbanSquare, GanttChart, List, CalendarDays, Clock3, Settings2, LayoutGrid, ChevronDown, Check, ArrowUp, ArrowDown } from 'lucide-react';
 import { projectPhaseLabels, projectPhaseOrder } from '@/lib/projects/lifecycle-schema';
 import type { WorkplanFilters, TaskGrouping } from '@/lib/projects/workplan-filters';
 
-export type TasksDisplayView = 'overview' | 'kanban' | 'gantt' | 'list' | 'calendar' | 'table' | 'timeline';
+export type TasksDisplayView = 'overview' | 'kanban' | 'gantt' | 'list' | 'calendar' | 'timeline' | 'milestone';
 export type TaskSort = 'default' | 'title' | 'due' | 'priority';
 export type TaskColumn = 'priority' | 'status' | 'milestone' | 'due' | 'assignee';
 
 const field = 'min-h-9 w-full min-w-0 rounded-md border border-input bg-background px-2.5 py-1.5 text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50';
 const control = 'inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50';
 const views: {value:TasksDisplayView;label:string;icon:typeof Table2}[] = [
-  {value:'overview',label:'Table',icon:Table2}, {value:'kanban',label:'Kanban',icon:KanbanSquare}, {value:'gantt',label:'Gantt',icon:GanttChart},
+  {value:'overview',label:'Table',icon:Table2}, {value:'kanban',label:'Kanban',icon:KanbanSquare}, {value:'milestone',label:'Milestones',icon:LayoutGrid}, {value:'gantt',label:'Gantt',icon:GanttChart},
   {value:'list',label:'List',icon:List}, {value:'calendar',label:'Calendar',icon:CalendarDays}, {value:'timeline',label:'Timeline',icon:Clock3},
 ];
 const tableColumns: {value:TaskColumn;label:string}[] = [
@@ -36,27 +36,20 @@ export function ProjectWorkplanToolbar({projectId,filters,onChange,view,onView,g
   const [searchOpen,setSearchOpen]=useState(false);
   const applied=[filters.phase!=='all',filters.side!=='all',filters.assignee!=='all',filters.status!=='all',filters.deadline!=='all',Boolean(filters.from||filters.to),Boolean(filters.query.trim()),Boolean(tagFilter)].filter(Boolean).length;
   const clear=()=>{onChange({query:'',phase:'all',side:'all',assignee:'all',status:'all',deadline:'all',from:'',to:''});onTagFilter('');};
-  return <div className="sticky top-0 z-30 space-y-2 bg-white py-2 text-slate-950 shadow-sm dark:bg-card dark:text-foreground">
-    <div className="flex flex-wrap items-center justify-between gap-2">
-      <nav className="flex min-w-0 flex-wrap gap-1" aria-label="Task view">
-        {views.map(item=><button key={item.value} type="button" aria-pressed={view===item.value} onClick={()=>onView(item.value)}
-          className={`inline-flex min-h-9 items-center gap-2 rounded-lg px-3 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${view===item.value?'bg-slate-100 text-slate-950 shadow-sm dark:bg-muted dark:text-foreground':'text-muted-foreground hover:bg-muted'}`}><item.icon size={15} aria-hidden/>{item.label}</button>)}
-      </nav>
-      <div className="flex flex-wrap items-center gap-1.5">
-        {onAdvancedToggle&&<button type="button" className={control} onClick={onAdvancedToggle}><Settings2 size={15}/>{advanced?'Back to tasks':'Advanced editor'}</button>}
-        <button type="button" title="Search tasks" aria-label="Search tasks" aria-expanded={searchOpen} className={control} onClick={()=>setSearchOpen(value=>!value)}><Search size={15}/></button>
-        <Link className={control} href={`/projects/${projectId}/activity?type=tasks`} title="Task activity log"><Activity size={15}/><span className="hidden sm:inline">Activity</span></Link>
-        <button type="button" className={control} title={showEditor?'Hide task editor':'Show task editor'} aria-label={showEditor?'Hide task editor':'Show task editor'} aria-pressed={showEditor} onClick={onToggleEditor}>{showEditor?<PanelRightClose size={15}/>:<PanelRightOpen size={15}/>}</button>
-        <details className="relative"><summary className={`${control} cursor-pointer list-none [&::-webkit-details-marker]:hidden`} aria-label="Add task or milestone"><Plus size={16}/><Menu size={13}/></summary>
-          <div className="absolute right-0 z-30 mt-1 w-48 space-y-1 rounded-xl border border-border bg-popover p-2 text-popover-foreground shadow-lg">
-            <button type="button" disabled={disabled} onClick={onAddTask} className="w-full rounded-md px-3 py-2 text-left text-xs hover:bg-muted disabled:opacity-50">Add task</button>
-            <Link href={`/projects/${projectId}?tab=phases&newMilestone=1`} className="block w-full rounded-md px-3 py-2 text-left text-xs hover:bg-muted">Add milestone in Lifecycle</Link>
-          </div>
-        </details>
-      </div>
-    </div>
-    {(searchOpen||Boolean(filters.query))&&<div className="flex items-center gap-2 rounded-lg border border-input bg-background px-2"><Search size={14} className="shrink-0 text-muted-foreground"/><input autoFocus type="search" className="min-h-9 min-w-0 flex-1 bg-transparent text-xs outline-none" placeholder="Search task names, descriptions, and milestones" value={filters.query} onChange={event=>onChange({query:event.target.value})}/><button type="button" aria-label="Close search" onClick={()=>{onChange({query:''});setSearchOpen(false);}}><X size={14}/></button></div>}
-    <div className="flex flex-wrap items-center gap-2">
+  const selectView=(next:TasksDisplayView,button:HTMLButtonElement)=>{onView(next);const menu=button.closest('details');if(menu)menu.open=false;};
+  const chooseGroup=(next:TaskGrouping,button:HTMLButtonElement)=>{onGrouping(next);const menu=button.closest('details');if(menu)menu.open=false;};
+  const chooseSort=(next:TaskSort,button:HTMLButtonElement)=>{onSort(next);const menu=button.closest('details');if(menu)menu.open=false;};
+  const moveColumn=(column:TaskColumn,delta:number)=>{const index=columns.indexOf(column);const other=index+delta;if(index<0||other<0||other>=columns.length)return;const next=[...columns];[next[index],next[other]]=[next[other],next[index]];onColumns(next);};
+  const currentView=views.find(option=>option.value===view)??views[0];
+  const CurrentViewIcon=currentView.icon;
+  const popup='absolute z-40 mt-1 min-w-44 rounded-xl border border-border bg-popover p-2 text-popover-foreground shadow-xl';
+  const optionClass='flex min-h-9 w-full items-center gap-2 rounded-lg px-2.5 text-left text-xs hover:bg-muted';
+  return <div className="sticky top-0 z-30 bg-white px-4 py-3 text-slate-950 dark:bg-card dark:text-foreground">
+    <div className="flex min-w-0 flex-nowrap items-center gap-2 overflow-x-auto scrollbar-hide" aria-label="Task view and tools">
+      <details className="relative shrink-0">
+        <summary className={control+' cursor-pointer list-none [&::-webkit-details-marker]:hidden'} title="Choose task view"><CurrentViewIcon size={16}/><span className="hidden sm:inline">{currentView.label}</span><ChevronDown size={13}/></summary>
+        <div className={popup+' left-0'}>{views.map(item=><button type="button" key={item.value} className={optionClass} aria-pressed={view===item.value} onClick={event=>selectView(item.value,event.currentTarget)}><item.icon size={15}/><span className="flex-1">{item.label}</span>{view===item.value&&<Check size={14}/>}</button>)}</div>
+      </details>
       <details className="relative"><summary className={`${control} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}><Filter size={14}/>Filters{applied>0&&<span className="rounded bg-foreground px-1.5 text-[10px] text-background">{applied}</span>}</summary>
         <div className="absolute left-0 z-30 mt-1 w-[min(91vw,720px)] rounded-xl border border-border bg-popover p-3 text-popover-foreground shadow-lg">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -73,10 +66,20 @@ export function ProjectWorkplanToolbar({projectId,filters,onChange,view,onView,g
           <button type="button" disabled={!applied} onClick={clear} className="mt-3 rounded-lg border border-border px-3 py-2 text-xs hover:bg-muted disabled:opacity-50">Clear filters</button>
         </div>
       </details>
-      <label className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-border bg-white px-3 text-xs text-foreground dark:bg-card"><ListFilter size={14}/>Group by<select aria-label="Group tasks" className="min-h-8 rounded-md bg-transparent px-2 text-xs text-foreground" value={grouping} onChange={e=>onGrouping(e.target.value as TaskGrouping)}><option value="status">Status</option><option value="milestone">Milestone</option><option value="side">Responsibility</option><option value="none">None</option></select></label>
-      <label className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-border bg-white px-3 text-xs text-foreground dark:bg-card"><SlidersHorizontal size={14}/>Sort by<select aria-label="Sort tasks" className="min-h-8 rounded-md bg-transparent px-2 text-xs text-foreground" value={sort} onChange={e=>onSort(e.target.value as TaskSort)}><option value="default">Manual order</option><option value="due">Due date</option><option value="priority">Priority</option><option value="title">Name</option></select></label>
-      <details className="relative"><summary className={`${control} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}><Columns3 size={14}/>Columns</summary><fieldset className="absolute right-0 z-30 mt-1 min-w-40 space-y-2 rounded-xl border border-border bg-popover p-3 text-xs shadow-lg"><legend className="sr-only">Visible task columns</legend>{tableColumns.map(col=><label key={col.value} className="flex items-center gap-2"><input type="checkbox" checked={columns.includes(col.value)} onChange={e=>onColumns(e.target.checked?[...columns,col.value]:columns.filter(x=>x!==col.value))}/>{col.label}</label>)}</fieldset></details>
-      {applied>0&&<button type="button" onClick={clear} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"><X size={12}/>Clear {applied}</button>}
+      <details className="relative shrink-0"><summary className={control+' cursor-pointer list-none [&::-webkit-details-marker]:hidden'}><ListFilter size={15}/>Group by<ChevronDown size={13}/></summary>
+        <div className={popup+' left-0'}>{([{value:'status',label:'Status'},{value:'side',label:'Responsibility'},{value:'none',label:'None'}] as {value:TaskGrouping;label:string}[]).map(item=><button type="button" key={item.value} className={optionClass} onClick={event=>chooseGroup(item.value,event.currentTarget)}><span className="flex-1">{item.label}</span>{grouping===item.value&&<Check size={14}/>}</button>)}</div>
+      </details>
+      <details className="relative shrink-0"><summary className={control+' cursor-pointer list-none [&::-webkit-details-marker]:hidden'}><SlidersHorizontal size={15}/>Sort by<ChevronDown size={13}/></summary>
+        <div className={popup+' left-0'}>{([{value:'default',label:'Manual order'},{value:'due',label:'Due date'},{value:'priority',label:'Priority'},{value:'title',label:'Name'}] as {value:TaskSort;label:string}[]).map(item=><button type="button" key={item.value} className={optionClass} onClick={event=>chooseSort(item.value,event.currentTarget)}><span className="flex-1">{item.label}</span>{sort===item.value&&<Check size={14}/>}</button>)}</div>
+      </details>
+      <details className="relative"><summary className={`${control} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}><Columns3 size={14}/>Columns</summary><fieldset className="absolute right-0 z-30 mt-1 min-w-40 space-y-2 rounded-xl border border-border bg-popover p-3 text-xs shadow-lg"><legend className="sr-only">Visible task columns</legend>{tableColumns.map(col=><div key={col.value} className="flex items-center gap-1"><label className="flex flex-1 items-center gap-2"><input type="checkbox" checked={columns.includes(col.value)} onChange={e=>onColumns(e.target.checked?[...columns,col.value]:columns.filter(x=>x!==col.value))}/>{col.label}</label><button type="button" aria-label={"Move "+col.label+" left"} disabled={!columns.includes(col.value)||columns.indexOf(col.value)===0} className="rounded p-1 hover:bg-muted disabled:opacity-30" onClick={()=>moveColumn(col.value,-1)}><ArrowUp size={13}/></button><button type="button" aria-label={"Move "+col.label+" right"} disabled={!columns.includes(col.value)||columns.indexOf(col.value)===columns.length-1} className="rounded p-1 hover:bg-muted disabled:opacity-30" onClick={()=>moveColumn(col.value,1)}><ArrowDown size={13}/></button></div>)}</fieldset></details>
+      <div className="min-w-0 flex-1"/>
+      <button type="button" title="Search tasks" aria-label="Search tasks" aria-expanded={searchOpen} className={control} onClick={()=>setSearchOpen(value=>!value)}><Search size={15}/></button>
+      <button type="button" className={control} title={showEditor?'Hide task editor':'Show task editor'} aria-label={showEditor?'Hide task editor':'Show task editor'} aria-pressed={showEditor} onClick={onToggleEditor}>{showEditor?<PanelRightClose size={15}/>:<PanelRightOpen size={15}/>}</button>
+      <details className="relative shrink-0"><summary className={control+' cursor-pointer list-none [&::-webkit-details-marker]:hidden'} aria-label="Add task or milestone"><Plus size={16}/><Menu size={13}/></summary>
+        <div className={popup+' right-0'}><button type="button" disabled={disabled} className={optionClass} onClick={event=>{onAddTask();const menu=event.currentTarget.closest('details');if(menu)menu.open=false;}}>Add task</button><Link href={'/projects/'+projectId+'?tab=phases&newMilestone=1'} className={optionClass}>Add milestone in Lifecycle</Link></div>
+      </details>
     </div>
+    {(searchOpen||Boolean(filters.query))&&<div className="mt-2 flex items-center gap-2 rounded-lg border border-input bg-background px-2"><Search size={14}/><input autoFocus type="search" className="min-h-9 min-w-0 flex-1 bg-transparent text-xs outline-none" placeholder="Search tasks" value={filters.query} onChange={event=>onChange({query:event.target.value})}/><button type="button" aria-label="Close search" onClick={()=>{onChange({query:''});setSearchOpen(false);}}><X size={14}/></button></div>}
   </div>;
 }
