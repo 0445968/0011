@@ -258,6 +258,7 @@ export function ProjectWorkspace({
   const controller=useProjectEditingController(id,record,Boolean(selectedMilestone));
   const {body,savedBody,savedRevision,setBody,busy,setBusy,blocked,setBlocked,
     message,setMessage,saveOutcomeUnknown,setSaveOutcomeUnknown,serverBlockers,setServerBlockers,workflowGate,setWorkflowGate,dirty,drafts,advanced,setAdvanced}=controller;
+  const [lastReadMessage,setLastReadMessage]=useState('');
   const [reason,setReason]=useState('');
   const [workflowOverrideReason,setWorkflowOverrideReason]=useState('');
   const [overviewTaskId,setOverviewTaskId]=useState<string|null>(selectedTask??null);
@@ -876,7 +877,6 @@ export function ProjectWorkspace({
     );
   }
 
-  const [lastReadMessage,setLastReadMessage]=useState('');
   const hasTaskMessage=Boolean(drafts.recoverable||message||drafts.error||blocked||saveOutcomeUnknown);
   const taskMessageKey=String(drafts.recoverable?.updatedAt??'')+'|'+message+'|'+String(blocked)+'|'+String(saveOutcomeUnknown)+'|'+String(drafts.error);
   const showMessageDot=hasTaskMessage&&lastReadMessage!==taskMessageKey;
