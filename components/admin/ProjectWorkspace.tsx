@@ -17,6 +17,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  useRef,
   type ReactNode,
 } from 'react';
 
@@ -32,6 +33,9 @@ import {
   RotateCcw,
   Save,
   Trash2,
+  Bell,
+  FileClock,
+  RefreshCw,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -343,6 +347,22 @@ export function ProjectWorkspace({
     const saved = await command('save');
     if (saved !== true) throw new Error('Project changes were not saved. Review the editor message.');
   },async()=>{if(!await controller.discard())throw new Error('Private draft discard could not be confirmed. Your edits remain available.');});
+
+  // Debounced, revision-checked server autosave. The private-draft recovery
+  // mechanism remains a fallback, not a substitute for saving task changes.
+  // A failed candidate is not retried until the user edits again.
+  const autosaveAttempt=useRef('');
+  useEffect(()=>{
+    if(overview||!body||!dirty||completed||inactive||busy||blocked||saveOutcomeUnknown||
+       !drafts.ready||Boolean(drafts.recoverable)||Boolean(drafts.conflict)||Boolean(workflowGate))return;
+    const candidate=JSON.stringify(body);
+    if(candidate===autosaveAttempt.current)return;
+    const timer=window.setTimeout(()=>{
+      autosaveAttempt.current=candidate;
+      void controller.save();
+    },1800);
+    return ()=>window.clearTimeout(timer);
+  },[body,dirty,overview,completed,inactive,busy,blocked,saveOutcomeUnknown,drafts.ready,drafts.recoverable,drafts.conflict,workflowGate]);
 
   const today=savedToday;
 
@@ -856,6 +876,46 @@ export function ProjectWorkspace({
     );
   }
 
+  const [lastReadMessage,setLastReadMessage]=useState('');
+  const hasTaskMessage=Boolean(drafts.recoverable||message||drafts.error||blocked||saveOutcomeUnknown);
+  const taskMessageKey=String(drafts.recoverable?.updatedAt??'')+'|'+message+'|'+String(blocked)+'|'+String(saveOutcomeUnknown)+'|'+String(drafts.error);
+  const showMessageDot=hasTaskMessage&&lastReadMessage!==taskMessageKey;
+  const toolbarIcon='relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-white hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40 dark:bg-card';
+  const toolbarActions=!overview?<div className="ml-1 flex shrink-0 items-center gap-1.5" aria-label="Workplan save and messages">
+    <button type="button" className={toolbarIcon} title="Refresh saved data" aria-label="Refresh saved task data" disabled={busy} onClick={()=>void controller.checkUncertainSave()}><RefreshCw size={16}/></button>
+    <button type="button" className={toolbarIcon} title={busy?'Saving changes':'Save workplan now'} aria-label="Save workplan now" disabled={!dirty||locked||saveOutcomeUnknown||!drafts.ready||Boolean(drafts.recoverable)||Boolean(drafts.conflict)} onClick={()=>void command('save')}><Save size={16}/></button>
+    <details className="relative">
+      <summary className={toolbarIcon+' cursor-pointer list-none [&::-webkit-details-marker]:hidden'} title="Draft options" aria-label="Draft options"><FileClock size={16}/>{dirty&&<span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-amber-400"/>}</summary>
+      <div className="absolute right-0 z-50 mt-2 min-w-56 rounded-xl border border-border bg-white p-3 text-xs shadow-xl dark:bg-card">
+        <p className="mb-2 font-medium">{dirty?'Changes autosave after editing':'All task changes saved'}</p>
+        <p className="mb-3 text-muted-foreground">Private draft: {drafts.state==='saving'?'Saving…':drafts.state==='saved'?'Backed up':drafts.state==='pending'?'Pending':drafts.state==='conflict'?'Conflict — review required':drafts.state==='error'?'Unavailable':'Ready'}</p>
+        <button type="button" className="block w-full rounded-lg px-2 py-2 text-left hover:bg-muted disabled:opacity-40" disabled={!dirty||busy||saveOutcomeUnknown||!drafts.ready||Boolean(drafts.recoverable)||Boolean(drafts.conflict)} onClick={()=>void drafts.saveDraft()}>Back up private draft</button>
+        <button type="button" className="block w-full rounded-lg px-2 py-2 text-left hover:bg-muted disabled:opacity-40" disabled={!dirty||busy} onClick={()=>{if(window.confirm('Discard work-plan edits and the private draft?'))void controller.discard();}}>Discard changes…</button>
+      </div>
+    </details>
+    <details className="relative" onToggle={event=>{if(event.currentTarget.open)setLastReadMessage(taskMessageKey);}}>
+      <summary className={toolbarIcon+' cursor-pointer list-none [&::-webkit-details-marker]:hidden'} title="Task messages" aria-label="Task messages"><Bell size={16}/>{showMessageDot&&<span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-blue-600"/>}</summary>
+      <div className="absolute right-0 z-50 mt-2 w-[min(90vw,380px)] space-y-3 rounded-xl border border-border bg-white p-3 text-xs shadow-xl dark:bg-card">
+        <p className="font-semibold">Task messages</p>
+        {drafts.recoverable&&<div className="space-y-2 rounded-lg bg-violet-50 p-3 text-violet-950 dark:bg-violet-950 dark:text-violet-100">
+          <p className="font-semibold">A private work-plan draft is available</p>
+          <p>Last saved: {new Date(drafts.recoverable.updatedAt).toLocaleString('en-US',{timeZone:'America/Chicago'})}. Restore it to resume editing, or export a backup before discarding.</p>
+          {drafts.recoverable.baseRevision!==savedRevision&&<p className="font-medium">The draft baseline differs from the saved project. Reconciliation is required.</p>}
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className={controlClass} disabled={Boolean(drafts.rebase)||drafts.recoverable.baseRevision!==savedRevision} onClick={drafts.restore}>Restore</button>
+            <button type="button" className={controlClass} onClick={()=>{const blob=new Blob([JSON.stringify(drafts.recoverable?.body,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download='bivi-project-'+id+'-draft.json';link.click();URL.revokeObjectURL(url);}}>Export</button>
+            <button type="button" className={controlClass} onClick={()=>{if(window.confirm('Permanently discard the private draft?'))void controller.discard();}}>Discard</button>
+          </div>
+        </div>}
+        {message&&<p role="status" className="rounded-lg bg-muted p-2">{message}</p>}
+        {drafts.error&&<p role="alert" className="text-destructive">{drafts.error}</p>}
+        {blocked&&<p role="alert" className="text-destructive">Revision conflict. Refresh to reconcile before saving.</p>}
+        {saveOutcomeUnknown&&<p role="alert">Save result uncertain. Use Refresh to verify before retrying.</p>}
+        {!hasTaskMessage&&<p className="text-muted-foreground">No new messages. Workplan changes autosave when possible.</p>}
+      </div>
+    </details>
+  </div>:null;
+
   /* =======================================================
      MAIN EDITOR
      ======================================================= */
@@ -898,6 +958,7 @@ export function ProjectWorkspace({
         disabled={locked || drafts.conflict}
         dirty={dirty}
         sidecarReady={drafts.ready && !drafts.recoverable && !drafts.conflict}
+        toolbarActions={toolbarActions}
         dirtyTaskIds={body.tasks.filter(task=>!savedBody?.tasks.some(saved=>saved.id===task.id&&JSON.stringify(saved)===JSON.stringify(task))).map(task=>task.id)}
         onTaskChange={editTask}
         onMilestoneChange={editMilestone}
@@ -1330,115 +1391,7 @@ export function ProjectWorkspace({
         </div>
       </details>
 
-      {/* ===============================================
-          STICKY SAVE BAR
-          =============================================== */}
 
-      <div className="sticky bottom-0 z-40 flex flex-wrap items-center justify-between gap-3 border-t border-border bg-white/95 px-4 py-3 shadow-lg backdrop-blur-sm dark:bg-card/95">
-
-        <div className="min-w-0 text-xs">
-      {drafts.recoverable && (
-        <section role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-violet-300 bg-violet-50 p-3 text-xs text-violet-900 dark:border-violet-800 dark:bg-violet-950 dark:text-violet-100">
-          <div><p className="font-semibold">A private work-plan draft is available.</p><p className="mt-1">Last saved: {new Date(drafts.recoverable.updatedAt).toLocaleString('en-US', {timeZone:'America/Chicago'})}. {drafts.rebase ? 'Review the conflicting fields below.' : drafts.recoverable.baseRevision !== savedRevision ? 'Its saved baseline needs reconciliation before it can be restored.' : 'Restore it to continue editing.'}</p></div>
-          <div className="flex flex-wrap gap-2"><button type="button" className={controlClass} disabled={Boolean(drafts.rebase) || drafts.recoverable.baseRevision !== savedRevision} onClick={drafts.restore}>Restore draft</button><button type="button" className={controlClass} onClick={() => { const blob = new Blob([JSON.stringify(drafts.recoverable?.body,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=`bivi-project-${id}-draft.json`;link.click();URL.revokeObjectURL(url); }}>Export draft</button><button type="button" className={controlClass} onClick={() => { if (window.confirm('Permanently delete your saved draft and load the latest saved project?')) void controller.discard().then(ok => { if (ok) setMessage('The private draft was discarded. The latest saved project is loaded.'); }); }}>Discard draft</button></div>
-        </section>
-      )}
-
-
-          <span className="font-semibold">
-            {dirty
-              ? 'Unsaved task & milestone fields'
-              : 'Task & milestone fields saved'}
-          </span>
-          {!completed && <p className="mt-1 text-[11px] text-muted-foreground" role="status">Draft: {drafts.state === 'saving' ? 'Saving…' : drafts.state === 'saved' ? 'Autosaved privately' : drafts.state === 'pending' ? 'Pending autosave' : drafts.state === 'loading' ? 'Checking saved drafts…' : drafts.state === 'conflict' ? 'Conflict — review required' : drafts.state === 'error' ? 'Save unavailable' : 'Ready to autosave'}</p>}
-
-          {completed && (
-            <span className="ml-2 text-muted-foreground">
-              Read-only until reopened
-            </span>
-          )}
-
-          {blocked && (
-            <p className="mt-1 text-destructive">
-              The latest saved project could not be loaded after a revision conflict. Reload to reconcile before saving.
-            </p>
-          )}
-
-          {message && (
-            <p
-              role="status"
-              className={`mt-1 ${message.toLowerCase().includes('saved') && !message.toLowerCase().includes('could not') ? 'text-emerald-700 dark:text-emerald-300' : 'text-destructive'}`}
-            >
-              {message}
-            </p>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button type="button" className={controlClass} disabled={busy} onClick={()=>void controller.checkUncertainSave()}>Refresh saved data</button>
-
-          {blocked ? (
-            <button
-              type="button"
-              className={controlClass}
-              onClick={() =>
-                void controller.checkUncertainSave()
-              }
-            >
-              <RotateCcw size={14} />
-              Reload
-            </button>
-          ) : (
-            <>
-              {saveOutcomeUnknown && <button type="button" className={controlClass} disabled={busy} onClick={() => void controller.checkUncertainSave()}>Check save status</button>}
-              {dirty && !completed && (
-                <button
-                  type="button"
-                  className={controlClass}
-                  disabled={busy}
-                  onClick={() => {
-                    if (
-                      window.confirm(
-                        'Discard work-plan edits, remove the private draft, and load the latest saved project?'
-                      )
-                    ) {
-                      void controller.discard().then(ok => {
-                        if (ok) {
-                          setMessage('Work-plan edits were discarded. The latest saved project is loaded.');
-                          setServerBlockers([]);
-                          setSaveOutcomeUnknown(false);
-                        }
-                      });
-                    }
-                  }}
-                >
-                  <RotateCcw size={14} />
-                  Discard changes
-                </button>
-              )}
-
-              <Button
-                type="button"
-                variant="outline"
-                disabled={!dirty || busy || saveOutcomeUnknown || !drafts.ready || Boolean(drafts.recoverable) || drafts.conflict}
-                onClick={() => void drafts.saveDraft()}
-                className="gap-2"
-              >
-                Save draft
-              </Button>
-              <Button
-                type="button"
-                disabled={!dirty || locked || saveOutcomeUnknown || !drafts.ready || Boolean(drafts.recoverable) || drafts.conflict}
-                onClick={() => void command('save')}
-                className="gap-2"
-              >
-                <Save size={15} />
-                {busy ? 'Saving…' : 'Save all'}
-              </Button>
-            </>
-          )}
-        </div>
-      </div>
     </div>
     </>
   );
