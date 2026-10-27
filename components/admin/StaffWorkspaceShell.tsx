@@ -14,6 +14,7 @@ import {
 } from 'react';
 
 import { staffGroups, recordDefinitions, canonicalKind, isStaffDestinationActive as isActive, type SectionId, type StaffDestination } from '@/lib/admin/workspace/navigation';
+import { projectRecordSections, projectSectionHref } from '@/lib/admin/workspace/project-sections';
 import { WorkspacePreferencesContext } from './workspace/WorkspacePreferences';
 import { NotificationsBell } from './notifications/NotificationsBell';
 import { WorkspaceItemMenu } from './workspace/WorkspaceItemMenu';
@@ -33,6 +34,10 @@ import {
   ChevronDown,
   ChevronRight,
   ClipboardList,
+  CalendarDays,
+  Clock3,
+  Files,
+  MessageSquare,
   FileText,
   FolderKanban,
   Inbox,
@@ -45,6 +50,7 @@ import {
   Search,
   Send,
   Settings2,
+  Layers,
   Truck,
   UserRound,
   Users,
@@ -106,33 +112,24 @@ const sections = staffGroups.map(group => ({ ...group, links: sidebarItems.filte
    PROJECT SECTIONS
    ========================================================= */
 
-const projectSections = [
-  {
-    id: 'overview',
-    label: 'Overview',
-    icon: LayoutDashboard,
-  },
-  {
-    id: 'plan',
-    label: 'Tasks & Milestones',
-    icon: ClipboardList,
-  },
-  {
-    id: 'lifecycle',
-    label: 'Lifecycle',
-    icon: Settings2,
-  },
-  {
-    id: 'brief',
-    label: 'Brief',
-    icon: FileText,
-  },
-  {
-    id: 'delivery',
-    label: 'Delivery',
-    icon: Truck,
-  },
-];
+const projectSectionIcons: Record<(typeof projectRecordSections)[number]['id'], LucideIcon> = {
+  requests: ClipboardList,
+  overview: LayoutDashboard,
+  plan: ClipboardList,
+  phases: Layers,
+  calendar: CalendarDays,
+  brief: FileText,
+  delivery: Truck,
+  files: Files,
+  discussion: MessageSquare,
+  access: Users,
+  activity: Clock3,
+  publishing: Send,
+};
+const projectSections = projectRecordSections.map(section => ({
+  ...section,
+  icon: projectSectionIcons[section.id],
+}));
 
 /* =========================================================
    INQUIRY SECTIONS
@@ -508,60 +505,36 @@ function RecordContextNavigation({
         {/* PROJECT SECTIONS */}
 
         {isProject &&
-          projectSections.map(
-            (section) => {
-              const href =
-                section.id === 'overview'
-                  ? base
-                  : `${base}?tab=${section.id}`;
-
-              const active =
-                isOnMainProjectPage &&
-                currentProjectSection ===
-                  section.id;
-
-              const Icon = section.icon;
-
-              return (
-                <Link
-                  key={section.id}
-                  href={href}
-                  scroll={false}
-                  aria-current={
-                    active
-                      ? 'page'
-                      : undefined
-                  }
-                  className={`
-                    flex
-                    h-full
-                    shrink-0
-                    items-center
-                    gap-1.5
-                    border-b-2
-                    px-2
-                    text-[11px]
-                    font-medium
-                    transition-colors
-
-                    ${
-                      active
-                        ? 'border-foreground font-semibold text-foreground'
-                        : 'border-transparent text-muted-foreground hover:text-foreground'
-                    }
-                  `}
-                >
-                  <Icon
-                    size={14}
-                    strokeWidth={1.8}
-                    aria-hidden="true"
-                  />
-
-                  {section.label}
-                </Link>
-              );
-            }
-          )}
+          projectSections.map(section => {
+            const href = projectSectionHref(base, section);
+            const active = Boolean(href && (
+              section.href === ''
+                ? isOnMainProjectPage && currentProjectSection === 'overview'
+                : section.href?.startsWith('?tab=')
+                  ? isOnMainProjectPage && currentProjectSection === section.id
+                  : cleanPath === href
+            ));
+            const Icon = section.icon;
+            const content = <>
+              <Icon size={14} strokeWidth={1.8} aria-hidden="true" />
+              {section.label}
+            </>;
+            const className = `flex h-full shrink-0 items-center gap-1.5 border-b-2 px-2 text-[11px] font-medium transition-colors ${active
+              ? 'border-foreground font-semibold text-foreground'
+              : 'border-transparent text-muted-foreground hover:text-foreground'}`;
+            return href ? (
+              <Link key={section.id} href={href} scroll={false}
+                aria-current={active ? 'page' : undefined} className={className}>
+                {content}
+              </Link>
+            ) : (
+              <span key={section.id} aria-disabled="true"
+                title="Not available yet"
+                className="flex h-full shrink-0 cursor-not-allowed items-center gap-1.5 border-b-2 border-transparent px-2 text-[11px] text-muted-foreground/50">
+                {content}<span className="sr-only">Coming soon</span>
+              </span>
+            );
+          })}
 
         {/* INQUIRY SECTIONS */}
 
@@ -1208,9 +1181,10 @@ useEffect(() => {
      SELECTED SECTION
      ======================================================= */
 
-  const selectedProjectTab =
-    searchParams.get('tab') ??
-    'overview';
+  const requestedProjectTab = searchParams.get('tab') ?? 'overview';
+  // Preserve former lifecycle and calendar phase-schedule URLs as Phases aliases.
+  const isLegacyPhaseView = requestedProjectTab === 'calendar' && searchParams.get('view') === 'phases';
+  const selectedProjectTab = requestedProjectTab === 'lifecycle' || isLegacyPhaseView ? 'phases' : requestedProjectTab;
 
   /* =======================================================
      STAFF ACCOUNT

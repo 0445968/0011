@@ -1,7 +1,15 @@
 
 'use client';
 import {milestoneDomId} from '@/lib/calendar/links';
+import Link from 'next/link';
 import {taskDomId} from '@/lib/tasks/links';
+import { DirectoryStatus, ProjectTaskStateIcon } from './projects/DirectoryIndicators';
+import { ProjectMilestoneBoard } from './projects/ProjectMilestoneBoardV2';
+import type { ProjectTaskControl } from '@/lib/projects/lifecycle-schema';
+import { useProjectEditingController } from './projects/useProjectEditingController';
+import {postProjectCommand} from '@/lib/projects/immediate-command';
+import {refreshProjectSurfaces} from '@/lib/projects/refresh';
+import {ProjectPageHeader} from './projects/ProjectVisuals';
 import { useWorkspaceUnsavedChanges } from './workspace/WorkspaceNavigationGuard';
 
 import {
@@ -32,7 +40,6 @@ import { Textarea } from '@/components/ui/textarea';
 
 import {
   projectBodySchema,
-  projectProgress,
   projectStates,
   type ProjectBody,
 } from '@/lib/projects/schema';
@@ -60,12 +67,17 @@ type Command =
 type TaskFilter = 'all' | Task['status'];
 
 type Props = {
+  overview?: ReactNode;
+  savedToday: string;
   selectedTask?:string;
   selectedMilestone?:string;
+  taskControls?: ProjectTaskControl[];
   id: string;
+  userId: string;
   record: ProjectRecord | null;
   history: ProjectEvent[];
   gateReady: boolean;
+  operationalStatus?: import('@/lib/projects/operational-status').OperationalStatus;
 };
 
 /* =========================================================
@@ -138,12 +150,14 @@ function CompactSelect({
   value,
   onChange,
   disabled,
+  status = false,
   children,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
+  status?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -157,6 +171,7 @@ function CompactSelect({
         }
         className={`
           ${inputClass}
+          ${status ? value === 'done' ? '!border-emerald-200 !bg-emerald-50 !text-emerald-800 dark:!border-emerald-800 dark:!bg-emerald-950 dark:!text-emerald-200' : value === 'blocked' ? '!border-amber-200 !bg-amber-50 !text-amber-900 dark:!border-amber-800 dark:!bg-amber-950 dark:!text-amber-200' : value === 'doing' || value === 'in_progress' ? '!border-amber-300 !bg-amber-50 !text-amber-800 dark:!border-amber-700 dark:!bg-amber-950 dark:!text-amber-200' : '' : ''}
           appearance-none
           pl-2.5
           pr-9
@@ -218,12 +233,17 @@ function SectionTitle({
    ========================================================= */
 
 export function ProjectWorkspace({
+  overview,
+  savedToday,
   id,
+  userId,
   record,
   history,
   gateReady,
+  operationalStatus,
   selectedTask,
   selectedMilestone,
+  taskControls = [],
 }: Props) {
   const router = useRouter();
 
@@ -231,16 +251,19 @@ export function ProjectWorkspace({
      EDITOR STATE
      ======================================================= */
 
-  const [body, setBody] = useState<
-    ProjectBody | undefined
-  >(record?.body);
-
-  const [reason, setReason] = useState('');
-
-  const [busy, setBusy] = useState(false);
-  const [blocked, setBlocked] = useState(false);
-  const [message, setMessage] = useState('');
-
+  const controller=useProjectEditingController(id,record,Boolean(selectedMilestone));
+  const {body,savedRevision,setBody,busy,setBusy,blocked,setBlocked,
+    message,setMessage,saveOutcomeUnknown,setSaveOutcomeUnknown,serverBlockers,setServerBlockers,workflowGate,setWorkflowGate,dirty,drafts,advanced,setAdvanced}=controller;
+  const [reason,setReason]=useState('');
+  const [workflowOverrideReason,setWorkflowOverrideReason]=useState('');
+  const [overviewTaskId,setOverviewTaskId]=useState<string|null>(selectedTask??null);
+  const [taskFocusRequest,setTaskFocusRequest]=useState(0);
+  useEffect(()=>{if(selectedTask){setOverviewTaskId(selectedTask);setTaskFocusRequest(value=>value+1);}},[selectedTask]);
+  useEffect(()=>{if(workflowGate){setAdvanced(false);setOverviewTaskId(workflowGate.taskId);setTaskFocusRequest(value=>value+1);}},[workflowGate?.taskId]);
+  function focusTaskDetails(taskId:string) {
+    setAdvanced(false);setOverviewTaskId(taskId);
+    setTaskFocusRequest(value=>value+1);
+  }
   /* =======================================================
      TASK VIEW
      ======================================================= */
@@ -259,6 +282,33 @@ export function ProjectWorkspace({
 
   const [expandedTaskId, setExpandedTaskId] =
     useState<string | null>(null);
+
+  const [editorFocus, setEditorFocus] = useState<string | null>(null);
+  function openAdvanced(taskId?: string, milestoneId?: string) {
+    setAdvanced(true);
+    if (taskId) {
+      const index = body?.tasks.findIndex(task=>task.id===taskId) ?? -1;
+      setTaskFilter('all'); setTaskQuery('');
+      if (index>=0) setTaskPage(Math.floor(index/TASK_PAGE_SIZE)+1);
+      setExpandedTaskId(taskId); setOverviewTaskId(taskId); setTaskFocusRequest(value=>value+1); setEditorFocus(taskDomId(taskId));
+    } else if (milestoneId) {
+      const index = body?.milestones.findIndex(item=>item.id===milestoneId) ?? -1;
+      if (index>=0) setMilestonePage(Math.floor(index/MILESTONE_PAGE_SIZE)+1);
+      setEditorFocus(milestoneDomId(milestoneId));
+    } else setEditorFocus('project-advanced-editor');
+  }
+  function returnToWorkplan() {
+    setAdvanced(false); setEditorFocus(null);
+    window.requestAnimationFrame(()=>{
+      const cards=document.getElementById('project-workplan-cards');
+      cards?.focus({preventScroll:true}); cards?.scrollIntoView({block:'start'});
+    });
+  }
+  useEffect(()=>{
+    if (!advanced || !editorFocus) return;
+    const row=document.getElementById(editorFocus);
+    row?.focus({preventScroll:true}); row?.scrollIntoView({block:'center'});
+  },[advanced,editorFocus,taskPage,milestonePage]);
 
   useEffect(()=>{if(!selectedTask||!record)return;const index=record.body.tasks.findIndex(task=>task.id===selectedTask);if(index<0)return;setTaskFilter('all');setTaskQuery('');setTaskPage(Math.floor(index/TASK_PAGE_SIZE)+1);setExpandedTaskId(selectedTask);},[selectedTask,record]);
   useEffect(()=>{if(selectedTask&&expandedTaskId===selectedTask){const row=document.getElementById(taskDomId(selectedTask));row?.focus({preventScroll:true});row?.scrollIntoView({block:'start'});}},[selectedTask,expandedTaskId,taskPage]);
@@ -280,26 +330,21 @@ export function ProjectWorkspace({
 
   const completed =
     record?.state === 'completed';
+  const inactive = operationalStatus === 'inactive';
 
   const locked =
-    busy || blocked || completed;
+    busy || blocked || completed || inactive;
 
-  const dirty = Boolean(
-    record &&
-    body &&
-    JSON.stringify(body) !==
-      JSON.stringify(record.body)
-  );
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('bivi:project-workplan-dirty', { detail: { projectId: id, dirty, ready: drafts.ready&&!drafts.recoverable&&!drafts.conflict } }));
+  }, [id, dirty, drafts.ready,drafts.recoverable,drafts.conflict]);
 
-  const markWorkspaceSaved = useWorkspaceUnsavedChanges(dirty, 'Project work plan', () => command('save'));
+  const markWorkspaceSaved = useWorkspaceUnsavedChanges(dirty, 'Project work plan', async () => {
+    const saved = await command('save');
+    if (saved !== true) throw new Error('Project changes were not saved. Review the editor message.');
+  },async()=>{if(!await controller.discard())throw new Error('Private draft discard could not be confirmed. Your edits remain available.');});
 
-  const progress = body
-    ? projectProgress(body)
-    : null;
-
-  const today = new Date()
-    .toISOString()
-    .slice(0, 10);
+  const today=savedToday;
 
   /* =======================================================
      FILTERED TASKS
@@ -459,7 +504,7 @@ export function ProjectWorkspace({
      ADD TASK
      ======================================================= */
 
-  function addTask() {
+  function addTask(milestoneId: string | null = null) {
     if (
       !body ||
       body.tasks.length >= 100
@@ -473,7 +518,7 @@ export function ProjectWorkspace({
       owner: '',
       dueOn: null,
       status: 'todo',
-      milestoneId: null,
+      milestoneId,
       notes: '',
     };
 
@@ -493,6 +538,21 @@ export function ProjectWorkspace({
     );
 
     setExpandedTaskId(task.id);
+    return task.id;
+  }
+
+  async function bulkMilestoneTasks(milestoneId:string,status:'done'|'todo'){
+    if(!body||!savedRevision||dirty||busy)return;
+    const taskIds=body.tasks.filter(task=>task.milestoneId===milestoneId).map(task=>task.id);
+    if(!taskIds.length)return;
+    setBusy(true);setMessage('');
+    try{
+      const result=await postProjectCommand(`/api/admin/projects/${id}/task-productivity`,{action:'bulk_status',expectedProjectRevision:savedRevision,taskIds,status});
+      await controller.checkUncertainSave();
+      setMessage(`${result.changed??taskIds.length} tasks saved. The editor was reconciled against the saved project.`);
+      refreshProjectSurfaces(id,router);
+    }catch(cause){setMessage(cause instanceof Error?cause.message:'Bulk task update could not save.');}
+    finally{setBusy(false);}
   }
 
   /* =======================================================
@@ -507,10 +567,11 @@ export function ProjectWorkspace({
       return;
     }
 
+    const milestoneId = crypto.randomUUID();
     field('milestones', [
       ...body.milestones,
       {
-        id: crypto.randomUUID(),
+        id: milestoneId,
         title: 'New milestone',
         dueOn: null,
         status: 'planned',
@@ -523,16 +584,24 @@ export function ProjectWorkspace({
           MILESTONE_PAGE_SIZE
       )
     );
+    return milestoneId;
   }
 
   /* =======================================================
      REMOVE TASK
      ======================================================= */
 
-  function removeTask(index: number) {
+  function removeTask(taskId: string) {
+    const task = body?.tasks.find(item=>item.id===taskId);
+    if (!task) return;
+    const dependent = taskControls.find(control=>control.dependsOn===task.id);
+    if (dependent) {
+      setMessage(`Cannot remove “${task.title}” while “${body?.tasks.find(item=>item.id===dependent.taskId)?.title ?? dependent.taskId}” depends on it. Change that dependency first in Tasks & Milestones.`);
+      return;
+    }
     if (
       !window.confirm(
-        'Remove this task? Its previous saved state remains in history.'
+        `Remove “${task.title}” from the work plan? Existing activity, notes, files and discussion history stay recorded. Save changes to confirm removal.`
       )
     ) {
       return;
@@ -542,9 +611,7 @@ export function ProjectWorkspace({
       previous
         ? {
             ...previous,
-            tasks: previous.tasks.filter(
-              (_, i) => i !== index
-            ),
+            tasks: previous.tasks.filter(item=>item.id!==taskId),
           }
         : previous
     );
@@ -595,30 +662,10 @@ export function ProjectWorkspace({
      ======================================================= */
 
   async function command(action: Command) {
-    if (busy || blocked) return;
+    if (busy || blocked) return false;
 
-    /* VALIDATE SAVE */
-
-    if (action === 'save') {
-      if (
-        !record ||
-        completed ||
-        !dirty
-      ) {
-        return;
-      }
-
-      if (
-        !projectBodySchema
-          .safeParse(body)
-          .success
-      ) {
-        setMessage(
-          'Check the project title, task names, dates and milestone assignments.'
-        );
-        return;
-      }
-    } else {
+    if(action==='save')return controller.save();
+    {
       /* PROJECT STATE CHANGE */
 
       if (dirty) {
@@ -687,11 +734,9 @@ export function ProjectWorkspace({
           body: JSON.stringify({
             action,
             expectedRevision:
-              record?.revision ?? 0,
+              savedRevision,
 
-            ...(action === 'save'
-              ? { body }
-              : action === 'activate'
+            ...(action === 'activate'
                 ? {}
                 : { reason }),
           }),
@@ -711,12 +756,6 @@ export function ProjectWorkspace({
         return;
       }
 
-      if (
-        response.status === 409
-      ) {
-        setBlocked(true);
-      }
-
       if (!response.ok) {
         throw new Error(
           result.error ||
@@ -724,26 +763,37 @@ export function ProjectWorkspace({
         );
       }
 
-      markWorkspaceSaved(); window.location.reload();
+      markWorkspaceSaved();
+      router.refresh();
+      return true;
     } catch (error) {
-      setMessage(
-        error instanceof Error &&
-          error.name !== 'TimeoutError'
-          ? error.message
-          : 'The result could not be confirmed. Reload before retrying.'
-      );
-
-      if (
-        error instanceof Error &&
-        [
-          'TimeoutError',
-          'TypeError',
-        ].includes(error.name)
-      ) {
-        setBlocked(true);
-      }
+      setMessage(error instanceof Error ? error.message : 'Project could not be saved.');
+      return false;
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function overrideTaskStatus() {
+    const gate=workflowGate;
+    if (!gate || !gate.overrideAvailable || !workflowOverrideReason.trim() || busy || !savedRevision) return false;
+    setBusy(true);setMessage('Saving admin workflow override…');
+    await drafts.suspendAutosaves();
+    try {
+      const result=await postProjectCommand(`/api/admin/projects/${id}/task-status-override`,{
+        taskId:gate.taskId,targetStatus:gate.targetStatus,expectedProjectRevision:savedRevision,reason:workflowOverrideReason.trim(),
+      });
+      if (!result.body || !Number.isInteger(result.revision)) throw new Error('The override was saved, but its canonical task and revision could not be confirmed. Refresh before retrying.');
+      const merged=drafts.reconcile(result.body,result.revision);
+      setWorkflowGate(null);setServerBlockers([]);setWorkflowOverrideReason('');
+      setMessage(`Admin workflow override saved for “${gate.title}”.${merged.conflicts.length?' Review the draft conflicts before saving.':' Other unsaved work-plan edits remain in your private draft.'}`);
+      refreshProjectSurfaces(id,router);
+      return true;
+    } catch(cause) {
+      setMessage(cause instanceof Error?cause.message:'The override could not be confirmed. Your work-plan draft remains available.');
+      return false;
+    } finally {
+      drafts.resumeAutosaves();setBusy(false);
     }
   }
 
@@ -796,7 +846,7 @@ export function ProjectWorkspace({
             variant="outline"
             className="ml-2 mt-3"
             onClick={() =>
-              window.location.reload()
+              void controller.checkUncertainSave()
             }
           >
             Reload
@@ -811,76 +861,83 @@ export function ProjectWorkspace({
      ======================================================= */
 
   return (
-    <div className="space-y-3 pb-4">
+    <>
+    {overview}
+    {((selectedTask&&!record.body.tasks.some(task=>task.id===selectedTask))||(selectedMilestone&&!record.body.milestones.some(item=>item.id===selectedMilestone)))&&<p role="status" className="text-xs text-amber-800 dark:text-amber-200">The linked item is no longer in the saved project. Browse Tasks &amp; Milestones below; any private draft remains recoverable.</p>}
+    {overview&&<Link className="inline-flex rounded-lg border border-border px-3 py-2 text-xs font-medium hover:bg-muted" href={`/projects/${id}?tab=plan`}>Open Tasks</Link>}
+    <div hidden={Boolean(overview)} className="space-y-3 rounded-xl bg-white p-3 text-slate-950 dark:bg-background dark:text-foreground sm:p-4">
 
       {/* ===============================================
           COMPACT SUMMARY
           =============================================== */}
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-          <span className="font-semibold">
-            {projectStates[record.state]} project
-          </span>
+      <ProjectPageHeader compact title={advanced ? 'Advanced work-plan editor' : 'Tasks'} description={completed ? 'Read-only until reopened' : 'Work-plan edits stay private until you apply them.'}
+        action={<><button type="button" className={controlClass} onClick={()=>advanced ? returnToWorkplan() : openAdvanced()}>{advanced ? 'Back to tasks' : 'Advanced editor'}</button><DirectoryStatus state={record.state} operationalStatus={operationalStatus} />{dirty && <span className="rounded-md bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200">Draft changed</span>}</>}/>
+      {!gateReady && <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">Prerequisites need review before resuming or completing this project.</p>}
+      {drafts.recoverable && (
+        <section role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-violet-300 bg-violet-50 p-3 text-xs text-violet-900 dark:border-violet-800 dark:bg-violet-950 dark:text-violet-100">
+          <div><p className="font-semibold">A private work-plan draft is available.</p><p className="mt-1">Last saved: {new Date(drafts.recoverable.updatedAt).toLocaleString('en-US', {timeZone:'America/Chicago'})}. {drafts.rebase ? 'Review the conflicting fields below.' : drafts.recoverable.baseRevision !== savedRevision ? 'Its saved baseline needs reconciliation before it can be restored.' : 'Restore it to continue editing.'}</p></div>
+          <div className="flex flex-wrap gap-2"><button type="button" className={controlClass} disabled={Boolean(drafts.rebase) || drafts.recoverable.baseRevision !== savedRevision} onClick={drafts.restore}>Restore draft</button><button type="button" className={controlClass} onClick={() => { const blob = new Blob([JSON.stringify(drafts.recoverable?.body,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=`bivi-project-${id}-draft.json`;link.click();URL.revokeObjectURL(url); }}>Export draft</button><button type="button" className={controlClass} onClick={() => { if (window.confirm('Permanently delete your saved draft and load the latest saved project?')) void controller.discard().then(ok => { if (ok) setMessage('The private draft was discarded. The latest saved project is loaded.'); }); }}>Discard draft</button></div>
+        </section>
+      )}
+      {drafts.rebase && <section aria-label="Resolve project draft conflicts" className="space-y-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100"><div><p className="font-semibold">The saved project changed. Resolve these fields before saving.</p><p className="mt-1">Nonconflicting edits are already combined. Each choice applies only to the field shown.</p></div>{drafts.rebase.conflicts.map(conflict => <article key={conflict.path} className="rounded-md border border-amber-300/70 bg-background/70 p-3 dark:border-amber-800"><p className="font-semibold">{conflict.label}</p><div className="mt-2 grid gap-2 md:grid-cols-2"><div><p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Your draft</p><pre className="mt-1 max-h-28 overflow-auto whitespace-pre-wrap break-words rounded bg-muted p-2">{JSON.stringify(conflict.draft, null, 2)}</pre><button type="button" className={`${controlClass} mt-2`} onClick={() => drafts.chooseConflict(conflict.path, 'draft')}>Keep my edit</button></div><div><p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Latest saved value</p><pre className="mt-1 max-h-28 overflow-auto whitespace-pre-wrap break-words rounded bg-muted p-2">{JSON.stringify(conflict.latest, null, 2)}</pre><button type="button" className={`${controlClass} mt-2`} onClick={() => drafts.chooseConflict(conflict.path, 'latest')}>Use saved value</button></div></div></article>)}</section>}
+      {drafts.conflict && !drafts.rebase && <p role="alert" className="rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-100">The private draft’s original saved baseline is unavailable, so it cannot be merged safely. Export it to keep a copy, then discard it only if you want to load the latest saved project.</p>}
+      {drafts.error && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-100"><p>Draft reconciliation unavailable: {drafts.error}. Your edits remain in the editor until a discard is confirmed.</p><button type="button" className={controlClass} disabled={busy} onClick={() => { if (window.confirm('Discard the private draft and load the latest saved project?')) void controller.discard().then(ok => { if (ok) setMessage('The private draft was discarded. The latest saved project is loaded.'); }); }}>Discard draft and load latest</button></div>}
+      {serverBlockers.length > 0 && <section role="alert" className="space-y-2 rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-950 dark:border-red-800 dark:bg-red-950 dark:text-red-100"><p className="font-semibold">Complete these tasks before completing this milestone.</p>{serverBlockers.map(milestone => <div key={milestone.milestoneId}><p className="font-medium">{milestone.milestoneTitle}{milestone.needsTask ? ' — add at least one linked task' : ''}</p><ul className="ml-4 mt-1 list-disc">{milestone.tasks.map(task => <li key={task.taskId}><a className="underline" href={`#${taskDomId(task.taskId)}`} onClick={event=>{event.preventDefault();openAdvanced(task.taskId);}}>{task.title}</a>{task.taskIncomplete ? ' — task is not completed' : ''}{task.subtasks.map(subtask => <span key={subtask.id}>; unfinished subtask: {subtask.title}</span>)}</li>)}</ul></div>)}</section>}
+      {workflowGate && <section role="alert" aria-label="Task workflow requirement" className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
+        <p className="font-semibold">{workflowGate.title}: {workflowGate.requirement}</p>
+        <p>The status change is still a private draft. <button type="button" className="underline" onClick={()=>focusTaskDetails(workflowGate.taskId)}>Open the highlighted task settings</button> to review its saved and draft values.</p>
+        <ul className="ml-4 list-disc">{workflowGate.correctiveActions.map(action=><li key={action}>{action}</li>)}</ul>
+        {!workflowGate.overrideAvailable&&<p className="font-medium">This action is available only to a designated project workflow admin, and only for a new client-task completion transition.</p>}
+      </section>}
 
-          <span className="text-muted-foreground">
-            {progress?.done ?? 0}/
-            {progress?.total ?? 0} tasks ·{' '}
-            {progress?.percent ?? 0}%
-            complete
-          </span>
 
-          {!gateReady && (
-            <span className="text-amber-700 dark:text-amber-400">
-              Prerequisites need review
-            </span>
-          )}
-
-          {dirty && (
-            <span className="font-semibold text-foreground">
-              Unsaved changes
-            </span>
-          )}
-        </div>
-
-        <span className="text-[11px] text-muted-foreground">
-          {completed
-            ? 'Read-only until reopened'
-            : 'Changes are saved together'}
-        </span>
+      <div id="project-workplan-cards" tabIndex={-1} className="scroll-mt-24 focus:outline-none">
+      <ProjectMilestoneBoard
+        advanced={advanced}
+        focusTaskId={overviewTaskId}
+        focusTaskRequest={taskFocusRequest}
+        today={today}
+        id={id}
+        userId={userId}
+        revision={savedRevision}
+        body={body}
+        disabled={locked || drafts.conflict}
+        dirty={dirty}
+        sidecarReady={drafts.ready && !drafts.recoverable && !drafts.conflict}
+        onTaskChange={editTask}
+        onMilestoneChange={editMilestone}
+        onAddTask={milestoneId=>{const taskId=addTask(milestoneId);if(taskId)focusTaskDetails(taskId);}}
+        onAddMilestone={()=>{const milestoneId=addMilestone();if(milestoneId)openAdvanced(undefined,milestoneId);}}
+        onEditTask={taskId=>focusTaskDetails(taskId)}
+        onEditMilestone={milestoneId=>openAdvanced(undefined,milestoneId)}
+        taskControls={taskControls}
+        workflowGate={workflowGate}
+        workflowOverrideReason={workflowOverrideReason}
+        onWorkflowOverrideReason={setWorkflowOverrideReason}
+        onOverrideTaskStatus={()=>void overrideTaskStatus()}
+        overrideReady={drafts.ready&&drafts.recoverable===null&&!drafts.conflict}
+        busy={busy}
+        onRemoveTask={removeTask}
+        onBulkTasks={bulkMilestoneTasks}
+      />
       </div>
 
-      {/* ===============================================
-          PROJECT DETAILS
-          =============================================== */}
-
-      <section className="rounded-xl border border-border bg-card">
+      <section id="project-advanced-editor" tabIndex={-1} hidden={!advanced} aria-label="Advanced work-plan editor" className="scroll-mt-24 rounded-xl border border-border bg-card focus:outline-none">
+        <p className="p-3 text-xs text-muted-foreground">Detailed task and milestone controls share your current draft. Use Back to tasks &amp; milestones to return without discarding edits.</p>
+      <div>
+        <div className="grid min-w-0 items-start gap-3 lg:grid-cols-2">
+      <section className="min-w-0 rounded-xl border border-border bg-card">
         <SectionTitle
           title="Project details"
-          detail="Name, owner and internal notes"
+          detail="Legacy owner label and internal notes"
+          action={<Link className="text-[11px] font-medium underline" href={`/projects/${id}?tab=brief`}>Name and verified owner in Brief</Link>}
         />
 
-        <div className="grid gap-3 px-4 py-3 sm:grid-cols-2">
+        <div className="grid gap-3 px-4 py-3 sm:grid-cols-2 xl:grid-cols-1">
 
           <label className="block min-w-0 text-[11px] font-medium text-muted-foreground">
-            Project title
-
-            <Input
-              className={`${inputClass} mt-1`}
-              maxLength={200}
-              value={body.title}
-              disabled={locked}
-              onChange={(event) =>
-                field(
-                  'title',
-                  event.target.value
-                )
-              }
-            />
-          </label>
-
-          <label className="block min-w-0 text-[11px] font-medium text-muted-foreground">
-            Project owner
+            Legacy owner label · not verified
 
             <Input
               className={`${inputClass} mt-1`}
@@ -899,7 +956,7 @@ export function ProjectWorkspace({
 
           {/* COLLAPSIBLE INTERNAL NOTES */}
 
-          <details className="rounded-lg border border-border px-3 py-2 sm:col-span-2">
+          <details className="rounded-lg border border-border px-3 py-2 sm:col-span-2 xl:col-span-1">
             <summary className="cursor-pointer text-xs font-medium text-foreground">
               Internal project notes{' '}
               {body.notes
@@ -925,699 +982,13 @@ export function ProjectWorkspace({
         </div>
       </section>
 
-      {/* ===============================================
-          MILESTONES TABLE
-          =============================================== */}
-
-      <section className="rounded-xl border border-border bg-card">
-
-        <SectionTitle
-          title="Milestones"
-          detail={`${body.milestones.length}/20`}
-          action={
-            <button
-              type="button"
-              className={controlClass}
-              disabled={
-                locked ||
-                body.milestones.length >= 20
-              }
-              onClick={addMilestone}
-            >
-              <Plus size={14} />
-              Add milestone
-            </button>
-          }
-        />
-
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[680px] text-left text-xs">
-
-            <thead className="border-b border-border bg-muted/50 text-[10px] uppercase tracking-wider text-muted-foreground">
-              <tr>
-                <th
-                  scope="col"
-                  className="w-[41%] px-3 py-2 font-medium"
-                >
-                  Milestone
-                </th>
-
-                <th
-                  scope="col"
-                  className="w-[21%] px-3 py-2 font-medium"
-                >
-                  Status
-                </th>
-
-                <th
-                  scope="col"
-                  className="w-[20%] px-3 py-2 font-medium"
-                >
-                  Due
-                </th>
-
-                <th
-                  scope="col"
-                  className="px-3 py-2 font-medium"
-                >
-                  Tasks
-                </th>
-
-                <th
-                  scope="col"
-                  className="w-12 px-3 py-2 font-medium"
-                />
-              </tr>
-            </thead>
-
-            <tbody className="divide-y divide-border">
-              {visibleMilestones.map(
-                ({ milestone, index }) => {
-                  const linked =
-                    body.tasks.filter(
-                      (task) =>
-                        task.milestoneId ===
-                        milestone.id
-                    ).length;
-
-                  return (
-                    <tr
-                      key={milestone.id}
-                      id={milestoneDomId(milestone.id)}
-                      tabIndex={-1}
-                      style={{scrollMarginTop:'6rem'}}
-                      className="hover:bg-muted/20 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-ring"
-                    >
-                      {/* MILESTONE TITLE */}
-
-                      <td className="px-3 py-2">
-                        <input
-                          aria-label={`Milestone ${index + 1} title`}
-                          className={inputClass}
-                          value={milestone.title}
-                          maxLength={300}
-                          disabled={locked}
-                          onChange={(event) =>
-                            editMilestone(index, {
-                              title:
-                                event.target.value,
-                            })
-                          }
-                        />
-                      </td>
-
-                      {/* MILESTONE STATUS */}
-
-                      <td className="px-3 py-2">
-                        <CompactSelect
-                          label={`Status for ${milestone.title}`}
-                          value={milestone.status}
-                          disabled={locked}
-                          onChange={(value) =>
-                            editMilestone(index, {
-                              status:
-                                value as Milestone['status'],
-                            })
-                          }
-                        >
-                          <option value="planned">
-                            Planned
-                          </option>
-
-                          <option value="in_progress">
-                            In progress
-                          </option>
-
-                          <option value="done">
-                            Done
-                          </option>
-                        </CompactSelect>
-                      </td>
-
-                      {/* DUE DATE */}
-
-                      <td className="px-3 py-2">
-                        <input
-                          type="date"
-                          aria-label={`Due date for ${milestone.title}`}
-                          className={inputClass}
-                          value={
-                            milestone.dueOn ?? ''
-                          }
-                          disabled={locked}
-                          onChange={(event) =>
-                            editMilestone(index, {
-                              dueOn:
-                                event.target.value ||
-                                null,
-                            })
-                          }
-                        />
-                      </td>
-
-                      {/* LINKED TASKS */}
-
-                      <td className="px-3 py-2 text-muted-foreground">
-                        {linked}
-                      </td>
-
-                      {/* REMOVE */}
-
-                      <td className="px-3 py-2 text-right">
-                        <button
-                          type="button"
-                          disabled={
-                            locked ||
-                            linked > 0
-                          }
-                          onClick={() =>
-                            removeMilestone(
-                              index,
-                              milestone.id
-                            )
-                          }
-                          title={
-                            linked
-                              ? 'Reassign linked tasks before removing'
-                              : 'Remove milestone'
-                          }
-                          aria-label={`Remove ${milestone.title}`}
-                          className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-destructive disabled:cursor-not-allowed disabled:opacity-30"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                }
-              )}
-            </tbody>
-          </table>
-
-          {!body.milestones.length && (
-            <p className="px-4 py-5 text-xs text-muted-foreground">
-              No milestones yet.
-            </p>
-          )}
-        </div>
-
-        {/* MILESTONE PAGINATION */}
-
-        {milestonePages > 1 && (
-          <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-2 text-xs">
-
-            <span className="text-muted-foreground">
-              Page {visibleMilestonePage} of{' '}
-              {milestonePages}
-            </span>
-
-            <div className="flex gap-1">
-              <button
-                type="button"
-                className={controlClass}
-                disabled={
-                  visibleMilestonePage === 1
-                }
-                onClick={() =>
-                  setMilestonePage(
-                    visibleMilestonePage - 1
-                  )
-                }
-                aria-label="Previous milestones"
-              >
-                <ChevronLeft size={14} />
-              </button>
-
-              <button
-                type="button"
-                className={controlClass}
-                disabled={
-                  visibleMilestonePage ===
-                  milestonePages
-                }
-                onClick={() =>
-                  setMilestonePage(
-                    visibleMilestonePage + 1
-                  )
-                }
-                aria-label="Next milestones"
-              >
-                <ChevronRight size={14} />
-              </button>
-            </div>
-          </div>
-        )}
+      <section className="rounded-xl border border-border bg-card p-4">
+        <p className="text-xs font-medium">Milestone editing is now in Lifecycle.</p>
+        <Link href={`/projects/${id}?tab=phases`} className="mt-2 inline-flex rounded-lg border border-border px-3 py-2 text-xs font-medium hover:bg-muted">Open Lifecycle milestones</Link>
       </section>
 
-      {/* ===============================================
-          TASKS TABLE
-          =============================================== */}
-
-      <section className="rounded-xl border border-border bg-card">
-
-        <SectionTitle
-          title="Tasks"
-          detail={`${filteredTasks.length} shown · ${body.tasks.length}/100 total`}
-          action={
-            <button
-              type="button"
-              className={controlClass}
-              disabled={
-                locked ||
-                body.tasks.length >= 100
-              }
-              onClick={addTask}
-            >
-              <Plus size={14} />
-              Add task
-            </button>
-          }
-        />
-
-        <p className="border-b border-border px-3 py-2 text-xs text-muted-foreground">Assign verified staff accounts in Lifecycle → Task ownership. Owner labels here are optional display text.</p>
-        {/* SEARCH AND STATUS FILTER */}
-
-        <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2.5">
-
-          <input
-            type="search"
-            value={taskQuery}
-            onChange={(event) => {
-              setTaskQuery(
-                event.target.value
-              );
-              setTaskPage(1);
-            }}
-            placeholder="Find tasks…"
-            aria-label="Find tasks"
-            className={`${inputClass} max-w-xs flex-1`}
-          />
-
-          <div className="min-w-[140px]">
-            <CompactSelect
-              label="Filter tasks by status"
-              value={taskFilter}
-              onChange={(value) => {
-                setTaskFilter(
-                  value as TaskFilter
-                );
-                setTaskPage(1);
-              }}
-            >
-              <option value="all">
-                All statuses
-              </option>
-
-              <option value="todo">
-                To do
-              </option>
-
-              <option value="doing">
-                In progress
-              </option>
-
-              <option value="blocked">
-                Blocked
-              </option>
-
-              <option value="done">
-                Done
-              </option>
-            </CompactSelect>
-          </div>
         </div>
-
-        {/* TASK TABLE */}
-
-        <div className="overflow-x-auto">
-
-          <table className="w-full min-w-[930px] text-left text-xs">
-
-            <thead className="border-b border-border bg-muted/50 text-[10px] uppercase tracking-wider text-muted-foreground">
-              <tr>
-                <th
-                  scope="col"
-                  className="w-[26%] px-3 py-2 font-medium"
-                >
-                  Task
-                </th>
-
-                <th
-                  scope="col"
-                  className="w-[17%] px-3 py-2 font-medium"
-                >
-                  Owner label
-                </th>
-
-                <th
-                  scope="col"
-                  className="w-[16%] px-3 py-2 font-medium"
-                >
-                  Status
-                </th>
-
-                <th
-                  scope="col"
-                  className="w-[17%] px-3 py-2 font-medium"
-                >
-                  Due
-                </th>
-
-                <th
-                  scope="col"
-                  className="w-[19%] px-3 py-2 font-medium"
-                >
-                  Milestone
-                </th>
-
-                <th
-                  scope="col"
-                  className="px-3 py-2 font-medium"
-                >
-                  Details
-                </th>
-              </tr>
-            </thead>
-
-            <tbody className="divide-y divide-border">
-
-              {visibleTasks.map(
-                ({ task, index }) => {
-                  const expanded =
-                    expandedTaskId === task.id;
-
-                  const overdue = Boolean(
-                    task.dueOn &&
-                    task.dueOn < today &&
-                    task.status !== 'done'
-                  );
-
-                  return (
-                    <Fragment key={task.id}>
-
-                      {/* TASK ROW */}
-
-                      <tr id={taskDomId(task.id)} tabIndex={-1} style={{scrollMarginTop:'6rem'}}
-                        className={
-                          expanded
-                            ? 'bg-muted/30'
-                            : 'hover:bg-muted/20'
-                        }
-                      >
-                        {/* TASK TITLE */}
-
-                        <td className="px-3 py-2">
-                          <input
-                            aria-label={`Task ${index + 1} title`}
-                            className={inputClass}
-                            value={task.title}
-                            maxLength={300}
-                            disabled={locked}
-                            onChange={(event) =>
-                              editTask(index, {
-                                title:
-                                  event.target.value,
-                              })
-                            }
-                          />
-                        </td>
-
-                        {/* OWNER */}
-
-                        <td className="px-3 py-2">
-                          <input
-                            aria-label={`Owner for ${task.title}`}
-                            className={inputClass}
-                            value={task.owner}
-                            maxLength={200}
-                            placeholder="Unassigned"
-                            disabled={locked}
-                            onChange={(event) =>
-                              editTask(index, {
-                                owner:
-                                  event.target.value,
-                              })
-                            }
-                          />
-                        </td>
-
-                        {/* STATUS */}
-
-                        <td className="px-3 py-2">
-                          <CompactSelect
-                            label={`Status for ${task.title}`}
-                            value={task.status}
-                            disabled={locked}
-                            onChange={(value) =>
-                              editTask(index, {
-                                status:
-                                  value as Task['status'],
-                              })
-                            }
-                          >
-                            <option value="todo">
-                              To do
-                            </option>
-
-                            <option value="doing">
-                              In progress
-                            </option>
-
-                            <option value="blocked">
-                              Blocked
-                            </option>
-
-                            <option value="done">
-                              Done
-                            </option>
-                          </CompactSelect>
-                        </td>
-
-                        {/* DUE DATE */}
-
-                        <td className="px-3 py-2">
-                          <input
-                            type="date"
-                            aria-label={`Due date for ${task.title}`}
-                            className={
-                              overdue
-                                ? `${inputClass} border-red-500/60`
-                                : inputClass
-                            }
-                            value={
-                              task.dueOn ?? ''
-                            }
-                            disabled={locked}
-                            onChange={(event) =>
-                              editTask(index, {
-                                dueOn:
-                                  event.target.value ||
-                                  null,
-                              })
-                            }
-                          />
-                        </td>
-
-                        {/* MILESTONE */}
-
-                        <td className="px-3 py-2">
-                          <CompactSelect
-                            label={`Milestone for ${task.title}`}
-                            value={
-                              task.milestoneId ?? ''
-                            }
-                            disabled={locked}
-                            onChange={(value) =>
-                              editTask(index, {
-                                milestoneId:
-                                  value || null,
-                              })
-                            }
-                          >
-                            <option value="">
-                              No milestone
-                            </option>
-
-                            {body.milestones.map(
-                              (milestone) => (
-                                <option
-                                  key={milestone.id}
-                                  value={milestone.id}
-                                >
-                                  {milestone.title}
-                                </option>
-                              )
-                            )}
-                          </CompactSelect>
-                        </td>
-
-                        {/* EXPAND DETAILS */}
-
-                        <td className="px-3 py-2">
-                          <button
-                            type="button"
-                            title={
-                              expanded
-                                ? 'Hide task details'
-                                : 'Show task details'
-                            }
-                            aria-label={`${
-                              expanded
-                                ? 'Hide'
-                                : 'Show'
-                            } details for ${task.title}`}
-                            aria-expanded={
-                              expanded
-                            }
-                            aria-controls={`project-task-details-${task.id}`}
-                            onClick={() =>
-                              setExpandedTaskId(
-                                expanded
-                                  ? null
-                                  : task.id
-                              )
-                            }
-                            className={
-                              controlClass
-                            }
-                          >
-                            <ChevronRight
-                              size={14}
-                              className={
-                                expanded
-                                  ? 'rotate-90 transition-transform'
-                                  : 'transition-transform'
-                              }
-                            />
-
-                            {task.notes
-                              ? 'Notes'
-                              : 'More'}
-                          </button>
-                        </td>
-                      </tr>
-
-                      {/* EXPANDED TASK DETAILS */}
-
-                      {expanded && (
-                        <tr>
-                          <td
-                            id={`project-task-details-${task.id}`}
-                            colSpan={6}
-                            className="bg-muted/25 px-4 py-3"
-                          >
-                            <div className="flex flex-wrap items-end gap-3">
-
-                              <label className="min-w-[220px] flex-1 text-xs font-medium">
-                                Task notes /
-                                blocker details
-
-                                <Textarea
-                                  rows={2}
-                                  maxLength={2000}
-                                  value={task.notes}
-                                  disabled={locked}
-                                  onChange={(
-                                    event
-                                  ) =>
-                                    editTask(
-                                      index,
-                                      {
-                                        notes:
-                                          event.target.value,
-                                      }
-                                    )
-                                  }
-                                  className="mt-1.5 bg-card text-xs"
-                                />
-                              </label>
-
-                              <button
-                                type="button"
-                                disabled={locked}
-                                onClick={() =>
-                                  removeTask(index)
-                                }
-                                className="inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-card px-3 text-xs font-medium text-destructive hover:bg-muted disabled:opacity-50"
-                              >
-                                <Trash2 size={14} />
-                                Remove task
-                              </button>
-                            </div>
-
-                            {overdue && (
-                              <p className="mt-2 text-[11px] text-red-600 dark:text-red-400">
-                                Overdue (UTC date)
-                              </p>
-                            )}
-                          </td>
-                        </tr>
-                      )}
-                    </Fragment>
-                  );
-                }
-              )}
-            </tbody>
-          </table>
-
-          {!visibleTasks.length && (
-            <p className="px-4 py-6 text-xs text-muted-foreground">
-              No tasks match this view.
-            </p>
-          )}
-        </div>
-
-        {/* TASK PAGINATION */}
-
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-2.5 text-xs">
-
-          <span className="text-muted-foreground">
-            Showing {visibleTasks.length} of{' '}
-            {filteredTasks.length} matching
-            tasks · Page {visibleTaskPage} of{' '}
-            {taskPages}
-          </span>
-
-          <div className="flex gap-2">
-
-            <button
-              type="button"
-              className={controlClass}
-              disabled={
-                visibleTaskPage === 1
-              }
-              onClick={() => {
-                setTaskPage(
-                  visibleTaskPage - 1
-                );
-
-                setExpandedTaskId(null);
-              }}
-            >
-              <ChevronLeft size={14} />
-              Previous
-            </button>
-
-            <button
-              type="button"
-              className={controlClass}
-              disabled={
-                visibleTaskPage ===
-                taskPages
-              }
-              onClick={() => {
-                setTaskPage(
-                  visibleTaskPage + 1
-                );
-
-                setExpandedTaskId(null);
-              }}
-            >
-              Next
-              <ChevronRight size={14} />
-            </button>
-          </div>
-        </div>
+      </div>
       </section>
 
       {/* ===============================================
@@ -1665,21 +1036,7 @@ export function ProjectWorkspace({
 
             {record.state === 'active' && (
               <>
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={
-                    busy ||
-                    blocked ||
-                    dirty ||
-                    !reason.trim()
-                  }
-                  onClick={() =>
-                    void command('hold')
-                  }
-                >
-                  Place on hold
-                </Button>
+                <Link href={`/projects/${id}?tab=brief`} className="inline-flex min-h-9 items-center rounded-md border border-border px-3 text-xs font-medium hover:bg-muted">Change operational status in Brief</Link>
 
                 <Button
                   type="button"
@@ -1710,23 +1067,7 @@ export function ProjectWorkspace({
               </>
             )}
 
-            {record.state === 'on_hold' && (
-              <Button
-                type="button"
-                disabled={
-                  busy ||
-                  blocked ||
-                  dirty ||
-                  !reason.trim() ||
-                  !gateReady
-                }
-                onClick={() =>
-                  void command('resume')
-                }
-              >
-                Resume project
-              </Button>
-            )}
+            {record.state === 'on_hold' && <Link href={`/projects/${id}?tab=brief`} className="inline-flex min-h-9 items-center rounded-md border border-border px-3 text-xs font-medium hover:bg-muted">Resume through operational status in Brief</Link>}
 
             {record.state === 'completed' && (
               <Button
@@ -2005,9 +1346,10 @@ export function ProjectWorkspace({
 
           <span className="font-semibold">
             {dirty
-              ? 'Unsaved changes'
-              : 'All changes saved'}
+              ? 'Unsaved task & milestone fields'
+              : 'Task & milestone fields saved'}
           </span>
+          {!completed && <p className="mt-1 text-[11px] text-muted-foreground" role="status">Draft: {drafts.state === 'saving' ? 'Saving…' : drafts.state === 'saved' ? 'Autosaved privately' : drafts.state === 'pending' ? 'Pending autosave' : drafts.state === 'loading' ? 'Checking saved drafts…' : drafts.state === 'conflict' ? 'Conflict — review required' : drafts.state === 'error' ? 'Save unavailable' : 'Ready to autosave'}</p>}
 
           {completed && (
             <span className="ml-2 text-muted-foreground">
@@ -2017,15 +1359,14 @@ export function ProjectWorkspace({
 
           {blocked && (
             <p className="mt-1 text-destructive">
-              Revision conflict or uncertain
-              save. Reload before retrying.
+              The latest saved project could not be loaded after a revision conflict. Reload to reconcile before saving.
             </p>
           )}
 
           {message && (
             <p
               role="status"
-              className="mt-1 text-destructive"
+              className={`mt-1 ${message.toLowerCase().includes('saved') && !message.toLowerCase().includes('could not') ? 'text-emerald-700 dark:text-emerald-300' : 'text-destructive'}`}
             >
               {message}
             </p>
@@ -2033,13 +1374,14 @@ export function ProjectWorkspace({
         </div>
 
         <div className="flex items-center gap-2">
+          <button type="button" className={controlClass} disabled={busy} onClick={()=>void controller.checkUncertainSave()}>Refresh saved data</button>
 
           {blocked ? (
             <button
               type="button"
               className={controlClass}
               onClick={() =>
-                window.location.reload()
+                void controller.checkUncertainSave()
               }
             >
               <RotateCcw size={14} />
@@ -2047,6 +1389,7 @@ export function ProjectWorkspace({
             </button>
           ) : (
             <>
+              {saveOutcomeUnknown && <button type="button" className={controlClass} disabled={busy} onClick={() => void controller.checkUncertainSave()}>Check save status</button>}
               {dirty && !completed && (
                 <button
                   type="button"
@@ -2055,39 +1398,47 @@ export function ProjectWorkspace({
                   onClick={() => {
                     if (
                       window.confirm(
-                        'Discard all unsaved project edits?'
+                        'Discard work-plan edits, remove the private draft, and load the latest saved project?'
                       )
                     ) {
-                      setBody(record.body);
+                      void controller.discard().then(ok => {
+                        if (ok) {
+                          setMessage('Work-plan edits were discarded. The latest saved project is loaded.');
+                          setServerBlockers([]);
+                          setSaveOutcomeUnknown(false);
+                        }
+                      });
                     }
                   }}
                 >
                   <RotateCcw size={14} />
-                  Discard
+                  Discard changes
                 </button>
               )}
 
               <Button
                 type="button"
-                disabled={
-                  !dirty ||
-                  locked
-                }
-                onClick={() =>
-                  void command('save')
-                }
+                variant="outline"
+                disabled={!dirty || busy || saveOutcomeUnknown || !drafts.ready || Boolean(drafts.recoverable) || drafts.conflict}
+                onClick={() => void drafts.saveDraft()}
+                className="gap-2"
+              >
+                Save draft
+              </Button>
+              <Button
+                type="button"
+                disabled={!dirty || locked || saveOutcomeUnknown || !drafts.ready || Boolean(drafts.recoverable) || drafts.conflict}
+                onClick={() => void command('save')}
                 className="gap-2"
               >
                 <Save size={15} />
-
-                {busy
-                  ? 'Saving…'
-                  : 'Save project'}
+                {busy ? 'Saving…' : 'Save all'}
               </Button>
             </>
           )}
         </div>
       </div>
     </div>
+    </>
   );
 }

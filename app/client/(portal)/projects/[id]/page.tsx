@@ -6,6 +6,7 @@ import { ProjectFiles } from '@/components/files/ProjectFiles';
 import { ClientDeliveryControls } from '@/components/portal/ClientDeliveryControls';
 import { ClientProjectBrief } from '@/components/portal/ClientProjectBrief';
 import { ClientProjectTasks } from '@/components/portal/ClientProjectTasks';
+import { ClientProjectManagement } from '@/components/portal/ClientProjectManagement';
 import { ClientReview } from '@/components/portal/ClientReview';
 import { PublishedUpdate } from '@/components/portal/PublishedUpdate';
 import { projectFiles } from '@/lib/files/data';
@@ -14,13 +15,21 @@ import { projectFeedback, projectPublications } from '@/lib/portal/data';
 import { getClientBriefVersions } from '@/lib/projects/brief-data';
 import { getProjectDelivery } from '@/lib/projects/delivery-data';
 import { clientProjectWork } from '@/lib/projects/lifecycle-data';
+import { clientProjectAssignmentWorkspaceSchema } from '@/lib/projects/client-team-schema';
 
-export default async function ClientProjectPage({ params }: { params: { id: string } }) {
+export default async function ClientProjectPage({ params,searchParams={} }: { params: { id: string };searchParams?:{request?:string} }) {
   const { client, user } = await requireClient();
   if (!z.string().uuid().safeParse(params.id).success) notFound();
 
   const work = await clientProjectWork(client, params.id);
   if (!work) notFound();
+
+  const receiptId=z.string().uuid().safeParse(searchParams.request);
+  const receiptResult=receiptId.success?await client.rpc('client_project_request_receipt',{p_request:params.id,p_response:receiptId.data}):null;
+  const receipt=receiptResult?.data;
+  const teamResult = await client.rpc('client_project_assignment_workspace', { p_request: params.id });
+  const teamParsed = teamResult.error ? null : clientProjectAssignmentWorkspaceSchema.safeParse(teamResult.data);
+  const team = teamParsed && teamParsed.success ? teamParsed.data : null;
 
   const [updatesRaw, files, feedback, briefVersions, review, delivery] = await Promise.all([
     projectPublications(client, params.id),
@@ -49,7 +58,9 @@ export default async function ClientProjectPage({ params }: { params: { id: stri
       </header>
 
       <div className="mt-8 space-y-7">
+        {searchParams.request&&<section id="request-receipt" className="space-y-2 rounded-xl border border-border p-4"><h2 className="text-sm font-semibold">Your task request</h2>{receipt&&!receiptResult?.error?<><p className="text-sm">{receipt.title} · {receipt.kind} · {receipt.status}</p><p className="text-xs">Submitted {new Date(receipt.submittedAt).toISOString()}</p><p className="whitespace-pre-wrap text-sm">{receipt.note}</p>{receipt.reviewedAt&&<><p className="text-xs">Bivi reviewed {new Date(receipt.reviewedAt).toISOString()}</p><p className="whitespace-pre-wrap text-sm">{receipt.reviewNote||'No additional decision note.'}</p></>}</>:<p className="text-sm">This request is unavailable or you no longer have permission to view it.</p>}</section>}
         <ClientProjectTasks id={params.id} work={work} />
+        <ClientProjectManagement id={params.id} work={work} team={team} />
         <ClientProjectBrief id={params.id} version={latestBrief} canReview={canReview} />
         <ClientDeliveryControls
           id={params.id}

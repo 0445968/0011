@@ -1,3 +1,4 @@
+import {revalidateProjectSurfaces} from '@/lib/projects/revalidate';
 import { z } from 'zod';
 
 import { getStaffAccess } from '@/lib/admin/auth';
@@ -28,7 +29,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     });
 
     if (error) {
-      if (error.code === '23514') return adminReply({ error: error.message || 'Complete delivery gates before advancing the lifecycle.' }, 409);
+      if (error.code === '23514') return adminReply({ error: error.message || 'Completion requirements are not satisfied.',code:'validation_rejected' }, 422);
       return adminReply({ error: error.code === '22023' ? 'Check task references and lifecycle fields.' : 'The lifecycle update could not be saved.' }, error.code === '42501' ? 403 : error.code === '22023' ? 400 : 503);
     }
 
@@ -44,6 +45,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       return adminReply({ error: message }, status);
     }
     if (data?.result !== 'saved') return adminReply({ error: 'The result could not be confirmed. Reload before retrying.' }, 503);
+  revalidateProjectSurfaces(params.id);
     return adminReply({ saved: true, revision: data.revision });
   } catch {
     return adminReply({ error: 'The result could not be confirmed. Reload before retrying.' }, 503);

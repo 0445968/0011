@@ -1,13 +1,8 @@
 import {ApprovalFocus} from '@/components/admin/approvals/ApprovalFocus';
 
-import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { z } from 'zod';
 
-import {
-  ArrowUpRight,
-  CheckCircle2,
-} from 'lucide-react';
 
 import {
   WorkspaceRecordDetails,
@@ -22,10 +17,6 @@ import {
 } from '@/components/admin/ProjectDeliveryControls';
 
 import {
-  ProjectLifecycleControls,
-} from '@/components/admin/ProjectLifecycleControls';
-
-import {
   ProjectWorkspace,
 } from '@/components/admin/ProjectWorkspace';
 
@@ -34,7 +25,6 @@ import {
 } from '@/lib/admin/auth';
 
 import {
-  formatDate,
   getInquiry,
 } from '@/lib/admin/inquiries';
 
@@ -66,9 +56,24 @@ import {
   getProjectLifecycle,
 } from '@/lib/projects/lifecycle-data';
 
-import {
-  projectProgress,
-} from '@/lib/projects/schema';
+import {ProjectMeetings} from '@/components/admin/projects/ProjectMeetings';
+import {getProjectMeetings} from '@/lib/projects/meeting-data';
+import { ProjectOverview } from '@/components/admin/projects/ProjectOverview';
+import { ProjectCalendar } from '@/components/admin/projects/ProjectCalendar';
+import { ProjectPhasesPage } from '@/components/admin/projects/ProjectPhasesPage';
+import { ProjectTaskResponseReview } from '@/components/admin/projects/ProjectTaskResponseReview';
+import {ProjectBriefIdentity} from '@/components/admin/projects/ProjectBriefIdentity';
+import {ProjectOperationalStatus} from '@/components/admin/projects/ProjectOperationalStatus';
+import type {OperationalStatus} from '@/lib/projects/operational-status';
+import { getProjectDirectoryContext } from '@/lib/projects/directory-context';
+import {getProjectOverviewContent} from '@/lib/projects/overview-content-data';
+import {getProjectActivity} from '@/lib/projects/activity-data';
+import { getProjectOverviewExtras } from '@/lib/projects/overview-data';
+import { taskToday } from '@/lib/tasks/links';
+import { getProjectTaskSchedule } from '@/lib/projects/schedule-data';
+import { projectPhaseStatesSchema } from '@/lib/projects/phase-status';
+import { getProjectPhaseColors } from '@/lib/projects/phase-color-data';
+import { phaseColorMap } from '@/lib/projects/phase-colors';
 
 import {
   getServiceBlueprint,
@@ -81,83 +86,21 @@ import {
 type Tab =
   | 'overview'
   | 'plan'
-  | 'lifecycle'
+  | 'requests'
+  | 'phases'
+  | 'calendar'
   | 'brief'
   | 'delivery';
 
 const ALL_TABS: Tab[] = [
   'overview',
   'plan',
-  'lifecycle',
+  'requests',
+  'phases',
+  'calendar',
   'brief',
   'delivery',
 ];
-
-/* =========================================================
-   SUMMARY CARD
-   ========================================================= */
-
-function Stat({
-  label,
-  value,
-  detail,
-}: {
-  label: string;
-  value: string;
-  detail: string;
-}) {
-  return (
-    <div
-      className="
-        min-w-0
-        rounded-xl
-        border
-        border-border
-        bg-card
-        p-3
-        sm:p-4
-      "
-    >
-      <p
-        className="
-          font-mono
-          text-[10px]
-          uppercase
-          tracking-wider
-          text-muted-foreground
-        "
-      >
-        {label}
-      </p>
-
-      <p
-        className="
-          mt-1
-          truncate
-          text-xl
-          font-semibold
-          tabular-nums
-          text-foreground
-        "
-        title={value}
-      >
-        {value}
-      </p>
-
-      <p
-        className="
-          mt-1
-          truncate
-          text-[11px]
-          text-muted-foreground
-        "
-        title={detail}
-      >
-        {detail}
-      </p>
-    </div>
-  );
-}
 
 /* =========================================================
    PROJECT DETAIL PAGE
@@ -168,13 +111,13 @@ export default async function ProjectPage({
   searchParams = {},
 }: {
   params: { id: string };
-  searchParams?: { tab?: string;task?:string;focus?:string;milestone?:string };
+  searchParams?: { tab?: string;task?:string;focus?:string;milestone?:string;view?:string;request?:string;meeting?:string;newMilestone?:string };
 }) {
   /* =======================================================
      AUTHENTICATION
      ======================================================= */
 
-  const { client } = await requireStaff();
+  const { client, user } = await requireStaff();
 
   if (
     !z.string().uuid().safeParse(
@@ -257,16 +200,6 @@ export default async function ProjectPage({
 
   const record = data.record;
 
-  const base = `/projects/${params.id}`;
-
-  const owner =
-    record?.body.owner ||
-    'Unassigned';
-
-  const progress = record
-    ? projectProgress(record.body)
-    : null;
-
   /* =======================================================
      COMPANY NAME
      ======================================================= */
@@ -322,39 +255,6 @@ export default async function ProjectPage({
         : 'Custom Project';
 
   /* =======================================================
-     TASKS AND MILESTONES
-     ======================================================= */
-
-  const openTasks =
-    record?.body.tasks
-      .filter(
-        (task) =>
-          task.status !== 'done'
-      )
-      .sort(
-        (a, b) =>
-          (
-            a.dueOn ??
-            '9999-12-31'
-          ).localeCompare(
-            b.dueOn ??
-            '9999-12-31'
-          )
-      ) ?? [];
-
-  const blocked =
-    openTasks.filter(
-      (task) =>
-        task.status === 'blocked'
-    ).length;
-
-  const milestoneDone =
-    record?.body.milestones.filter(
-      (milestone) =>
-        milestone.status === 'done'
-    ).length ?? 0;
-
-  /* =======================================================
      SELECTED PROJECT SECTION
      ======================================================= */
 
@@ -374,19 +274,28 @@ export default async function ProjectPage({
   const requestedTask=searchParams.task;const selectedTask=requestedTask&&record?.body.tasks.some(task=>task.id===requestedTask)?requestedTask:undefined;
   const requestedMilestone = searchParams.milestone;
   const selectedMilestone = requestedMilestone && record?.body.milestones.some(item => item.id === requestedMilestone) ? requestedMilestone : undefined;
+  if (selectedMilestone && searchParams.tab === 'plan' && !selectedTask) redirect(`/projects/${params.id}?tab=phases&milestone=${encodeURIComponent(selectedMilestone)}`);
   const requestedTab =
     searchParams.tab;
 
+  const legacyPhaseView = requestedTab === 'calendar' && searchParams.view === 'phases';
+  const legacyTaskRoute = Boolean(searchParams.task) && (requestedTab === 'lifecycle' || requestedTab === 'phases' || legacyPhaseView);
+  const canonicalRequestedTab = legacyTaskRoute ? 'plan' : requestedTab === 'plan' && Boolean(selectedMilestone) && !selectedTask ? 'phases' : requestedTab === 'lifecycle' || legacyPhaseView ? 'phases' : requestedTab === 'responses' || (requestedTab==='plan'&&searchParams.request) ? 'requests' : requestedTab;
   const requested =
     ALL_TABS.find(
       (item) =>
-        item === requestedTab
+        item === canonicalRequestedTab
     );
 
   const tab: Tab =
     !record || !requested
       ? defaultTab
       : requested;
+
+  const operationalStatusResult=record?await client.rpc('get_project_operational_status',{p_request:params.id}):null;
+  if(operationalStatusResult?.error)throw new Error('Project operational status could not load. Check the R8 migration.');
+  const operationalStatusData=operationalStatusResult?.data?.result==='ok'?operationalStatusResult.data:null;
+  const operationalStatus=(operationalStatusData?.status??(record?.state==='completed'?'completed':record?.state==='on_hold'?'on_hold':'active')) as OperationalStatus;
 
   /* =======================================================
      LOAD ACTIVE SECTION DATA
@@ -399,12 +308,32 @@ export default async function ProjectPage({
 
   const lifecycle =
     record &&
-    tab === 'lifecycle'
+    (tab === 'requests' || tab === 'overview' || tab === 'phases' || tab === 'calendar' || tab === 'plan')
       ? await getProjectLifecycle(
           client,
           params.id
         )
       : null;
+
+  const [calendarExtras, scheduleRows, phaseStatesResult, phaseColorsResult] = record && (tab === 'calendar' || tab === 'phases')
+    ? await Promise.all([
+        getProjectOverviewExtras(client, params.id),
+        getProjectTaskSchedule(client, params.id),
+        client.rpc('staff_project_phase_states', { p_request: params.id }),
+        getProjectPhaseColors(client, params.id),
+      ])
+    : [null, null, null, null] as const;
+  if (phaseStatesResult?.error) throw new Error('Project phase schedule could not load. Check migration 035.');
+  const phaseStates = phaseStatesResult ? projectPhaseStatesSchema.parse(phaseStatesResult.data).states : [];
+  const phaseColors = phaseColorsResult?.colors ?? [];
+  const completionIssues=record&&tab==='phases' ? await client.rpc('staff_project_completion_issues',{p_request:params.id}) : null;
+  if(completionIssues?.error)throw new Error('Project completion checks could not load.');
+  const completionIssueRows=completionIssues?z.array(z.string()).parse(completionIssues.data):[];
+  const workPreferences=record&&['calendar','phases','plan','requests','brief'].includes(tab)
+    ? await client.from('staff_notification_preferences').select('timezone').eq('user_id',user.id).maybeSingle() : null;
+  if(workPreferences?.error)throw new Error('Project timezone preferences could not load.');
+  const calendarPreference=taskToday(workPreferences?.data?.timezone||'America/Chicago');
+  const calendarToday=calendarPreference.today;
 
   const brief =
     record &&
@@ -424,6 +353,27 @@ export default async function ProjectPage({
         )
       : null;
 
+  // Read-only enrichment is loaded for Overview only. Editors keep their existing
+  // source data, keys, revision checks and action handlers.
+  let overview = null;
+  if (record && tab === 'overview') {
+    const [contexts, preferences, extras, formalPhasesResult, formalColors, content, activityResult, meetings] = await Promise.all([
+      getProjectDirectoryContext(client, [params.id]),
+      client.from('staff_notification_preferences').select('timezone').eq('user_id', user.id).maybeSingle(),
+      getProjectOverviewExtras(client, params.id),
+      client.rpc('staff_project_phase_states', { p_request: params.id }),
+      getProjectPhaseColors(client, params.id),
+      getProjectOverviewContent(client, params.id),
+      getProjectActivity(client,params.id,record.body).then(data=>({data,error:null})).catch(()=>({data:null,error:'Recent activity unavailable. Retry saved data.'})),
+      getProjectMeetings(client,params.id,{upcoming:true,limit:5}).catch(()=>({rows:null,total:null})),
+    ]);
+    if (preferences.error) throw new Error('Project timezone preferences could not load.');
+    if (formalPhasesResult.error) throw new Error('Saved project phase statuses could not load. Check migration 035.');
+    const formalPhases = projectPhaseStatesSchema.parse(formalPhasesResult.data).states;
+    const day = taskToday(preferences.data?.timezone || 'America/Chicago');
+    overview = { meetings, content, activityResult, context: contexts[params.id], ...day, ...extras, phaseStates: formalPhases, phaseColors: phaseColorMap(formalColors.colors) };
+  }
+
   /* =======================================================
      RENDER
      ======================================================= */
@@ -439,9 +389,9 @@ export default async function ProjectPage({
         kind="project"
         id={params.id}
         title={companyName}
-        recordType={projectType}
+        recordType={record?.body.title || projectType}
         status={
-          record?.state ??
+          operationalStatus ??
           'Not activated'
         }
       />
@@ -450,457 +400,49 @@ export default async function ProjectPage({
           OVERVIEW
           =================================================== */}
 
-      {tab === 'overview' &&
-        record &&
-        progress && (
-          <div className="space-y-4">
-
-            {/* PROJECT METADATA */}
-
-            <div
-              className="
-                flex
-                flex-wrap
-                items-center
-                gap-x-5
-                gap-y-1.5
-                text-[11px]
-                text-muted-foreground
-              "
-            >
-              <span>
-                Project owner:{' '}
-                <strong className="font-semibold text-foreground">
-                  {owner}
-                </strong>
-              </span>
-
-              <span>
-                Last updated:{' '}
-                {formatDate(
-                  record.updated_at
-                )}
-              </span>
-            </div>
-
-            {/* SUMMARY METRICS */}
-
-            <div
-              className="
-                grid
-                gap-3
-                sm:grid-cols-2
-                lg:grid-cols-4
-              "
-            >
-              <Stat
-                label="Tasks completed"
-                value={`${progress.done}/${progress.total}`}
-                detail={`${progress.percent}% complete`}
-              />
-
-              <Stat
-                label="Open tasks"
-                value={String(
-                  openTasks.length
-                )}
-                detail={`${blocked} blocked`}
-              />
-
-              <Stat
-                label="Milestones"
-                value={`${milestoneDone}/${record.body.milestones.length}`}
-                detail="Completed milestones"
-              />
-
-              <Stat
-                label="Next action"
-                value={
-                  openTasks[0]?.dueOn ||
-                  '—'
-                }
-                detail={
-                  openTasks[0]?.title ||
-                  'No pending tasks'
-                }
-              />
-            </div>
-
-            {/* TASKS + MILESTONES GRID */}
-
-            <div
-              className="
-                grid
-                items-start
-                gap-4
-                lg:grid-cols-2
-              "
-            >
-              {/* OPEN TASKS */}
-
-              <section
-                className="
-                  min-w-0
-                  overflow-hidden
-                  rounded-xl
-                  border
-                  border-border
-                  bg-card
-                "
-              >
-                <div
-                  className="
-                    flex
-                    items-center
-                    justify-between
-                    gap-3
-                    border-b
-                    border-border
-                    px-4
-                    py-3
-                  "
-                >
-                  <h2 className="text-sm font-semibold">
-                    Open tasks
-                  </h2>
-
-                  <Link
-                    href={`${base}?tab=plan`}
-                    className="
-                      inline-flex
-                      shrink-0
-                      items-center
-                      gap-1
-                      text-xs
-                      font-medium
-                      text-muted-foreground
-                      hover:text-foreground
-                    "
-                  >
-                    Edit tasks
-
-                    <ArrowUpRight
-                      size={13}
-                    />
-                  </Link>
-                </div>
-
-                {openTasks.length ? (
-                  <ul className="divide-y divide-border">
-                    {openTasks
-                      .slice(0, 6)
-                      .map(
-                        (task) => (
-                          <li
-                            key={task.id}
-                            className="
-                              flex
-                              items-center
-                              justify-between
-                              gap-3
-                              px-4
-                              py-3
-                              text-xs
-                            "
-                          >
-                            <span
-                              title={
-                                task.title
-                              }
-                              className="
-                                min-w-0
-                                truncate
-                                font-medium
-                              "
-                            >
-                              {
-                                task.title
-                              }
-                            </span>
-
-                            <span
-                              className="
-                                shrink-0
-                                text-muted-foreground
-                              "
-                            >
-                              {task.dueOn ||
-                                'No due date'}
-                            </span>
-                          </li>
-                        )
-                      )}
-                  </ul>
-                ) : (
-                  <p
-                    className="
-                      px-4
-                      py-5
-                      text-xs
-                      text-muted-foreground
-                    "
-                  >
-                    No open tasks.
-                  </p>
-                )}
-              </section>
-
-              {/* MILESTONES */}
-
-              <section
-                className="
-                  min-w-0
-                  overflow-hidden
-                  rounded-xl
-                  border
-                  border-border
-                  bg-card
-                "
-              >
-                <div
-                  className="
-                    flex
-                    items-center
-                    justify-between
-                    gap-3
-                    border-b
-                    border-border
-                    px-4
-                    py-3
-                  "
-                >
-                  <h2 className="text-sm font-semibold">
-                    Milestones
-                  </h2>
-
-                  <Link
-                    href={`${base}?tab=plan`}
-                    className="
-                      inline-flex
-                      shrink-0
-                      items-center
-                      gap-1
-                      text-xs
-                      font-medium
-                      text-muted-foreground
-                      hover:text-foreground
-                    "
-                  >
-                    Edit milestones
-
-                    <ArrowUpRight
-                      size={13}
-                    />
-                  </Link>
-                </div>
-
-                {record.body.milestones.length ? (
-                  <ul className="divide-y divide-border">
-                    {record.body.milestones
-                      .slice(0, 6)
-                      .map(
-                        (milestone) => (
-                          <li
-                            key={
-                              milestone.id
-                            }
-                            className="
-                              flex
-                              items-center
-                              justify-between
-                              gap-3
-                              px-4
-                              py-3
-                              text-xs
-                            "
-                          >
-                            <span
-                              title={
-                                milestone.title
-                              }
-                              className="
-                                min-w-0
-                                truncate
-                                font-medium
-                              "
-                            >
-                              {
-                                milestone.title
-                              }
-                            </span>
-
-                            <span
-                              className="
-                                flex
-                                shrink-0
-                                items-center
-                                gap-1
-                                text-muted-foreground
-                              "
-                            >
-                              {milestone.status ===
-                                'done' && (
-                                <CheckCircle2
-                                  size={13}
-                                />
-                              )}
-
-                              {milestone.status.replaceAll(
-                                '_',
-                                ' '
-                              )}
-                            </span>
-                          </li>
-                        )
-                      )}
-                  </ul>
-                ) : (
-                  <p className="px-4 py-5 text-xs text-muted-foreground">
-                    No milestones yet.
-                  </p>
-                )}
-              </section>
-            </div>
-
-            {/* PROJECT NOTES AND HISTORY */}
-
-            {(
-              record.body.notes ||
-              data.history.length > 0
-            ) && (
-              <div
-                className="
-                  grid
-                  items-start
-                  gap-3
-                  lg:grid-cols-2
-                "
-              >
-                {record.body.notes && (
-                  <details
-                    className="
-                      rounded-xl
-                      border
-                      border-border
-                      bg-card
-                      p-4
-                    "
-                  >
-                    <summary
-                      className="
-                        cursor-pointer
-                        text-xs
-                        font-semibold
-                      "
-                    >
-                      Project notes
-                    </summary>
-
-                    <p
-                      className="
-                        mt-3
-                        whitespace-pre-wrap
-                        break-words
-                        text-xs
-                        text-muted-foreground
-                      "
-                    >
-                      {
-                        record.body.notes
-                      }
-                    </p>
-                  </details>
-                )}
-
-                {data.history.length > 0 && (
-                  <details
-                    className="
-                      rounded-xl
-                      border
-                      border-border
-                      bg-card
-                      p-4
-                    "
-                  >
-                    <summary
-                      className="
-                        cursor-pointer
-                        text-xs
-                        font-semibold
-                      "
-                    >
-                      Recent project history
-                    </summary>
-
-                    <ul
-                      className="
-                        mt-3
-                        divide-y
-                        divide-border
-                      "
-                    >
-                      {data.history
-                        .slice(0, 5)
-                        .map(
-                          (event) => (
-                            <li
-                              key={
-                                event.id
-                              }
-                              className="
-                                py-2
-                                text-xs
-                              "
-                            >
-                              <span className="font-medium capitalize">
-                                {event.action.replaceAll(
-                                  '_',
-                                  ' '
-                                )}
-                              </span>
-
-                              <span className="ml-2 text-muted-foreground">
-                                {formatDate(
-                                  event.created_at
-                                )}
-                              </span>
-                            </li>
-                          )
-                        )}
-                    </ul>
-                  </details>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+      {tab === 'overview' && record && overview && (
+        <ProjectWorkspace id={params.id} userId={user.id} record={record} history={data.history} gateReady={gateReady} operationalStatus={operationalStatus}
+          savedToday={overview.today} taskControls={lifecycle?.controls??[]}
+          overview={<ProjectOverview
+          record={record}
+          meetings={overview.meetings}
+          content={overview.content}
+          activityResult={overview.activityResult}
+          context={overview.context}
+          today={overview.today}
+          timezone={overview.timezone}
+          members={overview.members}
+          milestonePhases={overview.milestonePhases}
+          phaseStates={overview.phaseStates}
+          phaseColors={overview.phaseColors}
+          operationalStatus={operationalStatus}
+        />} />
+      )}
 
       {/* ===================================================
           TASKS & MILESTONES
           =================================================== */}
 
       {tab === 'plan' && (
-        <div className="space-y-2">
-          {record && (
-            <p className="text-xs text-muted-foreground">
-              Save changes to tasks or milestones
-              before switching sections.
-            </p>
-          )}
-
+        <div className="space-y-3">
           {requestedTask&&!selectedTask&&<p role="status" className="rounded border p-4 text-sm">This task is no longer in the project. The current work plan remains available below.</p>}
           {requestedMilestone && !selectedMilestone && <p role="status" className="rounded border p-4 text-sm">This milestone is no longer in the project. The current work plan remains available below.</p>}
           <ProjectWorkspace
+            savedToday={calendarToday}
             key={
-              `${record?.revision??0}:${selectedTask||''}:${selectedMilestone||''}`
+              `${params.id}:${selectedTask||''}:${selectedMilestone||''}`
             }
             id={params.id}
+            userId={user.id}
             record={record}
             history={data.history}
             gateReady={gateReady}
+            operationalStatus={operationalStatus}
             selectedTask={selectedTask}
             selectedMilestone={selectedMilestone}
+            taskControls={lifecycle?.controls ?? []}
           />
+          {record && <a href={`/projects/${params.id}?tab=requests`} className="text-xs underline">Client requests and decline policies are in Requests</a>}
         </div>
       )}
 
@@ -908,58 +450,56 @@ export default async function ProjectPage({
           LIFECYCLE
           =================================================== */}
 
-      {tab === 'lifecycle' &&
-        record &&
-        (
-          lifecycle?.lifecycle ? (
-            <ProjectLifecycleControls
-              key={`${record.revision}:${selectedTask||''}`}
-              selectedTask={selectedTask}
-              id={params.id}
-              lifecycle={
-                lifecycle.lifecycle
-              }
-              controls={
-                lifecycle.controls
-              }
-              tasks={
-                record.body.tasks
-              }
-              events={
-                lifecycle.events
-              }
-            />
-          ) : (
-            <p
-              className="
-                rounded-xl
-                border
-                border-border
-                bg-card
-                p-5
-                text-sm
-                text-muted-foreground
-              "
-            >
-              Lifecycle information is not available
-              for this project.
-            </p>
-          )
-        )}
+      {tab === 'requests' && record && <ProjectWorkspace id={params.id} userId={user.id} record={record} history={data.history} gateReady={gateReady} operationalStatus={operationalStatus} savedToday={calendarToday} taskControls={lifecycle?.controls??[]}
+        overview={<ProjectTaskResponseReview id={params.id} focusRequestId={searchParams.request} tasks={record.body.tasks.map(task=>({id:task.id,title:task.title}))}/>}/>}
+
+      {tab === 'phases' && record && lifecycle?.lifecycle && calendarExtras && scheduleRows && (
+        <ProjectPhasesPage
+          record={record}
+          createMilestone={searchParams.newMilestone==='1'}
+          focusMilestone={selectedMilestone}
+          completionIssues={completionIssueRows}
+          key={params.id}
+          id={params.id}
+          selectedTask={searchParams.task}
+          revision={record.revision}
+          body={record.body}
+          lifecycle={lifecycle.lifecycle}
+          controls={lifecycle.controls}
+          events={lifecycle.events}
+          phaseStates={phaseStates}
+          phaseColors={phaseColors}
+          readOnly={record.state==='completed'}
+        />
+      )}
+
+      {tab === 'calendar' && record && calendarExtras && scheduleRows && (
+        <><ProjectMeetings id={params.id} readOnly={record.state==='completed'} focusId={searchParams.meeting}/><ProjectCalendar
+          id={params.id}
+          body={record.body}
+          projectRevision={record.revision}
+          controls={lifecycle?.controls ?? []}
+          phaseColors={phaseColorMap(phaseColors)}
+          schedule={scheduleRows}
+          members={calendarExtras.members}
+          milestonePhases={calendarExtras.milestonePhases}
+          today={calendarToday}
+        /></>
+      )}
 
       {/* ===================================================
           BRIEF
           =================================================== */}
 
-      {tab === 'brief' &&
-        record &&
-        (
+      {tab === 'brief' && record && (
           brief ? (
-            <><ApprovalFocus focus={searchParams.focus}/><ProjectBriefEditor
+            <div className="space-y-3"><ProjectBriefIdentity id={params.id} state={record.state} activatedAt={record.activated_at} proposalVersion={record.proposal_version} revision={record.revision} title={record.body.title} timezone={calendarPreference.timezone}/>
+            {operationalStatusData&&<ProjectOperationalStatus id={params.id} initial={operationalStatusData}/>}
+            <ApprovalFocus focus={searchParams.focus}/><ProjectBriefEditor
               id={params.id}
               draft={brief.draft}
               versions={brief.versions}
-            /></>
+            /></div>
           ) : (
             <p
               className="

@@ -16,6 +16,7 @@ import type {
   ProjectBriefDraft,
   ProjectBriefVersion,
 } from '@/lib/projects/brief-data';
+import {ProjectPanel} from './projects/ProjectVisuals';
 
 const fields: { key: keyof ProjectBriefBody; label: string; rows: number }[] = [
   { key: 'objectives', label: 'Objectives', rows: 4 },
@@ -48,10 +49,7 @@ export function ProjectBriefEditor({
 
   if (!draft || !body) {
     return (
-      <section className="mt-8 rounded-2xl border border-border bg-card p-6">
-        <h2 className="font-heading text-xl font-semibold">Project brief</h2>
-        <p className="mt-3 text-sm text-muted-foreground">The brief will be created when the project is activated.</p>
-      </section>
+      <ProjectPanel title="Project brief" description="Discovery gate"><p className="p-3 text-xs text-muted-foreground">The brief will be created when the project is activated.</p></ProjectPanel>
     );
   }
 
@@ -101,17 +99,9 @@ export function ProjectBriefEditor({
   }
 
   return (
-    <section className="mt-8 rounded-2xl border border-border bg-card p-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Discovery gate</p>
-          <h2 className="mt-2 font-heading text-2xl font-semibold">Project brief</h2>
-          <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">Review the generated draft, save your edits, then issue a fixed version for client approval. The lifecycle cannot move beyond Discovery until a brief version is approved.</p>
-        </div>
-        <span className="rounded-full bg-muted px-3 py-1.5 text-xs">Draft revision {draft.revision}</span>
-      </div>
+    <ProjectPanel title="Project brief" description="Discovery gate · Save the draft, then issue a fixed version for client approval." action={<span className="rounded-full bg-muted px-2.5 py-1 text-[10px]">Draft revision {draft.revision}</span>}>
 
-      <fieldset disabled={busy || blocked} className="mt-6 space-y-5">
+      <fieldset disabled={busy || blocked} className="space-y-4 border-t border-border p-3 sm:p-4">
         <legend className="sr-only">Project brief draft</legend>
         <div>
           <label htmlFor="brief-title" className="mb-2 block text-sm font-medium">Brief title</label>
@@ -129,12 +119,12 @@ export function ProjectBriefEditor({
         </div>
       </fieldset>
 
-      {message && <p role="status" className="mt-4 text-sm text-muted-foreground">{message}</p>}
-      {blocked && <Button type="button" variant="outline" className="mt-3" onClick={() => window.location.reload()}>Reload brief</Button>}
+      {message && <p role="status" className="px-3 text-xs text-muted-foreground">{message}</p>}
+      {blocked && <Button type="button" variant="outline" className="mx-3 mb-3" onClick={() => window.location.reload()}>Reload brief</Button>}
 
-      <div className="mt-8 border-t border-border pt-6">
-        <h3 className="font-heading text-xl font-semibold">Issued brief versions</h3>
-        <div className="mt-4 space-y-4">
+      <div className="border-t border-border p-3 sm:p-4">
+        <h3 className="text-sm font-semibold">Issued brief versions</h3>
+        <div className="mt-3 space-y-2">
           {versions.map((version) => (
             <details id={approvalDomId('brief',String(version.version),version.version)} key={version.version} className="rounded-xl border border-border p-4">
               <summary className="cursor-pointer text-sm font-medium">Version {version.version} · {version.status.replace('_', ' ')}</summary>
@@ -149,6 +139,6 @@ export function ProjectBriefEditor({
           {!versions.length && <p className="text-sm text-muted-foreground">No brief version has been issued yet.</p>}
         </div>
       </div>
-    </section>
+    </ProjectPanel>
   );
 }
