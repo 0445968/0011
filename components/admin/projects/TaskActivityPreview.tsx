@@ -33,7 +33,7 @@ export function TaskActivityPreview({projectId,taskId,defaultOpen=false}:{projec
     return()=>{active=false;controller.abort();};
   },[opened,projectId,taskId,generation]);
 
-  return <details defaultOpen={defaultOpen} className="rounded-lg border border-border/70 bg-background p-3" onToggle={event=>setOpened(event.currentTarget.open)}>
+  return <details open={opened} className="rounded-lg border border-border/70 bg-background p-3" onToggle={event=>setOpened(event.currentTarget.open)}>
     <summary className="flex cursor-pointer items-center gap-2 text-xs font-semibold"><Activity size={14} aria-hidden/>Task activity</summary>
     {opened&&<div className="mt-3 space-y-2">
       {loading&&<p role="status" className="text-[11px] text-muted-foreground">Loading audited task changes…</p>}
