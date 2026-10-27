@@ -14,10 +14,10 @@ type FileRow = { id:string; filename:string };
 type TaskComment = { id:string; body:string; author_id:string|null; created_at:string; updated_at:string; revision:number };
 type TaskContext = { projectRevision:number; priority:string|null; notes:Note[]; comments:TaskComment[]; files:FileRow[]; noteCount:number;commentCount:number;fileCount:number;linkedFileIds?:string[]; availableFiles:FileRow[] };
 
-export function TaskProductivity({projectId,taskId,taskTitle,revision,disabled,userId,onPriority,hidePriority=false,workplanDescription,onWorkplanDescriptionChange}: {
+export function TaskProductivity({projectId,taskId,taskTitle,revision,disabled,userId,onPriority,hidePriority=false,workplanEditable=false,workplanDescription,onWorkplanDescriptionChange}: {
   projectId:string;taskId:string;taskTitle:string;revision:number;disabled:boolean;userId:string;
   onPriority?:(priority:string|null)=>void;
-  hidePriority?:boolean;workplanDescription?:string;onWorkplanDescriptionChange?:(value:string)=>void;
+  hidePriority?:boolean;workplanEditable?:boolean;workplanDescription?:string;onWorkplanDescriptionChange?:(value:string)=>void;
 }) {
   const router=useRouter();
   const [open,setOpen]=useState(false);
@@ -114,7 +114,7 @@ export function TaskProductivity({projectId,taskId,taskTitle,revision,disabled,u
       <span title="Files" aria-label={`Files: ${data?.fileCount??'loading'}`} className="inline-flex items-center gap-1"><Paperclip size={13} aria-hidden/>{data?.fileCount??'…'}</span>
     </summary>
     {open&&<div className="mt-3 space-y-4 rounded-lg bg-muted/30 p-3">
-      {onWorkplanDescriptionChange&&<label className="block text-xs font-medium">Task description<textarea aria-label={'Task description for '+taskTitle} className="mt-2 min-h-20 w-full rounded-md border border-input bg-background p-2 text-xs" value={workplanDescription??''} onChange={event=>onWorkplanDescriptionChange(event.target.value)} disabled={disabled&&(!workplanDescription||!onWorkplanDescriptionChange)} maxLength={2000}/></label>}
+      {onWorkplanDescriptionChange&&<label className="block text-xs font-medium">Task description<textarea aria-label={'Task description for '+taskTitle} className="mt-2 min-h-20 w-full rounded-md border border-input bg-background p-2 text-xs" value={workplanDescription??''} onChange={event=>onWorkplanDescriptionChange(event.target.value)} disabled={!workplanEditable} maxLength={2000}/></label>}
       {noteDirty&&<p role="status" className="text-xs text-amber-800 dark:text-amber-200">Unsaved task note. Save or cancel this note draft below.</p>}
       {loading&&<p role="status" className="text-xs text-muted-foreground">Loading saved task details…</p>}
       {data&&<>
