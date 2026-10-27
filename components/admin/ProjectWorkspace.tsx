@@ -947,7 +947,6 @@ export function ProjectWorkspace({
       <div id="project-workplan-cards" tabIndex={-1} className="scroll-mt-24 focus:outline-none">
       <ProjectMilestoneBoard
         advanced={advanced}
-        onAdvancedToggle={()=>advanced ? returnToWorkplan() : openAdvanced()}
         focusTaskId={overviewTaskId}
         focusTaskRequest={taskFocusRequest}
         today={today}
@@ -963,9 +962,9 @@ export function ProjectWorkspace({
         onTaskChange={editTask}
         onMilestoneChange={editMilestone}
         onAddTask={milestoneId=>{const taskId=addTask(milestoneId);if(taskId)focusTaskDetails(taskId);}}
-        onAddMilestone={()=>{const milestoneId=addMilestone();if(milestoneId)openAdvanced(undefined,milestoneId);}}
+        onAddMilestone={()=>router.push('/projects/'+id+'?tab=phases&newMilestone=1')}
         onEditTask={taskId=>focusTaskDetails(taskId)}
-        onEditMilestone={milestoneId=>openAdvanced(undefined,milestoneId)}
+        onEditMilestone={milestoneId=>router.push('/projects/'+id+'?tab=phases&milestone='+encodeURIComponent(milestoneId))}
         taskControls={taskControls}
         workflowGate={workflowGate}
         workflowOverrideReason={workflowOverrideReason}
@@ -977,74 +976,6 @@ export function ProjectWorkspace({
         onBulkTasks={bulkMilestoneTasks}
       />
       </div>
-
-      <section id="project-advanced-editor" tabIndex={-1} hidden={!advanced} aria-label="Advanced work-plan editor" className="scroll-mt-24 rounded-xl border border-border bg-card focus:outline-none">
-        <p className="p-3 text-xs text-muted-foreground">Detailed task and milestone controls share your current draft. Use Back to tasks &amp; milestones to return without discarding edits.</p>
-      <div>
-        <div className="grid min-w-0 items-start gap-3 lg:grid-cols-2">
-      <section className="min-w-0 rounded-xl border border-border bg-card">
-        <SectionTitle
-          title="Project details"
-          detail="Legacy owner label and internal notes"
-          action={<Link className="text-[11px] font-medium underline" href={`/projects/${id}?tab=brief`}>Name and verified owner in Brief</Link>}
-        />
-
-        <div className="grid gap-3 px-4 py-3 sm:grid-cols-2 xl:grid-cols-1">
-
-          <label className="block min-w-0 text-[11px] font-medium text-muted-foreground">
-            Legacy owner label · not verified
-
-            <Input
-              className={`${inputClass} mt-1`}
-              maxLength={200}
-              value={body.owner}
-              disabled={locked}
-              onChange={(event) =>
-                field(
-                  'owner',
-                  event.target.value
-                )
-              }
-              placeholder="Unassigned"
-            />
-          </label>
-
-          {/* COLLAPSIBLE INTERNAL NOTES */}
-
-          <details className="rounded-lg border border-border px-3 py-2 sm:col-span-2 xl:col-span-1">
-            <summary className="cursor-pointer text-xs font-medium text-foreground">
-              Internal project notes{' '}
-              {body.notes
-                ? '· Added'
-                : '· Empty'}
-            </summary>
-
-            <Textarea
-              aria-label="Internal project notes"
-              rows={3}
-              maxLength={4000}
-              value={body.notes}
-              disabled={locked}
-              onChange={(event) =>
-                field(
-                  'notes',
-                  event.target.value
-                )
-              }
-              className="mt-3 text-xs"
-            />
-          </details>
-        </div>
-      </section>
-
-      <section className="rounded-xl border border-border bg-card p-4">
-        <p className="text-xs font-medium">Milestone editing is now in Lifecycle.</p>
-        <Link href={`/projects/${id}?tab=phases`} className="mt-2 inline-flex rounded-lg border border-border px-3 py-2 text-xs font-medium hover:bg-muted">Open Lifecycle milestones</Link>
-      </section>
-
-        </div>
-      </div>
-      </section>
 
       {/* ===============================================
           PROJECT DECISIONS
