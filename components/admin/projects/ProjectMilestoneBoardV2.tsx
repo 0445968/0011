@@ -20,6 +20,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } f
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {TaskTags,useTaskPresentation} from './TaskPresentation';
 import { TaskProductivity } from './TaskProductivity';
+import { TaskActivityPreview } from './TaskActivityPreview';
 import { useProjectTaskSchedule } from './useProjectTaskSchedule';
 import { hasMilestoneCompletionBlockers, milestoneCompletionBlockers } from '@/lib/projects/workplan-completion';
 import { taskDomId } from '@/lib/tasks/links';
@@ -223,22 +224,26 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
       </summary>
       {visitedTasks[task.id]&&<div className="space-y-3 px-3 pb-3 sm:pl-10">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <button type="button" disabled={disabled} title="Change task status" aria-label={`Change status of ${task.title}`} className="rounded-full focus-visible:ring-2" onClick={()=>updateTask(task,{status:nextStatus(task.status,workStatusOrder)})}><ProjectTaskStateIcon status={task.status}/></button>
+        {statusMenu(task)}
         <div className="min-w-[160px] flex-[2] basis-48"><NameField title={task.title} completed={task.status==='done'} disabled={disabled} onChange={title=>updateTask(task,{title})}/></div>
-        <StatusButton status={task.status} disabled={disabled} onChange={()=>updateTask(task,{status:nextStatus(task.status,workStatusOrder)})} label={`task ${task.title}`}/>
+        <TaskPriorityCell projectId={id} taskId={task.id} priority={taskControls.find(row=>row.taskId===task.id)?.priority} revision={revision} disabled={disabled||dirty||!sidecarReady}/>
         <div className="shrink-0">{assignment(task)}</div>
-        <TaskMemberPicker taskId={task.id} controls={assignments} disabled={disabled||dirty||!sidecarReady} />
         <Remaining dueOn={task.dueOn} today={today} completed={task.status==='done'}/>
         <label className="inline-flex items-center gap-1 text-[10px] text-muted-foreground"><button type="button" title="Choose start date" aria-label={`Choose start date for ${task.title}`} disabled={disabled||dirty||!sidecarReady} onClick={event=>{const input=event.currentTarget.parentElement?.querySelector('input');input?.focus();input?.showPicker?.();}}><Play size={12} aria-hidden/></button>Start <input type="date" className={dateClass} aria-label={`Start date for ${task.title}`} disabled={disabled||dirty||!sidecarReady||schedule.busy!==null} value={startOn??''} onChange={event=>void schedule.save(task.id,event.target.value||null,task.dueOn,dirty)}/></label>
         <label className="inline-flex items-center gap-1 text-[10px] text-muted-foreground"><button type="button" title="Choose due date" aria-label={`Choose due date for ${task.title}`} disabled={disabled} onClick={event=>{const input=event.currentTarget.parentElement?.querySelector('input');input?.focus();input?.showPicker?.();}}><Flag size={12} aria-hidden/></button>Due <input type="date" className={dateClass} aria-label={`Due date for ${task.title}`} disabled={disabled} value={task.dueOn??''} onChange={event=>updateTask(task,{dueOn:event.target.value||null})}/></label>
         {suggested&&<span className="rounded-full border border-border px-2 py-1 text-[10px] text-muted-foreground" title="Suggested from the saved start date, deadline, and today">Suggested {suggested} priority</span>}
       </div>
-      <div className="grid gap-3 sm:grid-cols-2"><label className="text-[11px] font-medium">Task notes / description<textarea aria-label={`Task notes and description for ${task.title}`} className="mt-1 min-h-20 w-full rounded-lg border border-input bg-background p-2 text-xs" maxLength={2000} disabled={disabled} value={task.notes} onChange={event=>updateTask(task,{notes:event.target.value})}/></label><div className="space-y-2 text-[11px] text-muted-foreground"><p>Milestone phases: {phaseLinks.filter(link=>link.milestoneId===task.milestoneId).map(link=>projectPhaseLabels[link.phase]).join(', ')||'None'}</p></div></div>
       <TaskTags projectId={id} projectRevision={revision} row={presentation.rows.find(row=>row.task_id===task.id)} catalog={tagCatalog} disabled={disabled||dirty||!sidecarReady} reload={presentation.load}/>
-      <TaskProductivity projectId={id} taskId={task.id} taskTitle={task.title} revision={revision} disabled={disabled||dirty||!sidecarReady} userId={userId} />
+      <TaskProductivity projectId={id} taskId={task.id} taskTitle={task.title} revision={revision} disabled={disabled||dirty||!sidecarReady} userId={userId} hidePriority workplanDescription={task.notes} onWorkplanDescriptionChange={value=>updateTask(task,{notes:value})}/>
       {workflowGate?.taskId===task.id&&<section role="alert" className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100"><p className="font-semibold">{workflowGate.requirement}</p>{workflowGate.correctiveActions.map(action=><p key={action}>{action}</p>)}{workflowGate.overrideAvailable&&<><label className="block font-medium">Reason for overriding this completion review<textarea className="mt-1 min-h-16 w-full rounded-md border border-input bg-background p-2 text-xs" maxLength={2000} value={workflowOverrideReason} onChange={event=>onWorkflowOverrideReason(event.target.value)} disabled={busy}/></label><button type="button" className="min-h-9 rounded-lg bg-foreground px-3 text-xs font-medium text-background disabled:opacity-50" disabled={busy||!overrideReady||!workflowOverrideReason.trim()} onClick={onOverrideTaskStatus}>Override and change status</button></>}</section>}
       {(dirty||!sidecarReady)&&<p role="status" className="text-[11px] text-amber-800 dark:text-amber-200">Save or discard the work-plan draft before changing ownership, blockers or dependencies.</p>}
-      <ProjectLifecycleControls id={id} controls={taskControls} tasks={body.tasks} events={[]} taskOnlyTaskId={task.id} taskOnlyDisabled={disabled||dirty||!sidecarReady} showTaskManagement={false}/>
+      <details className="rounded-lg bg-muted/20 px-3 py-2">
+        <summary className="flex cursor-pointer items-center gap-2 text-xs font-semibold">Ownership &amp; dependencies <ChevronDown size={14} className="ml-auto"/></summary>
+        <div className="mt-3 space-y-3">
+          <TaskMemberPicker taskId={task.id} controls={assignments} disabled={disabled||dirty||!sidecarReady}/>
+          <ProjectLifecycleControls id={id} controls={taskControls} tasks={body.tasks} events={[]} taskOnlyTaskId={task.id} taskOnlyDisabled={disabled||dirty||!sidecarReady} showTaskManagement={false}/>
+        </div>
+      </details>
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-2"><span className="text-[10px] text-muted-foreground">Remove is a draft change; dependent work must be reassigned first.{hierarchy.data&&children.length?` Remove the ${children.length} subtask${children.length===1?'':'s'} explicitly before removing this task.`:''}{!hierarchy.data?' Removal is unavailable until the hierarchy loads.':''}</span><button type="button" disabled={disabled||!hierarchy.data||children.length>0} onClick={()=>onRemoveTask(task.id)} className="inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-destructive/40 px-2.5 text-xs text-destructive hover:bg-destructive/5 disabled:opacity-50"><Trash2 size={13} aria-hidden/>Remove task</button></div>
       <details className="mt-1 pl-6 text-xs"><summary className="cursor-pointer py-1 text-muted-foreground">Subtasks ({hierarchy.data?children.length:'loading'})</summary>
         <ul>{children.map(item=><SubtaskEditor key={item.id} item={item} disabled={!canEditSidecar} update={updateSubtask} requestRemove={removeSubtask} today={today}/>)}</ul>
@@ -432,6 +437,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
             return task?<div key={task.id}>
               {taskRow(task)}
               {dependencyPreview(task)}
+              <TaskActivityPreview projectId={id} taskId={task.id} defaultOpen/>
               <Link href={'/projects/'+id+'/activity?task='+encodeURIComponent(task.id)} className="mt-3 inline-flex items-center gap-1 px-3 text-xs font-medium underline">View all task activity</Link>
             </div>:null;
           })()}
