@@ -14,7 +14,7 @@ const field = 'min-h-9 w-full min-w-0 rounded-md border border-input bg-backgrou
 const control = 'inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50';
 const views: {value:TasksDisplayView;label:string}[] = [
   {value:'overview',label:'Overview'}, {value:'kanban',label:'Kanban'}, {value:'gantt',label:'Gantt'},
-  {value:'list',label:'List'}, {value:'calendar',label:'Calendar'}, {value:'table',label:'Table'}, {value:'timeline',label:'Timeline'},
+  {value:'list',label:'List'}, {value:'calendar',label:'Calendar'}, {value:'timeline',label:'Timeline'},
 ];
 const tableColumns: {value:TaskColumn;label:string}[] = [
   {value:'priority',label:'Priority'}, {value:'status',label:'Status'}, {value:'milestone',label:'Milestone'},
@@ -36,7 +36,7 @@ export function ProjectWorkplanToolbar({projectId,filters,onChange,view,onView,g
   const [searchOpen,setSearchOpen]=useState(false);
   const applied=[filters.phase!=='all',filters.side!=='all',filters.assignee!=='all',filters.status!=='all',filters.deadline!=='all',Boolean(filters.from||filters.to),Boolean(filters.query.trim()),Boolean(tagFilter)].filter(Boolean).length;
   const clear=()=>{onChange({query:'',phase:'all',side:'all',assignee:'all',status:'all',deadline:'all',from:'',to:''});onTagFilter('');};
-  return <div className="space-y-2 border-b border-border bg-white pb-3 text-slate-950 dark:bg-card dark:text-foreground">
+  return <div className="sticky top-0 z-20 -mx-3 space-y-2 bg-white px-3 py-2 text-slate-950 dark:bg-card dark:text-foreground">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <nav className="flex min-w-0 flex-wrap gap-1" aria-label="Task view">
         {views.map(item=><button key={item.value} type="button" aria-pressed={view===item.value} onClick={()=>onView(item.value)}
