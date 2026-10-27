@@ -1,6 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { postProjectCommand } from '@/lib/projects/immediate-command';
+import { refreshProjectSurfaces } from '@/lib/projects/refresh';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { Check, CheckCheck, ChevronDown, ChevronRight, Clock3, Flag, Play, UserRoundPlus, Pencil, Plus, RefreshCcw, RotateCcw, Trash2 } from 'lucide-react';
@@ -27,6 +30,47 @@ import { emptyWorkplanFilters, groupWorkplanTasks, workplanMilestoneMatches, wor
 import { ProfileImage } from '@/components/profile-images/ProfileImage';
 import { ProjectLifecycleControls } from '@/components/admin/ProjectLifecycleControls';
 import type { ProjectWorkflowGate } from '@/lib/projects/workplan-save-outcome';
+
+const priorityChoices: {value:string|null;label:string}[]=[
+  {value:null,label:'Not set'}, {value:'low',label:'Low'},
+  {value:'medium',label:'Medium'}, {value:'high',label:'High'},
+  {value:'urgent',label:'Urgent'},
+];
+function PriorityBars({priority}:{priority:string|null|undefined}){
+  const active=priority==='low'?1:priority==='medium'?2:priority==='high'||priority==='urgent'?3:0;
+  const color=active===3?'bg-red-500':active===2?'bg-amber-400':'bg-emerald-500';
+  return <span className="inline-flex items-center gap-0.5" role="img" aria-label={'Priority: '+(priority||'Not set')}>
+    {[0,1,2].map(index=><span key={index} className={'h-3.5 w-1 rounded-[2px] '+(index<active?color:'bg-zinc-300 dark:bg-zinc-600')}/>)}
+  </span>;
+}
+function TaskPriorityCell({projectId,taskId,priority,revision,disabled}:{
+  projectId:string;taskId:string;priority:string|null|undefined;revision:number;disabled:boolean;
+}){
+  const router=useRouter();
+  const [current,setCurrent]=useState(priority??null);
+  const [busy,setBusy]=useState(false);
+  const [error,setError]=useState('');
+  useEffect(()=>setCurrent(priority??null),[priority]);
+  async function choose(value:string|null){
+    if(busy||disabled||current===value)return;
+    setBusy(true);setError('');
+    try{
+      await postProjectCommand('/api/admin/projects/'+projectId+'/task-productivity',{
+        action:'priority',taskId,priority:value,expectedProjectRevision:revision,
+      });
+      setCurrent(value);
+      refreshProjectSurfaces(projectId,router);
+    }catch(cause){setError(cause instanceof Error?cause.message:'Priority could not be updated.');}
+    finally{setBusy(false);}
+  }
+  return <Popover>
+    <PopoverTrigger asChild><button type="button" disabled={disabled||busy} className="inline-flex min-h-8 items-center gap-2 rounded-lg px-2 hover:bg-muted disabled:opacity-50" aria-label={'Change task priority, currently '+(current??'not set')}><PriorityBars priority={current}/><ChevronDown size={12} className="text-muted-foreground"/></button></PopoverTrigger>
+    <PopoverContent align="start" className="w-44 space-y-1 p-2">
+      {priorityChoices.map(option=><button key={option.label} type="button" className="flex min-h-8 w-full items-center gap-3 rounded-md px-2 text-left text-xs hover:bg-muted" aria-pressed={current===option.value} disabled={busy} onClick={()=>void choose(option.value)}><PriorityBars priority={option.value}/>{option.label}{current===option.value&&<Check size={13}/>}</button>)}
+      {error&&<p role="alert" className="p-1 text-[11px] text-destructive">{error}</p>}
+    </PopoverContent>
+  </Popover>;
+}
 
 type Task = ProjectBody['tasks'][number];
 type Milestone = ProjectBody['milestones'][number];
@@ -264,15 +308,21 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const columnWidths='minmax(220px,3fr) '+visibleColumns.map(column=>column==='assignee'?'minmax(100px,1.2fr)':'minmax(105px,1fr)').join(' ')+' 42px';
   const labelForColumn:Record<TaskColumn,string>={priority:'Priority',status:'Status',milestone:'Milestone',due:'Due date',assignee:'Assignees'};
   const columnValue=(task:Task,column:TaskColumn):ReactNode=>{
-    if(column==='priority'){const priority=taskControls.find(row=>row.taskId===task.id)?.priority??'Not set';return <span className={`rounded-md px-2 py-1 text-[11px] font-medium capitalize ${priority==='urgent'?'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200':priority==='high'?'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200':'bg-muted text-muted-foreground'}`}>{priority}</span>;}
-    if(column==='status')return <span className="inline-flex items-center gap-1.5 text-[11px] capitalize"><ProjectTaskStateIcon status={task.status}/>{task.status==='todo'?'Backlog':task.status==='doing'?'In progress':task.status==='done'?'Completed':'Blocked'}</span>;
+    if(column==='priority'){const priority=taskControls.find(row=>row.taskId===task.id)?.priority??null;return <TaskPriorityCell projectId={id} taskId={task.id} priority={priority} revision={revision} disabled={disabled||dirty||!sidecarReady}/>;}
+    if(column==='status')return statusMenu(task);
     if(column==='milestone')return <span className="truncate text-[11px] text-muted-foreground" title={body.milestones.find(item=>item.id===task.milestoneId)?.title??'No milestone'}>{body.milestones.find(item=>item.id===task.milestoneId)?.title??'—'}</span>;
-    if(column==='due')return <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground"><Flag size={12} aria-hidden/>{task.dueOn??'Add date'}</span>;
-    return taskPeople(task);
+    if(column==='due')return <label className="inline-flex min-h-8 items-center gap-1 text-[11px] text-muted-foreground"><Flag size={12} aria-hidden/><input type="date" aria-label={'Due date for '+task.title} className="w-[120px] cursor-pointer bg-transparent px-1 text-[11px] outline-none focus-visible:ring-2" disabled={disabled} value={task.dueOn??''} onChange={event=>updateTask(task,{dueOn:event.target.value||null})}/></label>;
+    return <TaskMemberPicker taskId={task.id} controls={assignments} disabled={disabled||dirty||!sidecarReady}/>;
   };
+  const statusMenu=(task:Task)=><Popover>
+    <PopoverTrigger asChild><button type="button" disabled={disabled} aria-label={'Change status of '+task.title} className="inline-flex min-h-8 items-center gap-1.5 rounded-lg px-1.5 hover:bg-muted disabled:opacity-50"><ProjectTaskStateIcon status={task.status}/><span className="sr-only">{task.status}</span><ChevronDown size={12} className="text-muted-foreground"/></button></PopoverTrigger>
+    <PopoverContent align="start" className="w-44 space-y-1 p-2">
+      {([{value:'todo',label:'Backlog'},{value:'doing',label:'In progress'},{value:'blocked',label:'Blocked'},{value:'done',label:'Completed'}] as {value:Task['status'];label:string}[]).map(option=><button type="button" key={option.value} aria-pressed={task.status===option.value} disabled={disabled} className="flex min-h-9 w-full items-center gap-2 rounded-md px-2 text-left text-xs hover:bg-muted" onClick={()=>updateTask(task,{status:option.value})}><ProjectTaskStateIcon status={option.value}/><span className="flex-1">{option.label}</span>{task.status===option.value&&<Check size={13}/>}</button>)}
+    </PopoverContent>
+  </Popover>;
   const openFullEditor=(taskId:string)=>{openTask(taskId);};
   const compactRow=(task:Task)=><div role="row" key={task.id} style={{gridTemplateColumns:columnWidths}} className={`grid min-h-12 items-center gap-3 px-3 py-1.5 text-xs transition-colors hover:bg-slate-50 focus-within:bg-slate-50 dark:hover:bg-muted/50 dark:focus-within:bg-muted/50 ${selectedTaskId===task.id?'bg-blue-50/60 dark:bg-primary/10':''}`}>
-    <div role="cell" className="flex min-w-0 items-center gap-2"><ProjectTaskStateIcon status={task.status}/><span className="w-14 shrink-0 font-mono text-[10px] text-muted-foreground">{presentation.rows.find(row=>row.task_id===task.id)?.code??'Draft'}</span><button type="button" onClick={()=>openTask(task.id)} className="min-w-0 flex-1 truncate text-left font-medium hover:underline" title={task.title}>{task.title}</button>{dirtyTaskIds.includes(task.id)&&<span role="status" title="Task changes awaiting autosave" aria-label="Unsaved task changes" className="h-2 w-2 shrink-0 rounded-full bg-blue-600"/>}</div>
+    <div role="cell" className="flex min-w-0 items-center gap-2">{statusMenu(task)}<span className="w-14 shrink-0 font-mono text-[10px] text-muted-foreground">{presentation.rows.find(row=>row.task_id===task.id)?.code??'Draft'}</span><button type="button" onClick={()=>openTask(task.id)} className="min-w-0 flex-1 truncate text-left font-medium hover:underline" title={task.title}>{task.title}</button>{dirtyTaskIds.includes(task.id)&&<span role="status" title="Task changes awaiting autosave" aria-label="Unsaved task changes" className="h-2 w-2 shrink-0 rounded-full bg-blue-600"/>}</div>
     {visibleColumns.map(column=><div key={column} role="cell" className="min-w-0 truncate">{columnValue(task,column)}</div>)}
     <div role="cell"><button type="button" className={miniButton} title={`Full editor for ${task.title}`} aria-label={`Edit task ${task.title}`} onClick={()=>openFullEditor(task.id)}><Pencil size={15}/></button></div>
   </div>;
@@ -281,7 +331,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     {title&&<h2 className="bg-slate-50 px-3 py-2 text-xs font-semibold dark:bg-muted/40">{title} <span className="ml-1 font-normal text-muted-foreground">{tasks.length}</span></h2>}
     <div role="table" aria-label={title??'Tasks'} className="w-full min-w-[640px]">
       <div role="row" style={{gridTemplateColumns:columnWidths}} className="grid min-h-9 items-center gap-3 border-b border-border/70 px-3 text-[11px] font-medium text-muted-foreground">
-        <div role="columnheader">Name</div>{visibleColumns.map(column=><div role="columnheader" key={column}>{labelForColumn[column]}</div>)}<div role="columnheader"><span className="sr-only">Edit</span></div>
+        <div role="columnheader">Name</div>{visibleColumns.map(column=><div role="columnheader" key={column} draggable title="Drag to reorder columns" className="cursor-grab" onDragStart={event=>{event.dataTransfer.setData('text/plain',column);event.dataTransfer.effectAllowed='move';}} onDragOver={event=>event.preventDefault()} onDrop={event=>{event.preventDefault();const source=event.dataTransfer.getData('text/plain') as TaskColumn;if(!visibleColumns.includes(source)||source===column)return;const next=visibleColumns.filter(item=>item!==source);next.splice(next.indexOf(column),0,source);setVisibleColumns(next);}}>{labelForColumn[column]}</div>)}<div role="columnheader"><span className="sr-only">Edit</span></div>
       </div>
       {tasks.map(compactRow)}
     </div>
