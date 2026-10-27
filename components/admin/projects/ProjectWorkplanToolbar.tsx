@@ -25,8 +25,8 @@ function Field({label,children}:{label:string;children:ReactNode}) {
   return <label className="min-w-0 space-y-1 text-[11px] font-medium text-muted-foreground"><span>{label}</span>{children}</label>;
 }
 export function ProjectWorkplanToolbar({projectId,filters,onChange,view,onView,grouping,onGrouping,sort,onSort,columns,onColumns,assignees,phasesReady,assignmentsReady,
-  tagFilter,onTagFilter,tags,showEditor,onToggleEditor,onAddTask,onAddMilestone,disabled=false,onAdvancedToggle,advanced=false}: {
-  onAdvancedToggle?:()=>void;advanced?:boolean;projectId:string;filters:WorkplanFilters;onChange:(changes:Partial<WorkplanFilters>)=>void;
+  tagFilter,onTagFilter,tags,showEditor,onToggleEditor,onAddTask,onAddMilestone,disabled=false,onAdvancedToggle,advanced=false,actions}: {
+  actions?:ReactNode;onAdvancedToggle?:()=>void;advanced?:boolean;projectId:string;filters:WorkplanFilters;onChange:(changes:Partial<WorkplanFilters>)=>void;
   view:TasksDisplayView;onView:(view:TasksDisplayView)=>void;grouping:TaskGrouping;onGrouping:(value:TaskGrouping)=>void;
   sort:TaskSort;onSort:(value:TaskSort)=>void;columns:TaskColumn[];onColumns:(values:TaskColumn[])=>void;
   assignees:{id:string;label:string}[];phasesReady:boolean;assignmentsReady:boolean;
@@ -45,7 +45,7 @@ export function ProjectWorkplanToolbar({projectId,filters,onChange,view,onView,g
   const popup='absolute z-40 mt-1 min-w-44 rounded-xl border border-border bg-popover p-2 text-popover-foreground shadow-xl';
   const optionClass='flex min-h-9 w-full items-center gap-2 rounded-lg px-2.5 text-left text-xs hover:bg-muted';
   return <div className="sticky top-0 z-30 bg-white px-4 py-3 text-slate-950 dark:bg-card dark:text-foreground">
-    <div className="flex min-w-0 flex-nowrap items-center gap-2 overflow-x-auto scrollbar-hide" aria-label="Task view and tools">
+    <div className="flex min-w-0 flex-nowrap items-center gap-2 overflow-visible" aria-label="Task view and tools">
       <details className="relative shrink-0">
         <summary className={control+' cursor-pointer list-none [&::-webkit-details-marker]:hidden'} title="Choose task view"><CurrentViewIcon size={16}/><span className="hidden sm:inline">{currentView.label}</span><ChevronDown size={13}/></summary>
         <div className={popup+' left-0'}>{views.map(item=><button type="button" key={item.value} className={optionClass} aria-pressed={view===item.value} onClick={event=>selectView(item.value,event.currentTarget)}><item.icon size={15}/><span className="flex-1">{item.label}</span>{view===item.value&&<Check size={14}/>}</button>)}</div>
@@ -79,6 +79,7 @@ export function ProjectWorkplanToolbar({projectId,filters,onChange,view,onView,g
       <details className="relative shrink-0"><summary className={control+' cursor-pointer list-none [&::-webkit-details-marker]:hidden'} aria-label="Add task or milestone"><Plus size={16}/><Menu size={13}/></summary>
         <div className={popup+' right-0'}><button type="button" disabled={disabled} className={optionClass} onClick={event=>{onAddTask();const menu=event.currentTarget.closest('details');if(menu)menu.open=false;}}>Add task</button><Link href={'/projects/'+projectId+'?tab=phases&newMilestone=1'} className={optionClass}>Add milestone in Lifecycle</Link></div>
       </details>
+      {actions}
     </div>
     {(searchOpen||Boolean(filters.query))&&<div className="mt-2 flex items-center gap-2 rounded-lg border border-input bg-background px-2"><Search size={14}/><input autoFocus type="search" className="min-h-9 min-w-0 flex-1 bg-transparent text-xs outline-none" placeholder="Search tasks" value={filters.query} onChange={event=>onChange({query:event.target.value})}/><button type="button" aria-label="Close search" onClick={()=>{onChange({query:''});setSearchOpen(false);}}><X size={14}/></button></div>}
   </div>;
