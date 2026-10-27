@@ -36,7 +36,7 @@ export function ProjectWorkplanToolbar({projectId,filters,onChange,view,onView,g
   const [searchOpen,setSearchOpen]=useState(false);
   const applied=[filters.phase!=='all',filters.side!=='all',filters.assignee!=='all',filters.status!=='all',filters.deadline!=='all',Boolean(filters.from||filters.to),Boolean(filters.query.trim()),Boolean(tagFilter)].filter(Boolean).length;
   const clear=()=>{onChange({query:'',phase:'all',side:'all',assignee:'all',status:'all',deadline:'all',from:'',to:''});onTagFilter('');};
-  return <div className="sticky top-0 z-20 -mx-3 space-y-2 bg-white px-3 py-2 text-slate-950 dark:bg-card dark:text-foreground">
+  return <div className="sticky top-0 z-30 space-y-2 bg-white py-2 text-slate-950 shadow-sm dark:bg-card dark:text-foreground">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <nav className="flex min-w-0 flex-wrap gap-1" aria-label="Task view">
         {views.map(item=><button key={item.value} type="button" aria-pressed={view===item.value} onClick={()=>onView(item.value)}
