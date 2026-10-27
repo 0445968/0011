@@ -8,16 +8,16 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useWorkspaceUnsavedChanges } from '../workspace/WorkspaceNavigationGuard';
 import { MessageSquareText, Paperclip, StickyNote } from 'lucide-react';
-import { TaskActivityPreview } from './TaskActivityPreview';
 
 type Note = { id:string; body:string; author_id:string|null; revision:number; created_at:string; updated_at:string };
 type FileRow = { id:string; filename:string };
 type TaskComment = { id:string; body:string; author_id:string|null; created_at:string; updated_at:string; revision:number };
 type TaskContext = { projectRevision:number; priority:string|null; notes:Note[]; comments:TaskComment[]; files:FileRow[]; noteCount:number;commentCount:number;fileCount:number;linkedFileIds?:string[]; availableFiles:FileRow[] };
 
-export function TaskProductivity({projectId,taskId,taskTitle,revision,disabled,userId,onPriority}: {
+export function TaskProductivity({projectId,taskId,taskTitle,revision,disabled,userId,onPriority,hidePriority=false,workplanDescription,onWorkplanDescriptionChange}: {
   projectId:string;taskId:string;taskTitle:string;revision:number;disabled:boolean;userId:string;
   onPriority?:(priority:string|null)=>void;
+  hidePriority?:boolean;workplanDescription?:string;onWorkplanDescriptionChange?:(value:string)=>void;
 }) {
   const router=useRouter();
   const [open,setOpen]=useState(false);
@@ -106,7 +106,7 @@ export function TaskProductivity({projectId,taskId,taskTitle,revision,disabled,u
     try{const response=await fetch(`/api/admin/projects/${projectId}/files/${file.id}/preview`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}',signal:AbortSignal.timeout(20000)});const result=await response.json();if(!response.ok||typeof result.url!=='string')throw new Error(result.error||'File preview could not be opened.');window.open(result.url,'_blank','noopener,noreferrer');}
     catch(cause){setError(cause instanceof Error?cause.message:'File preview could not be opened.');}finally{setBusy(false);}
   }
-  return <>{data&&<div className="flex flex-wrap items-center gap-2"><label htmlFor={`priority-${taskId}`} className="text-xs font-medium">Priority</label><select id={`priority-${taskId}`} className="rounded-md border border-input bg-background px-2 py-1.5 text-xs" disabled={disabled||busy||loading} value={data.priority??''} onChange={async event=>{const value=event.target.value||null;if(await save({action:'priority',taskId,priority:value}))onPriority?.(value);}}><option value="">Not set</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="urgent">Urgent</option></select></div>}
+  return <>{!hidePriority&&data&&<div className="flex flex-wrap items-center gap-2"><label htmlFor={`priority-${taskId}`} className="text-xs font-medium">Priority</label><select id={`priority-${taskId}`} className="rounded-md border border-input bg-background px-2 py-1.5 text-xs" disabled={disabled||busy||loading} value={data.priority??''} onChange={async event=>{const value=event.target.value||null;if(await save({action:'priority',taskId,priority:value}))onPriority?.(value);}}><option value="">Not set</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="urgent">Urgent</option></select></div>}
   <details className="mt-2 pt-2" onToggle={event=>{const next=event.currentTarget.open;setOpen(next);if(next)void load();}}>
     <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 text-[11px] text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring">
       <span title="Notes" aria-label={`Notes: ${data?.noteCount??'loading'}`} className="inline-flex items-center gap-1"><StickyNote size={13} aria-hidden/>{data?.noteCount??'…'}</span>
@@ -114,6 +114,7 @@ export function TaskProductivity({projectId,taskId,taskTitle,revision,disabled,u
       <span title="Files" aria-label={`Files: ${data?.fileCount??'loading'}`} className="inline-flex items-center gap-1"><Paperclip size={13} aria-hidden/>{data?.fileCount??'…'}</span>
     </summary>
     {open&&<div className="mt-3 space-y-4 rounded-lg bg-muted/30 p-3">
+      {onWorkplanDescriptionChange&&<label className="block text-xs font-medium">Task description<textarea aria-label={'Task description for '+taskTitle} className="mt-2 min-h-20 w-full rounded-md border border-input bg-background p-2 text-xs" value={workplanDescription??''} onChange={event=>onWorkplanDescriptionChange(event.target.value)} disabled={disabled&&(!workplanDescription||!onWorkplanDescriptionChange)} maxLength={2000}/></label>}
       {noteDirty&&<p role="status" className="text-xs text-amber-800 dark:text-amber-200">Unsaved task note. Save or cancel this note draft below.</p>}
       {loading&&<p role="status" className="text-xs text-muted-foreground">Loading saved task details…</p>}
       {data&&<>
@@ -140,7 +141,6 @@ export function TaskProductivity({projectId,taskId,taskTitle,revision,disabled,u
           {commentMessage&&<p role="status" className="text-[11px] text-emerald-700 dark:text-emerald-300">{commentMessage}</p>}
           {commentError&&<p role="alert" className="text-[11px] text-destructive">{commentError}</p>}
         </section>
-        <TaskActivityPreview projectId={projectId} taskId={taskId}/>
       </>}
     </div>}
   </details>
