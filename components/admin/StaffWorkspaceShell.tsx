@@ -1186,6 +1186,12 @@ useEffect(() => {
   const isLegacyPhaseView = requestedProjectTab === 'calendar' && searchParams.get('view') === 'phases';
   const selectedProjectTab = requestedProjectTab === 'lifecycle' || isLegacyPhaseView ? 'phases' : requestedProjectTab;
 
+  // Tasks uses a full-bleed white work surface. Keep the standard padded
+  // container for all other staff pages and project sections.
+  const isProjectTasksSurface =
+    /^\/(?:admin\/)?projects\/[^/]+\/?$/.test(pathname) &&
+    selectedProjectTab === 'plan';
+
   /* =======================================================
      STAFF ACCOUNT
      ======================================================= */
@@ -1924,32 +1930,23 @@ useEffect(() => {
 
           <main
             id="staff-workspace-content"
-            className="
-              min-h-0
-              min-w-0
-              flex-1
-              overflow-x-hidden
-              overflow-y-auto
-              overscroll-contain
-              bg-background
-              scrollbar-transparent
-            "
+            data-workspace-surface={isProjectTasksSurface ? 'project-tasks' : undefined}
+            className={`min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain scrollbar-transparent ${
+              isProjectTasksSurface
+                ? 'bg-white dark:bg-background'
+                : 'bg-background'
+            }`}
           >
             <div
-              className={`
-                mx-auto
-                w-full
-                max-w-[1600px]
-                px-4
-                sm:px-6
-                lg:px-8
-
-                ${
-                  density === 'compact'
-                    ? 'py-3 sm:py-4'
-                    : 'py-5 sm:py-6 lg:py-7'
-                }
-              `}
+              className={
+                isProjectTasksSurface
+                  ? 'w-full min-w-0 max-w-none bg-white p-0 dark:bg-background'
+                  : `mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8 ${
+                      density === 'compact'
+                        ? 'py-3 sm:py-4'
+                        : 'py-5 sm:py-6 lg:py-7'
+                    }`
+              }
             >
               {children}{staffId&&<ImageEditorDialog open={avatarOpen} onOpenChange={setAvatarOpen} kind="staff" subject={staffId} name={staffEmail||"Staff"} path={staffAvatarPath}/>} 
             </div>
