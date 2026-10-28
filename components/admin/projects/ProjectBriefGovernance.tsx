@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {ClipboardList, History, ShieldCheck, RefreshCcw, ChevronDown} from 'lucide-react';
 import type {ProjectRecord, ProjectEvent} from '@/lib/projects/data';
 import {projectStates, type ProjectBody} from '@/lib/projects/schema';
-import {projectBodiesEqual} from '@/lib/projects/workplan-merge';
+import {canCompleteProject,canReopenProject,hasUnsavedProjectDraft} from '@/lib/projects/brief-governance';
 import {postProjectCommand, confirmProjectCommandRead} from '@/lib/projects/immediate-command';
 import {refreshProjectSurfaces} from '@/lib/projects/refresh';
 
@@ -41,9 +41,7 @@ export function ProjectBriefGovernance({id,record,history,gateReady}:{
   const [error,setError]=useState('');
   const [needsVerification,setNeedsVerification]=useState(false);
   const [uncertainAction,setUncertainAction]=useState<Decision|null>(null);
-  const completeReady=record.state==='active'&&gateReady&&record.body.tasks.length>0
-    &&record.body.tasks.every(task=>task.status==='done')
-    &&record.body.milestones.every(milestone=>milestone.status==='done');
+  const completeReady=canCompleteProject(record.state,record.body,gateReady);
 
   async function verifyDecision() {
     if(busy)return;
@@ -71,7 +69,7 @@ export function ProjectBriefGovernance({id,record,history,gateReady}:{
   async function changeState(action:Decision){
     if(busy||needsVerification||!reason.trim())return;
     if(action==='complete'&&!completeReady)return;
-    if(action==='reopen'&&record.state!=='completed')return;
+    if(action==='reopen'&&!canReopenProject(record.state))return;
     setBusy(true);setError('');setMessage('Checking the latest project and private work-plan draft…');
     try{
       const latest=await verifiedProject(id);
@@ -81,9 +79,7 @@ export function ProjectBriefGovernance({id,record,history,gateReady}:{
         router.refresh();
         return;
       }
-      if(action==='complete'&&(!gateReady||!latest.body.tasks.length||
-          latest.body.tasks.some(task=>task.status!=='done')||
-          latest.body.milestones.some(milestone=>milestone.status!=='done'))){
+      if(action==='complete'&&!canCompleteProject(latest.state,latest.body,gateReady)){
         setError('Complete all saved tasks and milestones, and resolve project prerequisites, before completing the project.');
         setMessage('');
         return;
@@ -100,7 +96,7 @@ export function ProjectBriefGovernance({id,record,history,gateReady}:{
         router.refresh();
         return;
       }
-      if(draftResult.draft&&!projectBodiesEqual(draftResult.draft.body,latest.body)){
+      if(hasUnsavedProjectDraft(draftResult.draft?.body,latest.body)){
         setError('Unsaved work-plan edits exist. Restore, save, or discard the private draft in Tasks before changing project state.');
         setMessage('');
         return;
