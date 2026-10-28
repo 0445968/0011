@@ -328,7 +328,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     {dirtyTaskIds.includes(task.id)&&<span role="status" aria-label="Unsaved task changes"
       title="Changes awaiting autosave" className="pointer-events-none absolute right-0 top-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-blue-600 dark:border-card"/>}
   </span>;
-  const taskPreview=(task:Task)=><div key={task.id} className="bivi-task-row flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-xs hover:bg-muted/40"><ProjectTaskStateIcon status={task.status}/><button type="button" className="min-w-0 flex-1 text-left hover:underline" onClick={()=>openTask(task.id)} aria-label={`Open task ${task.title}`}>{task.title}</button>{taskPeople(task)}<span className="inline-flex items-center gap-1 text-muted-foreground"><Flag size={12} aria-hidden/>{task.dueOn||'—'}</span>{taskEditControl(task)}</div>;
+  const taskPreview=(task:Task)=><div key={task.id} className="bivi-task-row flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-xs hover:bg-muted/40">{taskSelectControl(task)}<ProjectTaskStateIcon status={task.status}/><button type="button" className="min-w-0 flex-1 text-left hover:underline" onClick={()=>openTask(task.id)} aria-label={`Open task ${task.title}`}>{task.title}</button>{taskPeople(task)}<span className="inline-flex items-center gap-1 text-muted-foreground"><Flag size={12} aria-hidden/>{task.dueOn||'—'}</span>{taskEditControl(task)}</div>;
   const milestoneCard=(milestone:Milestone)=>{
     const stats=milestoneStats(body,milestone.id);
     const isOpen=expanded[milestone.id]===true;
@@ -420,6 +420,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const compactRow=(task:Task)=><div role="row" key={task.id} style={{gridTemplateColumns:columnWidths}}
     className={"bivi-task-row grid min-h-12 items-center gap-3 px-5 py-1.5 text-xs transition-colors hover:bg-slate-50 focus-within:bg-slate-50 dark:hover:bg-muted/50 dark:focus-within:bg-muted/50 "+(selectedTaskId===task.id?'bg-blue-50/60 dark:bg-primary/10':'')}>
     <div role="cell" className="flex min-w-0 items-center gap-2">
+      {taskSelectControl(task)}
       {!visibleColumns.includes('status')&&statusMenu(task)}
       <span className="w-14 shrink-0 font-mono text-[10px] text-muted-foreground">{presentation.rows.find(row=>row.task_id===task.id)?.code??'Draft'}</span>
       <button type="button" onClick={()=>openTask(task.id)} className="min-w-0 flex-1 truncate text-left font-medium hover:underline" title={task.title}>{task.title}</button>
@@ -496,12 +497,13 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     {title&&<h2 className="bg-slate-50 px-5 py-2 text-xs font-semibold dark:bg-muted/40">{title} <span className="ml-1 font-normal text-muted-foreground">{tasks.length}</span></h2>}
     <div role="table" aria-label={title??'Tasks'} className="w-full" style={{minWidth:tableMinWidth}}>
       <div role="row" style={{gridTemplateColumns:columnWidths}} className="grid min-h-9 items-center gap-3 border-b border-border/70 px-5 text-[11px] font-medium text-muted-foreground">
-        <div role="columnheader">Name</div>{visibleColumns.map(column=><div role="columnheader" key={column} draggable title="Drag to reorder columns" className="cursor-grab" onDragStart={event=>{event.dataTransfer.setData('text/plain',column);event.dataTransfer.effectAllowed='move';}} onDragOver={event=>event.preventDefault()} onDrop={event=>{event.preventDefault();const source=event.dataTransfer.getData('text/plain') as TaskColumn;if(!visibleColumns.includes(source)||source===column)return;const next=visibleColumns.filter(item=>item!==source);next.splice(next.indexOf(column),0,source);changeColumns(next);}}>{labelForColumn[column]}</div>)}<div role="columnheader"><span className="sr-only">Edit</span></div>
+        <div role="columnheader" className="flex items-center gap-2"><input type="checkbox" aria-label="Select all visible tasks" className="h-4 w-4 shrink-0 accent-blue-600" checked={allVisibleSelected} ref={input=>{if(input)input.indeterminate=orderedTasks.some(task=>selectedTaskSet.has(task.id))&&!allVisibleSelected;}} onChange={toggleAllVisible}/>Name</div>{visibleColumns.map(column=><div role="columnheader" key={column} draggable title="Drag to reorder columns" className="cursor-grab" onDragStart={event=>{event.dataTransfer.setData('text/plain',column);event.dataTransfer.effectAllowed='move';}} onDragOver={event=>event.preventDefault()} onDrop={event=>{event.preventDefault();const source=event.dataTransfer.getData('text/plain') as TaskColumn;if(!visibleColumns.includes(source)||source===column)return;const next=visibleColumns.filter(item=>item!==source);next.splice(next.indexOf(column),0,source);changeColumns(next);}}>{labelForColumn[column]}</div>)}<div role="columnheader"><span className="sr-only">Edit</span></div>
       </div>
       {tasks.map(compactRow)}
     </div>
   </section>;
   const viewTaskButton=(task:Task)=><div key={task.id} className="bivi-task-row flex min-w-0 items-center gap-2 rounded-lg border border-border/60 bg-white p-2 text-xs transition-colors hover:border-border hover:bg-slate-50 dark:bg-card dark:hover:bg-muted/60">
+    {taskSelectControl(task)}
     <button type="button" onClick={()=>openTask(task.id)} className="flex min-w-0 flex-1 items-start gap-2 p-1 text-left">
       <ProjectTaskStateIcon status={task.status}/><span className="min-w-0 flex-1"><span className="block break-words font-medium">{task.title}</span><span className="mt-1 block text-[11px] text-muted-foreground">{task.dueOn?`Due ${task.dueOn}`:'No due date'}</span></span><span className="shrink-0">{taskPeople(task)}</span>
     </button>
@@ -682,7 +684,14 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
       phasesReady={Boolean(hierarchy.data)} assignmentsReady={Boolean(assignments.data)}
       tagFilter={tagFilter} onTagFilter={setTagFilter} tags={tagCatalog}
       showEditor={showEditor} onToggleEditor={()=>{if(!selectedTaskId&&body.tasks[0])openTask(body.tasks[0].id);else setShowEditor(open=>!open);}}
-      onAddTask={()=>onAddTask(null)} onAddMilestone={onAddMilestone} disabled={disabled}/>
+      onAddTask={()=>onAddTask(null)} onAddMilestone={onAddMilestone} disabled={disabled}
+      selectedCount={selectedTasks.length} visibleCount={orderedTasks.length} allVisibleSelected={allVisibleSelected}
+      onToggleAllVisible={toggleAllVisible} onClearSelection={()=>setSelectedTaskIds([])}
+      onBulkStatus={requestBulkStatus} onBulkDueDate={date=>setBulkChange({dueOn:date})}
+      onBulkMilestone={milestoneId=>setBulkChange({milestoneId})}
+      onBulkDelete={requestBulkRemove} onCopySelectedLinks={copySelectedTaskLinks}
+      milestoneChoices={body.milestones.map(milestone=>({id:milestone.id,title:milestone.title}))}/>
+    {bulkMessage&&<p role="status" className="mx-4 flex items-center justify-between gap-3 rounded-lg bg-muted/60 px-3 py-2 text-xs"><span>{bulkMessage}</span><button type="button" aria-label="Dismiss bulk action message" onClick={()=>setBulkMessage('')}><X size={14}/></button></p>}
     {presentation.error&&<p role="alert" className="text-xs text-destructive">{presentation.error} <button type="button" className="underline" onClick={()=>void presentation.load()}>Retry tags</button></p>}
     {assignments.error&&<p role="alert" className="text-xs text-destructive">{assignments.error}<button type="button" className="ml-2 underline" onClick={()=>void assignments.load()}>Retry members</button></p>}
     {schedule.error&&<p role="alert" className="text-xs text-destructive">{schedule.error}<button type="button" className="ml-2 underline" onClick={()=>void schedule.reload()}>Retry schedule</button></p>}
@@ -730,8 +739,8 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
             const duration=valid?Math.max(1,dayDifference(end!,start!)+1):0;
             const left=offset/rangeDays*100;
             const width=Math.max(0,Math.min(100-left,duration/rangeDays*100));
-            return <div key={task.id} className="grid gap-2 border-b border-border/40 py-2 sm:grid-cols-[minmax(150px,1fr)_minmax(180px,2fr)]">
-              <button type="button" className="text-left text-xs font-medium hover:underline" onClick={()=>openTask(task.id)}>{task.title}</button>
+            return <div key={task.id} className="bivi-task-row grid gap-2 border-b border-border/40 py-2 sm:grid-cols-[minmax(175px,1fr)_minmax(180px,2fr)]">
+              <div className="flex min-w-0 items-center gap-2">{taskSelectControl(task)}<button type="button" className="min-w-0 truncate text-left text-xs font-medium hover:underline" onClick={()=>openTask(task.id)}>{task.title}</button></div>
               <div className="min-w-0">
                 <p className="mb-1 text-[10px] text-muted-foreground">{start??'Start not set'} → {end??'Due not set'}</p>
                 {valid?<div className="relative h-4 w-full overflow-hidden rounded bg-slate-100 dark:bg-muted"><div className="absolute inset-y-0 rounded bg-blue-500/80" style={{left:`${left}%`,width:`${width}%`}} title={`${duration} calendar days from ${start} through ${end}`}/></div>:<span className="text-[10px] text-muted-foreground">Set start and due dates to display the schedule bar.</span>}
@@ -739,17 +748,21 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
             </div>;
           })}
         </div>}
-        {view==='calendar'&&<div className="rounded-xl border border-border"><div className="flex items-center justify-between border-b border-border p-3"><button type="button" className={miniButton} aria-label="Previous month" onClick={()=>shiftMonth(-1)}><ChevronRight size={16} className="rotate-180"/></button><h2 className="text-sm font-semibold">{new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric',timeZone:'UTC'}).format(monthDate)}</h2><button type="button" className={miniButton} aria-label="Next month" onClick={()=>shiftMonth(1)}><ChevronRight size={16}/></button></div><div className="grid grid-cols-7 border-b border-border text-center text-[10px] font-medium text-muted-foreground">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(day=><div key={day} className="py-2">{day}</div>)}</div><div className="grid grid-cols-7">{dates.map((date,index)=><div key={index} className="min-h-20 border-b border-r border-border/40 p-1 text-[10px]"><span className="text-muted-foreground">{date?.slice(-2)??''}</span>{dateTasks.filter(task=>task.dueOn===date).map(task=><button type="button" key={task.id} title={task.title} onClick={()=>openTask(task.id)} className="mt-1 block w-full truncate rounded bg-blue-50 px-1 py-0.5 text-left text-[10px] text-blue-950 hover:bg-blue-100 dark:bg-blue-950 dark:text-blue-100">{task.title}</button>)}</div>)}</div><p className="p-2 text-[11px] text-muted-foreground">{undatedTasks.length} tasks without a due date are excluded from this calendar, not deleted.</p></div>}
+        {view==='calendar'&&<div className="rounded-xl border border-border"><div className="flex items-center justify-between border-b border-border p-3"><button type="button" className={miniButton} aria-label="Previous month" onClick={()=>shiftMonth(-1)}><ChevronRight size={16} className="rotate-180"/></button><h2 className="text-sm font-semibold">{new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric',timeZone:'UTC'}).format(monthDate)}</h2><button type="button" className={miniButton} aria-label="Next month" onClick={()=>shiftMonth(1)}><ChevronRight size={16}/></button></div><div className="grid grid-cols-7 border-b border-border text-center text-[10px] font-medium text-muted-foreground">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(day=><div key={day} className="py-2">{day}</div>)}</div><div className="grid grid-cols-7">{dates.map((date,index)=><div key={index} className="min-h-20 border-b border-r border-border/40 p-1 text-[10px]"><span className="text-muted-foreground">{date?.slice(-2)??''}</span>{dateTasks.filter(task=>task.dueOn===date).map(task=><div key={task.id} className="bivi-task-row mt-1 flex min-w-0 items-center gap-1 rounded bg-blue-50 px-1 py-0.5 dark:bg-blue-950">{taskSelectControl(task)}<button type="button" title={task.title} onClick={()=>openTask(task.id)} className="min-w-0 flex-1 truncate text-left text-[10px] text-blue-950 hover:underline dark:text-blue-100">{task.title}</button></div>)}</div>)}</div><p className="p-2 text-[11px] text-muted-foreground">{undatedTasks.length} tasks without a due date are excluded from this calendar, not deleted.</p></div>}
         {!orderedTasks.length&&<p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">{body.tasks.length?'No tasks match the current filters.':'No tasks yet. Use + to create one.'}</p>}
         <footer role="status" className="px-5 py-3 text-[11px] text-muted-foreground">{orderedTasks.length} of {body.tasks.length} tasks · {subtasks.length} saved subtasks</footer>
       </div>
       {showEditor&&editorPanel&&(panelTarget?createPortal(editorPanel,panelTarget):editorPanel)}
     </div>
     <style jsx global>{`
+      .bivi-workplan .bivi-task-select { opacity: 0; transition: opacity 120ms ease; }
+      .bivi-workplan .bivi-task-row:hover .bivi-task-select,
+      .bivi-workplan .bivi-task-row:focus-within .bivi-task-select,
+      .bivi-workplan .bivi-task-select[data-selected="true"] { opacity: 1; }
       .bivi-workplan .bivi-task-edit-button { opacity: 0; transition: opacity 120ms ease; }
       .bivi-workplan .bivi-task-row:hover .bivi-task-edit-button,
       .bivi-workplan .bivi-task-row:focus-within .bivi-task-edit-button { opacity: 1; }
-      @media (hover: none) { .bivi-workplan .bivi-task-edit-button { opacity: 1; } }
+      @media (hover: none) { .bivi-workplan .bivi-task-edit-button, .bivi-workplan .bivi-task-select { opacity: 1; } }
     `}</style>
     <Dialog open={prompt!==null} onOpenChange={open=>{if(!open)setPrompt(null);}}><DialogContent className="bivi-staff-surface"><DialogTitle>{prompt?.title}</DialogTitle><DialogDescription>{prompt?.description}</DialogDescription>{prompt?.blockers&&hasMilestoneCompletionBlockers(prompt.blockers)&&<div className="max-h-56 overflow-auto rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100"><p className="font-semibold">Complete these tasks before completing this milestone.</p>{prompt.blockers.needsTask&&<p className="mt-2">Add at least one task to {prompt.blockers.milestoneTitle}.</p>}<ul className="ml-4 mt-2 list-disc space-y-1">{prompt.blockers.tasks.map(task=><li key={task.taskId}><a className="underline" href={`#${taskDomId(task.taskId)}`} onClick={event=>{event.preventDefault();navigateToTask(task.taskId);}}>{task.title}</a>{task.taskIncomplete?' — task is not completed':''}{task.subtasks.map(subtask=><span key={subtask.id}>; unfinished subtask: {subtask.title}</span>)}</li>)}</ul></div>}{prompt?.unavailable&&<p role="alert" className="rounded border border-red-300 p-2 text-xs">Completion is unavailable until the task hierarchy loads.</p>}<DialogFooter><button type="button" className="rounded-lg border border-border px-4 py-2 text-xs font-medium hover:bg-muted" onClick={()=>setPrompt(null)}>{prompt?.blockers?'Continue editing':'Cancel'}</button>{(!prompt?.blockers||!hasMilestoneCompletionBlockers(prompt.blockers))&&<button type="button" className="rounded-lg bg-foreground px-4 py-2 text-xs font-medium text-background" onClick={()=>{const action=prompt?.confirm;setPrompt(null);action?.();}}>{prompt?.unavailable?'Refresh hierarchy':'Confirm'}</button>}</DialogFooter></DialogContent></Dialog>
   </section>;
