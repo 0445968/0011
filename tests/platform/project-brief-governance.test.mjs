@@ -43,7 +43,7 @@ test('project governance is rendered under Brief, never as extra Tasks cards',()
   const panels=readFileSync(new URL('../../components/admin/projects/ProjectBriefGovernance.tsx',import.meta.url),'utf8');
   assert.match(page,/tab === 'brief'[\s\S]*?<ProjectBriefGovernance /);
   assert.doesNotMatch(tasks,/<summary[^>]*>[\s\S]{0,200}Project state & decisions/);
-  for(const section of ['Project state & decisions','Activation snapshot','Project history']) {
+  for(const section of ['Project state &amp; decisions','Activation snapshot','Project history']) {
     assert.ok(panels.includes(section),section+' must remain available under Brief');
   }
   for(const field of ['summary','deliverables','exclusions','clientInputs','revisions','schedule','fees']) {
