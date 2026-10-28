@@ -1941,6 +1941,9 @@ useEffect(() => {
 
           {/* WORKSPACE CONTENT */}
 
+          {/* This row starts immediately beneath record navigation. The main
+              content and the optional task inspector scroll independently. */}
+          <div className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden">
           <main
             id="staff-workspace-content"
             data-workspace-surface={isProjectTasksSurface ? 'project-tasks' : undefined}
@@ -1964,6 +1967,11 @@ useEffect(() => {
               {children}{staffId&&<ImageEditorDialog open={avatarOpen} onOpenChange={setAvatarOpen} kind="staff" subject={staffId} name={staffEmail||"Staff"} path={staffAvatarPath}/>} 
             </div>
           </main>
+          {/* React portals mount the Tasks editor here, at the workspace
+              level rather than below the scrolling task toolbar. Empty on
+              all other workspace pages, with no reserved gutter. */}
+          <div id="staff-workspace-task-panel" className="relative z-20 flex h-full shrink-0" />
+          </div>
         </div>
 
         {/* ===============================================
