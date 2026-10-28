@@ -259,7 +259,7 @@ export function ProjectWorkspace({
 
   const controller=useProjectEditingController(id,record,Boolean(selectedMilestone));
   const {body,savedBody,savedRevision,setBody,busy,setBusy,blocked,setBlocked,
-    message,setMessage,saveOutcomeUnknown,setSaveOutcomeUnknown,serverBlockers,setServerBlockers,workflowGate,setWorkflowGate,dirty,drafts,advanced,setAdvanced}=controller;
+    message,setMessage,saveOutcomeUnknown,setSaveOutcomeUnknown,serverBlockers,setServerBlockers,workflowGate,setWorkflowGate,dirty,drafts,advanced,setAdvanced,savePhase}=controller;
   const [lastReadMessage,setLastReadMessage]=useState('');
   const [reason,setReason]=useState('');
   const [workflowOverrideReason,setWorkflowOverrideReason]=useState('');
@@ -356,16 +356,24 @@ export function ProjectWorkspace({
   // A failed candidate is not retried until the user edits again.
   const autosaveAttempt=useRef('');
   useEffect(()=>{
-    if(overview||!body||!dirty||completed||inactive||busy||blocked||saveOutcomeUnknown||
+    if(!dirty){
+      // Once the canonical revision is acknowledged, a later edit must be
+      // eligible for autosave even if its body resembles a prior attempt.
+      autosaveAttempt.current='';
+      return;
+    }
+    if(overview||!body||completed||inactive||busy||blocked||saveOutcomeUnknown||
        !drafts.ready||Boolean(drafts.recoverable)||Boolean(drafts.conflict)||Boolean(workflowGate))return;
-    const candidate=JSON.stringify(body);
+    // Include the saved revision. A conflict-free rebase may retain exactly
+    // the same task content while requiring a fresh revision-checked save.
+    const candidate=savedRevision+':'+JSON.stringify(body);
     if(candidate===autosaveAttempt.current)return;
     const timer=window.setTimeout(()=>{
       autosaveAttempt.current=candidate;
       void controller.save();
     },1800);
     return ()=>window.clearTimeout(timer);
-  },[body,dirty,overview,completed,inactive,busy,blocked,saveOutcomeUnknown,drafts.ready,drafts.recoverable,drafts.conflict,workflowGate]);
+  },[body,dirty,savedRevision,overview,completed,inactive,busy,blocked,saveOutcomeUnknown,drafts.ready,drafts.recoverable,drafts.conflict,workflowGate]);
 
   const today=savedToday;
 
@@ -944,7 +952,7 @@ export function ProjectWorkspace({
   const toolbarIcon='relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-white hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40 dark:bg-card';
   const toolbarActions=!overview?<div className="ml-1 flex shrink-0 items-center gap-1.5" aria-label="Workplan save and messages">
     <button type="button" className={toolbarIcon} title="Refresh saved data" aria-label="Refresh saved task data" disabled={busy} onClick={()=>void controller.checkUncertainSave()}><RefreshCw size={16}/></button>
-    <button type="button" className={toolbarIcon} title={busy?'Saving changes':'Save workplan now'} aria-label="Save workplan now" disabled={!dirty||locked||saveOutcomeUnknown||!drafts.ready||Boolean(drafts.recoverable)||Boolean(drafts.conflict)} onClick={()=>void command('save')}><Save size={16}/></button>
+    <button type="button" className={toolbarIcon} title={busy?'Saving changes':savePhase==='failed'?'Retry saving workplan':'Save workplan now'} aria-label={savePhase==='failed'?'Retry saving workplan':'Save workplan now'} disabled={!dirty||locked||saveOutcomeUnknown||!drafts.ready||Boolean(drafts.recoverable)||Boolean(drafts.conflict)} onClick={()=>void command('save')}><Save size={16}/></button>
     <details className="relative">
       <summary className={toolbarIcon+' cursor-pointer list-none [&::-webkit-details-marker]:hidden'} title="Draft options" aria-label="Draft options"><FileClock size={16}/>{dirty&&<span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-amber-400"/>}</summary>
       <div className="absolute right-0 z-50 mt-2 min-w-56 rounded-xl border border-border bg-white p-3 text-xs shadow-xl dark:bg-card">
@@ -1039,6 +1047,12 @@ export function ProjectWorkspace({
         onBulkTaskRemove={bulkRemoveTasks}
         onReorderTask={reorderTask}
         onSaveOrder={()=>{void command('save');}}
+        onVerifyOrder={()=>{void controller.checkUncertainSave();}}
+        orderSaveIssue={saveOutcomeUnknown
+          ? 'The save result could not be verified. Verify the saved project before retrying.'
+          : drafts.conflict ? 'The saved project changed. Resolve the draft conflicts before saving this order.'
+          : savePhase==='failed'&&dirty ? message || 'The last save did not complete. Review work-plan requirements, then retry.' : null}
+        orderVerifyRequired={saveOutcomeUnknown}
         orderDirty={Boolean(savedBody&&JSON.stringify(body.tasks.map(task=>[task.id,task.milestoneId]))!==JSON.stringify(savedBody.tasks.map(task=>[task.id,task.milestoneId])))}
       />
       </div>
