@@ -151,7 +151,7 @@ function SubtaskEditor({item,disabled,update,requestRemove,today}: {
   </li>;
 }
 
-export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarReady,onTaskChange,onMilestoneChange,onAddTask,onAddMilestone,onEditTask,onEditMilestone,taskControls,onBulkTasks,userId,today,focusTaskId,focusTaskRequest,workflowGate,workflowOverrideReason,onWorkflowOverrideReason,onOverrideTaskStatus,overrideReady,busy,onRemoveTask,onBulkTaskChange,onBulkTaskRemove,onReorderTask,onSaveOrder,onVerifyOrder,orderSaveIssue=null,orderVerifyRequired=false,orderDirty=false,advanced=false,onAdvancedToggle,dirtyTaskIds=[],toolbarActions}: {
+export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarReady,onTaskChange,onMilestoneChange,onAddTask,onAddMilestone,onEditTask,onEditMilestone,taskControls,onBulkTasks,userId,today,focusTaskId,focusTaskRequest,workflowGate,workflowOverrideReason,onWorkflowOverrideReason,onOverrideTaskStatus,overrideReady,busy,onRemoveTask,onBulkTaskChange,onBulkTaskRemove,onReorderTask,onSaveTask,taskSaveDisabled,onSaveOrder,onVerifyOrder,orderSaveIssue=null,orderVerifyRequired=false,orderDirty=false,advanced=false,onAdvancedToggle,dirtyTaskIds=[],toolbarActions}: {
   onAdvancedToggle?:()=>void;dirtyTaskIds?:string[];toolbarActions?:ReactNode;advanced?:boolean;id:string;revision:number;body:ProjectBody;disabled:boolean;dirty:boolean;sidecarReady:boolean;today:string;focusTaskId?:string|null;focusTaskRequest?:number;
   onTaskChange:(index:number,changes:Partial<Task>)=>void;
   onMilestoneChange:(index:number,changes:Partial<Milestone>)=>void;
@@ -162,6 +162,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   onBulkTaskChange:(taskIds:string[],changes:Partial<Task>)=>void;
   onBulkTaskRemove:(taskIds:string[])=>void;
   onReorderTask:(taskId:string,milestoneId:string|null,overTaskId:string|null,position:'before'|'after'|'end')=>boolean;
+  onSaveTask:(taskId:string)=>void;taskSaveDisabled:boolean;
   onSaveOrder:()=>void;onVerifyOrder:()=>void;orderSaveIssue?:string|null;orderVerifyRequired?:boolean;orderDirty?:boolean;
   userId:string;
   workflowGate?:ProjectWorkflowGate|null;workflowOverrideReason:string;onWorkflowOverrideReason:(reason:string)=>void;onOverrideTaskStatus:()=>void;overrideReady:boolean;busy:boolean;onRemoveTask:(taskId:string)=>void;
@@ -238,7 +239,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const schedule=useProjectTaskSchedule(id,revision);
   const phaseColors=useProjectPhaseColors(id,[]);
   const canEditSidecar=!disabled&&!dirty&&sidecarReady&&!hierarchy.busy&&!hierarchy.conflict&&hierarchy.data?.projectRevision===revision;
-  // Record the actual transition date after the revision-checked task autosave
+  // Record the actual transition date after the revision-checked task save
   // completes, not before (which could invalidate the workplan revision).
   useEffect(()=>{
     if(!canEditSidecar||schedule.busy!==null)return;
@@ -331,7 +332,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
       title={'Edit '+task.title} aria-label={'Edit task '+task.title}
       onClick={()=>openTask(task.id)}><Pencil size={15} aria-hidden/></button>
     {dirtyTaskIds.includes(task.id)&&<span role="status" aria-label="Unsaved task changes"
-      title="Changes awaiting autosave" className="pointer-events-none absolute right-0 top-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-blue-600 dark:border-card"/>}
+      title="Draft changes — not applied" className="pointer-events-none absolute right-0 top-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-blue-600 dark:border-card"/>}
   </span>;
   const taskPreview=(task:Task)=><div key={task.id} className="bivi-task-row flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-xs hover:bg-muted/40">{taskSelectControl(task)}<ProjectTaskStateIcon status={task.status}/><button type="button" className="min-w-0 flex-1 text-left hover:underline" onClick={()=>openTask(task.id)} aria-label={`Open task ${task.title}`}>{task.title}</button>{taskPeople(task)}<span className="inline-flex items-center gap-1 text-muted-foreground"><Flag size={12} aria-hidden/>{task.dueOn||'—'}</span>{taskEditControl(task)}</div>;
   const milestoneCard=(milestone:Milestone)=>{
@@ -353,7 +354,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
         {phases.length>0&&<div className="flex flex-wrap gap-1.5 pl-9">{phases.map(phase=><Link key={phase} href={`/projects/${id}?tab=phases`} className="inline-flex min-h-7 items-center gap-1 rounded-md border border-border px-2 text-[10px] text-muted-foreground hover:bg-muted"><span aria-hidden className="h-2 w-2 rounded-sm border border-black/15 dark:border-white/20" style={{backgroundColor:phaseColorFor(phase,phaseColors.rows)}}/>{projectPhaseLabels[phase]}</Link>)}</div>}
         <div className="flex items-center gap-2 pl-9 text-[10px] text-muted-foreground"><div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-muted"><div className="h-full bg-gradient-to-r from-emerald-400 via-green-500 to-teal-600" style={{width:`${stats.percent??0}%`}}/></div>{stats.percent===null?'No task progress':`${stats.percent}% tasks done`}</div>
       </div>
-      {isOpen&&<div className="bg-background/40"><div className="flex items-center justify-between gap-3 px-4 py-2"><span className="text-[11px] font-semibold">{matchingTasks.filter(task=>task.milestoneId===milestone.id).length} matching / {stats.total} tasks</span><div className="flex items-center gap-1">{btn('Mark all tasks completed',<CheckCheck size={16}/>,()=>setPrompt({title:'Complete all tasks?',description:`Update ${stats.total} task${stats.total===1?'':'s'} in “${milestone.title}” in one audited project revision. Blocked tasks and unmet dependencies will be rejected. Save other work-plan edits first.`,confirm:()=>onBulkTasks(milestone.id,'done')}),disabled||dirty||!stats.total)}{btn('Mark all tasks not started',<RotateCcw size={15}/>,()=>setPrompt({title:'Reset task statuses?',description:`Return ${stats.total} task${stats.total===1?'':'s'} in “${milestone.title}” to To do in one audited project revision? Active tasks may depend on this work. Save other work-plan edits first.`,confirm:()=>onBulkTasks(milestone.id,'todo')}),disabled||dirty||!stats.total)}{btn('Add task',<Plus size={16}/>,()=>onAddTask(milestone.id),disabled||body.tasks.length>=100)}</div></div><div className="space-y-2 px-3 pb-3">{matchingTasks.filter(task=>task.milestoneId===milestone.id).map(taskPreview)}{stats.total>0&&!matchingTasks.some(task=>task.milestoneId===milestone.id)&&<p className="text-xs text-muted-foreground">No tasks match the current filters. Milestone progress still includes all linked tasks.</p>}</div>{!stats.total&&<p className="px-4 py-4 text-xs text-muted-foreground">No tasks. Use + to add one.</p>}{stats.readyForReview&&milestone.status!=='done'&&<button type="button" disabled={disabled} onClick={()=>reviewMilestoneCompletion(milestone)} className="m-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">All tasks done — review milestone completion</button>}</div>}
+      {isOpen&&<div className="bg-background/40"><div className="flex items-center justify-between gap-3 px-4 py-2"><span className="text-[11px] font-semibold">{matchingTasks.filter(task=>task.milestoneId===milestone.id).length} matching / {stats.total} tasks</span><div className="flex items-center gap-1">{btn('Mark all tasks completed',<CheckCheck size={16}/>,()=>setPrompt({title:'Complete all tasks?',description:`Update ${stats.total} task${stats.total===1?'':'s'} in “${milestone.title}” in the private draft. Choose Save all changes to apply; blocked tasks and unmet dependencies will be rejected.`,confirm:()=>onBulkTasks(milestone.id,'done')}),disabled||!stats.total)}{btn('Mark all tasks not started',<RotateCcw size={15}/>,()=>setPrompt({title:'Reset task statuses?',description:`Return ${stats.total} task${stats.total===1?'':'s'} in “${milestone.title}” to To do in the private draft? Choose Save all changes to apply. Active tasks may depend on this work.`,confirm:()=>onBulkTasks(milestone.id,'todo')}),disabled||!stats.total)}{btn('Add task',<Plus size={16}/>,()=>onAddTask(milestone.id),disabled||body.tasks.length>=100)}</div></div><div className="space-y-2 px-3 pb-3">{matchingTasks.filter(task=>task.milestoneId===milestone.id).map(taskPreview)}{stats.total>0&&!matchingTasks.some(task=>task.milestoneId===milestone.id)&&<p className="text-xs text-muted-foreground">No tasks match the current filters. Milestone progress still includes all linked tasks.</p>}</div>{!stats.total&&<p className="px-4 py-4 text-xs text-muted-foreground">No tasks. Use + to add one.</p>}{stats.readyForReview&&milestone.status!=='done'&&<button type="button" disabled={disabled} onClick={()=>reviewMilestoneCompletion(milestone)} className="m-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">All tasks done — review milestone completion</button>}</div>}
     </article>;
   };
 
@@ -380,7 +381,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const columnValue=(task:Task,column:TaskColumn):ReactNode=>{
     if(column==='priority'){
       const priority=taskControls.find(row=>row.taskId===task.id)?.priority??null;
-      return <TaskPriorityCell projectId={id} taskId={task.id} priority={priority} revision={revision} disabled={disabled||dirty||!sidecarReady}/>;
+      return <button type="button" className={miniButton} aria-label={'Edit priority for '+task.title} title="Edit priority in full task editor" onClick={()=>openTask(task.id)}><PriorityBars priority={priority}/></button>;
     }
     if(column==='status')return statusMenu(task);
     if(column==='milestone'){
@@ -390,11 +391,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     if(column==='due')return <TaskDateCell label={'Due date for '+task.title} value={task.dueOn}
       disabled={disabled} icon={<Flag size={13} aria-hidden/>}
       onChange={value=>updateTask(task,{dueOn:value})}/>;
-    if(column==='start')return <TaskDateCell label={'Start date for '+task.title}
-      value={schedule.rows.get(task.id)?.start_on??null}
-      disabled={disabled||dirty||!sidecarReady||schedule.busy!==null}
-      icon={<Play size={13} aria-hidden/>}
-      onChange={value=>{void schedule.save(task.id,value,task.dueOn,dirty);}}/>;
+    if(column==='start')return <button type="button" className="inline-flex min-h-8 items-center gap-1.5 text-xs" title="Edit start date in full task editor" aria-label={'Edit start date for '+task.title} onClick={()=>openTask(task.id)}><Play size={13}/>{schedule.rows.get(task.id)?.start_on??'—'}</button>;
     if(column==='phase'){
       const phases=workplanTaskPhases(task,context);
       return phases.length?<Link href={'/projects/'+id+'?tab=phases'}
@@ -406,14 +403,10 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
       </Link>:<span className="text-[11px] text-muted-foreground">—</span>;
     }
     if(column==='tags'){
-      const row=presentation.rows.find(item=>item.task_id===task.id);
-      return <div className="flex min-w-0 items-center gap-1">
-        <TaskTags projectId={id} projectRevision={revision} row={row} catalog={tagCatalog}
-          disabled={disabled||dirty||!sidecarReady} reload={presentation.load}/>
-        {Boolean(row?.tags.length)&&<span className="min-w-0 truncate text-[10px] text-muted-foreground" title={row?.tags.join(', ')}>{row?.tags.slice(0,2).join(', ')}{(row?.tags.length??0)>2?'…':''}</span>}
-      </div>;
+      const tags=presentation.rows.find(item=>item.task_id===task.id)?.tags??[];
+      return <button type="button" className="min-h-8 max-w-full truncate text-left text-xs" title="Edit tags in full task editor" aria-label={'Edit tags for '+task.title} onClick={()=>openTask(task.id)}>{tags.join(', ')||'—'}</button>;
     }
-    return <TaskMemberPicker taskId={task.id} controls={assignments} disabled={disabled||dirty||!sidecarReady}/>;
+    return <button type="button" className="min-h-8" title="Edit assignees in full task editor" aria-label={'Edit assignees for '+task.title} onClick={()=>openTask(task.id)}>{taskPeople(task)}</button>;
   };
   const statusMenu=(task:Task)=><Popover>
     <PopoverTrigger asChild><button type="button" disabled={disabled} aria-label={'Change status of '+task.title} className="inline-flex min-h-8 items-center gap-1.5 rounded-lg px-1.5 hover:bg-muted disabled:opacity-50"><ProjectTaskStateIcon status={task.status}/><span className="sr-only">{task.status}</span></button></PopoverTrigger>
@@ -447,7 +440,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const setBulkChange=(changes:Partial<Task>)=>{
     if(disabled||!selectedTasks.length)return;
     onBulkTaskChange(selectedTasks.map(task=>task.id),changes);
-    setBulkMessage(`${selectedTasks.length} selected task${selectedTasks.length===1?'':'s'} queued for autosave.`);
+    setBulkMessage(`${selectedTasks.length} selected task${selectedTasks.length===1?'':'s'} added to the draft. Use Save all changes to apply.`);
   };
   const requestBulkStatus=(status:Task['status'])=>{
     if(disabled||!selectedTasks.length)return;
@@ -467,7 +460,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
         setBulkMessage(`Cannot complete “${blocked.title}” while its prerequisites or subtasks remain unfinished.`);
         return;
       }
-      setPrompt({title:'Complete selected tasks?',description:`Mark ${selectedTasks.length} selected tasks completed? Dependencies, client requirements and milestones must still pass project validation. Your changes will be submitted through autosave.`,confirm:()=>{
+      setPrompt({title:'Complete selected tasks?',description:`Mark ${selectedTasks.length} selected tasks completed? Dependencies, client requirements and milestones must still pass project validation. Your changes stay in the draft until you choose Save all changes.`,confirm:()=>{
         const pending=Object.fromEntries(selectedTasks.filter(task=>!['doing','done'].includes(task.status)&&!schedule.rows.get(task.id)?.start_on).map(task=>[task.id,today]));
         setPendingStartDates(previous=>({...previous,...pending}));
         setBulkChange({status});
@@ -493,9 +486,9 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
       return;
     }
     const ids=selectedTasks.map(task=>task.id);
-    setPrompt({title:`Remove ${ids.length} tasks?`,description:'Remove these tasks from the work-plan draft? Saved notes, files, discussions and audit history remain recorded. The deletion will be submitted through autosave.',confirm:()=>{
+    setPrompt({title:`Remove ${ids.length} tasks?`,description:'Remove these tasks from the work-plan draft? Saved notes, files, discussions and audit history remain recorded. Choose Save all changes to apply the deletion.',confirm:()=>{
       onBulkTaskRemove(ids);setSelectedTaskIds(previous=>previous.filter(id=>!ids.includes(id)));
-      setBulkMessage(`${ids.length} tasks removed from the draft; autosave is pending.`);
+      setBulkMessage(`${ids.length} tasks removed from the draft; choose Save all changes to apply.`);
     }});
   };
   const copySelectedTaskLinks=()=>{
@@ -635,7 +628,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
         </div>
       </details>
 
-      {(dirty||!sidecarReady)&&<p role="status" className="text-[11px] text-amber-700 dark:text-amber-300">Task changes are awaiting autosave. Saved assignments and dependencies can be edited after the project save is confirmed.</p>}
+      {(dirty||!sidecarReady)&&<p role="status" className="text-[11px] text-amber-700 dark:text-amber-300">Task changes remain drafts until you apply them. Use Save task or Save all changes to apply them. Saved assignments and dependencies can be edited after the project save is confirmed.</p>}
 
       <TaskActivityPreview projectId={id} taskId={task.id} defaultOpen/>
 
@@ -676,6 +669,9 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
       </div>
       <header className="flex min-h-14 shrink-0 items-center justify-between gap-3 border-b border-border/60 px-4 py-3">
         <h2 className="text-sm font-semibold">Edit task</h2>
+        <button type="button" className="ml-auto rounded-lg bg-foreground px-3 py-2 text-xs font-medium text-background disabled:opacity-40"
+          disabled={taskSaveDisabled||!selectedTaskId||!dirtyTaskIds.includes(selectedTaskId)}
+          onClick={()=>{if(selectedTaskId)onSaveTask(selectedTaskId);}}>Save task</button>
         <button type="button" className={miniButton} aria-label="Close task editor" title="Close task editor" onClick={()=>setShowEditor(false)}><X size={17}/></button>
       </header>
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 overscroll-contain">
@@ -716,7 +712,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     {hierarchy.conflict&&<p role="alert" className="text-xs text-destructive">Project data changed. Refresh before editing linked records.</p>}
     {(hierarchy.busy||assignments.busy||schedule.busy)&&<p role="status" className="text-xs text-muted-foreground">Saving task details…</p>}
     {(hierarchy.message||assignments.message||schedule.message)&&<p role="status" className="text-xs text-emerald-700 dark:text-emerald-300">{[hierarchy.message,assignments.message,schedule.message].filter(Boolean).join(' ')}</p>}
-    {dirty&&<p role="status" className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">Unsaved work-plan edits. Use Save all before changing saved assignments, notes or files.</p>}
+    {dirty&&<p role="status" className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">Unsaved work-plan edits. Use Save all changes to apply this draft. Priority, start date, tags and assignees are edited directly in the full task editor.</p>}
     {newSubtaskFor&&newSubtaskTitle.trim()&&<p role="status" className="text-xs text-amber-800 dark:text-amber-200">Unsaved subtask for {body.tasks.find(task=>task.id===newSubtaskFor)?.title}. <button type="button" className="underline" onClick={()=>openTask(newSubtaskFor)}>Return to editor</button>.</p>}
     <div className="min-w-0">
       <div className="min-w-0 space-y-3">
