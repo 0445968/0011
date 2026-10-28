@@ -150,7 +150,7 @@ function SubtaskEditor({item,disabled,update,requestRemove,today}: {
   </li>;
 }
 
-export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarReady,onTaskChange,onMilestoneChange,onAddTask,onAddMilestone,onEditTask,onEditMilestone,taskControls,onBulkTasks,userId,today,focusTaskId,focusTaskRequest,workflowGate,workflowOverrideReason,onWorkflowOverrideReason,onOverrideTaskStatus,overrideReady,busy,onRemoveTask,advanced=false,onAdvancedToggle,dirtyTaskIds=[],toolbarActions}: {
+export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarReady,onTaskChange,onMilestoneChange,onAddTask,onAddMilestone,onEditTask,onEditMilestone,taskControls,onBulkTasks,userId,today,focusTaskId,focusTaskRequest,workflowGate,workflowOverrideReason,onWorkflowOverrideReason,onOverrideTaskStatus,overrideReady,busy,onRemoveTask,onBulkTaskChange,onBulkTaskRemove,advanced=false,onAdvancedToggle,dirtyTaskIds=[],toolbarActions}: {
   onAdvancedToggle?:()=>void;dirtyTaskIds?:string[];toolbarActions?:ReactNode;advanced?:boolean;id:string;revision:number;body:ProjectBody;disabled:boolean;dirty:boolean;sidecarReady:boolean;today:string;focusTaskId?:string|null;focusTaskRequest?:number;
   onTaskChange:(index:number,changes:Partial<Task>)=>void;
   onMilestoneChange:(index:number,changes:Partial<Milestone>)=>void;
@@ -158,11 +158,17 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   onAddMilestone:()=>void; onEditTask:(taskId:string)=>void; onEditMilestone:(milestoneId:string)=>void;
   taskControls:ProjectTaskControl[];
   onBulkTasks:(milestoneId:string,status:'done'|'todo')=>void;
+  onBulkTaskChange:(taskIds:string[],changes:Partial<Task>)=>void;
+  onBulkTaskRemove:(taskIds:string[])=>void;
   userId:string;
   workflowGate?:ProjectWorkflowGate|null;workflowOverrideReason:string;onWorkflowOverrideReason:(reason:string)=>void;onOverrideTaskStatus:()=>void;overrideReady:boolean;busy:boolean;onRemoveTask:(taskId:string)=>void;
 }) {
   const presentation=useTaskPresentation(id,revision);
   const [tagFilter,setTagFilter]=useState('');
+  const [selectedTaskIds,setSelectedTaskIds]=useState<string[]>([]);
+  const [bulkMessage,setBulkMessage]=useState('');
+  const selectedTaskSet=new Set(selectedTaskIds);
+  useEffect(()=>{setSelectedTaskIds(previous=>{const valid=previous.filter(taskId=>body.tasks.some(task=>task.id===taskId));return valid.length===previous.length?previous:valid;});},[body.tasks]);
   const tagCatalog=[...new Set(presentation.rows.flatMap(row=>row.tags))].sort();
   const hierarchy=useProjectHierarchy(id,revision,true);
   const assignments=useProjectAssignments(id,revision);
@@ -308,6 +314,13 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     return <div className="flex flex-wrap items-center gap-2 px-3 pb-2 text-[11px] text-muted-foreground"><span>Requires</span>{prerequisite?<><button type="button" className="font-medium text-foreground hover:underline" onClick={()=>openTask(prerequisite.id)}>{prerequisite.title}</button>{taskPeople(prerequisite)}{assigneeNames&&<span>{assigneeNames}</span>}<span>{prerequisite.status==='done'?'Completed':'Incomplete'}</span></>:<span>Dependency unavailable</span>}</div>;
   };
   // Keep the unsaved dot visible even when the edit pencil is hidden.
+  const toggleTaskSelection=(taskId:string)=>setSelectedTaskIds(previous=>
+    previous.includes(taskId)?previous.filter(id=>id!==taskId):[...previous,taskId]);
+  const taskSelectControl=(task:Task)=><input type="checkbox"
+    className="bivi-task-select h-4 w-4 shrink-0 cursor-pointer rounded border border-border accent-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+    aria-label={`Select task ${task.title}`} data-selected={selectedTaskSet.has(task.id)?'true':'false'}
+    checked={selectedTaskSet.has(task.id)} onClick={event=>event.stopPropagation()}
+    onChange={()=>toggleTaskSelection(task.id)}/>;
   const taskEditControl=(task:Task)=><span className="relative inline-flex h-8 w-8 shrink-0 items-center justify-center">
     <button type="button" className={miniButton+' bivi-task-edit-button'}
       title={'Edit '+task.title} aria-label={'Edit task '+task.title}
@@ -414,6 +427,70 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     {visibleColumns.map(column=><div key={column} role="cell" className="min-w-0 overflow-hidden">{columnValue(task,column)}</div>)}
     <div role="cell">{taskEditControl(task)}</div>
   </div>;
+  const selectedTasks=body.tasks.filter(task=>selectedTaskSet.has(task.id));
+  const allVisibleSelected=orderedTasks.length>0&&orderedTasks.every(task=>selectedTaskSet.has(task.id));
+  const toggleAllVisible=()=>{
+    setSelectedTaskIds(previous=>{
+      const next=new Set(previous);
+      if(orderedTasks.length>0&&orderedTasks.every(task=>next.has(task.id))){
+        orderedTasks.forEach(task=>next.delete(task.id));
+      }else orderedTasks.forEach(task=>next.add(task.id));
+      return [...next];
+    });
+  };
+  const setBulkChange=(changes:Partial<Task>)=>{
+    if(disabled||!selectedTasks.length)return;
+    onBulkTaskChange(selectedTasks.map(task=>task.id),changes);
+    setBulkMessage(`${selectedTasks.length} selected task${selectedTasks.length===1?'':'s'} queued for autosave.`);
+  };
+  const requestBulkStatus=(status:Task['status'])=>{
+    if(disabled||!selectedTasks.length)return;
+    if(status==='done'){
+      if(!hierarchy.data||hierarchy.data.projectRevision!==revision){
+        setBulkMessage('Refresh the saved task hierarchy before marking multiple tasks completed.');
+        return;
+      }
+      const selected=new Set(selectedTasks.map(task=>task.id));
+      const blocked=selectedTasks.find(task=>{
+        const prerequisite=taskControls.find(control=>control.taskId===task.id)?.dependsOn;
+        const prerequisiteTask=prerequisite?body.tasks.find(row=>row.id===prerequisite):null;
+        return Boolean(prerequisiteTask&&prerequisiteTask.status!=='done'&&!selected.has(prerequisiteTask.id))||
+          subtasks.some(item=>item.taskId===task.id&&item.status!=='done');
+      });
+      if(blocked){
+        setBulkMessage(`Cannot complete “${blocked.title}” while its prerequisites or subtasks remain unfinished.`);
+        return;
+      }
+      setPrompt({title:'Complete selected tasks?',description:`Mark ${selectedTasks.length} selected tasks completed? Dependencies, client requirements and milestones must still pass project validation. Your changes will be submitted through autosave.`,confirm:()=>setBulkChange({status})});
+    }else setBulkChange({status});
+    if(status==='doing'||status==='done'){
+      const pending=Object.fromEntries(selectedTasks.filter(task=>['todo','blocked'].includes(task.status)&&!schedule.rows.get(task.id)?.start_on).map(task=>[task.id,today]));
+      setPendingStartDates(previous=>({...previous,...pending}));
+    }
+  };
+  const requestBulkRemove=()=>{
+    if(disabled||!selectedTasks.length)return;
+    if(!hierarchy.data||hierarchy.data.projectRevision!==revision){
+      setBulkMessage('Refresh the saved task hierarchy before removing multiple tasks.');
+      return;
+    }
+    const blocked=selectedTasks.find(task=>subtasks.some(item=>item.taskId===task.id)||
+      taskControls.some(control=>control.dependsOn===task.id));
+    if(blocked){
+      setBulkMessage(`Cannot remove “${blocked.title}”. Remove saved subtasks or reassign dependent tasks first.`);
+      return;
+    }
+    const ids=selectedTasks.map(task=>task.id);
+    setPrompt({title:`Remove ${ids.length} tasks?`,description:'Remove these tasks from the work-plan draft? Saved notes, files, discussions and audit history remain recorded. The deletion will be submitted through autosave.',confirm:()=>{
+      onBulkTaskRemove(ids);setSelectedTaskIds(previous=>previous.filter(id=>!ids.includes(id)));
+      setBulkMessage(`${ids.length} tasks removed from the draft; autosave is pending.`);
+    }});
+  };
+  const copySelectedTaskLinks=()=>{
+    const urls=selectedTasks.map(task=>new URL('/projects/'+id+'?tab=plan&task='+encodeURIComponent(task.id),window.location.origin).href);
+    if(!urls.length)return;
+    void navigator.clipboard.writeText(urls.join('\n')).then(()=>setBulkMessage(`Copied ${urls.length} internal task link${urls.length===1?'':'s'}. Existing access permissions still apply.`)).catch(()=>setBulkMessage('Could not copy links. Check browser clipboard permission.'));
+  };
   const sectionGroups=groupWorkplanTasks(orderedTasks,grouping,context).filter(group=>group.tasks.length>0);
   const rowTable=(tasks:Task[],key:string,title?:string)=><section key={key} className="overflow-x-auto bg-white dark:bg-card">
     {title&&<h2 className="bg-slate-50 px-5 py-2 text-xs font-semibold dark:bg-muted/40">{title} <span className="ml-1 font-normal text-muted-foreground">{tasks.length}</span></h2>}
