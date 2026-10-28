@@ -176,7 +176,7 @@ export function MilestoneOrderBoard({ milestones, tasks, disabled, addDisabled=f
       }
     }
     if (onMove(taskId, destinationId, targetTask?.id ?? null, position)) {
-      setAnnouncement('Completion order updated. Work-plan autosave will save this as the project manual order.');
+      setAnnouncement('Completion order updated. Choose Save all changes to apply the project manual order.');
     } else {
       setAnnouncement('Task order was unchanged. Completed milestones and invalid moves are protected.');
     }
@@ -192,11 +192,11 @@ export function MilestoneOrderBoard({ milestones, tasks, disabled, addDisabled=f
       </div>
       <div className="flex items-center gap-2">
         {orderDirty ? <span role="status" className={'text-[11px] '+(saveIssue?'text-amber-700 dark:text-amber-300':'text-blue-700 dark:text-blue-300')}>
-          {saving ? 'Saving order…' : saveIssue ? 'Order needs attention' : 'Order awaiting autosave'}
+          {saving ? 'Saving order…' : saveIssue ? 'Order needs attention' : 'Draft order — not applied'}
         </span> : <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground"><Check size={13}/>Order saved</span>}
         {orderDirty && !verifyRequired && <button type="button" onClick={onSave} disabled={disabled || saving} title="Save the entire work-plan draft, including this order"
           className="inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-border bg-background px-3 text-[11px] font-medium hover:bg-muted disabled:opacity-40">
-          <Save size={14}/>{saveIssue ? 'Retry save' : 'Save now'}
+          <Save size={14}/>{saveIssue ? 'Retry save' : 'Save all changes'}
         </button>}
         {verifyRequired && <button type="button" onClick={onVerifySave} disabled={saving}
           title="Verify the saved revision before retrying"

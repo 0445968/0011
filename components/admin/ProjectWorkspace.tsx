@@ -19,7 +19,6 @@ import {
   useEffect,
   useMemo,
   useState,
-  useRef,
   type ReactNode,
 } from 'react';
 
@@ -346,29 +345,8 @@ export function ProjectWorkspace({
     if (saved !== true) throw new Error('Project changes were not saved. Review the editor message.');
   },async()=>{if(!await controller.discard())throw new Error('Private draft discard could not be confirmed. Your edits remain available.');});
 
-  // Debounced, revision-checked server autosave. The private-draft recovery
-  // mechanism remains a fallback, not a substitute for saving task changes.
-  // A failed candidate is not retried until the user edits again.
-  const autosaveAttempt=useRef('');
-  useEffect(()=>{
-    if(!dirty){
-      // Once the canonical revision is acknowledged, a later edit must be
-      // eligible for autosave even if its body resembles a prior attempt.
-      autosaveAttempt.current='';
-      return;
-    }
-    if(overview||!body||completed||inactive||busy||blocked||saveOutcomeUnknown||
-       !drafts.ready||Boolean(drafts.recoverable)||Boolean(drafts.conflict)||Boolean(workflowGate))return;
-    // Include the saved revision. A conflict-free rebase may retain exactly
-    // the same task content while requiring a fresh revision-checked save.
-    const candidate=savedRevision+':'+JSON.stringify(body);
-    if(candidate===autosaveAttempt.current)return;
-    const timer=window.setTimeout(()=>{
-      autosaveAttempt.current=candidate;
-      void controller.save();
-    },1800);
-    return ()=>window.clearTimeout(timer);
-  },[body,dirty,savedRevision,overview,completed,inactive,busy,blocked,saveOutcomeUnknown,drafts.ready,drafts.recoverable,drafts.conflict,workflowGate]);
+  // Private draft backups are handled by the controller. Canonical saves
+  // require Save all changes or Save task in the full editor.
 
   const today=savedToday;
 
@@ -519,7 +497,7 @@ export function ProjectWorkspace({
           ? {...milestone,status:expected}:milestone;
       })};
     });
-    setMessage(`${selected.size} task change${selected.size===1?'':'s'} added to the work-plan draft. Autosave will submit them together.`);
+    setMessage(`${selected.size} task change${selected.size===1?'':'s'} added to the work-plan draft. Use Save all changes to apply them.`);
   }
 
   function bulkRemoveTasks(taskIds:string[]){
@@ -531,7 +509,7 @@ export function ProjectWorkspace({
       return;
     }
     setBody(previous=>previous?{...previous,tasks:previous.tasks.filter(task=>!selected.has(task.id))}:previous);
-    setMessage(`${selected.size} tasks removed from the work-plan draft. Their saved history remains recorded; autosave will submit the change.`);
+    setMessage(`${selected.size} tasks removed from the work-plan draft. Their saved history remains recorded; use Save all changes to apply the removal.`);
   }
 
   /* =======================================================
@@ -554,7 +532,7 @@ export function ProjectWorkspace({
           ? {...milestone,status:expected}:milestone;
       })};
     });
-    setMessage('Project completion order changed. The work-plan draft will autosave with revision conflict protection.');
+    setMessage('Project completion order changed. Use Save all changes to apply the draft order.');
     return true;
   }
 
@@ -626,18 +604,9 @@ export function ProjectWorkspace({
     return task.id;
   }
 
-  async function bulkMilestoneTasks(milestoneId:string,status:'done'|'todo'){
-    if(!body||!savedRevision||dirty||busy)return;
-    const taskIds=body.tasks.filter(task=>task.milestoneId===milestoneId).map(task=>task.id);
-    if(!taskIds.length)return;
-    setBusy(true);setMessage('');
-    try{
-      const result=await postProjectCommand(`/api/admin/projects/${id}/task-productivity`,{action:'bulk_status',expectedProjectRevision:savedRevision,taskIds,status});
-      await controller.checkUncertainSave();
-      setMessage(`${result.changed??taskIds.length} tasks saved. The editor was reconciled against the saved project.`);
-      refreshProjectSurfaces(id,router);
-    }catch(cause){setMessage(cause instanceof Error?cause.message:'Bulk task update could not save.');}
-    finally{setBusy(false);}
+  function bulkMilestoneTasks(milestoneId:string,status:'done'|'todo'){
+    if(!body||locked)return;
+    bulkEditTasks(body.tasks.filter(task=>task.milestoneId===milestoneId).map(task=>task.id),{status});
   }
 
   /* =======================================================
@@ -947,11 +916,11 @@ export function ProjectWorkspace({
   const toolbarIcon='relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-white hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40 dark:bg-card';
   const toolbarActions=!overview?<div className="ml-1 flex shrink-0 items-center gap-1.5" aria-label="Workplan save and messages">
     <button type="button" className={toolbarIcon} title="Refresh saved data" aria-label="Refresh saved task data" disabled={busy} onClick={()=>void controller.checkUncertainSave()}><RefreshCw size={16}/></button>
-    <button type="button" className={toolbarIcon} title={busy?'Saving changes':savePhase==='failed'?'Retry saving workplan':'Save workplan now'} aria-label={savePhase==='failed'?'Retry saving workplan':'Save workplan now'} disabled={!dirty||locked||saveOutcomeUnknown||!drafts.ready||Boolean(drafts.recoverable)||Boolean(drafts.conflict)} onClick={()=>void command('save')}><Save size={16}/></button>
+    <button type="button" className={toolbarIcon.replace('w-9','w-auto')+' gap-1.5 px-3'} title={busy?'Saving changes':savePhase==='failed'?'Retry saving workplan':'Save all changes'} aria-label={savePhase==='failed'?'Retry saving workplan':'Save all changes'} disabled={!dirty||locked||saveOutcomeUnknown||!drafts.ready||Boolean(drafts.recoverable)||Boolean(drafts.conflict)} onClick={()=>void command('save')}><Save size={16}/><span className="text-xs">Save all changes</span></button>
     <details className="relative">
       <summary className={toolbarIcon+' cursor-pointer list-none [&::-webkit-details-marker]:hidden'} title="Draft options" aria-label="Draft options"><FileClock size={16}/>{dirty&&<span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-amber-400"/>}</summary>
       <div className="absolute right-0 z-50 mt-2 min-w-56 rounded-xl border border-border bg-white p-3 text-xs shadow-xl dark:bg-card">
-        <p className="mb-2 font-medium">{dirty?'Changes autosave after editing':'All task changes saved'}</p>
+        <p className="mb-2 font-medium">{dirty?'Draft changes — waiting for you to save':'All task changes saved'}</p>
         <p className="mb-3 text-muted-foreground">Private draft: {drafts.state==='saving'?'Saving…':drafts.state==='saved'?'Backed up':drafts.state==='pending'?'Pending':drafts.state==='conflict'?'Conflict — review required':drafts.state==='error'?'Unavailable':'Ready'}</p>
         <button type="button" className="block w-full rounded-lg px-2 py-2 text-left hover:bg-muted disabled:opacity-40" disabled={!dirty||busy||saveOutcomeUnknown||!drafts.ready||Boolean(drafts.recoverable)||Boolean(drafts.conflict)} onClick={()=>void drafts.saveDraft()}>Back up private draft</button>
         <button type="button" className="block w-full rounded-lg px-2 py-2 text-left hover:bg-muted disabled:opacity-40" disabled={!dirty||busy} onClick={()=>{if(window.confirm('Discard work-plan edits and the private draft?'))void controller.discard();}}>Discard changes…</button>
@@ -975,7 +944,7 @@ export function ProjectWorkspace({
         {drafts.error&&<p role="alert" className="text-destructive">{drafts.error}</p>}
         {blocked&&<p role="alert" className="text-destructive">Revision conflict. Refresh to reconcile before saving.</p>}
         {saveOutcomeUnknown&&<p role="alert">Save result uncertain. Use Refresh to verify before retrying.</p>}
-        {!hasTaskMessage&&<p className="text-muted-foreground">No new messages. Workplan changes autosave when possible.</p>}
+        {!hasTaskMessage&&<p className="text-muted-foreground">No new messages. Changes stay in your private draft until you save.</p>}
       </div>
     </details>
   </div>:null;
@@ -1041,6 +1010,8 @@ export function ProjectWorkspace({
         onBulkTaskChange={bulkEditTasks}
         onBulkTaskRemove={bulkRemoveTasks}
         onReorderTask={reorderTask}
+        onSaveTask={taskId=>{void controller.save(taskId);}}
+        taskSaveDisabled={locked||saveOutcomeUnknown||!drafts.ready||Boolean(drafts.recoverable)||Boolean(drafts.conflict)}
         onSaveOrder={()=>{void command('save');}}
         onVerifyOrder={()=>{void controller.checkUncertainSave();}}
         orderSaveIssue={saveOutcomeUnknown

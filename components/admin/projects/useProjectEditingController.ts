@@ -76,10 +76,22 @@ export function useProjectEditingController(id:string,record:RecordState,initial
     finally{pending.current=false;drafts.resumeAutosaves();if(active.current)setBusy(false);}
   }
 
-  async function save(){
+  async function save(taskId?:string){
     if(pending.current||busy||blocked||completed||saveOutcomeUnknown)return false;
     if(!drafts.ready||drafts.recoverable||drafts.conflict){setMessage('Restore, discard or reconcile the private draft before Save all.');return false;}
-    const candidate=local.current;
+    let candidate=local.current;
+    if(taskId&&candidate&&baseline.current){
+      const task=candidate.tasks.find(item=>item.id===taskId);
+      if(!task)return false;
+      if(task.milestoneId&&!baseline.current.milestones.some(item=>item.id===task.milestoneId)){
+        setMessage('Save all changes to create this task’s draft milestone first.');return false;
+      }
+      // Save only this task, preserving saved ordering and all other draft edits.
+      const saved=baseline.current;
+      candidate={...saved,tasks:saved.tasks.some(item=>item.id===taskId)
+        ?saved.tasks.map(item=>item.id===taskId?task:item):[...saved.tasks,task]};
+      if(projectBodiesEqual(candidate,saved))return false;
+    }
     if(!candidate||!dirty)return false;
     if(!projectBodySchema.safeParse(candidate).success){setSavePhase('failed');setMessage('Check the project title, task names, dates and milestone assignments.');return false;}
     pending.current=true;setBusy(true);setSavePhase('saving');setMessage('Saving submitted work-plan changes…');
