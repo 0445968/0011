@@ -162,7 +162,9 @@ function TabAction({
         ${
           selected
             ? 'text-inherit'
-            : 'text-inherit opacity-65 hover:opacity-100'
+            : revealOnHover
+              ? 'text-inherit'
+              : 'text-inherit opacity-65 hover:opacity-100'
         }
 
         hover:bg-black/5
