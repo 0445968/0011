@@ -8,7 +8,7 @@ import type { WorkplanFilters, TaskGrouping } from '@/lib/projects/workplan-filt
 
 export type TasksDisplayView = 'overview' | 'kanban' | 'gantt' | 'list' | 'calendar' | 'timeline' | 'milestone';
 export type TaskSort = 'default' | 'title' | 'due' | 'priority';
-export type TaskColumn = 'priority' | 'status' | 'milestone' | 'due' | 'assignee';
+export type TaskColumn = 'priority' | 'status' | 'milestone' | 'due' | 'assignee' | 'start' | 'phase' | 'tags';
 
 const field = 'min-h-9 w-full min-w-0 rounded-md border border-input bg-background px-2.5 py-1.5 text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50';
 const control = 'inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50';
@@ -19,6 +19,7 @@ const views: {value:TasksDisplayView;label:string;icon:typeof Table2}[] = [
 const tableColumns: {value:TaskColumn;label:string}[] = [
   {value:'priority',label:'Priority'}, {value:'status',label:'Status'}, {value:'milestone',label:'Milestone'},
   {value:'due',label:'Due date'}, {value:'assignee',label:'Assignees'},
+  {value:'start',label:'Start date'}, {value:'phase',label:'Phase'}, {value:'tags',label:'Tags'},
 ];
 
 function Field({label,children}:{label:string;children:ReactNode}) {
