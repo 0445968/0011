@@ -101,16 +101,24 @@ function MilestoneColumn({ milestone, tasks, disabled, addDisabled, canReorder, 
 }
 
 const detectDrop: CollisionDetection = args => {
-  const pointerHits = pointerWithin(args);
+  // The active sortable is also a droppable. Never return it as its own
+  // target: doing so can turn an otherwise valid drag into a silent no-op.
+  const others = {
+    ...args,
+    droppableContainers: args.droppableContainers.filter(
+      container => container.id !== args.active.id && !container.disabled,
+    ),
+  };
+  const pointerHits = pointerWithin(others);
   if (pointerHits.length) {
     const tasks = pointerHits.filter(item => String(item.id).startsWith('task:'));
     return tasks.length ? tasks : pointerHits;
   }
-  return closestCorners(args);
+  return closestCorners(others);
 };
 
 export function MilestoneOrderBoard({ milestones, tasks, disabled, addDisabled=false, canReorder, orderDirty,
-  saving, onMove, onAddTask, onSave, renderTask }: {
+  saving, saveIssue, verifyRequired=false, onVerifySave, onMove, onAddTask, onSave, renderTask }: {
   milestones: Milestone[];
   tasks: Task[];
   disabled: boolean;
@@ -118,6 +126,9 @@ export function MilestoneOrderBoard({ milestones, tasks, disabled, addDisabled=f
   canReorder: boolean;
   orderDirty: boolean;
   saving: boolean;
+  saveIssue?: string | null;
+  verifyRequired?: boolean;
+  onVerifySave?: () => void;
   onMove: (taskId: string, milestoneId: string | null, overTaskId: string | null, position: DropPosition) => boolean;
   onAddTask: (milestoneId: string | null) => void;
   onSave: () => void;
@@ -143,6 +154,9 @@ export function MilestoneOrderBoard({ milestones, tasks, disabled, addDisabled=f
     const source = tasks.find(task => task.id === taskId);
     if (!source) return;
     const targetTask = overId.startsWith('task:') ? tasks.find(task => itemId(task.id) === overId) : null;
+    // Only known task and milestone IDs are valid. Never interpret an
+    // unexpected collision result as the unassigned column.
+    if (!targetTask && !overId.startsWith('milestone:')) return;
     const key = overId.startsWith('milestone:') ? overId.slice(10) : null;
     const destinationId = targetTask
       ? targetTask.milestoneId
@@ -177,14 +191,21 @@ export function MilestoneOrderBoard({ milestones, tasks, disabled, addDisabled=f
         </p>
       </div>
       <div className="flex items-center gap-2">
-        {orderDirty ? <span role="status" className="text-[11px] text-blue-700 dark:text-blue-300">{saving ? 'Saving order…' : 'Order awaiting autosave'}</span>
-          : <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground"><Check size={13}/>Order saved</span>}
-        {orderDirty && <button type="button" onClick={onSave} disabled={disabled || saving} title="Save the entire work-plan draft, including this order"
+        {orderDirty ? <span role="status" className={'text-[11px] '+(saveIssue?'text-amber-700 dark:text-amber-300':'text-blue-700 dark:text-blue-300')}>
+          {saving ? 'Saving order…' : saveIssue ? 'Order needs attention' : 'Order awaiting autosave'}
+        </span> : <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground"><Check size={13}/>Order saved</span>}
+        {orderDirty && !verifyRequired && <button type="button" onClick={onSave} disabled={disabled || saving} title="Save the entire work-plan draft, including this order"
           className="inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-border bg-background px-3 text-[11px] font-medium hover:bg-muted disabled:opacity-40">
-          <Save size={14}/>Save now
+          <Save size={14}/>{saveIssue ? 'Retry save' : 'Save now'}
+        </button>}
+        {verifyRequired && <button type="button" onClick={onVerifySave} disabled={saving}
+          title="Verify the saved revision before retrying"
+          className="inline-flex min-h-8 items-center rounded-lg border border-border bg-background px-3 text-[11px] font-medium hover:bg-muted disabled:opacity-40">
+          Verify save
         </button>}
       </div>
     </div>
+    {saveIssue && <p role="alert" className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">{saveIssue}</p>}
     {!canReorder && !disabled && <p role="status" className="flex items-center gap-2 px-3 text-[11px] text-amber-700 dark:text-amber-300">
       <Info size={14}/>Switch Sort to Manual order and clear active filters to enable dragging. Task order remains visible.
     </p>}
