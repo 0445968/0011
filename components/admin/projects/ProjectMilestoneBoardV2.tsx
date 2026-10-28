@@ -151,7 +151,7 @@ function SubtaskEditor({item,disabled,update,requestRemove,today}: {
   </li>;
 }
 
-export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarReady,onTaskChange,onMilestoneChange,onAddTask,onAddMilestone,onEditTask,onEditMilestone,taskControls,onBulkTasks,userId,today,focusTaskId,focusTaskRequest,workflowGate,workflowOverrideReason,onWorkflowOverrideReason,onOverrideTaskStatus,overrideReady,busy,onRemoveTask,onBulkTaskChange,onBulkTaskRemove,onReorderTask,onSaveOrder,orderDirty=false,advanced=false,onAdvancedToggle,dirtyTaskIds=[],toolbarActions}: {
+export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarReady,onTaskChange,onMilestoneChange,onAddTask,onAddMilestone,onEditTask,onEditMilestone,taskControls,onBulkTasks,userId,today,focusTaskId,focusTaskRequest,workflowGate,workflowOverrideReason,onWorkflowOverrideReason,onOverrideTaskStatus,overrideReady,busy,onRemoveTask,onBulkTaskChange,onBulkTaskRemove,onReorderTask,onSaveOrder,onVerifyOrder,orderSaveIssue=null,orderVerifyRequired=false,orderDirty=false,advanced=false,onAdvancedToggle,dirtyTaskIds=[],toolbarActions}: {
   onAdvancedToggle?:()=>void;dirtyTaskIds?:string[];toolbarActions?:ReactNode;advanced?:boolean;id:string;revision:number;body:ProjectBody;disabled:boolean;dirty:boolean;sidecarReady:boolean;today:string;focusTaskId?:string|null;focusTaskRequest?:number;
   onTaskChange:(index:number,changes:Partial<Task>)=>void;
   onMilestoneChange:(index:number,changes:Partial<Milestone>)=>void;
@@ -162,7 +162,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   onBulkTaskChange:(taskIds:string[],changes:Partial<Task>)=>void;
   onBulkTaskRemove:(taskIds:string[])=>void;
   onReorderTask:(taskId:string,milestoneId:string|null,overTaskId:string|null,position:'before'|'after'|'end')=>boolean;
-  onSaveOrder:()=>void;orderDirty?:boolean;
+  onSaveOrder:()=>void;onVerifyOrder:()=>void;orderSaveIssue?:string|null;orderVerifyRequired?:boolean;orderDirty?:boolean;
   userId:string;
   workflowGate?:ProjectWorkflowGate|null;workflowOverrideReason:string;onWorkflowOverrideReason:(reason:string)=>void;onOverrideTaskStatus:()=>void;overrideReady:boolean;busy:boolean;onRemoveTask:(taskId:string)=>void;
 }) {
@@ -724,7 +724,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
         {view==='milestone'&&<MilestoneOrderBoard
           milestones={matchingMilestones} tasks={orderedTasks}
           disabled={disabled} addDisabled={body.tasks.length>=100} canReorder={canReorderMilestones}
-          orderDirty={orderDirty} saving={busy} onMove={onReorderTask}
+          orderDirty={orderDirty} saving={busy} saveIssue={orderSaveIssue} verifyRequired={orderVerifyRequired} onVerifySave={onVerifyOrder} onMove={onReorderTask}
           onAddTask={onAddTask} onSave={onSaveOrder} renderTask={taskPreview}
         />}
         {view==='list'&&<div className="space-y-3">{(grouping==='none'?[{key:'all',label:'Tasks',tasks:orderedTasks}]:sectionGroups).map(group=><section key={group.key} className="space-y-1">{grouping!=='none'&&<h2 className="text-xs font-semibold">{group.label} <span className="text-muted-foreground">{group.tasks.length}</span></h2>}{group.tasks.map(viewTaskButton)}</section>)}</div>}
