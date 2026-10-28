@@ -21,6 +21,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } f
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {TaskTags,useTaskPresentation} from './TaskPresentation';
 import { TaskProductivity } from './TaskProductivity';
+import { WorkplanDraftReminder } from './WorkplanDraftReminder';
 import { TaskActivityPreview } from './TaskActivityPreview';
 import { useProjectTaskSchedule } from './useProjectTaskSchedule';
 import { hasMilestoneCompletionBlockers, milestoneCompletionBlockers } from '@/lib/projects/workplan-completion';
@@ -712,7 +713,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     {hierarchy.conflict&&<p role="alert" className="text-xs text-destructive">Project data changed. Refresh before editing linked records.</p>}
     {(hierarchy.busy||assignments.busy||schedule.busy)&&<p role="status" className="text-xs text-muted-foreground">Saving task details…</p>}
     {(hierarchy.message||assignments.message||schedule.message)&&<p role="status" className="text-xs text-emerald-700 dark:text-emerald-300">{[hierarchy.message,assignments.message,schedule.message].filter(Boolean).join(' ')}</p>}
-    {dirty&&<p role="status" className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">Unsaved work-plan edits. Use Save all changes to apply this draft. Priority, start date, tags and assignees are edited directly in the full task editor.</p>}
+    <WorkplanDraftReminder key={userId} userId={userId} dirty={dirty}/>
     {newSubtaskFor&&newSubtaskTitle.trim()&&<p role="status" className="text-xs text-amber-800 dark:text-amber-200">Unsaved subtask for {body.tasks.find(task=>task.id===newSubtaskFor)?.title}. <button type="button" className="underline" onClick={()=>openTask(newSubtaskFor)}>Return to editor</button>.</p>}
     <div className="min-w-0">
       <div className="min-w-0 space-y-3">
