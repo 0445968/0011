@@ -720,7 +720,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
         {view==='overview'&&<div className="space-y-3">{(grouping==='none'?[{key:'all',label:'Tasks',tasks:orderedTasks}]:sectionGroups).map(group=>rowTable(group.tasks,group.key,grouping==='none'?undefined:group.label))}</div>}
         {view==='milestone'&&<MilestoneOrderBoard
           milestones={matchingMilestones} tasks={orderedTasks}
-          disabled={disabled||body.tasks.length>=100} canReorder={canReorderMilestones}
+          disabled={disabled} addDisabled={body.tasks.length>=100} canReorder={canReorderMilestones}
           orderDirty={orderDirty} saving={busy} onMove={onReorderTask}
           onAddTask={onAddTask} onSave={onSaveOrder} renderTask={taskPreview}
         />}
