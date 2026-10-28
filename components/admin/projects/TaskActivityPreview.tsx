@@ -33,14 +33,14 @@ export function TaskActivityPreview({projectId,taskId,defaultOpen=false}:{projec
     return()=>{active=false;controller.abort();};
   },[opened,projectId,taskId,generation]);
 
-  return <details open={opened} className="rounded-lg border border-border/70 bg-background p-3" onToggle={event=>setOpened(event.currentTarget.open)}>
-    <summary className="flex cursor-pointer items-center gap-2 text-xs font-semibold"><Activity size={14} aria-hidden/>Task activity</summary>
+  return <details open={opened} className="rounded-lg border border-border/60 bg-white p-3 dark:bg-card" onToggle={event=>setOpened(event.currentTarget.open)}>
+    <summary className="flex cursor-pointer items-center gap-2 text-xs font-semibold"><Activity size={14} aria-hidden/>Latest activity</summary>
     {opened&&<div className="mt-3 space-y-2">
       {loading&&<p role="status" className="text-[11px] text-muted-foreground">Loading audited task changes…</p>}
       {error&&<p role="alert" className="text-[11px] text-destructive">{error}</p>}
       {data&&<>
         <ol className="max-h-72 space-y-2 overflow-y-auto">
-          {data.events.map(event=><li key={event.id} className="border-l-2 border-border px-3 py-1 text-[11px]">
+          {data.events.slice(0,3).map(event=><li key={event.id} className="border-l-2 border-border px-3 py-1 text-[11px]">
             <p className="font-medium">{event.title}</p>
             {event.detail&&<p className="mt-0.5 whitespace-pre-wrap break-words text-muted-foreground">{event.detail}</p>}
             <p className="mt-1 text-[10px] text-muted-foreground">
@@ -50,7 +50,7 @@ export function TaskActivityPreview({projectId,taskId,defaultOpen=false}:{projec
           </li>)}
           {!data.events.length&&<li className="text-[11px] text-muted-foreground">No individually attributable task changes were found on this page.</li>}
         </ol>
-        {data.hasOlder&&<p className="text-[10px] text-muted-foreground">Older audited changes may be available in the full log.</p>}
+        {(data.hasOlder||data.events.length>3)&&<p className="text-[10px] text-muted-foreground">Showing the latest three events. Open the full history for earlier changes.</p>}
       </>}
       <div className="flex items-center justify-between gap-2 border-t border-border pt-2">
         <Link href={`/projects/${projectId}/activity?task=${encodeURIComponent(taskId)}`} className="text-[11px] font-medium underline">View full task history</Link>
