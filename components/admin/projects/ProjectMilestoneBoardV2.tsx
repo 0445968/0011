@@ -75,6 +75,22 @@ function TaskPriorityCell({projectId,taskId,priority,revision,disabled}:{
   </Popover>;
 }
 
+/** A native date input covers the full icon-and-date control so any click opens
+ * the calendar, including when the field has no date. */
+function TaskDateCell({label,value,disabled,icon,onChange}:{
+  label:string;value:string|null;disabled:boolean;icon:ReactNode;onChange:(value:string|null)=>void;
+}){
+  const formatted=value?new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'UTC'}).format(new Date(value+'T12:00:00Z')):'—';
+  return <label title={label+(value?': '+formatted:': Not set')}
+    className="relative inline-flex min-h-8 max-w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 text-[11px] text-muted-foreground hover:bg-muted/50 focus-within:ring-2 focus-within:ring-ring has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50">
+    {icon}<span className="truncate tabular-nums">{formatted}</span>
+    <input type="date" value={value??''} disabled={disabled} aria-label={label}
+      className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
+      onClick={event=>{try{event.currentTarget.showPicker?.();}catch{ /* Browser's native picker is the fallback. */ }}}
+      onChange={event=>onChange(event.currentTarget.value||null)}/>
+  </label>;
+}
+
 type Task = ProjectBody['tasks'][number];
 type Milestone = ProjectBody['milestones'][number];
 type Subtask = ProjectHierarchyResponse['subtasks'][number];
@@ -153,6 +169,22 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const [view,setView]=useState<TasksDisplayView>('overview');
   const [sort,setSort]=useState<TaskSort>('default');
   const [visibleColumns,setVisibleColumns]=useState<TaskColumn[]>(['priority','status','milestone','due','assignee']);
+  const allowedColumns:TaskColumn[]=['priority','status','milestone','due','assignee','start','phase','tags'];
+  // Column order and visibility belong to this project rather than the session.
+  useEffect(()=>{
+    try {
+      const saved=JSON.parse(window.localStorage.getItem('bivi-task-columns:'+id)??'null') as unknown;
+      if(Array.isArray(saved)){
+        const columns=saved.filter((value):value is TaskColumn=>typeof value==='string'&&allowedColumns.includes(value as TaskColumn));
+        setVisibleColumns([...new Set(columns)]);
+      }
+    }catch{ /* Corrupt or unavailable preferences use the existing default columns. */ }
+  },[id]);
+  const changeColumns=(columns:TaskColumn[])=>{
+    const sanitized=[...new Set(columns.filter(column=>allowedColumns.includes(column)))];
+    setVisibleColumns(sanitized);
+    try{window.localStorage.setItem('bivi-task-columns:'+id,JSON.stringify(sanitized));}catch{ /* Keep this session's choice. */ }
+  };
 
   const [showEditor,setShowEditor]=useState(false);
   const [panelTarget,setPanelTarget]=useState<HTMLElement|null>(null);
@@ -306,13 +338,54 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     return body.tasks.findIndex(row=>row.id===a.id)-body.tasks.findIndex(row=>row.id===b.id);
   });
 
-  const columnWidths='minmax(220px,3fr) '+visibleColumns.map(column=>column==='assignee'?'minmax(100px,1.2fr)':'minmax(105px,1fr)').join(' ')+' 42px';
-  const labelForColumn:Record<TaskColumn,string>={priority:'Priority',status:'Status',milestone:'Milestone',due:'Due date',assignee:'Assignees'};
+  const columnWidths='minmax(260px,2.5fr) '+visibleColumns.map(column=>
+    column==='tags'||column==='phase'?'minmax(155px,1.2fr)':
+    column==='due'||column==='start'?'minmax(140px,1fr)':
+    column==='assignee'?'minmax(120px,1fr)':'minmax(100px,0.8fr)').join(' ')+' 42px';
+  const tableMinWidth=Math.max(640,302+visibleColumns.reduce((sum,column)=>sum+(
+    column==='tags'||column==='phase'?155:
+    column==='start'||column==='due'?140:
+    column==='assignee'?120:100),0));
+  const labelForColumn:Record<TaskColumn,string>={
+    priority:'Priority',status:'Status',milestone:'Milestone',due:'Due date',
+    assignee:'Assignees',start:'Start date',phase:'Phase',tags:'Tags',
+  };
   const columnValue=(task:Task,column:TaskColumn):ReactNode=>{
-    if(column==='priority'){const priority=taskControls.find(row=>row.taskId===task.id)?.priority??null;return <TaskPriorityCell projectId={id} taskId={task.id} priority={priority} revision={revision} disabled={disabled||dirty||!sidecarReady}/>;}
+    if(column==='priority'){
+      const priority=taskControls.find(row=>row.taskId===task.id)?.priority??null;
+      return <TaskPriorityCell projectId={id} taskId={task.id} priority={priority} revision={revision} disabled={disabled||dirty||!sidecarReady}/>;
+    }
     if(column==='status')return statusMenu(task);
-    if(column==='milestone')return <span className="truncate text-[11px] text-muted-foreground" title={body.milestones.find(item=>item.id===task.milestoneId)?.title??'No milestone'}>{body.milestones.find(item=>item.id===task.milestoneId)?.title??'—'}</span>;
-    if(column==='due')return <label className="inline-flex min-h-8 items-center gap-1 text-[11px] text-muted-foreground"><Flag size={12} aria-hidden/><input type="date" aria-label={'Due date for '+task.title} className="w-[120px] cursor-pointer bg-transparent px-1 text-[11px] outline-none focus-visible:ring-2" disabled={disabled} value={task.dueOn??''} onChange={event=>updateTask(task,{dueOn:event.target.value||null})}/></label>;
+    if(column==='milestone'){
+      const name=body.milestones.find(item=>item.id===task.milestoneId)?.title??'No milestone';
+      return <span className="block truncate text-[11px] text-muted-foreground" title={name}>{task.milestoneId?name:'—'}</span>;
+    }
+    if(column==='due')return <TaskDateCell label={'Due date for '+task.title} value={task.dueOn}
+      disabled={disabled} icon={<Flag size={13} aria-hidden/>}
+      onChange={value=>updateTask(task,{dueOn:value})}/>;
+    if(column==='start')return <TaskDateCell label={'Start date for '+task.title}
+      value={schedule.rows.get(task.id)?.start_on??null}
+      disabled={disabled||dirty||!sidecarReady||schedule.busy!==null}
+      icon={<Play size={13} aria-hidden/>}
+      onChange={value=>{void schedule.save(task.id,value,task.dueOn,dirty);}}/>;
+    if(column==='phase'){
+      const phases=workplanTaskPhases(task,context);
+      return phases.length?<Link href={'/projects/'+id+'?tab=phases'}
+        title={phases.map(phase=>projectPhaseLabels[phase]).join(', ')}
+        className="inline-flex max-w-full items-center gap-1.5 rounded-md px-1 py-1 hover:bg-muted/50">
+        <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{backgroundColor:phaseColorFor(phases[0],phaseColors.rows)}}/>
+        <span className="min-w-0 truncate text-[11px]">{projectPhaseLabels[phases[0]]}</span>
+        {phases.length>1&&<span className="shrink-0 text-[10px] text-muted-foreground">+{phases.length-1}</span>}
+      </Link>:<span className="text-[11px] text-muted-foreground">—</span>;
+    }
+    if(column==='tags'){
+      const row=presentation.rows.find(item=>item.task_id===task.id);
+      return <div className="flex min-w-0 items-center gap-1">
+        <TaskTags projectId={id} projectRevision={revision} row={row} catalog={tagCatalog}
+          disabled={disabled||dirty||!sidecarReady} reload={presentation.load}/>
+        {Boolean(row?.tags.length)&&<span className="min-w-0 truncate text-[10px] text-muted-foreground" title={row?.tags.join(', ')}>{row?.tags.slice(0,2).join(', ')}{(row?.tags.length??0)>2?'…':''}</span>}
+      </div>;
+    }
     return <TaskMemberPicker taskId={task.id} controls={assignments} disabled={disabled||dirty||!sidecarReady}/>;
   };
   const statusMenu=(task:Task)=><Popover>
