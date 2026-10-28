@@ -10,6 +10,7 @@ import { useProjectEditingController } from './projects/useProjectEditingControl
 import {postProjectCommand} from '@/lib/projects/immediate-command';
 import {refreshProjectSurfaces} from '@/lib/projects/refresh';
 import {ProjectPageHeader} from './projects/ProjectVisuals';
+import {expectedMilestoneStatus} from '@/lib/projects/phase-status';
 import { useWorkspaceUnsavedChanges } from './workspace/WorkspaceNavigationGuard';
 
 import {
@@ -495,6 +496,41 @@ export function ProjectWorkspace({
   }
 
   /* =======================================================
+     MULTI-TASK DRAFT EDITING
+     ======================================================= */
+
+  function bulkEditTasks(taskIds:string[],changes:Partial<Task>){
+    if(!body||locked||drafts.conflict||saveOutcomeUnknown||!taskIds.length)return;
+    const selected=new Set(taskIds);
+    setBody(previous=>{
+      if(!previous)return previous;
+      const candidate={...previous,tasks:previous.tasks.map(task=>
+        selected.has(task.id)?{...task,...changes}:task)};
+      if(!('status' in changes)&&!('milestoneId' in changes))return candidate;
+      return {...candidate,milestones:candidate.milestones.map(milestone=>{
+        if(milestone.status==='done')return milestone;
+        const expected=expectedMilestoneStatus(candidate,milestone.id);
+        // A milestone is only completed through its explicit review flow.
+        return expected&&expected!=='done'&&expected!==milestone.status
+          ? {...milestone,status:expected}:milestone;
+      })};
+    });
+    setMessage(`${selected.size} task change${selected.size===1?'':'s'} added to the work-plan draft. Autosave will submit them together.`);
+  }
+
+  function bulkRemoveTasks(taskIds:string[]){
+    if(!body||locked||drafts.conflict||saveOutcomeUnknown||!taskIds.length)return;
+    const selected=new Set(taskIds);
+    const dependent=taskControls.find(control=>selected.has(control.dependsOn??''));
+    if(dependent){
+      setMessage('Selected tasks include a prerequisite for another task. Reassign dependencies before removal.');
+      return;
+    }
+    setBody(previous=>previous?{...previous,tasks:previous.tasks.filter(task=>!selected.has(task.id))}:previous);
+    setMessage(`${selected.size} tasks removed from the work-plan draft. Their saved history remains recorded; autosave will submit the change.`);
+  }
+
+  /* =======================================================
      UPDATE MILESTONE
      ======================================================= */
 
@@ -974,6 +1010,8 @@ export function ProjectWorkspace({
         busy={busy}
         onRemoveTask={removeTask}
         onBulkTasks={bulkMilestoneTasks}
+        onBulkTaskChange={bulkEditTasks}
+        onBulkTaskRemove={bulkRemoveTasks}
       />
       </div>
 

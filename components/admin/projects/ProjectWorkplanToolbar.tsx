@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { Activity, Columns3, Filter, ListFilter, Menu, PanelRightClose, PanelRightOpen, Plus, Search, SlidersHorizontal, X, Table2, KanbanSquare, GanttChart, List, CalendarDays, Clock3, Settings2, LayoutGrid, ChevronDown, Check, ArrowUp, ArrowDown } from 'lucide-react';
+import { Activity, Columns3, Filter, ListFilter, Menu, PanelRightClose, PanelRightOpen, Plus, Search, SlidersHorizontal, X, Table2, KanbanSquare, GanttChart, List, CalendarDays, Clock3, Settings2, LayoutGrid, ChevronDown, Check, ArrowUp, ArrowDown, ListChecks, Copy, Trash2, CalendarClock, ArrowRightLeft } from 'lucide-react';
 import { projectPhaseLabels, projectPhaseOrder } from '@/lib/projects/lifecycle-schema';
 import type { WorkplanFilters, TaskGrouping } from '@/lib/projects/workplan-filters';
 
@@ -26,15 +26,50 @@ function Field({label,children}:{label:string;children:ReactNode}) {
   return <label className="min-w-0 space-y-1 text-[11px] font-medium text-muted-foreground"><span>{label}</span>{children}</label>;
 }
 export function ProjectWorkplanToolbar({projectId,filters,onChange,view,onView,grouping,onGrouping,sort,onSort,columns,onColumns,assignees,phasesReady,assignmentsReady,
-  tagFilter,onTagFilter,tags,showEditor,onToggleEditor,onAddTask,onAddMilestone,disabled=false,onAdvancedToggle,advanced=false,actions}: {
+  tagFilter,onTagFilter,tags,showEditor,onToggleEditor,onAddTask,onAddMilestone,disabled=false,onAdvancedToggle,advanced=false,actions,
+  selectedCount=0, visibleCount=0, allVisibleSelected=false, onToggleAllVisible, onClearSelection, onBulkStatus, onBulkDueDate, onBulkMilestone, onBulkDelete, onCopySelectedLinks, milestoneChoices=[]}: {
   actions?:ReactNode;onAdvancedToggle?:()=>void;advanced?:boolean;projectId:string;filters:WorkplanFilters;onChange:(changes:Partial<WorkplanFilters>)=>void;
   view:TasksDisplayView;onView:(view:TasksDisplayView)=>void;grouping:TaskGrouping;onGrouping:(value:TaskGrouping)=>void;
   sort:TaskSort;onSort:(value:TaskSort)=>void;columns:TaskColumn[];onColumns:(values:TaskColumn[])=>void;
   assignees:{id:string;label:string}[];phasesReady:boolean;assignmentsReady:boolean;
   tagFilter:string;onTagFilter:(tag:string)=>void;tags:string[];
   showEditor:boolean;onToggleEditor:()=>void;onAddTask:()=>void;onAddMilestone:()=>void;disabled?:boolean;
+  selectedCount?:number;visibleCount?:number;allVisibleSelected?:boolean;
+  onToggleAllVisible:()=>void;onClearSelection:()=>void;
+  onBulkStatus:(status:'todo'|'doing'|'blocked'|'done')=>void;
+  onBulkDueDate:(date:string|null)=>void;onBulkMilestone:(milestoneId:string|null)=>void;
+  onBulkDelete:()=>void;onCopySelectedLinks:()=>void;
+  milestoneChoices?:{id:string;title:string}[];
 }) {
   const [searchOpen,setSearchOpen]=useState(false);
+  const toolbarRef=useRef<HTMLDivElement>(null);
+  useEffect(()=>{
+    const closeDetails=(except?:HTMLDetailsElement|null)=>{
+      toolbarRef.current?.querySelectorAll<HTMLDetailsElement>('details[open]').forEach(menu=>{
+        if(menu!==except)menu.open=false;
+      });
+    };
+    const onPointerDown=(event:PointerEvent)=>{
+      const target=event.target;
+      if(!(target instanceof Node))return;
+      const active=toolbarRef.current?.contains(target)
+        ? (target instanceof Element?target.closest('details'):target.parentElement?.closest('details'))
+        : null;
+      closeDetails(active instanceof HTMLDetailsElement?active:null);
+    };
+    const onKeyDown=(event:KeyboardEvent)=>{
+      if(event.key==='Escape'){
+        closeDetails();
+      }
+    };
+    document.addEventListener('pointerdown',onPointerDown,true);
+    document.addEventListener('keydown',onKeyDown,true);
+    return ()=>{
+      document.removeEventListener('pointerdown',onPointerDown,true);
+      document.removeEventListener('keydown',onKeyDown,true);
+    };
+  },[]);
+
   const applied=[filters.phase!=='all',filters.side!=='all',filters.assignee!=='all',filters.status!=='all',filters.deadline!=='all',Boolean(filters.from||filters.to),Boolean(filters.query.trim()),Boolean(tagFilter)].filter(Boolean).length;
   const clear=()=>{onChange({query:'',phase:'all',side:'all',assignee:'all',status:'all',deadline:'all',from:'',to:''});onTagFilter('');};
   const selectView=(next:TasksDisplayView,button:HTMLButtonElement)=>{onView(next);const menu=button.closest('details');if(menu)menu.open=false;};
@@ -45,7 +80,7 @@ export function ProjectWorkplanToolbar({projectId,filters,onChange,view,onView,g
   const CurrentViewIcon=currentView.icon;
   const popup='absolute z-40 mt-1 min-w-44 rounded-xl border border-border bg-popover p-2 text-popover-foreground shadow-xl';
   const optionClass='flex min-h-9 w-full items-center gap-2 rounded-lg px-2.5 text-left text-xs hover:bg-muted';
-  return <div className="sticky top-0 z-30 bg-white px-4 py-3 text-slate-950 dark:bg-card dark:text-foreground">
+  return <div ref={toolbarRef} className="sticky top-0 z-30 bg-white px-4 py-3 text-slate-950 dark:bg-card dark:text-foreground">
     <div className="flex min-w-0 flex-nowrap items-center gap-2 overflow-visible" aria-label="Task view and tools">
       <details className="relative shrink-0">
         <summary className={control+' cursor-pointer list-none [&::-webkit-details-marker]:hidden'} title="Choose task view"><CurrentViewIcon size={16}/><span className="hidden sm:inline">{currentView.label}</span><ChevronDown size={13}/></summary>
@@ -74,6 +109,29 @@ export function ProjectWorkplanToolbar({projectId,filters,onChange,view,onView,g
         <div className={popup+' left-0'}>{([{value:'default',label:'Manual order'},{value:'due',label:'Due date'},{value:'priority',label:'Priority'},{value:'title',label:'Name'}] as {value:TaskSort;label:string}[]).map(item=><button type="button" key={item.value} className={optionClass} onClick={event=>chooseSort(item.value,event.currentTarget)}><span className="flex-1">{item.label}</span>{sort===item.value&&<Check size={14}/>}</button>)}</div>
       </details>
       <details className="relative"><summary className={`${control} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}><Columns3 size={14}/>Columns</summary><fieldset className="absolute right-0 z-30 mt-1 min-w-40 space-y-2 rounded-xl border border-border bg-popover p-3 text-xs shadow-lg"><legend className="sr-only">Visible task columns</legend>{tableColumns.map(col=><div key={col.value} className="flex items-center gap-1"><label className="flex flex-1 items-center gap-2"><input type="checkbox" checked={columns.includes(col.value)} onChange={e=>onColumns(e.target.checked?[...columns,col.value]:columns.filter(x=>x!==col.value))}/>{col.label}</label><button type="button" aria-label={"Move "+col.label+" left"} disabled={!columns.includes(col.value)||columns.indexOf(col.value)===0} className="rounded p-1 hover:bg-muted disabled:opacity-30" onClick={()=>moveColumn(col.value,-1)}><ArrowUp size={13}/></button><button type="button" aria-label={"Move "+col.label+" right"} disabled={!columns.includes(col.value)||columns.indexOf(col.value)===columns.length-1} className="rounded p-1 hover:bg-muted disabled:opacity-30" onClick={()=>moveColumn(col.value,1)}><ArrowDown size={13}/></button></div>)}</fieldset></details>
+      <details className="relative shrink-0">
+        <summary className={control+' cursor-pointer list-none [&::-webkit-details-marker]:hidden'} title="Quick actions for selected tasks" aria-label="Quick actions for selected tasks"><ListChecks size={15}/><span className="hidden lg:inline">Quick actions</span>{selectedCount>0&&<span className="rounded-full bg-blue-600 px-1.5 text-[10px] text-white">{selectedCount}</span>}<ChevronDown size={13}/></summary>
+        <div className={popup+' left-0 w-60 max-h-[75vh] overflow-auto'} aria-label="Bulk task actions">
+          <p className="mb-2 px-2 text-[11px] font-semibold">{selectedCount} task{selectedCount===1?'':'s'} selected</p>
+          <button type="button" className={optionClass} disabled={!visibleCount} onClick={event=>{onToggleAllVisible();event.currentTarget.closest('details')!.open=false;}}><Check size={14}/>{allVisibleSelected?'Deselect visible tasks':'Select all visible tasks'}</button>
+          <button type="button" className={optionClass} disabled={!selectedCount} onClick={event=>{onClearSelection();event.currentTarget.closest('details')!.open=false;}}><X size={14}/>Clear selection</button>
+          <div className="my-2 border-t border-border"/>
+          <p className="px-2 py-1 text-[11px] font-semibold text-muted-foreground">Change status</p>
+          {([{status:'todo',label:'Backlog'},{status:'doing',label:'In progress'},{status:'blocked',label:'Blocked'},{status:'done',label:'Completed'}] as const).map(item=><button key={item.status} type="button" disabled={!selectedCount||disabled} className={optionClass} onClick={event=>{onBulkStatus(item.status);event.currentTarget.closest('details')!.open=false;}}><Check size={14}/>{item.label}</button>)}
+          <div className="my-2 border-t border-border"/>
+          <p className="px-2 py-1 text-[11px] font-semibold text-muted-foreground">Move to milestone</p>
+          <div className="max-h-44 overflow-y-auto">
+            {[{id:null,title:'No milestone'},...milestoneChoices].map(item=><button key={item.id??'none'} type="button" disabled={!selectedCount||disabled} className={optionClass} onClick={event=>{onBulkMilestone(item.id);event.currentTarget.closest('details')!.open=false;}}><ArrowRightLeft size={14}/><span className="min-w-0 truncate">{item.title}</span></button>)}
+          </div>
+          <label className="my-2 flex items-center gap-2 rounded-lg px-2 py-2 text-xs hover:bg-muted"><CalendarClock size={14}/>Due date
+            <input type="date" aria-label="Set due date for selected tasks" className="min-w-0 w-32 bg-transparent text-xs" disabled={!selectedCount||disabled} onChange={event=>{if(event.currentTarget.value){onBulkDueDate(event.currentTarget.value);event.currentTarget.closest('details')!.open=false;}}}/>
+          </label>
+          <button type="button" className={optionClass} disabled={!selectedCount||disabled} onClick={event=>{onBulkDueDate(null);event.currentTarget.closest('details')!.open=false;}}>Clear due dates</button>
+          <div className="my-2 border-t border-border"/>
+          <button type="button" className={optionClass} disabled={!selectedCount} onClick={event=>{onCopySelectedLinks();event.currentTarget.closest('details')!.open=false;}}><Copy size={14}/>Copy internal task links</button>
+          <button type="button" className={optionClass+' text-destructive'} disabled={!selectedCount||disabled} onClick={event=>{onBulkDelete();event.currentTarget.closest('details')!.open=false;}}><Trash2 size={14}/>Remove selected tasks…</button>
+        </div>
+      </details>
       <div className="min-w-0 flex-1"/>
       <button type="button" title="Search tasks" aria-label="Search tasks" aria-expanded={searchOpen} className={control} onClick={()=>setSearchOpen(value=>!value)}><Search size={15}/></button>
       <button type="button" className={control} title={showEditor?'Hide task editor':'Show task editor'} aria-label={showEditor?'Hide task editor':'Show task editor'} aria-pressed={showEditor} onClick={onToggleEditor}>{showEditor?<PanelRightClose size={15}/>:<PanelRightOpen size={15}/>}</button>
