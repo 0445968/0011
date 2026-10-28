@@ -233,8 +233,8 @@ function WorkspaceTabItem({
         duration-150
         ${
           active
-            ? 'bivi-chrome-tab-active z-10 -mb-px border-slate-200 bg-white text-slate-900 dark:border-border/80 dark:bg-card dark:text-foreground'
-            : 'z-0 border-transparent bg-slate-200/60 text-slate-600 hover:bg-slate-200/95 hover:text-slate-900 dark:bg-muted/30 dark:text-muted-foreground dark:hover:bg-muted/70 dark:hover:text-foreground'
+            ? 'bivi-chrome-tab-active z-10 -mb-px border-border/60 bg-white text-slate-900 dark:border-border/80 dark:bg-card dark:text-foreground'
+            : 'z-0 border-transparent bg-background/50 text-slate-600 hover:bg-background/85 hover:text-slate-900 dark:bg-background/25 dark:text-muted-foreground dark:hover:bg-background/60 dark:hover:text-foreground'
         }
       `}
     >
@@ -455,13 +455,12 @@ export function WorkspaceTabBar({
         shrink-0
         items-end
         gap-1
-        border-b
-        border-slate-200
-        bg-[#e9edf2]
+        border-b-0
+        bg-muted
         px-2
         pt-2
-        dark:border-border/70
-        dark:bg-[#1d222b]
+        dark:border-transparent
+        dark:bg-muted
         sm:px-3
       "
     >
