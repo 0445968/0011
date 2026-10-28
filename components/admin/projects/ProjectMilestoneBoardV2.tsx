@@ -405,7 +405,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     <aside
       aria-label="Full task editor"
       style={{'--task-editor-width':editorWidth+'px'} as CSSProperties}
-      className="absolute inset-y-0 right-0 z-30 flex min-h-0 w-[100vw] max-w-full flex-col border-l border-border bg-white text-slate-950 shadow-lg dark:bg-card dark:text-foreground md:relative md:inset-auto md:z-auto md:h-full md:w-[var(--task-editor-width)] md:max-w-[75vw]"
+      className="absolute inset-y-0 right-0 z-30 flex min-h-0 w-[100vw] flex-col border-l border-border bg-white text-slate-950 shadow-lg dark:bg-card dark:text-foreground md:relative md:inset-auto md:z-auto md:h-full md:w-[var(--task-editor-width)] md:max-w-[75vw]"
     >
       <div
         role="separator"
@@ -419,7 +419,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
         className="group absolute inset-y-0 -left-1 z-10 hidden w-2 cursor-col-resize items-center justify-center outline-none focus-visible:bg-blue-500/20 md:flex"
         onPointerDown={event=>{event.preventDefault();event.currentTarget.setPointerCapture(event.pointerId);}}
         onPointerMove={event=>{if(!event.currentTarget.hasPointerCapture(event.pointerId))return;setEditorWidth(clampWidth(window.innerWidth-event.clientX));}}
-        onPointerUp={event=>{if(event.currentTarget.hasPointerCapture(event.pointerId))event.currentTarget.releasePointerCapture(event.pointerId);persistWidth(editorWidth);}}
+        onPointerUp={event=>{if(event.currentTarget.hasPointerCapture(event.pointerId))event.currentTarget.releasePointerCapture(event.pointerId);persistWidth(window.innerWidth-event.clientX);}}
         onPointerCancel={event=>{if(event.currentTarget.hasPointerCapture(event.pointerId))event.currentTarget.releasePointerCapture(event.pointerId);persistWidth(editorWidth);}}
         onKeyDown={event=>{if(event.key==='ArrowLeft'||event.key==='ArrowRight'){event.preventDefault();persistWidth(editorWidth+(event.key==='ArrowLeft'?20:-20));}}}
       >
