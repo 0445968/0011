@@ -11,6 +11,7 @@ import {postProjectCommand} from '@/lib/projects/immediate-command';
 import {refreshProjectSurfaces} from '@/lib/projects/refresh';
 import {ProjectPageHeader} from './projects/ProjectVisuals';
 import {expectedMilestoneStatus} from '@/lib/projects/phase-status';
+import {reorderProjectTasks} from '@/lib/projects/task-manual-order';
 import { useWorkspaceUnsavedChanges } from './workspace/WorkspaceNavigationGuard';
 
 import {
@@ -531,6 +532,30 @@ export function ProjectWorkspace({
   }
 
   /* =======================================================
+     PROJECT-WIDE MANUAL COMPLETION ORDER
+     ======================================================= */
+
+  function reorderTask(taskId:string,milestoneId:string|null,overTaskId:string|null,position:'before'|'after'|'end'){
+    if(!body||locked||!drafts.ready||drafts.recoverable||drafts.conflict||saveOutcomeUnknown||workflowGate)return false;
+    const next=reorderProjectTasks(body,taskId,milestoneId,overTaskId,position);
+    if(next===body)return false;
+    setBody(previous=>{
+      if(!previous)return previous;
+      // Apply against the newest draft, preserving edits made during a drag.
+      const moved=reorderProjectTasks(previous,taskId,milestoneId,overTaskId,position);
+      if(moved===previous)return previous;
+      return {...moved,milestones:moved.milestones.map(milestone=>{
+        if(milestone.status==='done')return milestone;
+        const expected=expectedMilestoneStatus(moved,milestone.id);
+        return expected&&expected!=='done'&&expected!==milestone.status
+          ? {...milestone,status:expected}:milestone;
+      })};
+    });
+    setMessage('Project completion order changed. The work-plan draft will autosave with revision conflict protection.');
+    return true;
+  }
+
+  /* =======================================================
      UPDATE MILESTONE
      ======================================================= */
 
@@ -1012,6 +1037,9 @@ export function ProjectWorkspace({
         onBulkTasks={bulkMilestoneTasks}
         onBulkTaskChange={bulkEditTasks}
         onBulkTaskRemove={bulkRemoveTasks}
+        onReorderTask={reorderTask}
+        onSaveOrder={()=>{void command('save');}}
+        orderDirty={Boolean(savedBody&&JSON.stringify(body.tasks.map(task=>[task.id,task.milestoneId]))!==JSON.stringify(savedBody.tasks.map(task=>[task.id,task.milestoneId])))}
       />
       </div>
 

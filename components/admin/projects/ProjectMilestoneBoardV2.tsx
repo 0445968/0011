@@ -28,6 +28,7 @@ import { taskDomId } from '@/lib/tasks/links';
 import { phaseColorFor } from '@/lib/projects/phase-colors';
 import { useProjectPhaseColors } from './useProjectPhaseColors';
 import { ProjectWorkplanToolbar, type TasksDisplayView, type TaskSort, type TaskColumn } from './ProjectWorkplanToolbar';
+import { MilestoneOrderBoard } from './MilestoneOrderBoard';
 import { emptyWorkplanFilters, groupWorkplanTasks, workplanMilestoneMatches, workplanTaskMatches, workplanTaskPhases, type WorkplanFilters, type TaskGrouping } from '@/lib/projects/workplan-filters';
 import { ProfileImage } from '@/components/profile-images/ProfileImage';
 import { ProjectLifecycleControls } from '@/components/admin/ProjectLifecycleControls';
@@ -150,7 +151,7 @@ function SubtaskEditor({item,disabled,update,requestRemove,today}: {
   </li>;
 }
 
-export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarReady,onTaskChange,onMilestoneChange,onAddTask,onAddMilestone,onEditTask,onEditMilestone,taskControls,onBulkTasks,userId,today,focusTaskId,focusTaskRequest,workflowGate,workflowOverrideReason,onWorkflowOverrideReason,onOverrideTaskStatus,overrideReady,busy,onRemoveTask,onBulkTaskChange,onBulkTaskRemove,advanced=false,onAdvancedToggle,dirtyTaskIds=[],toolbarActions}: {
+export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarReady,onTaskChange,onMilestoneChange,onAddTask,onAddMilestone,onEditTask,onEditMilestone,taskControls,onBulkTasks,userId,today,focusTaskId,focusTaskRequest,workflowGate,workflowOverrideReason,onWorkflowOverrideReason,onOverrideTaskStatus,overrideReady,busy,onRemoveTask,onBulkTaskChange,onBulkTaskRemove,onReorderTask,onSaveOrder,orderDirty=false,advanced=false,onAdvancedToggle,dirtyTaskIds=[],toolbarActions}: {
   onAdvancedToggle?:()=>void;dirtyTaskIds?:string[];toolbarActions?:ReactNode;advanced?:boolean;id:string;revision:number;body:ProjectBody;disabled:boolean;dirty:boolean;sidecarReady:boolean;today:string;focusTaskId?:string|null;focusTaskRequest?:number;
   onTaskChange:(index:number,changes:Partial<Task>)=>void;
   onMilestoneChange:(index:number,changes:Partial<Milestone>)=>void;
@@ -160,6 +161,8 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   onBulkTasks:(milestoneId:string,status:'done'|'todo')=>void;
   onBulkTaskChange:(taskIds:string[],changes:Partial<Task>)=>void;
   onBulkTaskRemove:(taskIds:string[])=>void;
+  onReorderTask:(taskId:string,milestoneId:string|null,overTaskId:string|null,position:'before'|'after'|'end')=>boolean;
+  onSaveOrder:()=>void;orderDirty?:boolean;
   userId:string;
   workflowGate?:ProjectWorkflowGate|null;workflowOverrideReason:string;onWorkflowOverrideReason:(reason:string)=>void;onOverrideTaskStatus:()=>void;overrideReady:boolean;busy:boolean;onRemoveTask:(taskId:string)=>void;
 }) {
@@ -219,11 +222,14 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const [selectedTaskId,setSelectedTaskId]=useState<string|null>(null);
   const [openTasks,setOpenTasks]=useState<Record<string,boolean>>({});
   const [visitedTasks,setVisitedTasks]=useState<Record<string,boolean>>({});
-  function openTask(taskId:string) {
-    setFilters({...emptyWorkplanFilters}); setTagFilter(''); setView('overview'); setGrouping('none'); setShowEditor(true);
-    setSelectedTaskId(taskId); setVisitedTasks({[taskId]:true}); setOpenTasks({[taskId]:true});
+  function openTask(taskId:string, reveal=false) {
+    // Opening an editor from Milestones, Kanban or List must not reset the view.
+    // Explicit deep links may still reveal a task hidden by the current filters.
+    if(reveal){setFilters({...emptyWorkplanFilters});setTagFilter('');setView('overview');setGrouping('none');}
+    setShowEditor(true);
+    setSelectedTaskId(taskId);setVisitedTasks({[taskId]:true});setOpenTasks({[taskId]:true});
   }
-  useEffect(()=>{if(focusTaskId)openTask(focusTaskId);},[focusTaskId,focusTaskRequest]);
+  useEffect(()=>{if(focusTaskId)openTask(focusTaskId,true);},[focusTaskId,focusTaskRequest]);
   useEffect(()=>{if(selectedTaskId&&showEditor){const row=document.getElementById(taskDomId(selectedTaskId));row?.focus({preventScroll:true});row?.scrollIntoView({block:'center',behavior:'smooth'});}},[selectedTaskId,focusTaskRequest,showEditor]);
   const [prompt,setPrompt]=useState<Prompt|null>(null);
   const [newSubtaskFor,setNewSubtaskFor]=useState<string|null>(null);
@@ -253,8 +259,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const subtasks=hierarchy.data?.subtasks??[];
   const context={body,links:phaseLinks,controls:taskControls,assignments:assignments.data?.tasks??[],today};
   const matchingTasks=body.tasks.filter(task=>workplanTaskMatches(task,filters,context)&&(!tagFilter||presentation.rows.find(row=>row.task_id===task.id)?.tags.includes(tagFilter)));
-  const matchingMilestones=body.milestones.filter(milestone=>workplanMilestoneMatches(milestone,filters,context)&&(!tagFilter||matchingTasks.some(task=>task.milestoneId===milestone.id)))
-    .sort((a,b)=>Number(a.status==='done')-Number(b.status==='done'));
+  const matchingMilestones=body.milestones.filter(milestone=>workplanMilestoneMatches(milestone,filters,context)&&(!tagFilter||matchingTasks.some(task=>task.milestoneId===milestone.id)));
   const cardGrid='grid grid-cols-1 items-start gap-3 md:grid-cols-2 xl:grid-cols-3';
   const memberOptions=[...new Map([...(assignments.data?.staff??[]),...(assignments.data?.clients??[])].map(person=>[person.id,person])).values()];
   const btn=(name:string, icon:ReactNode, action:()=>void, unavailable=false)=> <button type="button" className={miniButton} title={name} aria-label={name} disabled={unavailable} onClick={action}>{icon}</button>;
@@ -683,9 +688,15 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     </aside>
   ):null;
 
+  const orderFiltersActive=Boolean(
+    filters.query.trim() || filters.phase!=='all' || filters.side!=='all' ||
+    filters.assignee!=='all' || filters.status!=='all' || filters.deadline!=='all' ||
+    filters.from || filters.to || tagFilter
+  );
+  const canReorderMilestones=!disabled&&!busy&&sidecarReady&&sort==='default'&&!orderFiltersActive;
   return <section aria-label="Project tasks" className="bivi-workplan space-y-3 bg-white text-slate-950 dark:bg-background dark:text-foreground">
     <ProjectWorkplanToolbar actions={toolbarActions} onAdvancedToggle={onAdvancedToggle} advanced={advanced} projectId={id} filters={filters} onChange={change=>setFilters(previous=>({...previous,...change}))}
-      view={view} onView={setView} grouping={grouping} onGrouping={setGrouping} sort={sort} onSort={setSort}
+      view={view} onView={next=>{setView(next);if(next==='milestone')setSort('default');}} grouping={grouping} onGrouping={setGrouping} sort={sort} onSort={setSort}
       columns={visibleColumns} onColumns={changeColumns} assignees={memberOptions}
       phasesReady={Boolean(hierarchy.data)} assignmentsReady={Boolean(assignments.data)}
       tagFilter={tagFilter} onTagFilter={setTagFilter} tags={tagCatalog}
@@ -710,26 +721,12 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     <div className="min-w-0">
       <div className="min-w-0 space-y-3">
         {view==='overview'&&<div className="space-y-3">{(grouping==='none'?[{key:'all',label:'Tasks',tasks:orderedTasks}]:sectionGroups).map(group=>rowTable(group.tasks,group.key,grouping==='none'?undefined:group.label))}</div>}
-        {view==='milestone'&&<div className="grid items-start gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {matchingMilestones.map(milestone=>{
-            const items=orderedTasks.filter(task=>task.milestoneId===milestone.id);
-            const stats=milestoneStats(body,milestone.id);
-            return <section key={milestone.id} className="min-w-0 overflow-hidden rounded-xl bg-slate-50 dark:bg-muted/30">
-              <div className="flex items-start justify-between gap-2 px-3 py-3">
-                <div className="min-w-0">
-                  <h2 className="truncate text-sm font-semibold" title={milestone.title}>{milestone.title}</h2>
-                  <p className="mt-1 text-[11px] text-muted-foreground">{stats.done} of {stats.total} completed</p>
-                </div>
-                <button type="button" className={miniButton} title={'Add task to '+milestone.title} disabled={disabled} onClick={()=>onAddTask(milestone.id)}><Plus size={15}/></button>
-              </div>
-              <div className="max-h-[65vh] space-y-1 overflow-y-auto px-2 pb-3">
-                {items.map(task=><div key={task.id} className="rounded-lg bg-white dark:bg-card">{taskPreview(task)}</div>)}
-                {!items.length&&<p className="px-2 py-3 text-xs text-muted-foreground">No matching tasks</p>}
-              </div>
-            </section>;
-          })}
-          {orderedTasks.some(task=>!task.milestoneId)&&<section className="rounded-xl bg-slate-50 p-3 dark:bg-muted/30"><h2 className="mb-3 text-sm font-semibold">No milestone</h2>{orderedTasks.filter(task=>!task.milestoneId).map(task=><div key={task.id} className="mb-1 rounded-lg bg-white dark:bg-card">{taskPreview(task)}</div>)}</section>}
-        </div>}
+        {view==='milestone'&&<MilestoneOrderBoard
+          milestones={matchingMilestones} tasks={orderedTasks}
+          disabled={disabled} addDisabled={body.tasks.length>=100} canReorder={canReorderMilestones}
+          orderDirty={orderDirty} saving={busy} onMove={onReorderTask}
+          onAddTask={onAddTask} onSave={onSaveOrder} renderTask={taskPreview}
+        />}
         {view==='list'&&<div className="space-y-3">{(grouping==='none'?[{key:'all',label:'Tasks',tasks:orderedTasks}]:sectionGroups).map(group=><section key={group.key} className="space-y-1">{grouping!=='none'&&<h2 className="text-xs font-semibold">{group.label} <span className="text-muted-foreground">{group.tasks.length}</span></h2>}{group.tasks.map(viewTaskButton)}</section>)}</div>}
         
         {view==='kanban'&&<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{(['todo','doing','blocked','done'] as const).map(status=><section key={status} className="min-w-0 rounded-xl bg-slate-50 p-2 dark:bg-muted/30"><h2 className="mb-2 px-2 text-xs font-semibold capitalize">{status==='todo'?'Backlog':status==='doing'?'In progress':status==='done'?'Completed':'Blocked'} <span className="text-muted-foreground">{orderedTasks.filter(task=>task.status===status).length}</span></h2><div className="space-y-2">{orderedTasks.filter(task=>task.status===status).map(viewTaskButton)}</div></section>)}</div>}
