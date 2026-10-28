@@ -19,7 +19,7 @@ function example() {
   return {
     title: 'Project', owner: 'Bivi', notes: '',
     milestones: [
-      {id: 'm1', title: 'Discovery', status: 'active', dueOn: null},
+      {id: 'm1', title: 'Discovery', status: 'in_progress', dueOn: null},
       {id: 'm2', title: 'Design', status: 'planned', dueOn: null},
     ],
     tasks: [task('a','m1'),task('b','m1'),task('c','m2'),task('d',null)],
