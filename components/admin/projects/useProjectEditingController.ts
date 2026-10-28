@@ -23,6 +23,7 @@ export function useProjectEditingController(id:string,record:RecordState,initial
   const setSavedRevision:Dispatch<SetStateAction<number>>=useCallback(next=>{const value=typeof next==='function'?next(revision.current):next;revision.current=value;setRevisionState(value);},[]);
   const [busy,setBusy]=useState(false),[blocked,setBlocked]=useState(false),[message,setMessage]=useState('');
   const [saveOutcomeUnknown,setSaveOutcomeUnknown]=useState(false);
+  const [savePhase,setSavePhase]=useState<'idle'|'saving'|'saved'|'failed'|'uncertain'>('idle');
   const [serverBlockers,setServerBlockers]=useState<Blocker[]>([]);
   const [workflowGate,setWorkflowGate]=useState<ProjectWorkflowGate|null>(null);
   const [advanced,setAdvanced]=useState(initialAdvanced);
@@ -40,7 +41,10 @@ export function useProjectEditingController(id:string,record:RecordState,initial
     drafts.acceptSaved(candidate,current.body,current.revision);
     submitted.current=null;
     setServerBlockers([]);setWorkflowGate(null);setSaveOutcomeUnknown(false);setBlocked(false);
-    const newer=local.current&&!projectBodiesEqual(local.current,current.body);
+    // Compare with the submitted snapshot, not the server-normalized result.
+    // Trigger-side milestone normalization is not a newer user edit.
+    const newer=Boolean(local.current&&!projectBodiesEqual(local.current,candidate));
+    setSavePhase(newer?'idle':'saved');
     setMessage(`Submitted work-plan changes saved.${newer?' Newer edits remain in your private draft.':''}${warning?` ${warning}`:!cleared?' The private draft could not be cleared; refresh draft status before continuing.':''}`);
     try{refreshProjectSurfaces(id,router);}catch{setMessage('Submitted changes saved. Refresh saved views to update their display.');}
     return !newer;
@@ -51,6 +55,7 @@ export function useProjectEditingController(id:string,record:RecordState,initial
     const result=drafts.reconcile(current.body,current.revision);
     submitted.current=null;
     setBlocked(false);setSaveOutcomeUnknown(false);
+    setSavePhase(result.conflicts.length?'failed':'idle');
     setMessage(result.conflicts.length?'The saved project changed. Resolve the conflicting fields before saving.':'The latest saved project is loaded. Your nonconflicting edits remain for review and Save all.');
   }
 
@@ -64,10 +69,10 @@ export function useProjectEditingController(id:string,record:RecordState,initial
       const attempt=submitted.current;
       if(attempt&&savedCandidateMatches(attempt.body,attempt.revision,current))return await adoptSaved(attempt.body,current);
       if(current.revision!==revision.current||!baseline.current||!projectBodiesEqual(current.body,baseline.current))await reconcileLatest(current);
-      else{setSaveOutcomeUnknown(false);setBlocked(false);setMessage(local.current&&baseline.current&&projectBodiesEqual(local.current,baseline.current)?'Saved project data is current.':'The latest saved revision has not changed. Your edits remain available for a revision-checked retry.');}
+      else{setSaveOutcomeUnknown(false);setBlocked(false);setSavePhase('idle');setMessage(local.current&&baseline.current&&projectBodiesEqual(local.current,baseline.current)?'Saved project data is current.':'The latest saved revision has not changed. Your edits remain available for a revision-checked retry.');}
       router.refresh();
       return false;
-    }catch(cause){if(active.current)setMessage(cause instanceof Error?cause.message:'The saved project could not be checked.');return false;}
+    }catch(cause){if(active.current){setSavePhase('uncertain');setMessage(cause instanceof Error?cause.message:'The saved project could not be checked.');}return false;}
     finally{pending.current=false;drafts.resumeAutosaves();if(active.current)setBusy(false);}
   }
 
@@ -76,8 +81,8 @@ export function useProjectEditingController(id:string,record:RecordState,initial
     if(!drafts.ready||drafts.recoverable||drafts.conflict){setMessage('Restore, discard or reconcile the private draft before Save all.');return false;}
     const candidate=local.current;
     if(!candidate||!dirty)return false;
-    if(!projectBodySchema.safeParse(candidate).success){setMessage('Check the project title, task names, dates and milestone assignments.');return false;}
-    pending.current=true;setBusy(true);setMessage('Saving submitted work-plan changes…');
+    if(!projectBodySchema.safeParse(candidate).success){setSavePhase('failed');setMessage('Check the project title, task names, dates and milestone assignments.');return false;}
+    pending.current=true;setBusy(true);setSavePhase('saving');setMessage('Saving submitted work-plan changes…');
     const attempt={body:candidate,revision:revision.current};submitted.current=attempt;
     try{
       await drafts.suspendAutosaves();
@@ -85,9 +90,9 @@ export function useProjectEditingController(id:string,record:RecordState,initial
       if(!active.current)return false;
       if(outcome.kind==='saved')return await adoptSaved(attempt.body,{body:outcome.body??normalizeWorkplanBodyForSave(attempt.body),revision:outcome.revision},outcome.refreshWarning);
       if(outcome.kind==='revision_conflict'){await reconcileLatest(await readSavedProject(id));return false;}
-      if(outcome.kind==='validation_rejected'){submitted.current=null;setServerBlockers(outcome.blockers as Blocker[]);setWorkflowGate(outcome.workflowGate??null);setMessage(outcome.error);return false;}
+      if(outcome.kind==='validation_rejected'){setSavePhase('failed');submitted.current=null;setServerBlockers(outcome.blockers as Blocker[]);setWorkflowGate(outcome.workflowGate??null);setMessage(outcome.error);return false;}
       if(outcome.kind==='unknown')throw new Error(outcome.error);
-      submitted.current=null;setMessage(outcome.error);return false;
+      submitted.current=null;setSavePhase('failed');setMessage(outcome.error);return false;
     }catch(cause){
       if(!active.current)return false;
       try{
@@ -96,7 +101,7 @@ export function useProjectEditingController(id:string,record:RecordState,initial
         if(savedCandidateMatches(attempt.body,attempt.revision,current))return await adoptSaved(attempt.body,current);
         if(current.revision!==attempt.revision){await reconcileLatest(current);return false;}
       }catch{/* Preserve edits and require an explicit check before retry. */}
-      if(active.current){setSaveOutcomeUnknown(true);setMessage(`Save outcome is uncertain. Check save status before retrying. ${cause instanceof Error?cause.message:''}`);}
+      if(active.current){setSavePhase('uncertain');setSaveOutcomeUnknown(true);setMessage(`Save outcome is uncertain. Check save status before retrying. ${cause instanceof Error?cause.message:''}`);}
       return false;
     }finally{pending.current=false;drafts.resumeAutosaves();if(active.current)setBusy(false);}
   }
@@ -104,7 +109,7 @@ export function useProjectEditingController(id:string,record:RecordState,initial
   async function discard(){
     if(pending.current||busy)return false;
     pending.current=true;setBusy(true);
-    try{const ok=await drafts.discardDraft();if(ok&&active.current){setServerBlockers([]);setWorkflowGate(null);setSaveOutcomeUnknown(false);setBlocked(false);setMessage('Private draft discarded. The latest saved project is loaded.');}return ok;}
+    try{const ok=await drafts.discardDraft();if(ok&&active.current){setSavePhase('idle');setServerBlockers([]);setWorkflowGate(null);setSaveOutcomeUnknown(false);setBlocked(false);setMessage('Private draft discarded. The latest saved project is loaded.');}return ok;}
     finally{pending.current=false;if(active.current)setBusy(false);}
   }
   // Sidecar events request a canonical read/rebase, never just a newer revision token.
@@ -114,5 +119,5 @@ export function useProjectEditingController(id:string,record:RecordState,initial
   });
   return {body:bodyState,savedBody:savedState,savedRevision:revisionState,setBody,setSavedBody,setSavedRevision,
     busy,setBusy,blocked,setBlocked,message,setMessage,saveOutcomeUnknown,setSaveOutcomeUnknown,serverBlockers,setServerBlockers,workflowGate,setWorkflowGate,
-    dirty,drafts,save,discard,checkUncertainSave,advanced,setAdvanced};
+    dirty,drafts,save,savePhase,discard,checkUncertainSave,advanced,setAdvanced};
 }
