@@ -27,7 +27,8 @@ test('revised task board preserves confirmation dialogs while milestone editing 
   const board=fs.readFileSync(new URL('../../components/admin/projects/ProjectMilestoneBoardV2.tsx',import.meta.url),'utf8');
   const preview=fs.readFileSync(new URL('../../components/admin/projects/ProjectMilestonePreviews.tsx',import.meta.url),'utf8');
   const phases=fs.readFileSync(new URL('../../components/admin/projects/ProjectPhasesPage.tsx',import.meta.url),'utf8');
-  assert.match(board,/view==='table'/);
+  assert.match(board,/view==='overview'/);
+  assert.match(board,/view==='milestone'/);
   assert.match(phases,/<ProjectLifecycleMilestones/);
   assert.match(board,/<Dialog /);
   assert.doesNotMatch(board,/window\.confirm\(/);
