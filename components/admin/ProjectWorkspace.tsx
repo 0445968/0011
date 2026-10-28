@@ -500,7 +500,7 @@ export function ProjectWorkspace({
      ======================================================= */
 
   function bulkEditTasks(taskIds:string[],changes:Partial<Task>){
-    if(!body||locked||!taskIds.length)return;
+    if(!body||locked||drafts.conflict||saveOutcomeUnknown||!taskIds.length)return;
     const selected=new Set(taskIds);
     setBody(previous=>{
       if(!previous)return previous;
@@ -518,7 +518,7 @@ export function ProjectWorkspace({
   }
 
   function bulkRemoveTasks(taskIds:string[]){
-    if(!body||locked||!taskIds.length)return;
+    if(!body||locked||drafts.conflict||saveOutcomeUnknown||!taskIds.length)return;
     const selected=new Set(taskIds);
     const dependent=taskControls.find(control=>selected.has(control.dependsOn??''));
     if(dependent){
