@@ -113,7 +113,7 @@ export function TaskProductivity({projectId,taskId,taskTitle,revision,disabled,u
       <span title="Comments" aria-label={`Comments: ${data?.commentCount??'loading'}`} className="inline-flex items-center gap-1"><MessageSquareText size={13} aria-hidden/>{data?.commentCount??'…'}</span>
       <span title="Files" aria-label={`Files: ${data?.fileCount??'loading'}`} className="inline-flex items-center gap-1"><Paperclip size={13} aria-hidden/>{data?.fileCount??'…'}</span>
     </summary>
-    {open&&<div className="mt-3 space-y-4 rounded-lg bg-muted/30 p-3">
+    {open&&<div className="mt-3 space-y-4 rounded-lg bg-white p-2 dark:bg-card">
       {onWorkplanDescriptionChange&&<label className="block text-xs font-medium">Task description<textarea aria-label={'Task description for '+taskTitle} className="mt-2 min-h-20 w-full rounded-md border border-input bg-background p-2 text-xs" value={workplanDescription??''} onChange={event=>onWorkplanDescriptionChange(event.target.value)} disabled={!workplanEditable} maxLength={2000}/></label>}
       {noteDirty&&<p role="status" className="text-xs text-amber-800 dark:text-amber-200">Unsaved task note. Save or cancel this note draft below.</p>}
       {loading&&<p role="status" className="text-xs text-muted-foreground">Loading saved task details…</p>}
