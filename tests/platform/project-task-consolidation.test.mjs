@@ -4,10 +4,11 @@ import {readFileSync} from 'node:fs';
 
 const read=path=>readFileSync(new URL(`../../${path}`,import.meta.url),'utf8');
 
-test('normal task cards own grouped editing and use shared task controls, productivity, hierarchy, and completion override',()=>{
+test('single task inspector uses shared controls, productivity, hierarchy, and completion override',()=>{
  const board=read('components/admin/projects/ProjectMilestoneBoardV2.tsx');
- assert.match(board,/<details key=\{task\.id\} id=\{taskDomId\(task\.id\)\}/);
- assert.match(board,/open=\{Boolean\(openTasks\[task\.id\]\)\}/);
+ assert.match(board,/const editorTaskContent=\(task:Task\)=>/);
+ assert.match(board,/return task\?editorTaskContent\(task\):null/);
+ assert.doesNotMatch(board,/<details key=\{task\.id\}/);
  assert.equal((board.match(/<ProjectLifecycleControls/g)||[]).length,1);
  assert.match(board,/<ProjectLifecycleControls[\s\S]*taskOnlyTaskId=\{task\.id\}/);
  assert.match(board,/<TaskProductivity[\s\S]*taskId=\{task\.id\}/);
@@ -27,10 +28,12 @@ test('Phases keeps phase controls and sends task work back to the canonical Task
  assert.match(lifecycle,/showTaskManagement && events\.length/);
 });
 
-test('Open task clears transient board filters and resolves legacy phase task links to Tasks',()=>{
+test('Open task preserves the current view except when revealing a deep-linked task',()=>{
  const board=read('components/admin/projects/ProjectMilestoneBoardV2.tsx');
  const page=read('app/admin/(workspace)/projects/[id]/page.tsx');
- assert.match(board,/setFilters\(\{\.\.\.emptyWorkplanFilters\}\); setTagFilter\(''\); setView\('table'\); setGrouping\('none'\)/);
+ assert.match(board,/function openTask\(taskId:string, reveal=false\)/);
+ assert.match(board,/if\(reveal\)\{setFilters\(\{\.\.\.emptyWorkplanFilters\}\);setTagFilter\(''\);setView\('overview'\);setGrouping\('none'\);\}/);
+ assert.match(board,/if\(focusTaskId\)openTask\(focusTaskId,true\)/);
  assert.match(board,/taskDomId\(selectedTaskId\)/);
  assert.match(board,/focusTaskId/);
  assert.match(page,/legacyTaskRoute[\s\S]*\? 'plan'/);
