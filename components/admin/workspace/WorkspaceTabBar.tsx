@@ -122,12 +122,14 @@ function TabAction({
   label,
   selected = false,
   disabled = false,
+  revealOnHover = false,
   onClick,
   children,
 }: {
   label: string;
   selected?: boolean;
   disabled?: boolean;
+  revealOnHover?: boolean;
   onClick: () => void;
   children: ReactNode;
 }) {
@@ -144,6 +146,7 @@ function TabAction({
       onKeyDown={event => event.stopPropagation()}
       onClick={event => { event.stopPropagation(); onClick(); }}
       className={`
+        ${revealOnHover ? 'bivi-chrome-tab-close opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100' : 'opacity-100'}
         flex
         h-[23px]
         w-[21px]
@@ -159,7 +162,9 @@ function TabAction({
         ${
           selected
             ? 'text-inherit'
-            : 'text-inherit opacity-65 hover:opacity-100'
+            : revealOnHover
+              ? 'text-inherit'
+              : 'text-inherit opacity-65 hover:opacity-100'
         }
 
         hover:bg-black/5
@@ -210,34 +215,26 @@ function WorkspaceTabItem({
       onMouseEnter={onPrefetch}
       onFocus={onPrefetch}
       className={`
+        bivi-chrome-tab
         group
         relative
         flex
-        h-[45px]
-        min-w-[175px]
-        max-w-[270px]
+        h-[44px]
+        min-w-[170px]
+        max-w-[255px]
         shrink-0
         items-center
-        overflow-hidden
-        rounded-t-lg
+        overflow-visible
+        rounded-t-[13px]
         border
         border-b-0
         px-1.5
-        transition-colors
+        transition-[background-color,border-color,color]
         duration-150
-
         ${
           active
-            ? `
-              bg-white border-border
-              text-slate-900
-            `
-            : `
-              border-transparent
-              ${colors.inactive}
-              text-muted-foreground
-              hover:text-foreground
-            `
+            ? 'bivi-chrome-tab-active z-10 -mb-px border-slate-200 bg-white text-slate-900 dark:border-border/80 dark:bg-card dark:text-foreground'
+            : 'z-0 border-transparent bg-slate-200/60 text-slate-600 hover:bg-slate-200/95 hover:text-slate-900 dark:bg-muted/30 dark:text-muted-foreground dark:hover:bg-muted/70 dark:hover:text-foreground'
         }
       `}
     >
@@ -247,14 +244,15 @@ function WorkspaceTabItem({
         aria-hidden="true"
         className={`
           absolute
-          inset-x-0
+          inset-x-[2px]
           top-0
           h-[3px]
+          rounded-t-full
           ${colors.accent}
           ${
             active
               ? 'opacity-100'
-              : 'opacity-45 group-hover:opacity-80'
+              : 'opacity-70 group-hover:opacity-100'
           }
           transition-opacity
         `}
@@ -291,7 +289,7 @@ function WorkspaceTabItem({
           strokeWidth={1.8}
           className={`
             shrink-0
-            ${active ? colors.icon.replace(/dark:text-[^ ]+/g, '') : colors.icon}
+            ${colors.icon}
           `}
           aria-hidden="true"
         />
@@ -317,7 +315,7 @@ function WorkspaceTabItem({
 
               ${
                 active
-                  ? 'font-bold text-slate-900'
+                  ? 'font-bold text-slate-900 dark:text-foreground'
                   : 'font-semibold text-foreground/80'
               }
             `}
@@ -333,8 +331,9 @@ function WorkspaceTabItem({
               text-[10px]
               font-normal
               leading-tight
+              text-slate-500
+              dark:text-muted-foreground
             "
-            style={active ? { color: '#475569' } : undefined}
           >
             {typeLabel}
           </span>
@@ -345,6 +344,7 @@ function WorkspaceTabItem({
         {bookmarked && <TabAction label={`Remove bookmark: ${tab.title}`} selected onClick={onBookmark}><Bookmark size={12} fill="currentColor" /></TabAction>}
         {tab.pinned && <TabAction label={`Unpin: ${tab.title}`} selected onClick={onPin}><Pin size={12} fill="currentColor" /></TabAction>}
         <TabAction
+          revealOnHover={!active}
           label={
             tab.pinned
               ? 'Unpin this tab before closing'
@@ -387,7 +387,7 @@ function ScrollButton({
       aria-label={`Scroll tabs ${direction}`}
       onClick={onClick}
       className="
-        mb-1.5
+        mb-1
         flex
         h-8
         w-7
@@ -449,16 +449,19 @@ export function WorkspaceTabBar({
   return (
     <div
       className="
+        bivi-chrome-tab-bar
         flex
-        h-[53px]
+        h-[54px]
         shrink-0
         items-end
         gap-1
         border-b
-        border-border/60
-        bg-background
+        border-slate-200
+        bg-[#e9edf2]
         px-2
         pt-2
+        dark:border-border/70
+        dark:bg-[#1d222b]
         sm:px-3
       "
     >
@@ -535,15 +538,15 @@ export function WorkspaceTabBar({
                   <span
                     aria-hidden="true"
                     className={`
-                      mx-1
-                      mb-[15px]
-                      h-[16px]
+                      mx-[2px]
+                      mb-[13px]
+                      h-[17px]
                       w-px
                       shrink-0
 
                       ${
                         showDivider
-                          ? 'bg-border'
+                          ? 'bg-slate-400/40 dark:bg-white/25'
                           : 'bg-transparent'
                       }
                     `}
@@ -570,6 +573,32 @@ export function WorkspaceTabBar({
       )}
 
       <WorkspaceBarDropdowns {...menuProps}/>
+      <style jsx global>{`
+        .bivi-chrome-tab-active { --bivi-tab-active-surface: #fff; }
+        .dark .bivi-chrome-tab-active { --bivi-tab-active-surface: hsl(var(--card)); }
+        .bivi-chrome-tab-active::before,
+        .bivi-chrome-tab-active::after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          width: 12px;
+          height: 12px;
+          pointer-events: none;
+        }
+        .bivi-chrome-tab-active::before {
+          left: -12px;
+          border-bottom-right-radius: 12px;
+          box-shadow: 3px 4px 0 3px var(--bivi-tab-active-surface);
+        }
+        .bivi-chrome-tab-active::after {
+          right: -12px;
+          border-bottom-left-radius: 12px;
+          box-shadow: -3px 4px 0 3px var(--bivi-tab-active-surface);
+        }
+        @media (hover: none) {
+          .bivi-chrome-tab-close { opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }
