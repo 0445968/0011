@@ -32,7 +32,9 @@ export function reorderProjectTasks(
   if (overTaskId !== null && (!overTask || overTask.milestoneId !== destinationMilestoneId)) return body;
 
   const milestoneIds = body.milestones.map(m => m.id);
-  const groups = new Map<string | null, Task[]>([...milestoneIds, null].map(id => [id, []]));
+  const groups = new Map<string | null, Task[]>();
+  for (const id of milestoneIds) groups.set(id, []);
+  groups.set(null, []);
   for (const task of body.tasks) {
     if (task.id === taskId) continue;
     // Preserve legacy tasks with missing milestones rather than silently losing them.
