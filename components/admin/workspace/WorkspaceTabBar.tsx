@@ -289,7 +289,7 @@ function WorkspaceTabItem({
           strokeWidth={1.8}
           className={`
             shrink-0
-            ${active ? colors.icon.replace(/dark:text-[^ ]+/g, '') : colors.icon}
+            ${colors.icon}
           `}
           aria-hidden="true"
         />
@@ -315,7 +315,7 @@ function WorkspaceTabItem({
 
               ${
                 active
-                  ? 'font-bold text-slate-900'
+                  ? 'font-bold text-slate-900 dark:text-foreground'
                   : 'font-semibold text-foreground/80'
               }
             `}
@@ -331,8 +331,9 @@ function WorkspaceTabItem({
               text-[10px]
               font-normal
               leading-tight
+              text-slate-500
+              dark:text-muted-foreground
             "
-            style={active ? { color: '#475569' } : undefined}
           >
             {typeLabel}
           </span>
