@@ -75,6 +75,22 @@ function TaskPriorityCell({projectId,taskId,priority,revision,disabled}:{
   </Popover>;
 }
 
+/** A native date input covers the full icon-and-date control so any click opens
+ * the calendar, including when the field has no date. */
+function TaskDateCell({label,value,disabled,icon,onChange}:{
+  label:string;value:string|null;disabled:boolean;icon:ReactNode;onChange:(value:string|null)=>void;
+}){
+  const formatted=value?new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'UTC'}).format(new Date(value+'T12:00:00Z')):'—';
+  return <label title={label+(value?': '+formatted:': Not set')}
+    className="relative inline-flex min-h-8 max-w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 text-[11px] text-muted-foreground hover:bg-muted/50 focus-within:ring-2 focus-within:ring-ring has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50">
+    {icon}<span className="truncate tabular-nums">{formatted}</span>
+    <input type="date" value={value??''} disabled={disabled} aria-label={label}
+      className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
+      onClick={event=>{try{event.currentTarget.showPicker?.();}catch{ /* Browser's native picker is the fallback. */ }}}
+      onChange={event=>onChange(event.currentTarget.value||null)}/>
+  </label>;
+}
+
 type Task = ProjectBody['tasks'][number];
 type Milestone = ProjectBody['milestones'][number];
 type Subtask = ProjectHierarchyResponse['subtasks'][number];
@@ -153,6 +169,23 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const [view,setView]=useState<TasksDisplayView>('overview');
   const [sort,setSort]=useState<TaskSort>('default');
   const [visibleColumns,setVisibleColumns]=useState<TaskColumn[]>(['priority','status','milestone','due','assignee']);
+  const allowedColumns:TaskColumn[]=['priority','status','milestone','due','assignee','start','phase','tags'];
+  // Column order and visibility belong to this project rather than the session.
+  useEffect(()=>{
+    const defaults:TaskColumn[]=['priority','status','milestone','due','assignee'];
+    try {
+      const saved=JSON.parse(window.localStorage.getItem('bivi-task-columns:'+id)??'null') as unknown;
+      if(Array.isArray(saved)){
+        const columns=saved.filter((value):value is TaskColumn=>typeof value==='string'&&allowedColumns.includes(value as TaskColumn));
+        setVisibleColumns([...new Set(columns)]);
+      }else setVisibleColumns(defaults);
+    }catch{setVisibleColumns(defaults);}
+  },[id]);
+  const changeColumns=(columns:TaskColumn[])=>{
+    const sanitized=[...new Set(columns.filter(column=>allowedColumns.includes(column)))];
+    setVisibleColumns(sanitized);
+    try{window.localStorage.setItem('bivi-task-columns:'+id,JSON.stringify(sanitized));}catch{ /* Keep this session's choice. */ }
+  };
 
   const [showEditor,setShowEditor]=useState(false);
   const [panelTarget,setPanelTarget]=useState<HTMLElement|null>(null);
@@ -274,7 +307,15 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     const assigneeNames=dependencyAssignment?.assignees.map(personId=>dependencyPeople?.find(person=>person.id===personId)?.label).filter(Boolean).join(', ');
     return <div className="flex flex-wrap items-center gap-2 px-3 pb-2 text-[11px] text-muted-foreground"><span>Requires</span>{prerequisite?<><button type="button" className="font-medium text-foreground hover:underline" onClick={()=>openTask(prerequisite.id)}>{prerequisite.title}</button>{taskPeople(prerequisite)}{assigneeNames&&<span>{assigneeNames}</span>}<span>{prerequisite.status==='done'?'Completed':'Incomplete'}</span></>:<span>Dependency unavailable</span>}</div>;
   };
-  const taskPreview=(task:Task)=><div key={task.id} className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-xs hover:bg-muted/40"><ProjectTaskStateIcon status={task.status}/><button type="button" className="min-w-0 flex-1 text-left hover:underline" onClick={()=>openTask(task.id)} aria-label={`Open task ${task.title}`}>{task.title}</button>{taskPeople(task)}<span className="inline-flex items-center gap-1 text-muted-foreground"><Flag size={12} aria-hidden/>{task.dueOn||'—'}</span></div>;
+  // Keep the unsaved dot visible even when the edit pencil is hidden.
+  const taskEditControl=(task:Task)=><span className="relative inline-flex h-8 w-8 shrink-0 items-center justify-center">
+    <button type="button" className={miniButton+' bivi-task-edit-button'}
+      title={'Edit '+task.title} aria-label={'Edit task '+task.title}
+      onClick={()=>openTask(task.id)}><Pencil size={15} aria-hidden/></button>
+    {dirtyTaskIds.includes(task.id)&&<span role="status" aria-label="Unsaved task changes"
+      title="Changes awaiting autosave" className="pointer-events-none absolute right-0 top-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-blue-600 dark:border-card"/>}
+  </span>;
+  const taskPreview=(task:Task)=><div key={task.id} className="bivi-task-row flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-xs hover:bg-muted/40"><ProjectTaskStateIcon status={task.status}/><button type="button" className="min-w-0 flex-1 text-left hover:underline" onClick={()=>openTask(task.id)} aria-label={`Open task ${task.title}`}>{task.title}</button>{taskPeople(task)}<span className="inline-flex items-center gap-1 text-muted-foreground"><Flag size={12} aria-hidden/>{task.dueOn||'—'}</span>{taskEditControl(task)}</div>;
   const milestoneCard=(milestone:Milestone)=>{
     const stats=milestoneStats(body,milestone.id);
     const isOpen=expanded[milestone.id]===true;
@@ -306,13 +347,54 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     return body.tasks.findIndex(row=>row.id===a.id)-body.tasks.findIndex(row=>row.id===b.id);
   });
 
-  const columnWidths='minmax(220px,3fr) '+visibleColumns.map(column=>column==='assignee'?'minmax(100px,1.2fr)':'minmax(105px,1fr)').join(' ')+' 42px';
-  const labelForColumn:Record<TaskColumn,string>={priority:'Priority',status:'Status',milestone:'Milestone',due:'Due date',assignee:'Assignees'};
+  const columnWidths='minmax(260px,2.5fr) '+visibleColumns.map(column=>
+    column==='tags'||column==='phase'?'minmax(155px,1.2fr)':
+    column==='due'||column==='start'?'minmax(140px,1fr)':
+    column==='assignee'?'minmax(120px,1fr)':'minmax(100px,0.8fr)').join(' ')+' 42px';
+  const tableMinWidth=Math.max(640,302+visibleColumns.reduce((sum,column)=>sum+(
+    column==='tags'||column==='phase'?155:
+    column==='start'||column==='due'?140:
+    column==='assignee'?120:100),0));
+  const labelForColumn:Record<TaskColumn,string>={
+    priority:'Priority',status:'Status',milestone:'Milestone',due:'Due date',
+    assignee:'Assignees',start:'Start date',phase:'Phase',tags:'Tags',
+  };
   const columnValue=(task:Task,column:TaskColumn):ReactNode=>{
-    if(column==='priority'){const priority=taskControls.find(row=>row.taskId===task.id)?.priority??null;return <TaskPriorityCell projectId={id} taskId={task.id} priority={priority} revision={revision} disabled={disabled||dirty||!sidecarReady}/>;}
+    if(column==='priority'){
+      const priority=taskControls.find(row=>row.taskId===task.id)?.priority??null;
+      return <TaskPriorityCell projectId={id} taskId={task.id} priority={priority} revision={revision} disabled={disabled||dirty||!sidecarReady}/>;
+    }
     if(column==='status')return statusMenu(task);
-    if(column==='milestone')return <span className="truncate text-[11px] text-muted-foreground" title={body.milestones.find(item=>item.id===task.milestoneId)?.title??'No milestone'}>{body.milestones.find(item=>item.id===task.milestoneId)?.title??'—'}</span>;
-    if(column==='due')return <label className="inline-flex min-h-8 items-center gap-1 text-[11px] text-muted-foreground"><Flag size={12} aria-hidden/><input type="date" aria-label={'Due date for '+task.title} className="w-[120px] cursor-pointer bg-transparent px-1 text-[11px] outline-none focus-visible:ring-2" disabled={disabled} value={task.dueOn??''} onChange={event=>updateTask(task,{dueOn:event.target.value||null})}/></label>;
+    if(column==='milestone'){
+      const name=body.milestones.find(item=>item.id===task.milestoneId)?.title??'No milestone';
+      return <span className="block truncate text-[11px] text-muted-foreground" title={name}>{task.milestoneId?name:'—'}</span>;
+    }
+    if(column==='due')return <TaskDateCell label={'Due date for '+task.title} value={task.dueOn}
+      disabled={disabled} icon={<Flag size={13} aria-hidden/>}
+      onChange={value=>updateTask(task,{dueOn:value})}/>;
+    if(column==='start')return <TaskDateCell label={'Start date for '+task.title}
+      value={schedule.rows.get(task.id)?.start_on??null}
+      disabled={disabled||dirty||!sidecarReady||schedule.busy!==null}
+      icon={<Play size={13} aria-hidden/>}
+      onChange={value=>{void schedule.save(task.id,value,task.dueOn,dirty);}}/>;
+    if(column==='phase'){
+      const phases=workplanTaskPhases(task,context);
+      return phases.length?<Link href={'/projects/'+id+'?tab=phases'}
+        title={phases.map(phase=>projectPhaseLabels[phase]).join(', ')}
+        className="inline-flex max-w-full items-center gap-1.5 rounded-md px-1 py-1 hover:bg-muted/50">
+        <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{backgroundColor:phaseColorFor(phases[0],phaseColors.rows)}}/>
+        <span className="min-w-0 truncate text-[11px]">{projectPhaseLabels[phases[0]]}</span>
+        {phases.length>1&&<span className="shrink-0 text-[10px] text-muted-foreground">+{phases.length-1}</span>}
+      </Link>:<span className="text-[11px] text-muted-foreground">—</span>;
+    }
+    if(column==='tags'){
+      const row=presentation.rows.find(item=>item.task_id===task.id);
+      return <div className="flex min-w-0 items-center gap-1">
+        <TaskTags projectId={id} projectRevision={revision} row={row} catalog={tagCatalog}
+          disabled={disabled||dirty||!sidecarReady} reload={presentation.load}/>
+        {Boolean(row?.tags.length)&&<span className="min-w-0 truncate text-[10px] text-muted-foreground" title={row?.tags.join(', ')}>{row?.tags.slice(0,2).join(', ')}{(row?.tags.length??0)>2?'…':''}</span>}
+      </div>;
+    }
     return <TaskMemberPicker taskId={task.id} controls={assignments} disabled={disabled||dirty||!sidecarReady}/>;
   };
   const statusMenu=(task:Task)=><Popover>
@@ -322,26 +404,31 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     </PopoverContent>
   </Popover>;
   const openFullEditor=(taskId:string)=>{openTask(taskId);};
-  const compactRow=(task:Task)=><div role="row" key={task.id} style={{gridTemplateColumns:columnWidths}} className={`grid min-h-12 items-center gap-3 px-3 py-1.5 text-xs transition-colors hover:bg-slate-50 focus-within:bg-slate-50 dark:hover:bg-muted/50 dark:focus-within:bg-muted/50 ${selectedTaskId===task.id?'bg-blue-50/60 dark:bg-primary/10':''}`}>
-    <div role="cell" className="flex min-w-0 items-center gap-2">{statusMenu(task)}<span className="w-14 shrink-0 font-mono text-[10px] text-muted-foreground">{presentation.rows.find(row=>row.task_id===task.id)?.code??'Draft'}</span><button type="button" onClick={()=>openTask(task.id)} className="min-w-0 flex-1 truncate text-left font-medium hover:underline" title={task.title}>{task.title}</button>{dirtyTaskIds.includes(task.id)&&<span role="status" title="Task changes awaiting autosave" aria-label="Unsaved task changes" className="h-2 w-2 shrink-0 rounded-full bg-blue-600"/>}</div>
-    {visibleColumns.map(column=><div key={column} role="cell" className="min-w-0 truncate">{columnValue(task,column)}</div>)}
-    <div role="cell"><button type="button" className={miniButton} title={`Full editor for ${task.title}`} aria-label={`Edit task ${task.title}`} onClick={()=>openFullEditor(task.id)}><Pencil size={15}/></button></div>
+  const compactRow=(task:Task)=><div role="row" key={task.id} style={{gridTemplateColumns:columnWidths}}
+    className={"bivi-task-row grid min-h-12 items-center gap-3 px-5 py-1.5 text-xs transition-colors hover:bg-slate-50 focus-within:bg-slate-50 dark:hover:bg-muted/50 dark:focus-within:bg-muted/50 "+(selectedTaskId===task.id?'bg-blue-50/60 dark:bg-primary/10':'')}>
+    <div role="cell" className="flex min-w-0 items-center gap-2">
+      {!visibleColumns.includes('status')&&statusMenu(task)}
+      <span className="w-14 shrink-0 font-mono text-[10px] text-muted-foreground">{presentation.rows.find(row=>row.task_id===task.id)?.code??'Draft'}</span>
+      <button type="button" onClick={()=>openTask(task.id)} className="min-w-0 flex-1 truncate text-left font-medium hover:underline" title={task.title}>{task.title}</button>
+    </div>
+    {visibleColumns.map(column=><div key={column} role="cell" className="min-w-0 overflow-hidden">{columnValue(task,column)}</div>)}
+    <div role="cell">{taskEditControl(task)}</div>
   </div>;
   const sectionGroups=groupWorkplanTasks(orderedTasks,grouping,context).filter(group=>group.tasks.length>0);
   const rowTable=(tasks:Task[],key:string,title?:string)=><section key={key} className="overflow-x-auto bg-white dark:bg-card">
-    {title&&<h2 className="bg-slate-50 px-3 py-2 text-xs font-semibold dark:bg-muted/40">{title} <span className="ml-1 font-normal text-muted-foreground">{tasks.length}</span></h2>}
-    <div role="table" aria-label={title??'Tasks'} className="w-full min-w-[640px]">
-      <div role="row" style={{gridTemplateColumns:columnWidths}} className="grid min-h-9 items-center gap-3 border-b border-border/70 px-3 text-[11px] font-medium text-muted-foreground">
-        <div role="columnheader">Name</div>{visibleColumns.map(column=><div role="columnheader" key={column} draggable title="Drag to reorder columns" className="cursor-grab" onDragStart={event=>{event.dataTransfer.setData('text/plain',column);event.dataTransfer.effectAllowed='move';}} onDragOver={event=>event.preventDefault()} onDrop={event=>{event.preventDefault();const source=event.dataTransfer.getData('text/plain') as TaskColumn;if(!visibleColumns.includes(source)||source===column)return;const next=visibleColumns.filter(item=>item!==source);next.splice(next.indexOf(column),0,source);setVisibleColumns(next);}}>{labelForColumn[column]}</div>)}<div role="columnheader"><span className="sr-only">Edit</span></div>
+    {title&&<h2 className="bg-slate-50 px-5 py-2 text-xs font-semibold dark:bg-muted/40">{title} <span className="ml-1 font-normal text-muted-foreground">{tasks.length}</span></h2>}
+    <div role="table" aria-label={title??'Tasks'} className="w-full" style={{minWidth:tableMinWidth}}>
+      <div role="row" style={{gridTemplateColumns:columnWidths}} className="grid min-h-9 items-center gap-3 border-b border-border/70 px-5 text-[11px] font-medium text-muted-foreground">
+        <div role="columnheader">Name</div>{visibleColumns.map(column=><div role="columnheader" key={column} draggable title="Drag to reorder columns" className="cursor-grab" onDragStart={event=>{event.dataTransfer.setData('text/plain',column);event.dataTransfer.effectAllowed='move';}} onDragOver={event=>event.preventDefault()} onDrop={event=>{event.preventDefault();const source=event.dataTransfer.getData('text/plain') as TaskColumn;if(!visibleColumns.includes(source)||source===column)return;const next=visibleColumns.filter(item=>item!==source);next.splice(next.indexOf(column),0,source);changeColumns(next);}}>{labelForColumn[column]}</div>)}<div role="columnheader"><span className="sr-only">Edit</span></div>
       </div>
       {tasks.map(compactRow)}
     </div>
   </section>;
-  const viewTaskButton=(task:Task)=><div key={task.id} className="flex min-w-0 items-center gap-2 rounded-lg border border-border/60 bg-white p-2 text-xs transition-colors hover:border-border hover:bg-slate-50 dark:bg-card dark:hover:bg-muted/60">
+  const viewTaskButton=(task:Task)=><div key={task.id} className="bivi-task-row flex min-w-0 items-center gap-2 rounded-lg border border-border/60 bg-white p-2 text-xs transition-colors hover:border-border hover:bg-slate-50 dark:bg-card dark:hover:bg-muted/60">
     <button type="button" onClick={()=>openTask(task.id)} className="flex min-w-0 flex-1 items-start gap-2 p-1 text-left">
       <ProjectTaskStateIcon status={task.status}/><span className="min-w-0 flex-1"><span className="block break-words font-medium">{task.title}</span><span className="mt-1 block text-[11px] text-muted-foreground">{task.dueOn?`Due ${task.dueOn}`:'No due date'}</span></span><span className="shrink-0">{taskPeople(task)}</span>
     </button>
-    <button type="button" title={`Open full editor for ${task.title}`} aria-label={`Edit task ${task.title}`} className={miniButton} onClick={()=>openFullEditor(task.id)}><Pencil size={14}/></button>
+    {taskEditControl(task)}
   </div>;
   const dateTasks=orderedTasks.filter(task=>task.dueOn).sort((a,b)=>(a.dueOn??'').localeCompare(b.dueOn??''));
   const intervals=orderedTasks.map(task=>({task,start:schedule.rows.get(task.id)?.start_on??null,end:task.dueOn})).filter(item=>item.start&&item.end&&item.start<=item.end);
@@ -514,7 +601,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   return <section aria-label="Project tasks" className="bivi-workplan space-y-3 bg-white text-slate-950 dark:bg-background dark:text-foreground">
     <ProjectWorkplanToolbar actions={toolbarActions} onAdvancedToggle={onAdvancedToggle} advanced={advanced} projectId={id} filters={filters} onChange={change=>setFilters(previous=>({...previous,...change}))}
       view={view} onView={setView} grouping={grouping} onGrouping={setGrouping} sort={sort} onSort={setSort}
-      columns={visibleColumns} onColumns={setVisibleColumns} assignees={memberOptions}
+      columns={visibleColumns} onColumns={changeColumns} assignees={memberOptions}
       phasesReady={Boolean(hierarchy.data)} assignmentsReady={Boolean(assignments.data)}
       tagFilter={tagFilter} onTagFilter={setTagFilter} tags={tagCatalog}
       showEditor={showEditor} onToggleEditor={()=>{if(!selectedTaskId&&body.tasks[0])openTask(body.tasks[0].id);else setShowEditor(open=>!open);}}
@@ -530,7 +617,6 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     {newSubtaskFor&&newSubtaskTitle.trim()&&<p role="status" className="text-xs text-amber-800 dark:text-amber-200">Unsaved subtask for {body.tasks.find(task=>task.id===newSubtaskFor)?.title}. <button type="button" className="underline" onClick={()=>openTask(newSubtaskFor)}>Return to editor</button>.</p>}
     <div className="min-w-0">
       <div className="min-w-0 space-y-3">
-        <p role="status" className="text-[11px] text-muted-foreground">{orderedTasks.length} of {body.tasks.length} tasks · {subtasks.length} saved subtasks</p>
         {view==='overview'&&<div className="space-y-3">{(grouping==='none'?[{key:'all',label:'Tasks',tasks:orderedTasks}]:sectionGroups).map(group=>rowTable(group.tasks,group.key,grouping==='none'?undefined:group.label))}</div>}
         {view==='milestone'&&<div className="grid items-start gap-3 md:grid-cols-2 xl:grid-cols-3">
           {matchingMilestones.map(milestone=>{
@@ -545,7 +631,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
                 <button type="button" className={miniButton} title={'Add task to '+milestone.title} disabled={disabled} onClick={()=>onAddTask(milestone.id)}><Plus size={15}/></button>
               </div>
               <div className="max-h-[65vh] space-y-1 overflow-y-auto px-2 pb-3">
-                {items.map(task=><div key={task.id} className="rounded-lg bg-white dark:bg-card">{taskPreview(task)}{dirtyTaskIds.includes(task.id)&&<span className="ml-3 inline-block h-2 w-2 rounded-full bg-blue-600" title="Unsaved task changes"/>}</div>)}
+                {items.map(task=><div key={task.id} className="rounded-lg bg-white dark:bg-card">{taskPreview(task)}</div>)}
                 {!items.length&&<p className="px-2 py-3 text-xs text-muted-foreground">No matching tasks</p>}
               </div>
             </section>;
@@ -578,10 +664,16 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
         </div>}
         {view==='calendar'&&<div className="rounded-xl border border-border"><div className="flex items-center justify-between border-b border-border p-3"><button type="button" className={miniButton} aria-label="Previous month" onClick={()=>shiftMonth(-1)}><ChevronRight size={16} className="rotate-180"/></button><h2 className="text-sm font-semibold">{new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric',timeZone:'UTC'}).format(monthDate)}</h2><button type="button" className={miniButton} aria-label="Next month" onClick={()=>shiftMonth(1)}><ChevronRight size={16}/></button></div><div className="grid grid-cols-7 border-b border-border text-center text-[10px] font-medium text-muted-foreground">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(day=><div key={day} className="py-2">{day}</div>)}</div><div className="grid grid-cols-7">{dates.map((date,index)=><div key={index} className="min-h-20 border-b border-r border-border/40 p-1 text-[10px]"><span className="text-muted-foreground">{date?.slice(-2)??''}</span>{dateTasks.filter(task=>task.dueOn===date).map(task=><button type="button" key={task.id} title={task.title} onClick={()=>openTask(task.id)} className="mt-1 block w-full truncate rounded bg-blue-50 px-1 py-0.5 text-left text-[10px] text-blue-950 hover:bg-blue-100 dark:bg-blue-950 dark:text-blue-100">{task.title}</button>)}</div>)}</div><p className="p-2 text-[11px] text-muted-foreground">{undatedTasks.length} tasks without a due date are excluded from this calendar, not deleted.</p></div>}
         {!orderedTasks.length&&<p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">{body.tasks.length?'No tasks match the current filters.':'No tasks yet. Use + to create one.'}</p>}
+        <footer role="status" className="px-5 py-3 text-[11px] text-muted-foreground">{orderedTasks.length} of {body.tasks.length} tasks · {subtasks.length} saved subtasks</footer>
       </div>
       {showEditor&&editorPanel&&(panelTarget?createPortal(editorPanel,panelTarget):editorPanel)}
     </div>
-    <style jsx global>{`.bivi-workplan input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0; width: 0; padding: 0; }`}</style>
+    <style jsx global>{`
+      .bivi-workplan .bivi-task-edit-button { opacity: 0; transition: opacity 120ms ease; }
+      .bivi-workplan .bivi-task-row:hover .bivi-task-edit-button,
+      .bivi-workplan .bivi-task-row:focus-within .bivi-task-edit-button { opacity: 1; }
+      @media (hover: none) { .bivi-workplan .bivi-task-edit-button { opacity: 1; } }
+    `}</style>
     <Dialog open={prompt!==null} onOpenChange={open=>{if(!open)setPrompt(null);}}><DialogContent className="bivi-staff-surface"><DialogTitle>{prompt?.title}</DialogTitle><DialogDescription>{prompt?.description}</DialogDescription>{prompt?.blockers&&hasMilestoneCompletionBlockers(prompt.blockers)&&<div className="max-h-56 overflow-auto rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100"><p className="font-semibold">Complete these tasks before completing this milestone.</p>{prompt.blockers.needsTask&&<p className="mt-2">Add at least one task to {prompt.blockers.milestoneTitle}.</p>}<ul className="ml-4 mt-2 list-disc space-y-1">{prompt.blockers.tasks.map(task=><li key={task.taskId}><a className="underline" href={`#${taskDomId(task.taskId)}`} onClick={event=>{event.preventDefault();navigateToTask(task.taskId);}}>{task.title}</a>{task.taskIncomplete?' — task is not completed':''}{task.subtasks.map(subtask=><span key={subtask.id}>; unfinished subtask: {subtask.title}</span>)}</li>)}</ul></div>}{prompt?.unavailable&&<p role="alert" className="rounded border border-red-300 p-2 text-xs">Completion is unavailable until the task hierarchy loads.</p>}<DialogFooter><button type="button" className="rounded-lg border border-border px-4 py-2 text-xs font-medium hover:bg-muted" onClick={()=>setPrompt(null)}>{prompt?.blockers?'Continue editing':'Cancel'}</button>{(!prompt?.blockers||!hasMilestoneCompletionBlockers(prompt.blockers))&&<button type="button" className="rounded-lg bg-foreground px-4 py-2 text-xs font-medium text-background" onClick={()=>{const action=prompt?.confirm;setPrompt(null);action?.();}}>{prompt?.unavailable?'Refresh hierarchy':'Confirm'}</button>}</DialogFooter></DialogContent></Dialog>
   </section>;
 }
