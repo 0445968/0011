@@ -146,7 +146,7 @@ export function TaskMemberPicker({ taskId, disabled, controls }: { taskId: strin
   return <>
     <button type="button" className="flex max-w-full shrink-0 items-center gap-1.5 rounded-lg p-1 hover:bg-muted disabled:opacity-50" disabled={disabled || busy || !available} onClick={show}
       title="Choose responsible side and task assignees" aria-label="Responsible side and assignees">
-      {data && task ? <><SideLogo side={task.side} data={data} /><Faces ids={task.assignees} options={chosen} side={task.side} /><ChevronDown size={13} aria-hidden /></> : <span className="text-[11px] text-muted-foreground">Members…</span>}
+      {data && task ? <><SideLogo side={task.side} data={data} /><Faces ids={task.assignees} options={chosen} side={task.side} /></> : <span className="text-[11px] text-muted-foreground">Members…</span>}
     </button>
     <Dialog open={open} onOpenChange={value => { if (!busy) setOpen(value); }}>
       <DialogContent className="bivi-staff-surface max-h-[90dvh] overflow-y-auto">
