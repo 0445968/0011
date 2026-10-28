@@ -127,7 +127,7 @@ export function ProjectBriefGovernance({id,record,history,gateReady}:{
   }
 
   return <section aria-label="Project governance and records" className="space-y-3">
-    <details className={sectionClass} id="project-brief-decisions">
+    <details className={sectionClass+" group"} id="project-brief-decisions">
       <summary className={summaryClass}>
         <span className="inline-flex min-w-0 items-center gap-2"><ShieldCheck size={17} aria-hidden/>Project state &amp; decisions</span>
         <ChevronDown size={16} className="shrink-0 text-muted-foreground transition-transform group-open:rotate-180"/>
@@ -158,7 +158,7 @@ export function ProjectBriefGovernance({id,record,history,gateReady}:{
             onClick={()=>void changeState('reopen')}>Reopen on hold</button>}
           {needsVerification&&<button type="button" className={actionClass} disabled={busy}
             onClick={()=>void verifyDecision()}><RefreshCcw size={14}/>Verify saved state</button>}
-          {!gateReady&&<Link href={`/projects/${id}?tab=brief`} className="text-xs text-muted-foreground underline">Review project readiness in Brief</Link>}
+          {!gateReady&&<p className="text-xs text-muted-foreground">Project readiness requires review before completion.</p>}
         </div>
         {record.state==='active'&&!completeReady&&<p className="text-xs text-muted-foreground">Complete every task and milestone in the saved work plan and meet all prerequisites to enable project completion.</p>}
         {message&&<p role="status" className="text-xs text-muted-foreground">{message}</p>}
@@ -168,7 +168,7 @@ export function ProjectBriefGovernance({id,record,history,gateReady}:{
       </div>
     </details>
 
-    <details className={sectionClass} id="project-brief-activation">
+    <details className={sectionClass+" group"} id="project-brief-activation">
       <summary className={summaryClass}>
         <span className="inline-flex min-w-0 items-center gap-2"><ClipboardList size={17} aria-hidden/>Activation snapshot <span className="text-[11px] font-normal text-muted-foreground">Scope v{record.proposal_version}</span></span>
         <ChevronDown size={16} className="shrink-0 text-muted-foreground transition-transform group-open:rotate-180"/>
@@ -191,7 +191,7 @@ export function ProjectBriefGovernance({id,record,history,gateReady}:{
       </div>
     </details>
 
-    <details className={sectionClass} id="project-brief-history">
+    <details className={sectionClass+" group"} id="project-brief-history">
       <summary className={summaryClass}>
         <span className="inline-flex min-w-0 items-center gap-2"><History size={17} aria-hidden/>Project history <span className="text-[11px] font-normal text-muted-foreground">{history.length} recent events</span></span>
         <ChevronDown size={16} className="shrink-0 text-muted-foreground transition-transform group-open:rotate-180"/>
