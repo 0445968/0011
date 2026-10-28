@@ -462,11 +462,17 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
         setBulkMessage(`Cannot complete “${blocked.title}” while its prerequisites or subtasks remain unfinished.`);
         return;
       }
-      setPrompt({title:'Complete selected tasks?',description:`Mark ${selectedTasks.length} selected tasks completed? Dependencies, client requirements and milestones must still pass project validation. Your changes will be submitted through autosave.`,confirm:()=>setBulkChange({status})});
-    }else setBulkChange({status});
-    if(status==='doing'||status==='done'){
-      const pending=Object.fromEntries(selectedTasks.filter(task=>['todo','blocked'].includes(task.status)&&!schedule.rows.get(task.id)?.start_on).map(task=>[task.id,today]));
-      setPendingStartDates(previous=>({...previous,...pending}));
+      setPrompt({title:'Complete selected tasks?',description:`Mark ${selectedTasks.length} selected tasks completed? Dependencies, client requirements and milestones must still pass project validation. Your changes will be submitted through autosave.`,confirm:()=>{
+        const pending=Object.fromEntries(selectedTasks.filter(task=>!['doing','done'].includes(task.status)&&!schedule.rows.get(task.id)?.start_on).map(task=>[task.id,today]));
+        setPendingStartDates(previous=>({...previous,...pending}));
+        setBulkChange({status});
+      }});
+    }else{
+      if(status==='doing'){
+        const pending=Object.fromEntries(selectedTasks.filter(task=>!['doing','done'].includes(task.status)&&!schedule.rows.get(task.id)?.start_on).map(task=>[task.id,today]));
+        setPendingStartDates(previous=>({...previous,...pending}));
+      }
+      setBulkChange({status});
     }
   };
   const requestBulkRemove=()=>{
