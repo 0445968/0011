@@ -18,17 +18,20 @@ test('R7G task work plan keeps configurable columns and real view choices', () =
   const toolbar = read('components/admin/projects/ProjectWorkplanToolbar.tsx');
   const board = read('components/admin/projects/ProjectMilestoneBoardV2.tsx');
   const workspace = read('components/admin/ProjectWorkspace.tsx');
-  for(const view of ['overview','kanban','gantt','list','calendar','table','timeline']) assert.ok(toolbar.includes(`value:'${view}'`));
-  for(const column of ['priority','status','milestone','due','assignee']) assert.ok(toolbar.includes(`value:'${column}'`));
+  for(const view of ['overview','kanban','milestone','gantt','list','calendar','timeline']) assert.ok(toolbar.includes(`value:'${view}'`));
+  assert.match(toolbar, /value:'overview',label:'Table'/);
+  for(const column of ['priority','status','milestone','due','assignee','start','phase','tags']) assert.ok(toolbar.includes(`value:'${column}'`));
   for (const filter of ['Phase', 'Responsibility', 'Assignee', 'Status', 'Deadline']) assert.ok(toolbar.includes(`label="${filter}"`), `missing ${filter} filter`);
   assert.match(toolbar, /Clear filters/);
   assert.match(toolbar, /Add milestone in Lifecycle/);
-  assert.match(toolbar, /Group tasks/);
-  assert.match(toolbar, /Sort tasks/);
+  assert.match(toolbar, /Group by/);
+  assert.match(toolbar, /Sort by/);
   assert.match(board, /break-words/);
   assert.match(board, /flex flex-wrap/);
-  assert.match(workspace, /Advanced work-plan editor/);
-  assert.match(workspace, /Back to tasks/);
+  assert.match(toolbar, /Quick actions/);
+  assert.match(board, /MilestoneOrderBoard/);
+  assert.match(board, /taskSelectControl/);
+  assert.match(workspace, /onReorderTask/);
   assert.doesNotMatch(workspace, /Saved task progress|Open tasks',body\.tasks/);
 });
 
