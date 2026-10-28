@@ -172,13 +172,14 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const allowedColumns:TaskColumn[]=['priority','status','milestone','due','assignee','start','phase','tags'];
   // Column order and visibility belong to this project rather than the session.
   useEffect(()=>{
+    const defaults:TaskColumn[]=['priority','status','milestone','due','assignee'];
     try {
       const saved=JSON.parse(window.localStorage.getItem('bivi-task-columns:'+id)??'null') as unknown;
       if(Array.isArray(saved)){
         const columns=saved.filter((value):value is TaskColumn=>typeof value==='string'&&allowedColumns.includes(value as TaskColumn));
         setVisibleColumns([...new Set(columns)]);
-      }
-    }catch{ /* Corrupt or unavailable preferences use the existing default columns. */ }
+      }else setVisibleColumns(defaults);
+    }catch{setVisibleColumns(defaults);}
   },[id]);
   const changeColumns=(columns:TaskColumn[])=>{
     const sanitized=[...new Set(columns.filter(column=>allowedColumns.includes(column)))];
@@ -406,7 +407,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const compactRow=(task:Task)=><div role="row" key={task.id} style={{gridTemplateColumns:columnWidths}}
     className={"bivi-task-row grid min-h-12 items-center gap-3 px-5 py-1.5 text-xs transition-colors hover:bg-slate-50 focus-within:bg-slate-50 dark:hover:bg-muted/50 dark:focus-within:bg-muted/50 "+(selectedTaskId===task.id?'bg-blue-50/60 dark:bg-primary/10':'')}>
     <div role="cell" className="flex min-w-0 items-center gap-2">
-      {statusMenu(task)}
+      {!visibleColumns.includes('status')&&statusMenu(task)}
       <span className="w-14 shrink-0 font-mono text-[10px] text-muted-foreground">{presentation.rows.find(row=>row.task_id===task.id)?.code??'Draft'}</span>
       <button type="button" onClick={()=>openTask(task.id)} className="min-w-0 flex-1 truncate text-left font-medium hover:underline" title={task.title}>{task.title}</button>
     </div>
