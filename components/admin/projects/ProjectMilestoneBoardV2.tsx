@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { postProjectCommand } from '@/lib/projects/immediate-command';
 import { refreshProjectSurfaces } from '@/lib/projects/refresh';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { Check, CheckCheck, ChevronDown, ChevronRight, Clock3, Flag, Play, UserRoundPlus, Pencil, Plus, RefreshCcw, RotateCcw, Trash2 } from 'lucide-react';
+import { Check, CheckCheck, ChevronDown, ChevronRight, Clock3, Flag, Play, UserRoundPlus, Pencil, Plus, RefreshCcw, RotateCcw, Trash2, X, GripVertical } from 'lucide-react';
 import type { ProjectBody } from '@/lib/projects/schema';
 import { projectPhaseLabels, type ProjectTaskControl } from '@/lib/projects/lifecycle-schema';
 import { milestoneStats, nextStatus, workStatusOrder, milestoneStatusOrder, daysRemaining, remainingLabel, suggestedTaskPriority, type WorkplanView } from '@/lib/projects/workplan-views';
@@ -153,6 +154,23 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const [visibleColumns,setVisibleColumns]=useState<TaskColumn[]>(['priority','status','milestone','due','assignee']);
 
   const [showEditor,setShowEditor]=useState(false);
+  const [panelTarget,setPanelTarget]=useState<HTMLElement|null>(null);
+  const [editorWidth,setEditorWidth]=useState(440);
+  const widthStorageKey='bivi-task-editor-width:'+id;
+  useEffect(()=>{
+    // This dock lives immediately beneath the project sections navigation.
+    setPanelTarget(document.getElementById('staff-workspace-task-panel'));
+    try{
+      const stored=Number(window.localStorage.getItem(widthStorageKey));
+      if(Number.isFinite(stored)&&stored>=320&&stored<=800)setEditorWidth(stored);
+    }catch{ /* Storage is optional; keep the default. */ }
+  },[widthStorageKey]);
+  const clampWidth=(next:number)=>Math.max(320,Math.min(Math.min(760,window.innerWidth-320),next));
+  const persistWidth=(next:number)=>{
+    const width=clampWidth(next);
+    setEditorWidth(width);
+    try{window.localStorage.setItem(widthStorageKey,String(width));}catch{ /* Session width still applies. */ }
+  };
   const [pendingStartDates,setPendingStartDates]=useState<Record<string,string>>({});
   const [calendarMonth,setCalendarMonth]=useState(today.slice(0,7));
   const [filters,setFilters]=useState<WorkplanFilters>({...emptyWorkplanFilters});
@@ -382,6 +400,50 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const dates=Array.from({length:Math.ceil((monthOffset+monthDays)/7)*7},(_,index)=>{
     const n=index-monthOffset+1;return n>=1&&n<=monthDays?`${calendarMonth}-${String(n).padStart(2,'0')}`:null;
   });
+
+  const editorPanel=showEditor?(
+    <aside
+      aria-label="Full task editor"
+      style={{'--task-editor-width':editorWidth+'px'} as CSSProperties}
+      className="absolute inset-y-0 right-0 z-30 flex min-h-0 w-[100vw] flex-col border-l border-border bg-white text-slate-950 shadow-lg dark:bg-card dark:text-foreground md:relative md:inset-auto md:z-auto md:h-full md:w-[var(--task-editor-width)] md:max-w-[75vw]"
+    >
+      <div
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize task editor"
+        aria-valuemin={320}
+        aria-valuemax={760}
+        aria-valuenow={editorWidth}
+        tabIndex={0}
+        title="Drag to resize the task editor. Use arrow keys for precise adjustments."
+        className="group absolute inset-y-0 -left-1 z-10 hidden w-2 cursor-col-resize items-center justify-center outline-none focus-visible:bg-blue-500/20 md:flex"
+        onPointerDown={event=>{event.preventDefault();event.currentTarget.setPointerCapture(event.pointerId);}}
+        onPointerMove={event=>{if(!event.currentTarget.hasPointerCapture(event.pointerId))return;setEditorWidth(clampWidth(window.innerWidth-event.clientX));}}
+        onPointerUp={event=>{if(event.currentTarget.hasPointerCapture(event.pointerId))event.currentTarget.releasePointerCapture(event.pointerId);persistWidth(window.innerWidth-event.clientX);}}
+        onPointerCancel={event=>{if(event.currentTarget.hasPointerCapture(event.pointerId))event.currentTarget.releasePointerCapture(event.pointerId);persistWidth(editorWidth);}}
+        onKeyDown={event=>{if(event.key==='ArrowLeft'||event.key==='ArrowRight'){event.preventDefault();persistWidth(editorWidth+(event.key==='ArrowLeft'?20:-20));}}}
+      >
+        <span className="rounded-full border border-border bg-card p-0.5 opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"><GripVertical size={14}/></span>
+      </div>
+      <header className="flex min-h-14 shrink-0 items-center justify-between gap-3 border-b border-border/60 px-4 py-3">
+        <h2 className="text-sm font-semibold">Edit task</h2>
+        <button type="button" className={miniButton} aria-label="Close task editor" title="Close task editor" onClick={()=>setShowEditor(false)}><X size={17}/></button>
+      </header>
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 overscroll-contain">
+          {selectedTaskId&&openTasks[selectedTaskId]&&(()=>{
+            const task=body.tasks.find(row=>row.id===selectedTaskId);
+            return task?<div key={task.id}>
+              {taskRow(task)}
+              {dependencyPreview(task)}
+              <TaskActivityPreview projectId={id} taskId={task.id} defaultOpen/>
+              <Link href={'/projects/'+id+'/activity?task='+encodeURIComponent(task.id)} className="mt-3 inline-flex items-center gap-1 px-3 text-xs font-medium underline">View all task activity</Link>
+            </div>:null;
+          })()}
+          {(!selectedTaskId||!openTasks[selectedTaskId])&&<p className="p-3 text-xs text-muted-foreground">Select a task to edit its details.</p>}
+        </div>
+    </aside>
+  ):null;
+
   return <section aria-label="Project tasks" className="bivi-workplan space-y-3 bg-white text-slate-950 dark:bg-background dark:text-foreground">
     <ProjectWorkplanToolbar actions={toolbarActions} onAdvancedToggle={onAdvancedToggle} advanced={advanced} projectId={id} filters={filters} onChange={change=>setFilters(previous=>({...previous,...change}))}
       view={view} onView={setView} grouping={grouping} onGrouping={setGrouping} sort={sort} onSort={setSort}
@@ -399,7 +461,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     {(hierarchy.message||assignments.message||schedule.message)&&<p role="status" className="text-xs text-emerald-700 dark:text-emerald-300">{[hierarchy.message,assignments.message,schedule.message].filter(Boolean).join(' ')}</p>}
     {dirty&&<p role="status" className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">Unsaved work-plan edits. Use Save all before changing saved assignments, notes or files.</p>}
     {newSubtaskFor&&newSubtaskTitle.trim()&&<p role="status" className="text-xs text-amber-800 dark:text-amber-200">Unsaved subtask for {body.tasks.find(task=>task.id===newSubtaskFor)?.title}. <button type="button" className="underline" onClick={()=>openTask(newSubtaskFor)}>Return to editor</button>.</p>}
-    <div className={showEditor?'grid min-w-0 gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(330px,380px)]':'min-w-0'}>
+    <div className="min-w-0">
       <div className="min-w-0 space-y-3">
         <p role="status" className="text-[11px] text-muted-foreground">{orderedTasks.length} of {body.tasks.length} tasks · {subtasks.length} saved subtasks</p>
         {view==='overview'&&<div className="space-y-3">{(grouping==='none'?[{key:'all',label:'Tasks',tasks:orderedTasks}]:sectionGroups).map(group=>rowTable(group.tasks,group.key,grouping==='none'?undefined:group.label))}</div>}
@@ -450,21 +512,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
         {view==='calendar'&&<div className="rounded-xl border border-border"><div className="flex items-center justify-between border-b border-border p-3"><button type="button" className={miniButton} aria-label="Previous month" onClick={()=>shiftMonth(-1)}><ChevronRight size={16} className="rotate-180"/></button><h2 className="text-sm font-semibold">{new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric',timeZone:'UTC'}).format(monthDate)}</h2><button type="button" className={miniButton} aria-label="Next month" onClick={()=>shiftMonth(1)}><ChevronRight size={16}/></button></div><div className="grid grid-cols-7 border-b border-border text-center text-[10px] font-medium text-muted-foreground">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(day=><div key={day} className="py-2">{day}</div>)}</div><div className="grid grid-cols-7">{dates.map((date,index)=><div key={index} className="min-h-20 border-b border-r border-border/40 p-1 text-[10px]"><span className="text-muted-foreground">{date?.slice(-2)??''}</span>{dateTasks.filter(task=>task.dueOn===date).map(task=><button type="button" key={task.id} title={task.title} onClick={()=>openTask(task.id)} className="mt-1 block w-full truncate rounded bg-blue-50 px-1 py-0.5 text-left text-[10px] text-blue-950 hover:bg-blue-100 dark:bg-blue-950 dark:text-blue-100">{task.title}</button>)}</div>)}</div><p className="p-2 text-[11px] text-muted-foreground">{undatedTasks.length} tasks without a due date are excluded from this calendar, not deleted.</p></div>}
         {!orderedTasks.length&&<p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">{body.tasks.length?'No tasks match the current filters.':'No tasks yet. Use + to create one.'}</p>}
       </div>
-      <aside hidden={!showEditor} aria-label="Full task editor" className="min-w-0 self-start rounded-xl border border-border bg-slate-50/50 dark:bg-card xl:sticky xl:top-5">
-        <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2"><h2 className="min-w-0 truncate text-sm font-semibold">Edit task{selectedTaskId?`: ${body.tasks.find(task=>task.id===selectedTaskId)?.title??''}`:''}</h2><button type="button" className={miniButton} aria-label="Hide task editor" onClick={()=>setShowEditor(false)}><ChevronRight size={16}/></button></div>
-        <div className="max-h-[75vh] overflow-y-auto p-2">
-          {selectedTaskId&&openTasks[selectedTaskId]&&(()=>{
-            const task=body.tasks.find(row=>row.id===selectedTaskId);
-            return task?<div key={task.id}>
-              {taskRow(task)}
-              {dependencyPreview(task)}
-              <TaskActivityPreview projectId={id} taskId={task.id} defaultOpen/>
-              <Link href={'/projects/'+id+'/activity?task='+encodeURIComponent(task.id)} className="mt-3 inline-flex items-center gap-1 px-3 text-xs font-medium underline">View all task activity</Link>
-            </div>:null;
-          })()}
-          {(!selectedTaskId||!openTasks[selectedTaskId])&&<p className="p-3 text-xs text-muted-foreground">Select a task to edit its details.</p>}
-        </div>
-      </aside>
+      {showEditor&&editorPanel&&(panelTarget?createPortal(editorPanel,panelTarget):editorPanel)}
     </div>
     <style jsx global>{`.bivi-workplan input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0; width: 0; padding: 0; }`}</style>
     <Dialog open={prompt!==null} onOpenChange={open=>{if(!open)setPrompt(null);}}><DialogContent className="bivi-staff-surface"><DialogTitle>{prompt?.title}</DialogTitle><DialogDescription>{prompt?.description}</DialogDescription>{prompt?.blockers&&hasMilestoneCompletionBlockers(prompt.blockers)&&<div className="max-h-56 overflow-auto rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100"><p className="font-semibold">Complete these tasks before completing this milestone.</p>{prompt.blockers.needsTask&&<p className="mt-2">Add at least one task to {prompt.blockers.milestoneTitle}.</p>}<ul className="ml-4 mt-2 list-disc space-y-1">{prompt.blockers.tasks.map(task=><li key={task.taskId}><a className="underline" href={`#${taskDomId(task.taskId)}`} onClick={event=>{event.preventDefault();navigateToTask(task.taskId);}}>{task.title}</a>{task.taskIncomplete?' — task is not completed':''}{task.subtasks.map(subtask=><span key={subtask.id}>; unfinished subtask: {subtask.title}</span>)}</li>)}</ul></div>}{prompt?.unavailable&&<p role="alert" className="rounded border border-red-300 p-2 text-xs">Completion is unavailable until the task hierarchy loads.</p>}<DialogFooter><button type="button" className="rounded-lg border border-border px-4 py-2 text-xs font-medium hover:bg-muted" onClick={()=>setPrompt(null)}>{prompt?.blockers?'Continue editing':'Cancel'}</button>{(!prompt?.blockers||!hasMilestoneCompletionBlockers(prompt.blockers))&&<button type="button" className="rounded-lg bg-foreground px-4 py-2 text-xs font-medium text-background" onClick={()=>{const action=prompt?.confirm;setPrompt(null);action?.();}}>{prompt?.unavailable?'Refresh hierarchy':'Confirm'}</button>}</DialogFooter></DialogContent></Dialog>
