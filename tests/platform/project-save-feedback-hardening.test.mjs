@@ -41,9 +41,12 @@ test('rejected saves are visibly retryable, then acknowledged on the same editor
 });
 
 test('uncertain saves do not issue duplicate writes and verification repairs the state', async () => {
-  const work = projectEditor({ controls: { loseReply: true, readFails: true } });
+  const work = projectEditor({ controls: { loseReply: true } });
   try {
     await work.flush();
+    // The editor must load its initial saved baseline before simulating a
+    // temporary read outage during save-result verification.
+    work.controls.readFails = true;
     work.edit(body => { body.title = 'Ordering revision'; });
     assert.equal(await work.current.save(), false);
     await work.flush();
