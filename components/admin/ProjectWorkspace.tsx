@@ -506,6 +506,7 @@ export function ProjectWorkspace({
       if(!previous)return previous;
       const candidate={...previous,tasks:previous.tasks.map(task=>
         selected.has(task.id)?{...task,...changes}:task)};
+      if(!('status' in changes)&&!('milestoneId' in changes))return candidate;
       return {...candidate,milestones:candidate.milestones.map(milestone=>{
         if(milestone.status==='done')return milestone;
         const expected=expectedMilestoneStatus(candidate,milestone.id);
