@@ -53,8 +53,8 @@ function SortableMilestoneTask({ task, index, disabled, children }: {
   </div>;
 }
 
-function MilestoneColumn({ milestone, tasks, disabled, canReorder, onAddTask, renderTask }: {
-  milestone: Milestone | null; tasks: Task[]; disabled: boolean; canReorder: boolean;
+function MilestoneColumn({ milestone, tasks, disabled, addDisabled, canReorder, onAddTask, renderTask }: {
+  milestone: Milestone | null; tasks: Task[]; disabled: boolean; addDisabled: boolean; canReorder: boolean;
   onAddTask: (milestoneId: string | null) => void;
   renderTask: (task: Task) => ReactNode;
 }) {
@@ -81,7 +81,7 @@ function MilestoneColumn({ milestone, tasks, disabled, canReorder, onAddTask, re
       </div>
       <button type="button"
         onClick={() => onAddTask(milestoneId)}
-        disabled={disabled || completed}
+        disabled={disabled || addDisabled || completed}
         aria-label={'Add task to ' + (milestone?.title ?? 'No milestone')}
         title={completed ? 'Reopen this milestone before adding tasks' : 'Add task'}
         className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg hover:bg-background/80 disabled:opacity-35"
@@ -109,11 +109,12 @@ const detectDrop: CollisionDetection = args => {
   return closestCorners(args);
 };
 
-export function MilestoneOrderBoard({ milestones, tasks, disabled, canReorder, orderDirty,
+export function MilestoneOrderBoard({ milestones, tasks, disabled, addDisabled=false, canReorder, orderDirty,
   saving, onMove, onAddTask, onSave, renderTask }: {
   milestones: Milestone[];
   tasks: Task[];
   disabled: boolean;
+  addDisabled?: boolean;
   canReorder: boolean;
   orderDirty: boolean;
   saving: boolean;
@@ -196,10 +197,10 @@ export function MilestoneOrderBoard({ milestones, tasks, disabled, canReorder, o
       <div className="grid items-start gap-3 md:grid-cols-2 xl:grid-cols-3">
         {milestones.map(milestone => <MilestoneColumn key={milestone.id} milestone={milestone}
           tasks={filteredTasks.filter(task => task.milestoneId === milestone.id)}
-          disabled={disabled} canReorder={canReorder} onAddTask={onAddTask} renderTask={renderTask}/>)}
+          disabled={disabled} addDisabled={addDisabled} canReorder={canReorder} onAddTask={onAddTask} renderTask={renderTask}/>)}
         <MilestoneColumn key="unassigned" milestone={null}
           tasks={filteredTasks.filter(task => task.milestoneId === null)}
-          disabled={disabled} canReorder={canReorder} onAddTask={onAddTask} renderTask={renderTask}/>
+          disabled={disabled} addDisabled={addDisabled} canReorder={canReorder} onAddTask={onAddTask} renderTask={renderTask}/>
       </div>
       <DragOverlay dropAnimation={null}>
         {draggedTask ? <div className="max-w-80 rounded-lg border border-blue-300 bg-white px-4 py-3 text-xs font-medium shadow-xl dark:bg-card">
