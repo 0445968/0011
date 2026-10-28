@@ -222,11 +222,14 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const [selectedTaskId,setSelectedTaskId]=useState<string|null>(null);
   const [openTasks,setOpenTasks]=useState<Record<string,boolean>>({});
   const [visitedTasks,setVisitedTasks]=useState<Record<string,boolean>>({});
-  function openTask(taskId:string) {
-    setFilters({...emptyWorkplanFilters}); setTagFilter(''); setView('overview'); setGrouping('none'); setShowEditor(true);
-    setSelectedTaskId(taskId); setVisitedTasks({[taskId]:true}); setOpenTasks({[taskId]:true});
+  function openTask(taskId:string, reveal=false) {
+    // Opening an editor from Milestones, Kanban or List must not reset the view.
+    // Explicit deep links may still reveal a task hidden by the current filters.
+    if(reveal){setFilters({...emptyWorkplanFilters});setTagFilter('');setView('overview');setGrouping('none');}
+    setShowEditor(true);
+    setSelectedTaskId(taskId);setVisitedTasks({[taskId]:true});setOpenTasks({[taskId]:true});
   }
-  useEffect(()=>{if(focusTaskId)openTask(focusTaskId);},[focusTaskId,focusTaskRequest]);
+  useEffect(()=>{if(focusTaskId)openTask(focusTaskId,true);},[focusTaskId,focusTaskRequest]);
   useEffect(()=>{if(selectedTaskId&&showEditor){const row=document.getElementById(taskDomId(selectedTaskId));row?.focus({preventScroll:true});row?.scrollIntoView({block:'center',behavior:'smooth'});}},[selectedTaskId,focusTaskRequest,showEditor]);
   const [prompt,setPrompt]=useState<Prompt|null>(null);
   const [newSubtaskFor,setNewSubtaskFor]=useState<string|null>(null);
