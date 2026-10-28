@@ -64,6 +64,7 @@ import { ProjectPhasesPage } from '@/components/admin/projects/ProjectPhasesPage
 import { ProjectTaskResponseReview } from '@/components/admin/projects/ProjectTaskResponseReview';
 import {ProjectBriefIdentity} from '@/components/admin/projects/ProjectBriefIdentity';
 import {ProjectOperationalStatus} from '@/components/admin/projects/ProjectOperationalStatus';
+import {ProjectBriefGovernance} from '@/components/admin/projects/ProjectBriefGovernance';
 import type {OperationalStatus} from '@/lib/projects/operational-status';
 import { getProjectDirectoryContext } from '@/lib/projects/directory-context';
 import {getProjectOverviewContent} from '@/lib/projects/overview-content-data';
@@ -492,30 +493,24 @@ export default async function ProjectPage({
           =================================================== */}
 
       {tab === 'brief' && record && (
-          brief ? (
-            <div className="space-y-3"><ProjectBriefIdentity id={params.id} state={record.state} activatedAt={record.activated_at} proposalVersion={record.proposal_version} revision={record.revision} title={record.body.title} timezone={calendarPreference.timezone}/>
-            {operationalStatusData&&<ProjectOperationalStatus id={params.id} initial={operationalStatusData}/>}
-            <ApprovalFocus focus={searchParams.focus}/><ProjectBriefEditor
-              id={params.id}
-              draft={brief.draft}
-              versions={brief.versions}
-            /></div>
+        <div className="space-y-3">
+          <ProjectBriefIdentity id={params.id} state={record.state} activatedAt={record.activated_at}
+            proposalVersion={record.proposal_version} revision={record.revision}
+            title={record.body.title} timezone={calendarPreference.timezone}/>
+          {operationalStatusData && <ProjectOperationalStatus id={params.id} initial={operationalStatusData}/>}
+          {brief ? (
+            <>
+              <ApprovalFocus focus={searchParams.focus}/>
+              <ProjectBriefEditor id={params.id} draft={brief.draft} versions={brief.versions}/>
+            </>
           ) : (
-            <p
-              className="
-                rounded-xl
-                border
-                border-border
-                bg-card
-                p-5
-                text-sm
-                text-muted-foreground
-              "
-            >
-              No project brief is available yet.
+            <p className="rounded-xl border border-border bg-card p-5 text-sm text-muted-foreground">
+              No project brief is available yet. The accepted scope, project decisions and history remain accessible below.
             </p>
-          )
-        )}
+          )}
+          <ProjectBriefGovernance id={params.id} record={record} history={data.history} gateReady={gateReady}/>
+        </div>
+      )}
 
       {/* ===================================================
           DELIVERY
