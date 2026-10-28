@@ -45,7 +45,7 @@ export function ProjectWorkplanToolbar({projectId,filters,onChange,view,onView,g
   const toolbarRef=useRef<HTMLDivElement>(null);
   useEffect(()=>{
     const closeDetails=(except?:HTMLDetailsElement|null)=>{
-      toolbarRef.current?.querySelectorAll('details[open]').forEach(menu=>{
+      toolbarRef.current?.querySelectorAll<HTMLDetailsElement>('details[open]').forEach(menu=>{
         if(menu!==except)menu.open=false;
       });
     };
