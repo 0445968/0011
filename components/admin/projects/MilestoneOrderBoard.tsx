@@ -53,8 +53,8 @@ function SortableMilestoneTask({ task, index, disabled, children }: {
   </div>;
 }
 
-function MilestoneColumn({ milestone, tasks, disabled, onAddTask, renderTask }: {
-  milestone: Milestone | null; tasks: Task[]; disabled: boolean;
+function MilestoneColumn({ milestone, tasks, disabled, canReorder, onAddTask, renderTask }: {
+  milestone: Milestone | null; tasks: Task[]; disabled: boolean; canReorder: boolean;
   onAddTask: (milestoneId: string | null) => void;
   renderTask: (task: Task) => ReactNode;
 }) {
@@ -63,14 +63,14 @@ function MilestoneColumn({ milestone, tasks, disabled, onAddTask, renderTask }: 
   const { setNodeRef, isOver } = useDroppable({
     id: columnId(milestoneId),
     data: { kind: 'milestone', milestoneId },
-    disabled: disabled || completed,
+    disabled: !canReorder || completed,
   });
   const done = tasks.filter(task => task.status === 'done').length;
   return <section
     ref={setNodeRef}
     aria-label={(milestone?.title ?? 'No milestone') + ' task column'}
     className={'flex min-h-52 min-w-0 flex-col rounded-xl border p-2 transition-colors ' +
-      (isOver && !disabled && !completed
+      (isOver && canReorder && !completed
         ? 'border-blue-400 bg-blue-50/80 dark:border-blue-600 dark:bg-blue-950/30'
         : 'border-border/50 bg-muted/40 dark:bg-muted/20')}
   >
@@ -91,9 +91,9 @@ function MilestoneColumn({ milestone, tasks, disabled, onAddTask, renderTask }: 
       <div className="flex min-h-24 flex-1 flex-col gap-1.5 rounded-lg p-1">
         {tasks.map((task, index) =>
           <SortableMilestoneTask key={task.id} task={task} index={index + 1}
-            disabled={disabled || completed}>{renderTask(task)}</SortableMilestoneTask>)}
+            disabled={!canReorder || completed}>{renderTask(task)}</SortableMilestoneTask>)}
         {!tasks.length && <div className="flex min-h-20 flex-1 items-center justify-center rounded-lg border border-dashed border-border/70 px-3 py-4 text-center text-[11px] text-muted-foreground">
-          {completed ? 'Completed milestone' : disabled ? 'No matching tasks' : 'Drop a task here'}
+          {completed ? 'Completed milestone' : !canReorder ? 'No matching tasks' : 'Drop a task here'}
         </div>}
       </div>
     </SortableContext>
@@ -196,10 +196,10 @@ export function MilestoneOrderBoard({ milestones, tasks, disabled, canReorder, o
       <div className="grid items-start gap-3 md:grid-cols-2 xl:grid-cols-3">
         {milestones.map(milestone => <MilestoneColumn key={milestone.id} milestone={milestone}
           tasks={filteredTasks.filter(task => task.milestoneId === milestone.id)}
-          disabled={!canReorder} onAddTask={onAddTask} renderTask={renderTask}/>)}
+          disabled={disabled} canReorder={canReorder} onAddTask={onAddTask} renderTask={renderTask}/>)}
         <MilestoneColumn key="unassigned" milestone={null}
           tasks={filteredTasks.filter(task => task.milestoneId === null)}
-          disabled={!canReorder} onAddTask={onAddTask} renderTask={renderTask}/>
+          disabled={disabled} canReorder={canReorder} onAddTask={onAddTask} renderTask={renderTask}/>
       </div>
       <DragOverlay dropAnimation={null}>
         {draggedTask ? <div className="max-w-80 rounded-lg border border-blue-300 bg-white px-4 py-3 text-xs font-medium shadow-xl dark:bg-card">
