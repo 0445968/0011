@@ -15,7 +15,8 @@ test('R6 project calendar retains schedule views and links while Lifecycle moves
   assert.match(read('components/admin/projects/useProjectTaskSchedule.ts'),/expectedScheduleRevision/);
   assert.match(calendar, /ProfileImage/);
   assert.match(calendar, /Task starts/);
-  assert.match(read('components/admin/projects/ProjectMilestoneBoardV2.tsx'), /Suggested \{suggested\} priority/);
+  assert.match(read('components/admin/projects/ProjectMilestoneBoardV2.tsx'), /function PriorityBars/);
+  assert.match(read('components/admin/projects/ProjectMilestoneBoardV2.tsx'), /TaskPriorityCell/);
   assert.match(read('lib/tasks/data.ts'), /start_on:string\|null/);
   assert.match(read('lib/projects/activity-data.ts'), /start_date:'Task start date changed'/);
   assert.match(page, /requestedTab === 'lifecycle' \|\| legacyPhaseView \? 'phases'/);
