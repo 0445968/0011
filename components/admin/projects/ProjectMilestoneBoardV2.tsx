@@ -579,8 +579,11 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
 
   // The full editor is intentionally not a nested task-row preview.
   // Each editable field appears once, with sidecar records remaining revision-safe.
+  const workplanDisabled=disabled;
   const editorTaskContent=(task:Task)=>{
-    if(task.archived)return <div className="space-y-4"><h3 className="text-xl font-semibold">{task.title}</h3><p role="status" className="rounded-lg bg-muted p-3 text-xs">Archived task. Its status, history, dependencies and completion requirements are preserved.</p><p className="whitespace-pre-wrap rounded-lg bg-muted/50 p-3 text-sm">{task.notes||'No description'}</p><button type="button" disabled={disabled} className="rounded border px-3 py-2 text-xs" onClick={()=>{updateTask(task,{archived:false});setBulkMessage('Restore added to your draft. Save task or Save all changes to apply.');}}>Restore in draft</button><TaskProductivity projectId={id} taskId={task.id} taskTitle={task.title} revision={revision} disabled userId={userId} hidePriority tabbed activity={<TaskActivityPreview projectId={id} taskId={task.id} defaultOpen/>}/></div>;
+    const disabled=workplanDisabled||Boolean(task.archived);
+
+    const canEditTaskSidecar=canEditSidecar&&!task.archived;
     const children=subtasks.filter(item=>item.taskId===task.id);
     const startOn=taskStartOn(task,schedule.rows.get(task.id)?.start_on??null);
     const priority=taskControls.find(row=>row.taskId===task.id)?.priority??null;
@@ -590,14 +593,14 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     return <div key={task.id} className="space-y-5 pb-6">
       <div className="space-y-2">
         <p className="font-mono text-[11px] text-muted-foreground">{code}</p>
-        {task.archived&&<p role="status" className="rounded-lg bg-muted p-3 text-xs">Archived task. History, dependencies and completion requirements are retained. <button type="button" disabled={disabled} className="underline" onClick={()=>updateTask(task,{archived:false})}>Restore in draft</button></p>}
+        {task.archived&&<p role="status" className="rounded-lg bg-muted p-3 text-xs">Archived task. History, dependencies and completion requirements are retained. <button type="button" disabled={workplanDisabled} className="underline" onClick={()=>{updateTask(task,{archived:false});setBulkMessage('Restore added to your draft. Save task or Save all changes to apply.');}}>Restore in draft</button></p>}
         <TaskInlineText taskId={task.id} value={task.title} disabled={disabled} onChange={title=>updateTask(task,{title})}/>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <section className="min-w-0 space-y-1.5" aria-label="Task status">
           <p className="text-[11px] font-medium text-muted-foreground">Status</p>
-          <div className="flex min-h-[40px] items-center rounded-lg border border-border/70 bg-white px-2 dark:bg-card">{statusMenu(task)}<span className="ml-1 truncate text-xs">{task.status==='todo'?'Backlog':task.status==='doing'?'In progress':task.status==='done'?'Completed':'Blocked'}</span></div>
+          <div className="flex min-h-[40px] items-center rounded-lg border border-border/70 bg-white px-2 dark:bg-card">{task.archived?<ProjectTaskStateIcon status={task.status}/>:statusMenu(task)}<span className="ml-1 truncate text-xs">{task.status==='todo'?'Backlog':task.status==='doing'?'In progress':task.status==='done'?'Completed':'Blocked'}</span></div>
         </section>
         <section className="min-w-0 space-y-1.5" aria-label="Task priority">
           <p className="text-[11px] font-medium text-muted-foreground">Priority</p>
@@ -677,9 +680,9 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
           Subtasks ({hierarchy.data?children.length:'loading'})<ChevronDown size={15} className="transition-transform group-open/subtasks:rotate-180"/>
         </summary>
         <div className="border-t border-border/60 px-2 pb-2">
-          <ul>{children.map(item=><SubtaskEditor key={item.id} item={item} disabled={!canEditSidecar} update={updateSubtask} requestRemove={removeSubtask} today={today}/>)}</ul>
-          {newSubtaskFor===task.id?<div className="flex items-center gap-2 py-2"><input autoFocus className={nameInput} aria-label="New subtask title" maxLength={300} disabled={!canEditSidecar} value={newSubtaskTitle} onChange={event=>setNewSubtaskTitle(event.target.value)} onKeyDown={event=>{if(event.key==='Enter'){event.preventDefault();void addSubtask(task.id);}}}/>{btn('Save subtask',<Check size={15}/>,()=>{void addSubtask(task.id);},!canEditSidecar||!newSubtaskTitle.trim())}{btn('Cancel',<RotateCcw size={15}/>,()=>setNewSubtaskFor(null))}</div>
-          :btn('Add subtask',<Plus size={15}/>,()=>{setNewSubtaskFor(task.id);setNewSubtaskTitle('');},!canEditSidecar||children.length>=50)}
+          <ul>{children.map(item=><SubtaskEditor key={item.id} item={item} disabled={!canEditTaskSidecar} update={updateSubtask} requestRemove={removeSubtask} today={today}/>)}</ul>
+          {newSubtaskFor===task.id?<div className="flex items-center gap-2 py-2"><input autoFocus className={nameInput} aria-label="New subtask title" maxLength={300} disabled={!canEditTaskSidecar} value={newSubtaskTitle} onChange={event=>setNewSubtaskTitle(event.target.value)} onKeyDown={event=>{if(event.key==='Enter'){event.preventDefault();void addSubtask(task.id);}}}/>{btn('Save subtask',<Check size={15}/>,()=>{void addSubtask(task.id);},!canEditTaskSidecar||!newSubtaskTitle.trim())}{btn('Cancel',<RotateCcw size={15}/>,()=>setNewSubtaskFor(null))}</div>
+          :btn('Add subtask',<Plus size={15}/>,()=>{setNewSubtaskFor(task.id);setNewSubtaskTitle('');},!canEditTaskSidecar||children.length>=50)}
         </div>
       </details>
 
