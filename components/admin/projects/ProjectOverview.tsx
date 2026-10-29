@@ -75,7 +75,7 @@ export function ProjectOverview({record, activityResult, content, meetings, cont
     </header>
 
     <section aria-label="Project work summary" className="grid grid-cols-2 gap-2 xl:grid-cols-4">
-      <ProjectMetric label="Open tasks" value={summary.openTasks.length} detail={`${summary.done} of ${distinctById(record.body.tasks).length} completed`} />
+      <ProjectMetric label="Active open tasks" value={summary.openTasks.length} detail={`${summary.done} of ${distinctById(record.body.tasks).length} completed · includes archived tasks`} />
       <ProjectMetric label="Blocked tasks" value={summary.blocked} detail="Saved Blocked status · subset of Open" />
       <ProjectMetric label="Past-due open tasks" value={summary.overdue} detail={`${summary.dueToday} due today · ${today}`} />
       <ProjectMetric label="Milestones completed" value={`${summary.milestoneDone}/${record.body.milestones.length}`} detail="Saved milestone states" />
@@ -106,7 +106,7 @@ export function ProjectOverview({record, activityResult, content, meetings, cont
 
       <div className="min-w-0 space-y-3 xl:order-1">
         <ProjectPanel title="Phase & task progress" action={<Link href={`${base}?tab=phases`} className={linkClass}>View phases<ArrowUpRight size={13} aria-hidden /></Link>}>
-          <div className="space-y-3 p-3"><DirectoryPhases project={record} context={context} formalStates={phaseStates} phaseColors={phaseColors} /><div className="border-t border-border pt-2"><p className="mb-2 text-[10px] text-muted-foreground">Task completion</p><DirectoryProgress project={record} /><p className="mt-1 text-[10px] text-muted-foreground">Task progress is separate from phase approval.</p></div></div>
+          <div className="space-y-3 p-3"><DirectoryPhases project={record} context={context} formalStates={phaseStates} phaseColors={phaseColors} /><div className="border-t border-border pt-2"><p className="mb-2 text-[10px] text-muted-foreground">Task completion</p><DirectoryProgress project={record} /><p className="mt-1 text-[10px] text-muted-foreground">Task progress includes archived tasks. Archiving does not satisfy completion or phase approval.</p></div></div>
         </ProjectPanel>
         <ProjectPanel title="Recent activity" action={<Link href={`${base}/activity`} className={linkClass}>View all<ArrowUpRight size={13} aria-hidden /></Link>}>
           {activityResult.data?<><ProjectActivityList activity={{...activityResult.data,events:activityResult.data.events.slice(0,4)}} timezone={timezone}/>

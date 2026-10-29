@@ -40,7 +40,7 @@ export function ProjectCalendar({id,body,projectRevision,controls,phaseColors,sc
   const saving=scheduling.busy;
   const message=scheduling.error||scheduling.message;
   const allEvents=useMemo<Event[]>(()=>[
-    ...body.tasks.map(task=>({key:`task:${task.id}`,title:task.title,...taskEvent(task,'due',timezone),dateKind:'due' as const,type:'task' as const,id:task.id,status:task.status,task})),
+    ...body.tasks.filter(task=>!task.archived).map(task=>({key:`task:${task.id}`,title:task.title,...taskEvent(task,'due',timezone),dateKind:'due' as const,type:'task' as const,id:task.id,status:task.status,task})),
     ...body.milestones.filter(item=>item.dueOn).map(item=>({key:`milestone:${item.id}`,title:item.title,date:item.dueOn,dateKind:'due' as const,type:'milestone' as const,id:item.id,status:item.status})),
   ].sort((a:Event,b:Event)=>(a.date??'9999-12-31').localeCompare(b.date??'9999-12-31')||(a.time??'24:00').localeCompare(b.time??'24:00')||((a.instant??0)-(b.instant??0))||a.title.localeCompare(b.title)),[body,timezone]);
   const assigned=(taskId:string)=>members.filter(person=>person.assignedTaskIds.includes(taskId));

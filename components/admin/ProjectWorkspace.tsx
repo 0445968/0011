@@ -607,7 +607,7 @@ export function ProjectWorkspace({
   function duplicateTask(taskId:string){
     const source=body?.tasks.find(task=>task.id===taskId);
     if(!body||locked||!source||body.tasks.length>=100)return;
-    const task={...source,id:crypto.randomUUID(),title:(source.title+' (copy)').slice(0,300),owner:'',status:'todo' as const,startOn:null,startTime:null};
+    const task={...source,id:crypto.randomUUID(),title:(source.title+' (copy)').slice(0,300),owner:'',archived:false,status:'todo' as const,startOn:null,startTime:null};
     field('tasks',[...body.tasks,task]);focusTaskDetails(task.id);
   }
 

@@ -22,6 +22,12 @@ Implemented: explicit Open in workspace tab action/hover button for saved tasks;
 
 Reversible archive remains a separate backend patch: it must retain dependencies, subtask history and completion obligations across all saved views. Milestone record tabs/sidebar choices remain pending alongside other future subitem types.
 
+## Reversible task archive (migration 20261029201158)
+
+Implemented: archive/restore actions add a boolean archive state to the existing work-plan task and remain private drafts until Save task or Save all. Archived view and direct task links provide Restore in draft. The same task identity, status, subtasks, dependencies, assignments, files, notes, comments and history are preserved. Archived tasks remain part of overall project completion/progress and unfinished archived work still blocks milestones, phases and dependencies. Active deadline summaries, personal My Tasks, project calendar and workspace calendar omit archived tasks. Overview labels distinguish active open work from overall completion. Archive/restore changes appear in project task activity.
+
+Archive does not remove tasks from the existing project task limit. Restore retains the original status; it does not create a new task or bypass client review. The editor presents archived tasks as read-only until restored. No task history is deleted.
+
 ## 1. Workspace controls and task interaction
 
 - Remove the Requests/decline-policy explanatory link from Tasks.

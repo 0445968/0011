@@ -114,7 +114,8 @@ export function snapshots(history: Row[], base: string): ProjectActivityEvent[] 
             create(source, `${kind}:${itemId}:new`, `${kind === 'tasks' ? 'Task' : 'Milestone'} created`, name, itemId);
             count++;
           } else {
-            for (const [field, label] of [['title','title'],['status','status'],['dueOn','deadline'],['owner','owner label']] as const) {
+            for (const [field, label] of [['title','title'],['archived','archive state'],['status','status'],['dueOn','deadline'],['owner','owner label']] as const) {
+              if(field==='archived'){if(Boolean(earlier.archived)!==Boolean(item.archived)){create(source,`${kind}:${itemId}:archived`,item.archived?'Task archived':'Task restored',name,itemId);count++;}continue;}
               if (earlier[field] === item[field]) continue;
               create(source, `${kind}:${itemId}:${field}`, `${kind === 'tasks' ? 'Task' : 'Milestone'} ${label} changed`,
                 `${name}: ${display(earlier[field])} → ${display(item[field])}`, itemId);

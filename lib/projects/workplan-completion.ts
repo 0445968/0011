@@ -24,7 +24,7 @@ export function milestoneCompletionBlockers(
     const unfinished = subtasks.filter(item => item.taskId === task.id && item.status !== 'done');
     const taskIncomplete = task.status !== 'done';
     return taskIncomplete || unfinished.length
-      ? [{ taskId: task.id, title: task.title, taskIncomplete, subtasks: unfinished.map(item => ({ id: item.id, title: item.title })) }]
+      ? [{ taskId: task.id, title: task.title+(task.archived?' (Archived — restore to complete)':''), taskIncomplete, subtasks: unfinished.map(item => ({ id: item.id, title: item.title })) }]
       : [];
   });
   return { milestoneId, milestoneTitle: milestone?.title ?? 'Milestone', needsTask: !body.tasks.some(task => task.milestoneId === milestoneId), tasks };

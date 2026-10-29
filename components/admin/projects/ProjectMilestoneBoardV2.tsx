@@ -246,6 +246,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const [calendarMonth,setCalendarMonth]=useState(today.slice(0,7));
   const [filters,setFilters]=useState<WorkplanFilters>({...emptyWorkplanFilters});
 
+  const [archivedView,setArchivedView]=useState(false);
   const [grouping,setGrouping]=useState<TaskGrouping>('status');
   const [selectedTaskId,setSelectedTaskId]=useState<string|null>(null);
   const [openTasks,setOpenTasks]=useState<Record<string,boolean>>({});
@@ -256,7 +257,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     }
     // Opening an editor from Milestones, Kanban or List must not reset the view.
     // Explicit deep links may still reveal a task hidden by the current filters.
-    if(reveal){setFilters({...emptyWorkplanFilters});setTagFilter('');setView('overview');setGrouping('none');}
+    if(reveal){setArchivedView(Boolean(body.tasks.find(task=>task.id===taskId)?.archived));setFilters({...emptyWorkplanFilters});setTagFilter('');setView('overview');setGrouping('none');}
     setShowEditor(true);
     setSelectedTaskId(taskId);setVisitedTasks({[taskId]:true});setOpenTasks({[taskId]:true});
     setShowMoreRecent(false);
@@ -276,7 +277,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const phaseLinks=hierarchy.data?.milestonePhases??[];
   const subtasks=hierarchy.data?.subtasks??[];
   const context={body,links:phaseLinks,controls:taskControls,assignments:assignments.data?.tasks??[],today,timezone,now};
-  const matchingTasks=body.tasks.filter(task=>workplanTaskMatches(task,filters,context)&&(!tagFilter||presentation.rows.find(row=>row.task_id===task.id)?.tags.includes(tagFilter)));
+  const matchingTasks=body.tasks.filter(task=>Boolean(task.archived)===archivedView&&workplanTaskMatches(task,filters,context)&&(!tagFilter||presentation.rows.find(row=>row.task_id===task.id)?.tags.includes(tagFilter)));
   const matchingMilestones=body.milestones.filter(milestone=>workplanMilestoneMatches(milestone,filters,context)&&(!tagFilter||matchingTasks.some(task=>task.milestoneId===milestone.id)));
   const cardGrid='grid grid-cols-1 items-start gap-3 md:grid-cols-2 xl:grid-cols-3';
   const memberOptions=[...new Map([...(assignments.data?.staff??[]),...(assignments.data?.clients??[])].map(person=>[person.id,person])).values()];
@@ -284,6 +285,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const updateMilestone=(milestone:Milestone,changes:Partial<Milestone>)=>{const index=body.milestones.findIndex(item=>item.id===milestone.id);if(index>=0)onMilestoneChange(index,changes);};
   const autoStartDate=(task:Task)=>localDateTime(now,task.timeZone??timezone).date;
   const updateTask=(task:Task,changes:Partial<Task>)=>{
+    if(task.archived&&!Object.prototype.hasOwnProperty.call(changes,'archived')){setBulkMessage('Restore this task before editing it.');return;}
     const index=body.tasks.findIndex(item=>item.id===task.id);if(index<0)return;
     if(changes.status&&changes.status!=='todo'&&task.status==='todo'&&!taskStartOn(task,schedule.rows.get(task.id)?.start_on)){
       changes={...changes,startOn:autoStartDate(task)};
@@ -337,7 +339,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     const dependencyAssignment=assignments.data?.tasks.find(item=>item.task_id===dependencyId);
     const dependencyPeople=dependencyAssignment?.side==='client'?assignments.data?.clients:assignments.data?.staff;
     const assigneeNames=dependencyAssignment?.assignees.map(personId=>dependencyPeople?.find(person=>person.id===personId)?.label).filter(Boolean).join(', ');
-    return <div className="flex flex-wrap items-center gap-2 px-3 pb-2 text-[11px] text-muted-foreground"><span>Requires</span>{prerequisite?<><button type="button" className="font-medium text-foreground hover:underline" onClick={()=>openTask(prerequisite.id)}>{prerequisite.title}</button>{taskPeople(prerequisite)}{assigneeNames&&<span>{assigneeNames}</span>}<span>{prerequisite.status==='done'?'Completed':'Incomplete'}</span></>:<span>Dependency unavailable</span>}</div>;
+    return <div className="flex flex-wrap items-center gap-2 px-3 pb-2 text-[11px] text-muted-foreground"><span>Requires</span>{prerequisite?<><button type="button" className="font-medium text-foreground hover:underline" onClick={()=>openTask(prerequisite.id,true)}>{prerequisite.title}{prerequisite.archived?' (Archived)':''}</button>{taskPeople(prerequisite)}{assigneeNames&&<span>{assigneeNames}</span>}<span>{prerequisite.status==='done'?'Completed':'Incomplete'}</span></>:<span>Dependency unavailable</span>}</div>;
   };
   // Keep the unsaved dot visible even when the edit pencil is hidden.
   const toggleTaskSelection=(taskId:string)=>setSelectedTaskIds(previous=>
@@ -357,9 +359,10 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   };
   const taskActions=(task:Task):TaskAction[]=>[
     {label:'Open in workspace tab',disabled:dirty||!sidecarReady||!presentation.rows.some(row=>row.task_id===task.id),run:()=>openTaskWorkspace(id,task.id,task.title)},
-    {label:'Rename',disabled,run:()=>{setRenameTaskId(task.id);setRenameValue(task.title);}},
+    {label:task.archived?'Restore task':'Archive task',disabled,run:()=>setPrompt({title:task.archived?'Restore task?':'Archive task?',description:task.archived?'Restore this task to active lists. Use Save task or Save all changes to apply.':'Hide this task from active lists and calendars. History and relationships are preserved. Unfinished work still blocks dependencies and milestone completion. Use Save task or Save all changes to apply.',confirm:()=>{updateTask(task,{archived:!task.archived});setSelectedTaskIds(previous=>previous.filter(id=>id!==task.id));setArchivedView(!task.archived);setBulkMessage('Archive change added to your draft. Save task or Save all changes to apply.');}})},
+    {label:'Rename',disabled:disabled||task.archived,run:()=>{setRenameTaskId(task.id);setRenameValue(task.title);}},
     {label:'Duplicate',disabled:disabled||body.tasks.length>=100,run:()=>{onDuplicateTask(task.id);setBulkMessage('Created a draft copy of the title, description, due date and milestone. Assignments, tags, dependencies, files and history are independent. Use Save all changes to apply it.');}},
-    {label:'Move task',disabled,run:()=>setMoveTaskId(task.id)},
+    {label:'Move task',disabled:disabled||task.archived,run:()=>setMoveTaskId(task.id)},
     {label:'Copy link',run:()=>{void copyTaskLink(task);}},
     {label:'Share',run:()=>{void copyTaskLink(task,true);}},
   ];
@@ -577,6 +580,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   // The full editor is intentionally not a nested task-row preview.
   // Each editable field appears once, with sidecar records remaining revision-safe.
   const editorTaskContent=(task:Task)=>{
+    if(task.archived)return <div className="space-y-4"><h3 className="text-xl font-semibold">{task.title}</h3><p role="status" className="rounded-lg bg-muted p-3 text-xs">Archived task. Its status, history, dependencies and completion requirements are preserved.</p><p className="whitespace-pre-wrap rounded-lg bg-muted/50 p-3 text-sm">{task.notes||'No description'}</p><button type="button" disabled={disabled} className="rounded border px-3 py-2 text-xs" onClick={()=>{updateTask(task,{archived:false});setBulkMessage('Restore added to your draft. Save task or Save all changes to apply.');}}>Restore in draft</button><TaskProductivity projectId={id} taskId={task.id} taskTitle={task.title} revision={revision} disabled userId={userId} hidePriority tabbed activity={<TaskActivityPreview projectId={id} taskId={task.id} defaultOpen/>}/></div>;
     const children=subtasks.filter(item=>item.taskId===task.id);
     const startOn=taskStartOn(task,schedule.rows.get(task.id)?.start_on??null);
     const priority=taskControls.find(row=>row.taskId===task.id)?.priority??null;
@@ -586,6 +590,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     return <div key={task.id} className="space-y-5 pb-6">
       <div className="space-y-2">
         <p className="font-mono text-[11px] text-muted-foreground">{code}</p>
+        {task.archived&&<p role="status" className="rounded-lg bg-muted p-3 text-xs">Archived task. History, dependencies and completion requirements are retained. <button type="button" disabled={disabled} className="underline" onClick={()=>updateTask(task,{archived:false})}>Restore in draft</button></p>}
         <TaskInlineText taskId={task.id} value={task.title} disabled={disabled} onChange={title=>updateTask(task,{title})}/>
       </div>
 
@@ -747,13 +752,13 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const canReorderMilestones=!disabled&&!busy&&sidecarReady&&sort==='default'&&!orderFiltersActive;
   return <section aria-label="Project tasks" className="bivi-workplan space-y-3 bg-white text-slate-950 dark:bg-background dark:text-foreground">
     {workspaceTask&&<WorkspaceRecordDetails kind="task" id={taskRecordId(id,workspaceTask.id)} title={workspaceTask.title} status={workspaceTask.status} dueDate={workspaceTask.dueOn??undefined}/>}
-    <ProjectWorkplanToolbar actions={toolbarActions} onAdvancedToggle={onAdvancedToggle} advanced={advanced} projectId={id} filters={filters} onChange={change=>setFilters(previous=>({...previous,...change}))}
+    <ProjectWorkplanToolbar actions={<>{toolbarActions}<button type="button" aria-pressed={archivedView} className="min-h-9 rounded-lg border border-border px-3 text-xs" onClick={()=>{setSelectedTaskIds([]);setArchivedView(value=>!value);}}>{archivedView?'Show active tasks':'Archived ('+body.tasks.filter(task=>task.archived).length+')'}</button></>} onAdvancedToggle={onAdvancedToggle} advanced={advanced} projectId={id} filters={filters} onChange={change=>setFilters(previous=>({...previous,...change}))}
       view={view} onView={next=>{setView(next);if(next==='milestone')setSort('default');}} grouping={grouping} onGrouping={setGrouping} sort={sort} onSort={setSort}
       columns={visibleColumns} onColumns={changeColumns} showColumnLabels={showColumnLabels} onShowColumnLabels={changeColumnLabels} assignees={memberOptions}
       phasesReady={Boolean(hierarchy.data)} assignmentsReady={Boolean(assignments.data)}
       tagFilter={tagFilter} onTagFilter={setTagFilter} tags={tagCatalog}
       showEditor={showEditor} onToggleEditor={()=>{if(showEditor)closeEditor();else{clearEditorTask();setShowEditor(true);}}}
-      onAddTask={()=>onAddTask(null)} onAddMilestone={onAddMilestone} disabled={disabled}
+      onAddTask={()=>onAddTask(null)} onAddMilestone={onAddMilestone} disabled={disabled||archivedView}
       selectedCount={selectedTasks.length} visibleCount={orderedTasks.length} allVisibleSelected={allVisibleSelected}
       onToggleAllVisible={toggleAllVisible} onClearSelection={()=>setSelectedTaskIds([])}
       onBulkStatus={requestBulkStatus} onBulkDueDate={date=>setBulkChange({dueOn:date})}
@@ -807,7 +812,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
         </div>}
         {view==='calendar'&&<div className="rounded-xl border border-border"><div className="flex items-center justify-between border-b border-border p-3"><button type="button" className={miniButton} aria-label="Previous month" onClick={()=>shiftMonth(-1)}><ChevronRight size={16} className="rotate-180"/></button><h2 className="text-sm font-semibold">{new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric',timeZone:'UTC'}).format(monthDate)}</h2><button type="button" className={miniButton} aria-label="Next month" onClick={()=>shiftMonth(1)}><ChevronRight size={16}/></button></div><div className="grid grid-cols-7 border-b border-border text-center text-[10px] font-medium text-muted-foreground">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(day=><div key={day} className="py-2">{day}</div>)}</div><div className="grid grid-cols-7">{dates.map((date,index)=><div key={index} className="min-h-20 border-b border-r border-border/40 p-1 text-[10px]"><span className="text-muted-foreground">{date?.slice(-2)??''}</span>{dateTasks.filter(task=>dueDay(task)===date).map(task=><div key={task.id} className="bivi-task-row mt-1 flex min-w-0 items-center gap-1 rounded bg-blue-50 px-1 py-0.5 dark:bg-blue-950">{taskSelectControl(task)}<button type="button" title={taskDeadlineLabel(task,timezone)+' · '+task.title} onClick={()=>openTask(task.id)} className="min-w-0 flex-1 truncate text-left text-[10px] text-blue-950 hover:underline dark:text-blue-100">{task.title}</button></div>)}</div>)}</div><p className="p-2 text-[11px] text-muted-foreground">Calendar dates use {timezone}. {undatedTasks.length} tasks without a due date are excluded from this calendar, not deleted.</p></div>}
         {!orderedTasks.length&&<p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">{body.tasks.length?'No tasks match the current filters.':'No tasks yet. Use + to create one.'}</p>}
-        <footer role="status" className="px-5 py-3 text-[11px] text-muted-foreground">{orderedTasks.length} of {body.tasks.length} tasks · {subtasks.length} saved subtasks</footer>
+        <footer role="status" className="px-5 py-3 text-[11px] text-muted-foreground">{orderedTasks.length} of {body.tasks.length} tasks (including archived) · {subtasks.length} saved subtasks</footer>
       </div>
       {showEditor&&editorPanel&&(panelTarget?createPortal(editorPanel,panelTarget):editorPanel)}
     </div>

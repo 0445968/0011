@@ -51,5 +51,27 @@ test('task collaboration, files, priorities and bulk actions preserve staff perm
   assert.equal(snapshot.revision,2);assert.ok(snapshot.body.tasks.filter(task=>['first','second'].includes(task.id)).every(task=>task.status==='done'));
   assert.equal((await db.query("select count(*)::int n from project_task_history where request_id=$1 and snapshot->>'change'='bulk_status'",[request])).rows[0].n,2);
   assert.equal((await db.query("select count(*)::int n from inquiry_project_history where request_id=$1 and reason='Bulk task status update'",[request])).rows[0].n,1);
+  await db.query('select assign_project_task($1,$2,$3,1)',[request,'outside',staff]);
+  const archived=JSON.parse(JSON.stringify(snapshot.body));archived.milestones=archived.milestones.map(({notes,...milestone})=>milestone);
+  archived.tasks.find(task=>task.id==='outside').archived=true;
+  archived.tasks.find(task=>task.id==='outside').milestoneId='mile';
+  archived.tasks.find(task=>task.id==='outside').dueOn='2026-11-10';
+  await db.exec('reset role');
+  assert.equal((await db.query('select valid_project_body($1) valid',[archived])).rows[0].valid,true);
+  const malformed=JSON.parse(JSON.stringify(archived));malformed.tasks[0].archived='true';
+  assert.equal((await db.query('select valid_project_body($1) valid',[malformed])).rows[0].valid,false);
+  await db.exec('set role authenticated');
+  assert.equal((await db.query('select manage_inquiry_project($1,$2) r',[request,{action:'save',expectedRevision:2,body:archived}])).rows[0].r.result,'saved');
+  assert.equal((await db.query("select count(*)::int n from staff_my_tasks where task_id='outside'")).rows[0].n,0);
+  assert.equal((await db.query("select count(*)::int n from staff_calendar where source_id='outside'")).rows[0].n,0);
+  assert.equal((await db.query('select body from inquiry_projects where request_id=$1',[request])).rows[0].body.tasks.find(task=>task.id==='outside').status,'todo');
+  const invalidCompletion=JSON.parse(JSON.stringify(archived));invalidCompletion.milestones[0].status='done';
+  try{const result=(await db.query('select manage_inquiry_project($1,$2) r',[request,{action:'save',expectedRevision:3,body:invalidCompletion}])).rows[0].r;assert.notEqual(result.result,'saved','archive cannot satisfy milestone completion');}catch(error){if(error.code==='ERR_ASSERTION')throw error;assert.match(error.message,/complete|unfinished|milestone|blocked/i);}
+  assert.equal((await db.query('select revision from inquiry_projects where request_id=$1',[request])).rows[0].revision,3,'blocked completion is atomic');
+  archived.tasks.find(task=>task.id==='outside').archived=false;
+  assert.equal((await db.query('select manage_inquiry_project($1,$2) r',[request,{action:'save',expectedRevision:3,body:archived}])).rows[0].r.result,'saved');
+  assert.equal((await db.query("select count(*)::int n from staff_my_tasks where task_id='outside'")).rows[0].n,1);
+  assert.equal((await db.query("select count(*)::int n from staff_calendar where source_id='outside'")).rows[0].n,1);
+  assert.equal((await db.query('select count(*)::int n from project_task_note_history where note_id=$1',[note])).rows[0].n,2,'archive and restore preserve note history');
  }finally{await db.close();}
 });
