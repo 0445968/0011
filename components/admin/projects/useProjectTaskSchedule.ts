@@ -7,9 +7,10 @@ import { useRouter } from 'next/navigation';
 
 type Row = { task_id:string; start_on:string|null; revision:number };
 
-export function useProjectTaskSchedule(projectId:string,projectRevision:number,initial:Row[]=[]) {
+export function useProjectTaskSchedule(projectId:string,projectRevision:number,initial?:Row[]) {
   const router=useRouter();
-  const [rows,setRows]=useState<Map<string,Row>>(()=>new Map(initial.map(row=>[row.task_id,row])));
+  const [rows,setRows]=useState<Map<string,Row>>(()=>new Map((initial??[]).map(row=>[row.task_id,row])));
+  const [ready,setReady]=useState(initial!==undefined);
   const generation=useRef(0),pending=useRef(false);
   const url=`/api/admin/projects/${projectId}/schedule`;
   const [error,setError]=useState('');
@@ -22,7 +23,7 @@ export function useProjectTaskSchedule(projectId:string,projectRevision:number,i
       if(!response.ok)throw new Error(result.error||'Task schedules could not load.');
       if(token!==generation.current)return false;
       confirmProjectCommandRead(url);
-      setRows(new Map((result.rows as Row[]).map(row=>[row.task_id,row])));setError('');
+      setRows(new Map((result.rows as Row[]).map(row=>[row.task_id,row])));setReady(true);setError('');
       return true;
     } catch(cause) { if(token===generation.current)setError(cause instanceof Error?cause.message:'Task schedules could not load.');return false; }
   },[projectId,url]);
@@ -41,5 +42,5 @@ export function useProjectTaskSchedule(projectId:string,projectRevision:number,i
     } catch(cause) { setError(cause instanceof Error?cause.message:'Task schedule could not save.');return false; }
     finally { pending.current=false;setBusy(null); }
   },[busy,projectId,projectRevision,rows,router]);
-  return {rows,error,busy,message,save,reload:load};
+  return {rows,ready,error,busy,message,save,reload:load};
 }

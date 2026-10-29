@@ -851,6 +851,19 @@ export function ProjectWorkspace({
     }
   }
 
+  const [draftPulse,setDraftPulse]=useState(false);
+  useEffect(()=>{
+    let timer:ReturnType<typeof setTimeout>;
+    const dismissed=(event:Event)=>{
+      const detail=(event as CustomEvent).detail;
+      if(detail?.projectId!==id||detail?.userId!==userId)return;
+      setDraftPulse(true);clearTimeout(timer);
+      timer=setTimeout(()=>setDraftPulse(false),4000);
+    };
+    window.addEventListener('bivi:draft-reminder-dismissed',dismissed);
+    return()=>{clearTimeout(timer);window.removeEventListener('bivi:draft-reminder-dismissed',dismissed);};
+  },[id,userId]);
+
   /* =======================================================
      ACTIVATION VIEW
      ======================================================= */
@@ -918,7 +931,7 @@ export function ProjectWorkspace({
     <button type="button" className={toolbarIcon} title="Refresh saved data" aria-label="Refresh saved task data" disabled={busy} onClick={()=>void controller.checkUncertainSave()}><RefreshCw size={16}/></button>
     <button type="button" className={toolbarIcon.replace('w-9','w-auto')+' gap-1.5 px-3'} title={busy?'Saving changes':savePhase==='failed'?'Retry saving workplan':'Save all changes'} aria-label={savePhase==='failed'?'Retry saving workplan':'Save all changes'} disabled={!dirty||locked||saveOutcomeUnknown||!drafts.ready||Boolean(drafts.recoverable)||Boolean(drafts.conflict)} onClick={()=>void command('save')}><Save size={16}/><span className="text-xs">Save all changes</span></button>
     <details className="relative">
-      <summary className={toolbarIcon+' cursor-pointer list-none [&::-webkit-details-marker]:hidden'} title="Draft options" aria-label="Draft options"><FileClock size={16}/>{dirty&&<span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-amber-400"/>}</summary>
+      <summary className={toolbarIcon+' cursor-pointer list-none [&::-webkit-details-marker]:hidden '+(draftPulse?'bivi-draft-pulse':'')} title="Draft changes" aria-label="Draft changes"><FileClock size={16}/>{dirty&&<span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-amber-400"/>}</summary>
       <div className="absolute right-0 z-50 mt-2 min-w-56 rounded-xl border border-border bg-white p-3 text-xs shadow-xl dark:bg-card">
         <p className="mb-2 font-medium">{dirty?'Draft changes — waiting for you to save':'All task changes saved'}</p>
         <p className="mb-3 text-muted-foreground">Private draft: {drafts.state==='saving'?'Saving…':drafts.state==='saved'?'Backed up':drafts.state==='pending'?'Pending':drafts.state==='conflict'?'Conflict — review required':drafts.state==='error'?'Unavailable':'Ready'}</p>

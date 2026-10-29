@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 
 /** Informational only: dismissing this never saves or discards task edits. */
-export function WorkplanDraftReminder({userId,dirty}:{userId:string;dirty:boolean}) {
+export function WorkplanDraftReminder({userId,projectId,dirty}:{userId:string;projectId:string;dirty:boolean}) {
   const storageKey='bivi:workplan-draft-reminder:v1:'+userId;
   const [ready,setReady]=useState(false);
   const [hidden,setHidden]=useState(false);
@@ -23,7 +23,13 @@ export function WorkplanDraftReminder({userId,dirty}:{userId:string;dirty:boolea
   // Dismiss applies to this batch of edits; a new batch can show the reminder.
   useEffect(()=>{if(!dirty)setDismissed(false);},[dirty]);
 
+  function dismiss(){
+    setDismissed(true);
+    window.dispatchEvent(new CustomEvent('bivi:draft-reminder-dismissed',{detail:{projectId,userId}}));
+  }
+
   function hideFutureReminders(){
+    dismiss();
     setHidden(true);
     try{window.localStorage.setItem(storageKey,'hidden');}
     catch{ /* Keep it hidden for this visit if browser storage is unavailable. */ }
@@ -34,7 +40,7 @@ export function WorkplanDraftReminder({userId,dirty}:{userId:string;dirty:boolea
   return <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
     <p role="status" className="min-w-0 flex-1">Unsaved work-plan edits. Use Save all changes to apply this draft. Priority, start date, tags and assignees are edited directly in the full task editor.</p>
     <div className="flex shrink-0 flex-wrap items-center gap-1" aria-label="Draft reminder options">
-      <button type="button" className={actionClass} title="Hide this reminder for the current unsaved edits" onClick={()=>setDismissed(true)}>Dismiss</button>
+      <button type="button" className={actionClass} title="Hide this reminder for the current unsaved edits" onClick={dismiss}>Dismiss</button>
       <button type="button" className={actionClass} title="Hide this reminder across projects for your account in this browser" onClick={hideFutureReminders}>Don’t show again</button>
     </div>
   </div>;

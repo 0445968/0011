@@ -1,4 +1,5 @@
 'use client';
+import {taskDateTimeLabel} from '@/lib/projects/task-timing';
 import Link from 'next/link';
 import {ProjectUpcomingMeetings} from './ProjectUpcomingMeetings';
 import type {ProjectMeeting} from '@/lib/projects/meeting-schema';
@@ -87,12 +88,12 @@ export function ProjectOverview({record, activityResult, content, meetings, cont
           <div className="flex flex-wrap items-start gap-2 border-b border-border bg-muted/30 px-3 py-2 text-xs">
             <CalendarDays size={15} className="mt-0.5 shrink-0 text-muted-foreground" aria-hidden />
             <div className="min-w-0"><p className="text-[11px] text-muted-foreground">Earliest open deadline</p>
-              {summary.nextDatedTask ? <Link className="mt-1 block break-words font-medium hover:underline" href={taskHref(record.request_id, summary.nextDatedTask.id)}>{summary.nextDatedTask.dueOn} · {summary.nextDatedTask.title}</Link> : <p className="mt-1">{summary.openTasks.length ? 'No dated open tasks' : 'No open tasks'}</p>}
+              {summary.nextDatedTask ? <Link className="mt-1 block break-words font-medium hover:underline" href={taskHref(record.request_id, summary.nextDatedTask.id)}>{taskDateTimeLabel(summary.nextDatedTask.dueOn,summary.nextDatedTask.dueTime,summary.nextDatedTask.timeZone)} · {summary.nextDatedTask.title}</Link> : <p className="mt-1">{summary.openTasks.length ? 'No dated open tasks' : 'No open tasks'}</p>}
             </div>
           </div>
           <ul className="divide-y divide-border">{summary.openTasks.slice(0,5).map(task => <li key={task.id} className="flex flex-wrap items-start justify-between gap-2 px-3 py-2">
             <div className="min-w-0 flex-1 basis-40"><Link href={taskHref(record.request_id,task.id)} className="break-words text-xs font-medium hover:underline">{task.title}</Link><p className="mt-1 break-words text-[11px] text-muted-foreground">{task.owner || 'Unassigned'}</p></div>
-            <div className="text-right"><WorkStatus status={task.status} /><p className={`mt-1 text-[11px] ${task.dueOn && task.dueOn < today ? 'font-medium text-red-700 dark:text-red-400' : 'text-muted-foreground'}`}>{task.dueOn ? `${task.dueOn}${task.dueOn < today ? ' · Past due' : task.dueOn === today ? ' · Today' : ''}` : 'No due date'}</p></div>
+            <div className="text-right"><WorkStatus status={task.status} /><p className={`mt-1 text-[11px] ${task.dueOn && task.dueOn < today ? 'font-medium text-red-700 dark:text-red-400' : 'text-muted-foreground'}`}>{task.dueOn ? `${taskDateTimeLabel(task.dueOn,task.dueTime,task.timeZone)}${task.dueOn < today ? ' · Past due' : task.dueOn === today ? ' · Today' : ''}` : 'No due date'}</p></div>
           </li>)}</ul>
           {!summary.openTasks.length && <p className="px-4 py-5 text-xs text-muted-foreground">No open tasks. Add or review work in Tasks & Milestones.</p>}
           {summary.openTasks.length > 5 && <p className="border-t border-border px-3 py-2 text-[11px] text-muted-foreground">Showing 5 of {summary.openTasks.length} · earliest deadline first.</p>}

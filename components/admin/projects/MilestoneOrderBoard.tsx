@@ -11,7 +11,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Check, GripVertical, Info, Plus, Save, ShieldAlert } from 'lucide-react';
+import { Check, GripVertical, Info, Plus, Save, ShieldAlert, Folder } from 'lucide-react';
 import type { ProjectBody } from '@/lib/projects/schema';
 
 type Task = ProjectBody['tasks'][number];
@@ -53,10 +53,11 @@ function SortableMilestoneTask({ task, index, disabled, children }: {
   </div>;
 }
 
-function MilestoneColumn({ milestone, tasks, disabled, addDisabled, canReorder, onAddTask, renderTask }: {
+function MilestoneColumn({ milestone, tasks, disabled, addDisabled, canReorder, onAddTask, renderTask, folderColor }: {
   milestone: Milestone | null; tasks: Task[]; disabled: boolean; addDisabled: boolean; canReorder: boolean;
   onAddTask: (milestoneId: string | null) => void;
   renderTask: (task: Task) => ReactNode;
+  folderColor?:(milestoneId:string)=>string;
 }) {
   const milestoneId = milestone?.id ?? null;
   const completed = milestone?.status === 'done';
@@ -76,7 +77,7 @@ function MilestoneColumn({ milestone, tasks, disabled, addDisabled, canReorder, 
   >
     <div className="flex min-w-0 items-start justify-between gap-2 px-2 py-2">
       <div className="min-w-0">
-        <h2 className="truncate text-sm font-semibold" title={milestone?.title ?? 'No milestone'}>{milestone?.title ?? 'No milestone'}</h2>
+        <h2 className="truncate text-sm font-semibold" title={milestone?.title ?? 'No milestone'}><Folder size={16} className="mr-1.5 inline shrink-0" style={{color:milestone&&folderColor?folderColor(milestone.id):'#64748B'}}/>{milestone?.title ?? 'No milestone'}</h2>
         <p className="mt-1 text-[11px] text-muted-foreground">{done} of {tasks.length} completed{completed ? ' · Milestone locked' : ''}</p>
       </div>
       <button type="button"
@@ -118,7 +119,7 @@ const detectDrop: CollisionDetection = args => {
 };
 
 export function MilestoneOrderBoard({ milestones, tasks, disabled, addDisabled=false, canReorder, orderDirty,
-  saving, saveIssue, verifyRequired=false, onVerifySave, onMove, onAddTask, onSave, renderTask }: {
+  saving, saveIssue, verifyRequired=false, onVerifySave, onMove, onAddTask, onSave, renderTask, folderColor }: {
   milestones: Milestone[];
   tasks: Task[];
   disabled: boolean;
@@ -133,6 +134,7 @@ export function MilestoneOrderBoard({ milestones, tasks, disabled, addDisabled=f
   onAddTask: (milestoneId: string | null) => void;
   onSave: () => void;
   renderTask: (task: Task) => ReactNode;
+  folderColor?:(milestoneId:string)=>string;
 }) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 7 } }),
@@ -218,10 +220,10 @@ export function MilestoneOrderBoard({ milestones, tasks, disabled, addDisabled=f
       <div className="grid items-start gap-3 md:grid-cols-2 xl:grid-cols-3">
         {milestones.map(milestone => <MilestoneColumn key={milestone.id} milestone={milestone}
           tasks={filteredTasks.filter(task => task.milestoneId === milestone.id)}
-          disabled={disabled} addDisabled={addDisabled} canReorder={canReorder} onAddTask={onAddTask} renderTask={renderTask}/>)}
+          disabled={disabled} addDisabled={addDisabled} canReorder={canReorder} onAddTask={onAddTask} renderTask={renderTask} folderColor={folderColor}/>)}
         <MilestoneColumn key="unassigned" milestone={null}
           tasks={filteredTasks.filter(task => task.milestoneId === null)}
-          disabled={disabled} addDisabled={addDisabled} canReorder={canReorder} onAddTask={onAddTask} renderTask={renderTask}/>
+          disabled={disabled} addDisabled={addDisabled} canReorder={canReorder} onAddTask={onAddTask} renderTask={renderTask} folderColor={folderColor}/>
       </div>
       <DragOverlay dropAnimation={null}>
         {draggedTask ? <div className="max-w-80 rounded-lg border border-blue-300 bg-white px-4 py-3 text-xs font-medium shadow-xl dark:bg-card">

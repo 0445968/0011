@@ -39,7 +39,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
   });
   if (result.error) return adminReply({ error: result.error.code === '42883'
     ? 'Task scheduling is unavailable. Apply migration 20261021120000_project_task_scheduling.sql.'
-    : 'The task schedule could not be saved.' }, result.error.code === '42501' ? 403 : 503);
+    : result.error.code==='22023'?'Check the task start and due dates and times.':'The task schedule could not be saved.' }, result.error.code === '42501' ? 403 : result.error.code==='22023'?400:503);
   const failure: Record<string, [number, string]> = {
     conflict: [409, 'The project or schedule changed. Refresh before editing again.'],
     not_found: [404, 'Task not found in this project.'],

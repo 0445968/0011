@@ -33,7 +33,7 @@ test('Calendar projects date-only current tasks and milestones under staff RLS w
  assert.equal(rows.length,1);assert.equal(rows[0].due_on.toISOString().slice(0,10),'2026-10-20');
  assert.equal((await db.query('select * from project_task_schedule_history where request_id=$1',[project])).rows.length,1);
  assert.equal((await db.query("select manage_project_task_schedule($1,'same/id','2026-10-21',1,0) as result",[project])).rows[0].result.result,'conflict');
- const invalid=await db.query("select manage_project_task_schedule($1,'same/id','2026-12-01',1,1) as result",[project]);
+ const invalid=await db.query("select manage_project_task_schedule($1,'same/id','2026-12-01',2,1) as result",[project]);
  assert.equal(invalid.rows[0].result.result,'invalid_dates');
  assert.equal((await db.query('select count(*)::int n from project_task_schedule_history where request_id=$1',[project])).rows[0].n,1);
  await db.query("select set_config('request.jwt.claim.sub',$1,false)",[client]);
