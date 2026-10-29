@@ -69,7 +69,7 @@ type TaskFilter = 'all' | Task['status'];
 
 type Props = {
   overview?: ReactNode;
-  savedToday: string;
+  savedToday: string;timezone?:string;asOf?:string;
   selectedTask?:string;
   selectedMilestone?:string;
   taskControls?: ProjectTaskControl[];
@@ -235,7 +235,7 @@ function SectionTitle({
 
 export function ProjectWorkspace({
   overview,
-  savedToday,
+  savedToday,timezone,asOf,
   id,
   userId,
   record,
@@ -995,7 +995,7 @@ export function ProjectWorkspace({
         advanced={advanced}
         focusTaskId={overviewTaskId}
         focusTaskRequest={taskFocusRequest}
-        today={today}
+        today={today} timezone={timezone} asOf={asOf}
         id={id}
         userId={userId}
         revision={savedRevision}

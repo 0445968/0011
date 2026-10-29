@@ -20,3 +20,12 @@ The migration keeps the existing staff-only schedule table as a projection for o
 Platform tests cover private backup, isolated task saves, new-field rebases, invalid times, daylight-saving conversion, atomic schedule projection, new task foreign keys and stale writes. Existing Calendar and My Tasks tests now expect start edits to advance the project revision.
 
 Browser acceptance covers group-only selection, hidden headings, editor close/reopen, recent tasks, optional times, dismissal pulse and narrow-screen layout. Authenticated production acceptance remains the final user check.
+
+
+## Cross-page deadline consistency
+
+Timed task deadlines now share exact instants across Tasks, Overview, Lifecycle, project calendar and workspace calendar. Displays and day filters use the staff timezone; date-only deadlines remain floating calendar dates. Overdue counts use the actual deadline time and exclude completed tasks and start-date markers. Sorting uses day and time, with date-only deadlines at the end of the day.
+
+Assigned-task projections preserve staff authorization, task identity and assignee counts. Private task drafts remain excluded from saved summaries until explicitly saved. Task settings links open the canonical full editor.
+
+Small requests are bundled into the next substantive patch unless explicitly requested as a separate release; this policy is recorded in AGENTS.md.

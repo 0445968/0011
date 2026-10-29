@@ -3,13 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import ts from 'typescript';
 import {loadProjectTs} from './load-project-ts.mjs';
-function load(path) {
-  const module={exports:{}};
-  new Function('module','exports','require',ts.transpileModule(fs.readFileSync(new URL(path,import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText)(module,module.exports,()=>loadProjectTs('lib/projects/metrics.ts'));
-  return module.exports;
-}
-const {projectOverviewSummary}=load('../../lib/projects/overview-summary.ts');
-const {taskToday}=load('../../lib/tasks/links.ts');
+const {projectOverviewSummary}=loadProjectTs('lib/projects/overview-summary.ts');
+const {taskToday}=loadProjectTs('lib/tasks/links.ts');
 const task=(id,status,dueOn)=>({id,title:id,owner:'',notes:'',milestoneId:null,status,dueOn});
 const body=(tasks,milestones=[])=>({title:'Project',owner:'',notes:'',tasks,milestones});
 

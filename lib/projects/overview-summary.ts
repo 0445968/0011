@@ -1,11 +1,12 @@
+import {compareTaskDeadlines,type DeadlineContext} from './deadlines';
 import type { ProjectBody } from './schema';
 import { distinctById, taskMetrics } from './metrics';
 
-/** Date-only deadlines are compared to the staff member's local calendar day. */
-export function projectOverviewSummary(body: ProjectBody, today: string) {
-  const metrics=taskMetrics(body.tasks,today);
+/** Saved deadlines share the viewer's calendar day and exact instants for timed tasks. */
+export function projectOverviewSummary(body: ProjectBody, today: string,context?:Omit<DeadlineContext,'today'>) {
+  const metrics=taskMetrics(body.tasks,today,context);
   const openTasks = distinctById(body.tasks).filter(task => task.status !== 'done').sort((a, b) =>
-    (a.dueOn ?? '9999-12-31').localeCompare(b.dueOn ?? '9999-12-31') || a.title.localeCompare(b.title)
+    compareTaskDeadlines(a,b,context?.timezone) || a.title.localeCompare(b.title)
   );
   const milestones = [...body.milestones].sort((a, b) =>
     Number(a.status === 'done') - Number(b.status === 'done') ||

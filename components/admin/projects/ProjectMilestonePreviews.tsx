@@ -18,12 +18,12 @@ import { calendarHref } from '@/lib/calendar/links';
 import { ProjectTaskStateIcon } from './DirectoryIndicators';
 import { ProjectMemberStack } from './ProjectMemberStack';
 
-export function ProjectMilestonePreviews({ id, body, phaseStates, milestonePhases, members, phaseColors, content, today }: {
+export function ProjectMilestonePreviews({ id, body, phaseStates, milestonePhases, members, phaseColors, content, today,timezone }: {
   id: string;
   body: ProjectBody;
   phaseStates: ProjectPhaseState[];
   content:OverviewContent;
-  today:string;
+  today:string;timezone?:string;
   milestonePhases: MilestonePhaseLink[];
   members: ProjectRosterMember[];
   phaseColors: ProjectPhaseColorMap;
@@ -62,7 +62,7 @@ export function ProjectMilestonePreviews({ id, body, phaseStates, milestonePhase
     {visible.length ? <div ref={carousel} className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3" role="list">
       {visible.map(milestone => {
         const progress = milestoneStats(body, milestone.id);
-        const contents=milestoneContent(body,milestone.id,content,today);
+        const contents=milestoneContent(body,milestone.id,content,today,timezone);
         const href = calendarHref({ event_type: 'milestone', request_id: id, source_id: milestone.id });
         const phases = [...new Set(milestonePhases.filter(link => link.milestoneId === milestone.id).map(link => link.phase))];
         const taskIds = new Set(body.tasks.filter(task => task.milestoneId === milestone.id).map(task => task.id));

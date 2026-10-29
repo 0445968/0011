@@ -1,5 +1,6 @@
 'use client';
-import {taskDateTimeLabel} from '@/lib/projects/task-timing';
+import {taskDeadlineLabel,taskDeadlineDay,taskIsOverdue,localDateTime} from '@/lib/projects/deadlines';
+import {useProjectClock} from './useProjectClock';
 import Link from 'next/link';
 import {ProjectUpcomingMeetings} from './ProjectUpcomingMeetings';
 import type {ProjectMeeting} from '@/lib/projects/meeting-schema';
@@ -38,14 +39,14 @@ const statusLabels = {todo:'To do',planned:'Planned',doing:'In progress',in_prog
 function WorkStatus({status}: {status: keyof typeof statusStyles}) {
   return <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium ${statusStyles[status]}`}><ProjectTaskStateIcon status={status} />{statusLabels[status]}</span>;
 }
-export function ProjectOverview({record, activityResult, content, meetings, context, today, timezone, members, milestonePhases, phaseStates, phaseColors, operationalStatus}: {
+export function ProjectOverview({record, activityResult, content, meetings, context, today:initialToday, timezone, asOf, members, milestonePhases, phaseStates, phaseColors, operationalStatus}: {
   record: OverviewRecord;
   activityResult:{data:ProjectActivity|null;error:string|null};
   content:OverviewContent;
   meetings:{rows:ProjectMeeting[]|null;total:number|null};
   context?: ProjectDirectoryContext;
   today: string;
-  timezone: string;
+  timezone: string;asOf?:string;
   members: ProjectRosterMember[];
   milestonePhases: MilestonePhaseLink[];
   phaseStates: ProjectPhaseState[];
@@ -54,7 +55,10 @@ export function ProjectOverview({record, activityResult, content, meetings, cont
 }) {
   const router=useRouter();
   const base = `/projects/${record.request_id}`;
-  const summary = projectOverviewSummary(record.body, today);
+  const now=useProjectClock(asOf);
+  const today=localDateTime(now,timezone).date;
+  const summary = projectOverviewSummary(record.body, today,{now,timezone});
+  const pastDue=(task:typeof record.body.tasks[number])=>taskIsOverdue(task,{today,now,timezone});
   const name = context?.company?.name || record.body.title;
   return <div className="space-y-3">
     <header className="grid gap-3 rounded-xl border border-border bg-card p-3 sm:grid-cols-[minmax(0,1fr)_auto]">
@@ -78,7 +82,7 @@ export function ProjectOverview({record, activityResult, content, meetings, cont
     </section>
 
     <ProjectMilestonePreviews id={record.request_id} body={record.body} members={members} phaseColors={phaseColors}
-      phaseStates={phaseStates} milestonePhases={milestonePhases} content={content} today={today} />
+      phaseStates={phaseStates} milestonePhases={milestonePhases} content={content} today={today} timezone={timezone} />
 
 
     <ProjectUpcomingMeetings id={record.request_id} rows={meetings.rows} total={meetings.total} timezone={timezone}/>
@@ -88,12 +92,12 @@ export function ProjectOverview({record, activityResult, content, meetings, cont
           <div className="flex flex-wrap items-start gap-2 border-b border-border bg-muted/30 px-3 py-2 text-xs">
             <CalendarDays size={15} className="mt-0.5 shrink-0 text-muted-foreground" aria-hidden />
             <div className="min-w-0"><p className="text-[11px] text-muted-foreground">Earliest open deadline</p>
-              {summary.nextDatedTask ? <Link className="mt-1 block break-words font-medium hover:underline" href={taskHref(record.request_id, summary.nextDatedTask.id)}>{taskDateTimeLabel(summary.nextDatedTask.dueOn,summary.nextDatedTask.dueTime,summary.nextDatedTask.timeZone)} · {summary.nextDatedTask.title}</Link> : <p className="mt-1">{summary.openTasks.length ? 'No dated open tasks' : 'No open tasks'}</p>}
+              {summary.nextDatedTask ? <Link className="mt-1 block break-words font-medium hover:underline" href={taskHref(record.request_id, summary.nextDatedTask.id)}>{taskDeadlineLabel(summary.nextDatedTask,timezone)} · {summary.nextDatedTask.title}</Link> : <p className="mt-1">{summary.openTasks.length ? 'No dated open tasks' : 'No open tasks'}</p>}
             </div>
           </div>
           <ul className="divide-y divide-border">{summary.openTasks.slice(0,5).map(task => <li key={task.id} className="flex flex-wrap items-start justify-between gap-2 px-3 py-2">
             <div className="min-w-0 flex-1 basis-40"><Link href={taskHref(record.request_id,task.id)} className="break-words text-xs font-medium hover:underline">{task.title}</Link><p className="mt-1 break-words text-[11px] text-muted-foreground">{task.owner || 'Unassigned'}</p></div>
-            <div className="text-right"><WorkStatus status={task.status} /><p className={`mt-1 text-[11px] ${task.dueOn && task.dueOn < today ? 'font-medium text-red-700 dark:text-red-400' : 'text-muted-foreground'}`}>{task.dueOn ? `${taskDateTimeLabel(task.dueOn,task.dueTime,task.timeZone)}${task.dueOn < today ? ' · Past due' : task.dueOn === today ? ' · Today' : ''}` : 'No due date'}</p></div>
+            <div className="text-right"><WorkStatus status={task.status} /><p className={`mt-1 text-[11px] ${pastDue(task) ? 'font-medium text-red-700 dark:text-red-400' : 'text-muted-foreground'}`}>{task.dueOn ? `${taskDeadlineLabel(task,timezone)}${pastDue(task) ? ' · Past due' : taskDeadlineDay(task,timezone) === today ? ' · Today' : ''}` : 'No due date'}</p></div>
           </li>)}</ul>
           {!summary.openTasks.length && <p className="px-4 py-5 text-xs text-muted-foreground">No open tasks. Add or review work in Tasks & Milestones.</p>}
           {summary.openTasks.length > 5 && <p className="border-t border-border px-3 py-2 text-[11px] text-muted-foreground">Showing 5 of {summary.openTasks.length} · earliest deadline first.</p>}

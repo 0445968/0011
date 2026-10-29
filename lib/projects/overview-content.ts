@@ -1,3 +1,4 @@
+import {taskEvent,taskDeadlineDay} from './deadlines';
 import type { ProjectBody } from './schema';
 import { distinctById } from './metrics';
 import { suggestedTaskPriority } from './workplan-views';
@@ -33,7 +34,7 @@ export async function readOverviewRows<T>(read: (from:number,to:number) => Promi
 }
 
 /** Scope only includes saved top-level task IDs. Subtasks are never task denominators. */
-export function milestoneContent(body:ProjectBody,milestoneId:string,content:OverviewContent,today:string) {
+export function milestoneContent(body:ProjectBody,milestoneId:string,content:OverviewContent,today:string,timezone='America/Chicago') {
   const tasks=distinctById(body.tasks).filter(task=>task.milestoneId===milestoneId);
   const ids=new Set(tasks.map(task=>task.id));
   const count=(source:OverviewSource<{id:string;task_id:string}>)=>source.rows===null?null:
@@ -47,7 +48,7 @@ export function milestoneContent(body:ProjectBody,milestoneId:string,content:Ove
     const dependency=body.tasks.find(item=>item.id===control?.depends_on);
     const paused=task.status==='done'||task.status==='blocked'||!control||!!control.blocker_owner||
       (!!control.depends_on&&dependency?.status!=='done');
-    const start=content.schedule.rows?.find(row=>row.task_id===task.id)?.start_on??null;
+    const start=taskEvent(task,'start',timezone,content.schedule.rows?.find(row=>row.task_id===task.id)?.start_on??null).date;
     return {id:task.id,title:task.title,
       files:content.files.rows===null||content.links.rows===null?null:new Set(content.links.rows.filter(row=>row.task_id===task.id&&accessibleFiles.has(row.file_id)).map(row=>row.file_id)).size,
       notes:content.notes.rows===null?null:new Set(content.notes.rows.filter(row=>row.task_id===task.id).map(row=>row.id)).size,
@@ -55,7 +56,7 @@ export function milestoneContent(body:ProjectBody,milestoneId:string,content:Ove
       communications:content.communications?.rows?new Set(content.communications.rows.filter(row=>row.task_id===task.id).map(row=>row.id)).size:null,
       communicationStates:content.communications?.rows?.filter(row=>row.task_id===task.id).reduce<Record<string,number>>((states,row)=>{states[row.status]=(states[row.status]??0)+1;return states;},{})??{},
       manual:control?.priority??null,
-      suggestion:content.schedule.rows===null||content.priorities.rows===null?null:suggestedTaskPriority(start,task.dueOn,today,paused),
+      suggestion:content.schedule.rows===null||content.priorities.rows===null?null:suggestedTaskPriority(start,taskDeadlineDay(task,timezone),today,paused),
       priorityAvailable:content.priorities.rows!==null&&!!control,
     };
   });

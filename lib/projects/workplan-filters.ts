@@ -1,3 +1,4 @@
+import {taskDeadlineDay,taskIsOverdue} from './deadlines';
 import type { ProjectBody } from './schema';
 import { effectiveTaskPhases } from './metrics';
 import type { ProjectPhase, ProjectTaskControl } from './lifecycle-schema';
@@ -23,6 +24,7 @@ export type WorkplanFilterContext = {
   controls: ProjectTaskControl[];
   assignments: ProjectAssignmentWorkspace['tasks'];
   today: string;
+  timezone?:string;now?:string;
 };
 
 /** A task keeps its canonical phase and also belongs to its milestone's linked phases. */
@@ -35,14 +37,15 @@ function statusMatches(status: Task['status'] | Milestone['status'], filter: Wor
     : filter==='in_progress' ? status==='doing'||status==='in_progress' : status===filter);
 }
 
-function dateMatches(dueOn: string|null, status: string, filters: WorkplanFilters, today: string) {
+function dateMatches(dueOn: string|null, status: string, filters: WorkplanFilters, today: string,task?:Task,context?:WorkplanFilterContext) {
+  if(task)dueOn=taskDeadlineDay(task,context?.timezone);
   if (filters.from && (!dueOn || dueOn<filters.from)) return false;
   if (filters.to && (!dueOn || dueOn>filters.to)) return false;
   if (filters.deadline==='all') return true;
   if (filters.deadline==='undated') return !dueOn;
   if (!dueOn) return false;
   if (filters.deadline==='dated') return true;
-  if (filters.deadline==='overdue') return status!=='done' && dueOn<today;
+  if (filters.deadline==='overdue') return task?taskIsOverdue(task,{today,timezone:context?.timezone,now:context?.now}):status!=='done' && dueOn<today;
   if (filters.deadline==='today') return dueOn===today;
   const end = new Date(`${today}T12:00:00Z`);
   end.setUTCDate(end.getUTCDate()+6);
@@ -62,7 +65,7 @@ export function workplanTaskMatches(task: Task, filters: WorkplanFilters, contex
   if (filters.side!=='all' && (assignment?.side??'unknown')!==filters.side) return false;
   if (filters.assignee==='unassigned' && (!assignment || assignment.assignees.length>0)) return false;
   if (filters.assignee!=='all' && filters.assignee!=='unassigned' && !assignment?.assignees.includes(filters.assignee)) return false;
-  return statusMatches(task.status,filters.status) && dateMatches(task.dueOn,task.status,filters,context.today);
+  return statusMatches(task.status,filters.status) && dateMatches(task.dueOn,task.status,filters,context.today,task,context);
 }
 
 /** Child criteria must match the same task; unrelated children cannot satisfy different filters. */
