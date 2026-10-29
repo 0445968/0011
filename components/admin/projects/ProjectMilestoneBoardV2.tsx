@@ -413,7 +413,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     return <button type="button" className="min-h-8" title="Edit assignees in full task editor" aria-label={'Edit assignees for '+task.title} onClick={()=>openTask(task.id)}>{taskPeople(task)}</button>;
   };
   const statusMenu=(task:Task)=><Popover>
-    <PopoverTrigger asChild><button type="button" disabled={disabled} aria-label={'Change status of '+task.title} className="inline-flex min-h-8 items-center gap-1.5 rounded-lg px-1.5 hover:bg-muted disabled:opacity-50"><ProjectTaskStateIcon status={task.status}/><span className="sr-only">{task.status}</span></button></PopoverTrigger>
+    <PopoverTrigger asChild><button type="button" disabled={disabled||(!schedule.ready&&task.startOn===undefined)} title={!schedule.ready&&task.startOn===undefined?'Loading the saved start date…':undefined} aria-label={'Change status of '+task.title} className="inline-flex min-h-8 items-center gap-1.5 rounded-lg px-1.5 hover:bg-muted disabled:opacity-50"><ProjectTaskStateIcon status={task.status}/><span className="sr-only">{task.status}</span></button></PopoverTrigger>
     <PopoverContent align="start" className="w-44 space-y-1 p-2">
       {([{value:'todo',label:'Backlog'},{value:'doing',label:'In progress'},{value:'blocked',label:'Blocked'},{value:'done',label:'Completed'}] as {value:Task['status'];label:string}[]).map(option=><button type="button" key={option.value} aria-pressed={task.status===option.value} disabled={disabled} className="flex min-h-9 w-full items-center gap-2 rounded-md px-2 text-left text-xs hover:bg-muted" onClick={()=>updateTask(task,{status:option.value})}><ProjectTaskStateIcon status={option.value}/><span className="flex-1">{option.label}</span>{task.status===option.value&&<Check size={13}/>}</button>)}
     </PopoverContent>
@@ -450,6 +450,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   };
   const requestBulkStatus=(status:Task['status'])=>{
     if(disabled||!selectedTasks.length)return;
+    if(!schedule.ready&&selectedTasks.some(task=>task.startOn===undefined)){setBulkMessage('Load the saved task schedules before changing these statuses.');return;}
     if(status==='done'){
       if(!hierarchy.data||hierarchy.data.projectRevision!==revision){
         setBulkMessage('Refresh the saved task hierarchy before marking multiple tasks completed.');
