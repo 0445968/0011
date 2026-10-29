@@ -1,6 +1,7 @@
 
 'use client';
 
+import {WorkspaceBarsMenu,WorkspaceBarsButton} from './workspace/WorkspaceBarsMenu';
 import {ProfileImage} from '@/components/profile-images/ProfileImage';
 import {ImageEditorDialog} from '@/components/profile-images/ImageEditor';
 import {
@@ -784,6 +785,9 @@ export function StaffWorkspaceShell({
   const [collapsed, setCollapsed] =
     useState(initialCollapsed);
   const [preferencesReady, setPreferencesReady] = useState(false);
+  const [showMenuBar,setShowMenuBar]=useState(true);
+  const [showRecordNavigation,setShowRecordNavigation]=useState(true);
+  const barsStorageKey=`bivi-staff-bars:${workspaceId}`;
   const [showTabs, setShowTabs] = useState(true);
   const [showFileMenu, setShowFileMenu] = useState(true);
   const tabBarStorageKey = `bivi-staff-tab-bar:${workspaceId}`;
@@ -929,6 +933,9 @@ useEffect(() => {
 
   useEffect(() => {
     try {
+      try{const bars=JSON.parse(localStorage.getItem(barsStorageKey)||'{}');
+        setShowMenuBar(bars?.menu!==false);setShowRecordNavigation(bars?.navigation!==false);
+      }catch{/* Ignore an invalid bars preference and restore the other settings. */}
       setShowTabs(localStorage.getItem(tabBarStorageKey) !== 'false');
       setShowFileMenu(localStorage.getItem(fileMenuStorageKey) !== 'false');
       const storedCollapsed = localStorage.getItem(SIDEBAR_STORAGE_KEY);
@@ -952,7 +959,7 @@ useEffect(() => {
     } catch {
       // Default preferences remain active.
     } finally { setPreferencesReady(true); }
-  }, [initialCollapsed, tabBarStorageKey, fileMenuStorageKey]);
+  }, [initialCollapsed, tabBarStorageKey, fileMenuStorageKey,barsStorageKey]);
 
   const toggleSidebar =
     useCallback(() => {
@@ -1007,6 +1014,12 @@ useEffect(() => {
     catch { /* Continue for this session. */ }
   }, [tabBarStorageKey]);
 
+  const changeBars=useCallback((kind:'menu'|'navigation',next:boolean)=>{
+    if(kind==='menu')setShowMenuBar(next);else setShowRecordNavigation(next);
+    try{const previous=JSON.parse(localStorage.getItem(barsStorageKey)||'{}');localStorage.setItem(barsStorageKey,JSON.stringify({...previous,[kind]:next}));}catch{/* Session only */}
+  },[barsStorageKey]);
+  const changeShowMenuBar=useCallback((next:boolean)=>changeBars('menu',next),[changeBars]);
+  const changeShowRecordNavigation=useCallback((next:boolean)=>changeBars('navigation',next),[changeBars]);
   /* =======================================================
      KEYBOARD SHORTCUTS
      ======================================================= */
@@ -1260,7 +1273,7 @@ useEffect(() => {
 
   return (
     <WorkspaceNavigationGuard>
-    <WorkspacePreferencesContext.Provider value={{density, changeDensity, collapsed, toggleSidebar, showTabs, changeShowTabs}}>
+    <WorkspacePreferencesContext.Provider value={{density, changeDensity, collapsed, toggleSidebar, showTabs, changeShowTabs,showMenuBar,changeShowMenuBar,showRecordNavigation,changeShowRecordNavigation}}>
     <RecordMetadataContext.Provider
       value={receiveMetadata}
     >
@@ -1576,7 +1589,7 @@ useEffect(() => {
         >
           {/* HEADER */}
 
-          <header
+          <WorkspaceBarsMenu><header
             className="
               relative
               z-20
@@ -1593,6 +1606,7 @@ useEffect(() => {
               sm:px-6
             "
           >
+            <WorkspaceBarsButton/>
             <div
               className="
                 flex
@@ -1862,7 +1876,7 @@ useEffect(() => {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-          </header>
+          </header></WorkspaceBarsMenu>
 
           {/* MOBILE DIRECTORY NAVIGATION */}
 
@@ -1887,7 +1901,7 @@ useEffect(() => {
 
           {/* TEXT-ONLY DESKTOP MENUS */}
 
-          <WorkspaceMenuBar
+          {showMenuBar&&<WorkspaceMenuBar
             activeTab={activeTab}
             tabs={tabs}
             bookmarks={bookmarks}
@@ -1905,7 +1919,7 @@ useEffect(() => {
             onToggleFileMenu={toggleFileMenu}
             sidebarCollapsed={collapsed}
             onToggleSidebar={toggleSidebar}
-          />
+          />}
 
           {/* PERSISTENT RECORD TABS */}
 
@@ -1931,13 +1945,13 @@ useEffect(() => {
 
           {/* PROJECT / INQUIRY SECTIONS */}
 
-          <RecordContextNavigation
+          {showRecordNavigation&&<RecordContextNavigation
             tab={activeTab}
             pathname={pathname}
             selectedProjectTab={
               selectedProjectTab
             }
-          />
+          />}
 
           {/* WORKSPACE CONTENT */}
 

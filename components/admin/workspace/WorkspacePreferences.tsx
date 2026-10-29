@@ -8,6 +8,8 @@ type WorkspacePreferences = {
   changeDensity: (value: WorkspaceDensity) => void;
   collapsed: boolean;
   toggleSidebar: () => void;
+  showMenuBar:boolean; changeShowMenuBar:(value:boolean)=>void;
+  showRecordNavigation:boolean; changeShowRecordNavigation:(value:boolean)=>void;
   showTabs: boolean;
   changeShowTabs: (value: boolean) => void;
 };
