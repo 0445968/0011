@@ -1,6 +1,8 @@
 
 'use client';
 
+import {TaskWorkspaceContext} from './workspace/TaskWorkspaceContext';
+import {taskRecordId,taskWorkspaceHref,parseTaskRecordId} from '@/lib/admin/workspace/navigation';
 import {WorkspaceBarsMenu,WorkspaceBarsButton} from './workspace/WorkspaceBarsMenu';
 import {ProfileImage} from '@/components/profile-images/ProfileImage';
 import {ImageEditorDialog} from '@/components/profile-images/ImageEditor';
@@ -446,16 +448,14 @@ function RecordContextNavigation({
   }
 
   const isProject =
-    tab.kind === 'project';
+    tab.kind === 'project'||tab.kind==='task';
 
   const isInquiry =
     tab.kind === 'inquiry' ||
     tab.kind === 'lead';
 
-  const base = getWorkspaceRecordHref(
-    tab.kind,
-    tab.id
-  );
+  const taskParent=tab.kind==='task'?parseTaskRecordId(tab.id):null;
+  const base=taskParent?'/projects/'+taskParent.projectId:getWorkspaceRecordHref(tab.kind,tab.id);
 
   const cleanPath = normalizeStaffPath(
     pathname
@@ -778,6 +778,9 @@ export function StaffWorkspaceShell({
     registerRecord,
   } = workspace;
 
+  const openTaskTab=useCallback((projectId:string,taskId:string,title:string)=>{
+    const id=taskRecordId(projectId,taskId);openTab({key:'task:'+id,id,kind:'task',title:title.slice(0,180)||'Task',href:taskWorkspaceHref(projectId,taskId),pinned:false,lastOpenedAt:Date.now()});
+  },[openTab]);
   /* =======================================================
      LOCAL UI STATE
      ======================================================= */
@@ -785,6 +788,8 @@ export function StaffWorkspaceShell({
   const [collapsed, setCollapsed] =
     useState(initialCollapsed);
   const [preferencesReady, setPreferencesReady] = useState(false);
+  const [sidebarRecords,setSidebarRecords]=useState<Partial<Record<WorkspaceRecordKind,boolean>>>({});
+  const sidebarRecordsKey=`bivi-staff-sidebar-records:${workspaceId}`;
   const [showMenuBar,setShowMenuBar]=useState(true);
   const [showRecordNavigation,setShowRecordNavigation]=useState(true);
   const barsStorageKey=`bivi-staff-bars:${workspaceId}`;
@@ -936,6 +941,7 @@ useEffect(() => {
       try{const bars=JSON.parse(localStorage.getItem(barsStorageKey)||'{}');
         setShowMenuBar(bars?.menu!==false);setShowRecordNavigation(bars?.navigation!==false);
       }catch{/* Ignore an invalid bars preference and restore the other settings. */}
+      try{const saved=JSON.parse(localStorage.getItem(sidebarRecordsKey)||'{}');if(saved&&typeof saved==='object'&&!Array.isArray(saved))setSidebarRecords(Object.fromEntries(Object.entries(saved).filter(([key,value])=>Object.keys(recordDefinitions).includes(key)&&typeof value==='boolean')));}catch{/* Keep default sidebar choices. */}
       setShowTabs(localStorage.getItem(tabBarStorageKey) !== 'false');
       setShowFileMenu(localStorage.getItem(fileMenuStorageKey) !== 'false');
       const storedCollapsed = localStorage.getItem(SIDEBAR_STORAGE_KEY);
@@ -959,7 +965,7 @@ useEffect(() => {
     } catch {
       // Default preferences remain active.
     } finally { setPreferencesReady(true); }
-  }, [initialCollapsed, tabBarStorageKey, fileMenuStorageKey,barsStorageKey]);
+  }, [initialCollapsed, tabBarStorageKey, fileMenuStorageKey,barsStorageKey,sidebarRecordsKey]);
 
   const toggleSidebar =
     useCallback(() => {
@@ -1020,6 +1026,10 @@ useEffect(() => {
   },[barsStorageKey]);
   const changeShowMenuBar=useCallback((next:boolean)=>changeBars('menu',next),[changeBars]);
   const changeShowRecordNavigation=useCallback((next:boolean)=>changeBars('navigation',next),[changeBars]);
+  const changeSidebarRecords=useCallback((kind:WorkspaceRecordKind,show:boolean)=>{
+    const next={...sidebarRecords,[kind]:show};setSidebarRecords(next);
+    try{localStorage.setItem(sidebarRecordsKey,JSON.stringify(next));}catch{/* Session only */}
+  },[sidebarRecords,sidebarRecordsKey]);
   /* =======================================================
      KEYBOARD SHORTCUTS
      ======================================================= */
@@ -1084,9 +1094,10 @@ useEffect(() => {
 
   const recordsByKind = useMemo(() => {
     const groups: Record<
-      'project' | 'inquiry' | 'contact' | 'company',
+      'project' | 'inquiry' | 'contact' | 'company' | 'task',
       WorkspaceTab[]
     > = {
+      task: [],
       project: [],
       inquiry: [],
       contact: [],
@@ -1105,7 +1116,7 @@ useEffect(() => {
   function sectionRecords(
     item: NavItem
   ) {
-    if (!item.kind) {
+    if (!item.kind||sidebarRecords[canonicalKind(item.kind)]===false) {
       return [];
     }
 
@@ -1273,7 +1284,8 @@ useEffect(() => {
 
   return (
     <WorkspaceNavigationGuard>
-    <WorkspacePreferencesContext.Provider value={{density, changeDensity, collapsed, toggleSidebar, showTabs, changeShowTabs,showMenuBar,changeShowMenuBar,showRecordNavigation,changeShowRecordNavigation}}>
+    <WorkspacePreferencesContext.Provider value={{density, changeDensity, collapsed, toggleSidebar, showTabs, changeShowTabs,showMenuBar,changeShowMenuBar,showRecordNavigation,changeShowRecordNavigation,sidebarRecords,changeSidebarRecords}}>
+    <TaskWorkspaceContext.Provider value={openTaskTab}>
     <RecordMetadataContext.Provider
       value={receiveMetadata}
     >
@@ -1445,7 +1457,7 @@ useEffect(() => {
                               const recordGroups = [
                                 { label: 'Pinned', records: openRecords.filter(tab => tab.pinned) },
                                 { label: 'Open', records: openRecords.filter(tab => !tab.pinned) },
-                                { label: 'Bookmarked', records: bookmarks.filter(bookmark => item.kind && recordGroup(bookmark.kind) === recordGroup(item.kind) && !tabs.some(tab => tab.key === bookmark.key)) },
+                                { label: 'Bookmarked', records: bookmarks.filter(bookmark => item.kind && sidebarRecords[canonicalKind(item.kind)]!==false && recordGroup(bookmark.kind) === recordGroup(item.kind) && !tabs.some(tab => tab.key === bookmark.key)) },
                               ].filter(group => group.records.length > 0);
 
                               return (
@@ -1456,7 +1468,7 @@ useEffect(() => {
                                     <div className="min-w-0 flex-1">
                                       <SidebarLink item={item} pathname={pathname} collapsed={false} />
                                     </div>
-                                    {!!item.kind && (
+                                    {!!item.kind && sidebarRecords[canonicalKind(item.kind)]!==false && (
                                       <button
                                         type="button"
                                         aria-label={`${expandedTypes[item.id] ? 'Hide' : 'Show'} ${item.label.toLowerCase()} records`}
@@ -1470,7 +1482,7 @@ useEffect(() => {
                                     )}
                                   </div>
 
-                                  {!!item.kind && <div id={`sidebar-records-${item.id}`} hidden={!expandedTypes[item.id]}>
+                                  {!!item.kind && sidebarRecords[canonicalKind(item.kind)]!==false && <div id={`sidebar-records-${item.id}`} hidden={!expandedTypes[item.id]}>
                                   {recordGroups.length > 0 ? (
                                     <div
                                       className="
@@ -2165,6 +2177,7 @@ useEffect(() => {
         )}
       </div>
     </RecordMetadataContext.Provider>
+    </TaskWorkspaceContext.Provider>
     </WorkspacePreferencesContext.Provider>
     </WorkspaceNavigationGuard>
   );
