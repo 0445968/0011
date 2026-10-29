@@ -2,11 +2,19 @@
 
 Requested 29 October 2026. Baseline: production PR #17, bfa439ef0be7b7316d26a250ca0d05b2ba74af58. This is the implementation scope; items below describe the full requested scope.
 
-## Current patch
+## Released foundation (PR #18)
 
 Implemented: whole menu-bar and record-section-bar visibility in Workspace Settings; top-bar right-click menu and an accessible hamburger button for bar visibility, sidebar expansion and guarded refresh; transparent task-row hover; inline responsive search; collapsible Table/List categories with add, select, clear and collapse actions; removal of the Requests explanatory link. Existing task drafts and selection identities are preserved. No database migration is required.
 
 Remaining in subsequent coordinated patches: per-task action/context menus and archive semantics; workspace task tabs/sidebar subitems; editor/title/description/tabs; colored tags; weekday/time column toggles; list subtasks; asset types/requirements/deliverables; review flow; private to-do lists. Review routing defaults to internal or client, chosen per task, following the recommendation in the conversation.
+
+## Editor and task menu patch
+
+Implemented in this patch: click-to-edit task title and description, empty Add description action, muted description editing surface, Activity/Files/Comments/Private Notes tabs preserving drafts, author-only task-note reads and activity history, and shared right-click/action-button menus for rename, duplicate, move to a milestone, copy link and share. All work-plan edits remain drafts until Save task or Save all. Duplicate creates a fresh To do task from title, description, due timing and milestone; assignments, tags, dependencies, files, history and start timing are independent. Sharing respects existing record access.
+
+Migration: private_task_notes, recorded remotely as 20261029193740. Existing staff task notes and their history are now visible only to their authors; note mutation already requires author identity. Direct reads and privileged activity readers enforce the same ownership. Notes with no remaining author stay inaccessible.
+
+Remaining: reversible archive, dedicated workspace task tabs/open-tab hover action, sidebar subitem preferences, colored tags, weekday/time column options, subtask list visibility, assets/deliverables, review flow and personal to-do lists. Move currently means moving between milestones in the same project; cross-project moves require explicit handling of dependencies and related records.
 
 ## 1. Workspace controls and task interaction
 

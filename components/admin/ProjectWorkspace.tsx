@@ -604,6 +604,13 @@ export function ProjectWorkspace({
     return task.id;
   }
 
+  function duplicateTask(taskId:string){
+    const source=body?.tasks.find(task=>task.id===taskId);
+    if(!body||locked||!source||body.tasks.length>=100)return;
+    const task={...source,id:crypto.randomUUID(),title:(source.title+' (copy)').slice(0,300),owner:'',status:'todo' as const,startOn:null,startTime:null};
+    field('tasks',[...body.tasks,task]);focusTaskDetails(task.id);
+  }
+
   function bulkMilestoneTasks(milestoneId:string,status:'done'|'todo'){
     if(!body||locked)return;
     bulkEditTasks(body.tasks.filter(task=>task.milestoneId===milestoneId).map(task=>task.id),{status});
@@ -1007,6 +1014,7 @@ export function ProjectWorkspace({
         dirtyTaskIds={body.tasks.filter(task=>!savedBody?.tasks.some(saved=>saved.id===task.id&&JSON.stringify(saved)===JSON.stringify(task))).map(task=>task.id)}
         onTaskChange={editTask}
         onMilestoneChange={editMilestone}
+        onDuplicateTask={duplicateTask}
         onAddTask={milestoneId=>{const taskId=addTask(milestoneId);if(taskId)focusTaskDetails(taskId);}}
         onAddMilestone={()=>router.push('/projects/'+id+'?tab=phases&newMilestone=1')}
         onEditTask={taskId=>focusTaskDetails(taskId)}

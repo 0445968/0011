@@ -8,7 +8,7 @@ const migrations=new URL('../../supabase/migrations/',import.meta.url);
 test('task collaboration, files, priorities and bulk actions preserve staff permissions and audited revisions',async()=>{
  const db=new PGlite();
  try{
-  await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create table auth.users(id uuid primary key,email text);create function auth.uid() returns uuid language sql as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;grant usage on schema public,auth to anon,authenticated,service_role;grant execute on function auth.uid() to authenticated;create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);create table storage.objects(id bigint generated always as identity,bucket_id text,name text,metadata jsonb,unique(bucket_id,name));alter table storage.objects enable row level security;grant usage on schema storage to authenticated,anon;grant select,insert,update,delete on storage.objects to authenticated,anon;grant usage on sequence storage.objects_id_seq to authenticated,anon;`);
+  await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create table auth.users(id uuid primary key,email text,raw_user_meta_data jsonb default '{}');create function auth.uid() returns uuid language sql as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;grant usage on schema public,auth to anon,authenticated,service_role;grant execute on function auth.uid() to authenticated;create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);create table storage.objects(id bigint generated always as identity,bucket_id text,name text,metadata jsonb,unique(bucket_id,name));alter table storage.objects enable row level security;grant usage on schema storage to authenticated,anon;grant select,insert,update,delete on storage.objects to authenticated,anon;grant usage on sequence storage.objects_id_seq to authenticated,anon;`);
   for(const file of fs.readdirSync(migrations).filter(name=>name.endsWith('.sql')).sort())await db.exec(fs.readFileSync(new URL(file,migrations),'utf8'));
   const staff=randomUUID(),other=randomUUID(),request=randomUUID(),file=randomUUID(),comment=randomUUID(),note=randomUUID();
   await db.query('insert into auth.users(id,email) values($1,$2),($3,$4)',[staff,'staff@example.com',other,'other@example.com']);
@@ -30,8 +30,14 @@ test('task collaboration, files, priorities and bulk actions preserve staff perm
   assert.equal((await db.query('select task_id,body from project_comments where id=$1',[comment])).rows[0].body,'Task discussion comment');
   await assert.rejects(db.query('insert into project_task_notes(id,request_id,task_id,body) values($1,$2,\'first\',\'forged\')',[randomUUID(),request]),/permission denied/);
   await db.query("select set_config('request.jwt.claim.sub',$1,false)",[other]);
+  assert.equal((await db.query('select count(*)::int n from project_task_notes where id=$1',[note])).rows[0].n,0,'other staff cannot read private notes');
+  assert.equal((await db.query('select count(*)::int n from project_task_note_history where note_id=$1',[note])).rows[0].n,0,'other staff cannot read private note history');
+  const hiddenActivity=(await db.query('select staff_project_activity_page($1,null,null,100,null) as result',[request])).rows[0].result;
+  assert.equal(JSON.stringify(hiddenActivity).includes('Verified handoff note'),false,'privileged activity reader cannot leak private note text');
   await assert.rejects(db.query('select manage_project_task_productivity($1,$2)',[request,{action:'note_edit',taskId:'first',noteId:note,expectedNoteRevision:1,body:'forged',expectedProjectRevision:1}]),/Note author authorization required/);
   await db.query("select set_config('request.jwt.claim.sub',$1,false)",[staff]);
+  const ownActivity=(await db.query('select staff_project_activity_page($1,null,null,100,null) as result',[request])).rows[0].result;
+  assert.equal(JSON.stringify(ownActivity).includes('Verified handoff note'),true,'author retains private note history in activity');
   await db.query('select manage_project_task_productivity($1,$2)',[request,{action:'note_remove',taskId:'first',noteId:note,expectedNoteRevision:1,expectedProjectRevision:1}]);
   assert.equal((await db.query('select removed,body from project_task_notes where id=$1',[note])).rows[0].removed,true);
   assert.equal((await db.query('select action from project_task_note_history where note_id=$1 order by id desc limit 1',[note])).rows[0].action,'remove');
