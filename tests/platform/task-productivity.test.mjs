@@ -65,6 +65,10 @@ test('task collaboration, files, priorities and bulk actions preserve staff perm
   assert.equal((await db.query("select count(*)::int n from staff_my_tasks where task_id='outside'")).rows[0].n,0);
   assert.equal((await db.query("select count(*)::int n from staff_calendar where source_id='outside'")).rows[0].n,0);
   assert.equal((await db.query('select body from inquiry_projects where request_id=$1',[request])).rows[0].body.tasks.find(task=>task.id==='outside').status,'todo');
+  await db.exec('reset role');const reminder=randomUUID();
+  await db.query("insert into project_communication_outbox(id,request_id,recipient_user_id,recipient_email,kind,dedupe_key,subject,body_text,action_surface,action_path) values($1,$2,$3,'staff@example.com','task_deadline',$4,'Deadline fixture','Fixture only','staff','/projects/fixture')",[reminder,request,staff,'task_deadline:outside:due:'+staff]);
+  await db.exec('set role service_role');assert.equal((await db.query('select project_communication_allowed($1) allowed',[reminder])).rows[0].allowed,false,'queued deadline email is suppressed while archived');
+  await db.exec('reset role;set role authenticated');
   const invalidCompletion=JSON.parse(JSON.stringify(archived));invalidCompletion.milestones[0].status='done';
   try{const result=(await db.query('select manage_inquiry_project($1,$2) r',[request,{action:'save',expectedRevision:3,body:invalidCompletion}])).rows[0].r;assert.notEqual(result.result,'saved','archive cannot satisfy milestone completion');}catch(error){if(error.code==='ERR_ASSERTION')throw error;assert.match(error.message,/complete|unfinished|milestone|blocked/i);}
   assert.equal((await db.query('select revision from inquiry_projects where request_id=$1',[request])).rows[0].revision,3,'blocked completion is atomic');
@@ -73,5 +77,7 @@ test('task collaboration, files, priorities and bulk actions preserve staff perm
   assert.equal((await db.query("select count(*)::int n from staff_my_tasks where task_id='outside'")).rows[0].n,1);
   assert.equal((await db.query("select count(*)::int n from staff_calendar where source_id='outside'")).rows[0].n,1);
   assert.equal((await db.query('select count(*)::int n from project_task_note_history where note_id=$1',[note])).rows[0].n,2,'archive and restore preserve note history');
+  await db.exec('reset role;set role service_role');assert.equal((await db.query('select project_communication_allowed($1) allowed',[reminder])).rows[0].allowed,true,'restored unfinished task is eligible for its pending reminder');
+
  }finally{await db.close();}
 });

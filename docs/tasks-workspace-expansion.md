@@ -26,6 +26,8 @@ Reversible archive remains a separate backend patch: it must retain dependencies
 
 Implemented: archive/restore actions add a boolean archive state to the existing work-plan task and remain private drafts until Save task or Save all. Archived view and direct task links provide Restore in draft. The same task identity, status, subtasks, dependencies, assignments, files, notes, comments and history are preserved. Archived tasks remain part of overall project completion/progress and unfinished archived work still blocks milestones, phases and dependencies. Active deadline summaries, personal My Tasks, project calendar and workspace calendar omit archived tasks. Overview labels distinguish active open work from overall completion. Archive/restore changes appear in project task activity.
 
+Migration 20261029201903 suppresses new client task deadline reminders for archived tasks and checks archive state before sending queued deadline/assignment messages. Restore makes eligible pending reminders actionable again; no messages are sent by the migration.
+
 Archive does not remove tasks from the existing project task limit. Restore retains the original status; it does not create a new task or bypass client review. The editor presents archived tasks as read-only until restored. No task history is deleted.
 
 ## 1. Workspace controls and task interaction

@@ -33,7 +33,7 @@ test('Open task preserves the current view except when revealing a deep-linked t
  const board=read('components/admin/projects/ProjectMilestoneBoardV2.tsx');
  const page=read('app/admin/(workspace)/projects/[id]/page.tsx');
  assert.match(board,/function openTask\(taskId:string, reveal=false\)/);
- assert.match(board,/if\(reveal\)\{setFilters\(\{\.\.\.emptyWorkplanFilters\}\);setTagFilter\(''\);setView\('overview'\);setGrouping\('none'\);\}/);
+ assert.match(board,/if\(reveal\)\{(?:setArchivedView\([^;]+\);)?setFilters\(\{\.\.\.emptyWorkplanFilters\}\);setTagFilter\(''\);setView\('overview'\);setGrouping\('none'\);\}/);
  assert.match(board,/if\(focusTaskId\)openTask\(focusTaskId,true\)/);
  assert.match(board,/taskDomId\(selectedTaskId\)/);
  assert.match(board,/focusTaskId/);
@@ -54,4 +54,3 @@ test('Overview and milestone previews link to canonical task editing rather than
  assert.equal(target.searchParams.get('tab'),'plan');
  assert.equal(target.searchParams.get('task'),'task & detail');
 });
-
