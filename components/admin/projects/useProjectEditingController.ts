@@ -93,7 +93,7 @@ export function useProjectEditingController(id:string,record:RecordState,initial
       if(projectBodiesEqual(candidate,saved))return false;
     }
     if(!candidate||!dirty)return false;
-    if(!projectBodySchema.safeParse(candidate).success){setSavePhase('failed');setMessage('Check the project title, task names, dates and milestone assignments.');return false;}
+    if(!projectBodySchema.safeParse(candidate).success){setSavePhase('failed');setMessage('Check the project title, task names, dates, times and milestone assignments.');return false;}
     pending.current=true;setBusy(true);setSavePhase('saving');setMessage('Saving submitted work-plan changes…');
     const attempt={body:candidate,revision:revision.current};submitted.current=attempt;
     try{

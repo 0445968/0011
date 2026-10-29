@@ -3,7 +3,7 @@ import type {SupabaseClient} from '@supabase/supabase-js';
 import {cleanCompanySearch} from '@/lib/companies/data';
 import {taskToday} from './links';
 import {projectPhaseLabels} from '@/lib/projects/lifecycle-schema';
-export type MyTask={request_id:string;project_public_id:string;project_title:string;project_state:string;operational_status:'active'|'on_hold'|'waiting_on_client'|'inactive'|'completed';task_id:string;title:string;task_status:'todo'|'doing'|'blocked'|'done';start_on:string|null;due_on:string|null;is_blocked:boolean;blocker_owner:string|null;depends_on:string|null;phase:keyof typeof projectPhaseLabels;updated_at:string;assignee_count:number;priority:'low'|'medium'|'high'|'urgent'|null};
+export type MyTask={request_id:string;project_public_id:string;project_title:string;project_state:string;operational_status:'active'|'on_hold'|'waiting_on_client'|'inactive'|'completed';task_id:string;title:string;task_status:'todo'|'doing'|'blocked'|'done';start_on:string|null;due_on:string|null;start_time?:string|null;due_time?:string|null;time_zone?:string;is_blocked:boolean;blocker_owner:string|null;depends_on:string|null;phase:keyof typeof projectPhaseLabels;updated_at:string;assignee_count:number;priority:'low'|'medium'|'high'|'urgent'|null};
 export async function listMyTasks(client:SupabaseClient,p:Record<string,string|undefined>){
  const preferences=!p.tz ? await client.from('staff_notification_preferences').select('timezone').maybeSingle() : null;
  if(preferences?.error)throw new Error('Task timezone preferences could not load.');

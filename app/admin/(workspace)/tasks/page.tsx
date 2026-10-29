@@ -1,3 +1,4 @@
+import {taskDateTimeLabel} from '@/lib/projects/task-timing';
 import Link from 'next/link';
 import { requireStaff } from '@/lib/admin/auth';
 import { listMyTasks } from '@/lib/tasks/data';
@@ -46,8 +47,8 @@ export default async function MyTasksPage({ searchParams: p }: { searchParams: R
             <td className="p-4"><Link href={`/projects/${task.request_id}`} className="hover:underline focus-visible:rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring">{task.project_title}</Link><p className="mt-1 font-mono text-xs text-muted-foreground">{task.project_public_id} · {operationalStatusLabels[task.operational_status as OperationalStatus]}</p></td>
             <td className="p-4">{taskLabels[task.task_status]}</td>
             <td className="p-4">{task.priority ? <span className={`rounded-full border px-2 py-1 text-xs capitalize ${task.priority==='urgent'?'border-red-300 bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200':task.priority==='high'?'border-orange-300 bg-orange-50 text-orange-800 dark:bg-orange-950 dark:text-orange-200':'border-border bg-muted/40'}`}>{task.priority}</span> : suggested ? <span className="rounded-full border border-border px-2 py-1 text-xs capitalize">Suggested {suggested}</span> : <span className="text-muted-foreground">Not set</span>}</td>
-            <td className="p-4">{task.start_on || 'Not scheduled'}</td>
-            <td className="p-4"><span className={overdue ? 'text-red-600 dark:text-red-400' : ''}>{task.due_on || 'No due date'}{overdue ? ' · Overdue' : ''}</span></td>
+            <td className="p-4">{taskDateTimeLabel(task.start_on,task.start_time,task.time_zone) || 'Not scheduled'}</td>
+            <td className="p-4"><span className={overdue ? 'text-red-600 dark:text-red-400' : ''}>{taskDateTimeLabel(task.due_on,task.due_time,task.time_zone) || 'No due date'}{overdue ? ' · Overdue' : ''}</span></td>
             <td className="p-4">{projectPhaseLabels[task.phase]}</td>
             <td className="p-4"><span>{task.assignee_count > 1 ? `You and ${task.assignee_count - 1} other${task.assignee_count === 2 ? '' : 's'}` : 'Assigned to you'}</span><Link className="ml-2 underline" href={taskHref(task.request_id, task.task_id, 'lifecycle')}>Task settings</Link></td>
           </tr>;

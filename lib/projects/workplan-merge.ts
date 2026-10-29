@@ -77,11 +77,12 @@ function mergeCollection<T extends { id: string }>(
       const preferred = local ?? remote!;
       if (local && remote && !same(local, remote)) {
         const item = { ...preferred } as T;
-        for (const field of Object.keys(item) as (keyof T)[]) {
+        for (const field of [...new Set([...Object.keys(before??{}),...Object.keys(local??{}),...Object.keys(remote??{})])] as (keyof T)[]) {
           if (field === 'id') continue;
           const value = mergeValue(`${key}.${id}.${String(field)}`, `${label} › ${String(field)}`,
             undefined, local[field], remote[field], choices, conflicts);
           if (value !== undefined) item[field] = value as T[keyof T];
+          else delete item[field];
         }
         merged.set(id, item);
       } else merged.set(id, preferred);
@@ -91,11 +92,12 @@ function mergeCollection<T extends { id: string }>(
     const localItem = local!;
     const remoteItem = remote!;
     const item = { ...remoteItem } as T;
-    for (const field of Object.keys(item) as (keyof T)[]) {
+    for (const field of [...new Set([...Object.keys(before??{}),...Object.keys(local??{}),...Object.keys(remote??{})])] as (keyof T)[]) {
       if (field === 'id') continue;
       const value = mergeValue(`${key}.${id}.${String(field)}`, `${label} › ${String(field)}`,
         before[field], localItem[field], remoteItem[field], choices, conflicts);
       if (value !== undefined) item[field] = value as T[keyof T];
+          else delete item[field];
     }
     merged.set(id, item);
   }
