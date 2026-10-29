@@ -1,0 +1,10 @@
+'use client';
+import {useRef,useState} from 'react';
+export function TaskInlineText({value,onChange,disabled=false,description=false,taskId}:{value:string;onChange:(value:string)=>void;disabled?:boolean;description?:boolean;taskId:string}){
+ const [editing,setEditing]=useState(false);const previous=useRef(value);
+ const begin=()=>{previous.current=value;setEditing(true);};
+ const finish=()=>{if(!description&&!value.trim())onChange(previous.current);setEditing(false);};
+ const keyboard=(event:React.KeyboardEvent)=>{if(event.key==='Escape'){event.preventDefault();onChange(previous.current);setEditing(false);}else if(event.key==='Enter'&&(!description||event.ctrlKey||event.metaKey)){event.preventDefault();finish();}};
+ const label=description?'Task description':'Task title';
+ return editing&&!disabled?description?<textarea autoFocus aria-label={label} maxLength={2000} rows={4} value={value} onChange={event=>onChange(event.target.value)} onBlur={finish} onKeyDown={keyboard} className="min-h-24 w-full resize-y rounded-xl border-0 bg-muted p-3 text-sm leading-relaxed outline-none focus-visible:ring-2 focus-visible:ring-ring"/>:<input autoFocus aria-label={label} maxLength={300} value={value} onChange={event=>onChange(event.target.value)} onBlur={finish} onKeyDown={keyboard} className="w-full border-0 bg-transparent p-0 text-xl font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring"/>:<button id={'task-'+(description?'description':'title')+'-'+taskId} type="button" disabled={disabled} onClick={begin} aria-label={description?(value?'Edit task description':'Add description'):'Rename task '+value} className={description?'min-h-16 w-full whitespace-pre-wrap break-words rounded-xl bg-muted/50 p-3 text-left text-sm leading-relaxed focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60':'w-full break-words text-left text-xl font-semibold focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60'}>{value||(description?'Add description':'Untitled task')}</button>;
+}
