@@ -1,0 +1,11 @@
+'use client';
+import type {ReactNode} from 'react';
+import {Menu} from 'lucide-react';
+import {useWorkspacePreferences} from './WorkspacePreferences';
+import {guardWorkspaceNavigation} from './WorkspaceNavigationGuard';
+import {ContextMenu,ContextMenuTrigger,ContextMenuContent,ContextMenuCheckboxItem,ContextMenuItem,ContextMenuSeparator,ContextMenuLabel} from '@/components/ui/context-menu';
+import {DropdownMenu,DropdownMenuTrigger,DropdownMenuContent,DropdownMenuCheckboxItem,DropdownMenuItem,DropdownMenuSeparator,DropdownMenuLabel} from '@/components/ui/dropdown-menu';
+function useBars(){const p=useWorkspacePreferences();return [{label:'Menu bar',checked:p.showMenuBar,change:p.changeShowMenuBar},{label:'Record tabs',checked:p.showTabs,change:p.changeShowTabs},{label:'Record sections',checked:p.showRecordNavigation,change:p.changeShowRecordNavigation},{label:'Expanded sidebar',checked:!p.collapsed,change:()=>p.toggleSidebar()}];}
+const refresh=()=>guardWorkspaceNavigation(()=>window.location.reload());
+export function WorkspaceBarsMenu({children}:{children:ReactNode}){const bars=useBars();return <ContextMenu><ContextMenuTrigger asChild><div className="shrink-0" aria-label="Workspace top bar">{children}</div></ContextMenuTrigger><ContextMenuContent><ContextMenuLabel>Workspace bars</ContextMenuLabel>{bars.map(bar=><ContextMenuCheckboxItem key={bar.label} checked={bar.checked} onCheckedChange={bar.change}>{bar.label}</ContextMenuCheckboxItem>)}<ContextMenuSeparator/><ContextMenuItem onSelect={refresh}>Refresh page</ContextMenuItem></ContextMenuContent></ContextMenu>;}
+export function WorkspaceBarsButton(){const bars=useBars();return <DropdownMenu><DropdownMenuTrigger asChild><button type="button" aria-label="Workspace bars and refresh" className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"><Menu size={17}/></button></DropdownMenuTrigger><DropdownMenuContent align="start"><DropdownMenuLabel>Workspace bars</DropdownMenuLabel>{bars.map(bar=><DropdownMenuCheckboxItem key={bar.label} checked={bar.checked} onCheckedChange={bar.change}>{bar.label}</DropdownMenuCheckboxItem>)}<DropdownMenuSeparator/><DropdownMenuItem onSelect={refresh}>Refresh page</DropdownMenuItem></DropdownMenuContent></DropdownMenu>;}

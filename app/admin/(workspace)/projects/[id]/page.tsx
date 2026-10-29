@@ -444,7 +444,6 @@ export default async function ProjectPage({
             selectedMilestone={selectedMilestone}
             taskControls={lifecycle?.controls ?? []}
           />
-          {record && <a href={`/projects/${params.id}?tab=requests`} className="text-xs underline">Client requests and decline policies are in Requests</a>}
         </div>
       )}
 

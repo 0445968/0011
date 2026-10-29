@@ -135,12 +135,13 @@ export function ProjectWorkplanToolbar({projectId,filters,onChange,view,onView,g
       </details>
       <div className="min-w-0 flex-1"/>
       <button type="button" title="Search tasks" aria-label="Search tasks" aria-expanded={searchOpen} className={control} onClick={()=>setSearchOpen(value=>!value)}><Search size={15}/></button>
+    {(searchOpen||Boolean(filters.query))&&<div className="flex min-w-[180px] basis-48 grow items-center gap-2 rounded-lg border border-input bg-background px-2"><Search size={14}/><input autoFocus type="search" className="min-h-9 min-w-0 flex-1 bg-transparent text-xs outline-none" placeholder="Search tasks" value={filters.query} onChange={event=>onChange({query:event.target.value})}/><button type="button" aria-label="Close search" onClick={()=>{onChange({query:''});setSearchOpen(false);}}><X size={14}/></button></div>}
       <button type="button" className={control} title={showEditor?'Hide task editor':'Show task editor'} aria-label={showEditor?'Hide task editor':'Show task editor'} aria-pressed={showEditor} onClick={onToggleEditor}>{showEditor?<PanelRightClose size={15}/>:<PanelRightOpen size={15}/>}</button>
       <details className="relative shrink-0"><summary className={control+' cursor-pointer list-none [&::-webkit-details-marker]:hidden'} aria-label="Add task or milestone"><Plus size={16}/><Menu size={13}/></summary>
         <div className={popup+' right-0'}><button type="button" disabled={disabled} className={optionClass} onClick={event=>{onAddTask();const menu=event.currentTarget.closest('details');if(menu)menu.open=false;}}>Add task</button><Link href={'/projects/'+projectId+'?tab=phases&newMilestone=1'} className={optionClass}>Add milestone in Lifecycle</Link></div>
       </details>
       {actions}
     </div>
-    {(searchOpen||Boolean(filters.query))&&<div className="mt-2 flex items-center gap-2 rounded-lg border border-input bg-background px-2"><Search size={14}/><input autoFocus type="search" className="min-h-9 min-w-0 flex-1 bg-transparent text-xs outline-none" placeholder="Search tasks" value={filters.query} onChange={event=>onChange({query:event.target.value})}/><button type="button" aria-label="Close search" onClick={()=>{onChange({query:''});setSearchOpen(false);}}><X size={14}/></button></div>}
+
   </div>;
 }

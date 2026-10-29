@@ -1,4 +1,5 @@
 'use client';
+import {TaskCategory} from './TaskCategory';
 
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
@@ -342,7 +343,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     {dirtyTaskIds.includes(task.id)&&<span role="status" aria-label="Unsaved task changes"
       title="Draft changes — not applied" className="pointer-events-none absolute right-0 top-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-blue-600 dark:border-card"/>}
   </span>;
-  const taskPreview=(task:Task)=><div key={task.id} className="bivi-task-row flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-xs hover:bg-muted/40">{taskSelectControl(task)}<ProjectTaskStateIcon status={task.status}/><button type="button" className="min-w-0 flex-1 text-left hover:underline" onClick={()=>openTask(task.id)} aria-label={`Open task ${task.title}`}>{task.title}</button>{taskPeople(task)}<span className="inline-flex items-center gap-1 text-muted-foreground"><Flag size={12} aria-hidden/>{taskDeadlineLabel(task,timezone)||'—'}</span>{taskEditControl(task)}</div>;
+  const taskPreview=(task:Task)=><div key={task.id} className="bivi-task-row flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-xs hover:bg-transparent">{taskSelectControl(task)}<ProjectTaskStateIcon status={task.status}/><button type="button" className="min-w-0 flex-1 text-left hover:underline" onClick={()=>openTask(task.id)} aria-label={`Open task ${task.title}`}>{task.title}</button>{taskPeople(task)}<span className="inline-flex items-center gap-1 text-muted-foreground"><Flag size={12} aria-hidden/>{taskDeadlineLabel(task,timezone)||'—'}</span>{taskEditControl(task)}</div>;
   const milestoneCard=(milestone:Milestone)=>{
     const stats=milestoneStats(body,milestone.id);
     const isOpen=expanded[milestone.id]===true;
@@ -428,7 +429,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   </Popover>;
   const openFullEditor=(taskId:string)=>{openTask(taskId);};
   const compactRow=(task:Task)=><div role="row" key={task.id} style={{gridTemplateColumns:columnWidths}}
-    className={"bivi-task-row grid min-h-12 items-center gap-3 px-5 py-1.5 text-xs transition-colors hover:bg-slate-50 focus-within:bg-slate-50 dark:hover:bg-muted/50 dark:focus-within:bg-muted/50 "+(showEditor&&selectedTaskId===task.id?'bg-blue-50/60 dark:bg-primary/10':'')}>
+    className={"bivi-task-row grid min-h-12 items-center gap-3 px-5 py-1.5 text-xs transition-colors hover:bg-transparent dark:hover:bg-transparent "+(showEditor&&selectedTaskId===task.id?'bg-blue-50/60 dark:bg-primary/10':'')}>
     <div role="cell" className="flex min-w-0 items-center gap-2">
       {taskSelectControl(task)}
       {!visibleColumns.includes('status')&&statusMenu(task)}
@@ -511,19 +512,17 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     const selected=new Set(previous);const all=tasks.every(task=>selected.has(task.id));
     tasks.forEach(task=>all?selected.delete(task.id):selected.add(task.id));return [...selected];
   });
-  const rowTable=(tasks:Task[],key:string,title?:string)=><section key={key} className="relative min-w-0 max-w-full overflow-x-auto bg-white dark:bg-card">
-    <h2 className="bivi-task-group flex items-center gap-2 bg-slate-50 px-5 py-2 text-xs font-semibold dark:bg-muted/40">
-      <input type="checkbox" className="bivi-group-select h-4 w-4 accent-blue-600" aria-label={'Select tasks in '+(title??'Tasks')} data-selected={tasks.some(task=>selectedTaskSet.has(task.id))?'true':'false'} checked={tasks.length>0&&tasks.every(task=>selectedTaskSet.has(task.id))} ref={input=>{if(input)input.indeterminate=tasks.some(task=>selectedTaskSet.has(task.id))&&!tasks.every(task=>selectedTaskSet.has(task.id));}} onChange={()=>toggleGroup(tasks)}/>
-      {title??'Tasks'} <span className="ml-1 font-normal text-muted-foreground">{tasks.length}</span>
-    </h2>
+  const selectCategory=(tasks:Task[],selected:boolean)=>setSelectedTaskIds(previous=>selected?[...new Set([...previous,...tasks.map(task=>task.id)])]:previous.filter(id=>!tasks.some(task=>task.id===id)));
+  const categorySelection=(tasks:Task[],title:string)=><input type="checkbox" className="bivi-group-select h-4 w-4 accent-blue-600" aria-label={'Select tasks in '+title} data-selected={tasks.some(task=>selectedTaskSet.has(task.id))?'true':'false'} checked={tasks.length>0&&tasks.every(task=>selectedTaskSet.has(task.id))} ref={input=>{if(input)input.indeterminate=tasks.some(task=>selectedTaskSet.has(task.id))&&!tasks.every(task=>selectedTaskSet.has(task.id));}} onChange={()=>toggleGroup(tasks)}/>;
+  const rowTable=(tasks:Task[],key:string,title='Tasks')=><TaskCategory key={key} title={title} count={tasks.length} selection={categorySelection(tasks,title)} onAdd={()=>onAddTask(null)} onSelect={()=>selectCategory(tasks,true)} onClear={()=>selectCategory(tasks,false)}>
     <div role="table" aria-label={title??'Tasks'} className="w-full" style={{minWidth:tableMinWidth}}>
       <div role="row" style={{gridTemplateColumns:columnWidths}} className={showColumnLabels?"grid min-h-9 items-center gap-3 border-b border-border/70 px-5 text-[11px] font-medium text-muted-foreground":"sr-only"}>
         <div role="columnheader">Name</div>{visibleColumns.map(column=><div role="columnheader" key={column} draggable title="Drag to reorder columns" className="cursor-grab" onDragStart={event=>{event.dataTransfer.setData('text/plain',column);event.dataTransfer.effectAllowed='move';}} onDragOver={event=>event.preventDefault()} onDrop={event=>{event.preventDefault();const source=event.dataTransfer.getData('text/plain') as TaskColumn;if(!visibleColumns.includes(source)||source===column)return;const next=visibleColumns.filter(item=>item!==source);next.splice(next.indexOf(column),0,source);changeColumns(next);}}>{labelForColumn[column]}</div>)}<div role="columnheader"><span className="sr-only">Edit</span></div>
       </div>
       {tasks.map(compactRow)}
     </div>
-  </section>;
-  const viewTaskButton=(task:Task)=><div key={task.id} className="bivi-task-row flex min-w-0 items-center gap-2 rounded-lg border border-border/60 bg-white p-2 text-xs transition-colors hover:border-border hover:bg-slate-50 dark:bg-card dark:hover:bg-muted/60">
+  </TaskCategory>;
+  const viewTaskButton=(task:Task)=><div key={task.id} className="bivi-task-row flex min-w-0 items-center gap-2 rounded-lg border border-border/60 bg-white p-2 text-xs transition-colors hover:border-border/60 hover:bg-transparent dark:bg-card dark:hover:bg-transparent">
     {taskSelectControl(task)}
     <button type="button" onClick={()=>openTask(task.id)} className="flex min-w-0 flex-1 items-start gap-2 p-1 text-left">
       <ProjectTaskStateIcon status={task.status}/><span className="min-w-0 flex-1"><span className="block break-words font-medium">{task.title}</span><span className="mt-1 block text-[11px] text-muted-foreground">{task.dueOn?`Due ${taskDeadlineLabel(task,timezone)}`:'No due date'}</span></span><span className="shrink-0">{taskPeople(task)}</span>
@@ -762,7 +761,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
           orderDirty={orderDirty} saving={busy} saveIssue={orderSaveIssue} verifyRequired={orderVerifyRequired} onVerifySave={onVerifyOrder} onMove={onReorderTask}
           onAddTask={onAddTask} onSave={onSaveOrder} renderTask={taskPreview}
         />}
-        {view==='list'&&<div className="space-y-3">{(grouping==='none'?[{key:'all',label:'Tasks',tasks:orderedTasks}]:sectionGroups).map(group=><section key={group.key} className="space-y-1">{grouping!=='none'&&<h2 className="text-xs font-semibold">{group.label} <span className="text-muted-foreground">{group.tasks.length}</span></h2>}{group.tasks.map(viewTaskButton)}</section>)}</div>}
+        {view==='list'&&<div className="space-y-3">{(grouping==='none'?[{key:'all',label:'Tasks',tasks:orderedTasks}]:sectionGroups).map(group=><TaskCategory key={group.key} title={group.label} count={group.tasks.length} selection={categorySelection(group.tasks,group.label)} onAdd={()=>onAddTask(null)} onSelect={()=>selectCategory(group.tasks,true)} onClear={()=>selectCategory(group.tasks,false)}>{group.tasks.map(viewTaskButton)}</TaskCategory>)}</div>}
         
         {view==='kanban'&&<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{(['todo','doing','blocked','done'] as const).map(status=><section key={status} className="min-w-0 rounded-xl bg-slate-50 p-2 dark:bg-muted/30"><h2 className="mb-2 px-2 text-xs font-semibold capitalize">{status==='todo'?'Backlog':status==='doing'?'In progress':status==='done'?'Completed':'Blocked'} <span className="text-muted-foreground">{orderedTasks.filter(task=>task.status===status).length}</span></h2><div className="space-y-2">{orderedTasks.filter(task=>task.status===status).map(viewTaskButton)}</div></section>)}</div>}
         {view==='timeline'&&<div className="space-y-3">{[...new Set(dateTasks.map(dueDay))].map(date=><section key={date!}><h2 className="mb-2 border-b border-border pb-1 text-xs font-semibold"><Flag size={13} className="mr-1 inline" aria-hidden/>Due {date}</h2><div className="space-y-1">{dateTasks.filter(task=>dueDay(task)===date).map(viewTaskButton)}</div></section>)}{undatedTasks.length>0&&<section><h2 className="mb-2 text-xs font-semibold">Without deadlines</h2><div className="space-y-1">{undatedTasks.map(viewTaskButton)}</div></section>}</div>}

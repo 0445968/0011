@@ -1,0 +1,64 @@
+# Tasks and workspace expansion
+
+Requested 29 October 2026. Baseline: production PR #17, bfa439ef0be7b7316d26a250ca0d05b2ba74af58. This is the implementation scope; items below describe the full requested scope.
+
+## Current patch
+
+Implemented: whole menu-bar and record-section-bar visibility in Workspace Settings; top-bar right-click menu and an accessible hamburger button for bar visibility, sidebar expansion and guarded refresh; transparent task-row hover; inline responsive search; collapsible Table/List categories with add, select, clear and collapse actions; removal of the Requests explanatory link. Existing task drafts and selection identities are preserved. No database migration is required.
+
+Remaining in subsequent coordinated patches: per-task action/context menus and archive semantics; workspace task tabs/sidebar subitems; editor/title/description/tabs; colored tags; weekday/time column toggles; list subtasks; asset types/requirements/deliverables; review flow; private to-do lists. Review routing defaults to internal or client, chosen per task, following the recommendation in the conversation.
+
+## 1. Workspace controls and task interaction
+
+- Remove the Requests/decline-policy explanatory link from Tasks.
+- Expose saved File/Edit/View menu visibility in Workspace Settings alongside record tab visibility.
+- Right-click the logo/top bar to open a hamburger-style workspace menu with bar visibility controls and Refresh. Provide keyboard and touch access too; refresh must honor unsaved-work protection.
+- Make task-row hover backgrounds and outlines transparent while retaining keyboard focus indication.
+- Keep search adjacent to its toolbar button when space permits; wrap below on narrow screens.
+- Shared task context/action menu: rename, duplicate, move task, copy link, share, archive. Hover actions: edit, open in workspace tab, actions.
+- Define duplicate/move/archive using existing permissions, revisions, associations and private-draft safeguards. Archive is reversible and distinct from delete. Sharing never grants access implicitly.
+- Collapsible task categories with counts and a three-dot menu: add task, select category tasks, category-wide actions. Empty header space toggles collapse; child controls do not.
+- Show/hide subtasks in task lists, preserving hierarchy and distinct selection identities.
+- Independent weekday and time display options for start/due columns. Match supplied weekday/date reference.
+
+## 2. Task editor, tags and navigation
+
+- Task title is plain text until clicked; inline editing has no permanent input border or edit button.
+- Empty description offers Add description. Existing description edits on click in a muted box, darker while editing.
+- Preserve private draft, Save task and Save all semantics, including keyboard commit/cancel and safe navigation.
+- Activity, Files, Comments and Notes (private) become sliding/underlined tabs matching the reference. Preserve contents, counts and drafts when changing tabs. Verify private notes authorization.
+- Colored label tags default to gray. Create/select color in task editor; manage names/colors in Project Brief. Stable tag identity keeps references intact when renamed.
+- Tasks can open as distinct persistent workspace tabs, with canonical record identity and direct links.
+- Workspace Settings controls which project records, milestones, tasks and other supported subitems appear in sidebar. Settings must not discard open tabs or bookmarks.
+
+## 3. Required assets and deliverables
+
+Terminology: Asset types is the reusable directory in Templates; Required assets is the task checklist; Deliverables are actual uploaded files or links satisfying requirements.
+
+- Asset types have stable identity, name, category, description and optional uploaded preview.
+- Starter categories: content/strategy (copy, mission/vision, research, brief, sitemap); brand/design (logo, palette, typography, UX flow, wireframe, UI design, presentation); media (company/stock photo, company/stock video, illustration, audio); web/functionality (form, contact details, page, integration, development); validation (testing, feedback, review, report, accessibility/compliance); operations (marketing, support, list).
+- Requirements and delivered files remain separate entities; task columns summarize requirement fulfillment.
+- Attach deliverables by upload or link and assign one or more asset types. Suggest task-required types first; allow full directory selection.
+- One deliverable can satisfy multiple requirements. Multiple deliverables can satisfy one requirement. Removing the last qualifying deliverable makes that requirement outstanding again.
+- Preserve task/project ownership, file access, revisions, audit history and existing completion gates. Directory previews are not task deliverables.
+- Define whether review-required requirements count as supplied versus approved; do not equate upload with review approval.
+
+## 4. In Review
+
+- Add visible In Review task category/status with spark icon matching reference.
+- For review-required tasks, Complete initiates an explicit Send for review confirmation; confirmation transitions to In Review, not Done.
+- Review acceptance completes the task; changes requested returns it to actionable work with feedback.
+- Admins may manually change review state under existing authorization/audit rules. Regular users cannot bypass review via bulk edits, drafts, direct API calls or alternate views.
+- Preserve existing client review/approval and dependency gates; define reviewer routing before implementing the migration.
+
+## 5. Personal to-do lists
+
+- Private lists owned by the signed-in user, with a default Main list and user-created categories/lists.
+- Manage from avatar menu; optional top-bar to-do button controlled in Workspace Settings.
+- Choose the list featured on the main dashboard.
+- To-do items can reference supported assets, projects, messages, tasks, meetings and other records through typed links. References respect source permissions and handle archived/deleted records.
+- Personal completion is independent of project task completion and approval state.
+
+## Delivery and verification
+
+Bundle smaller requests with the next substantive patch; no standalone small-change releases unless explicitly requested. Use coherent patches in the sequence above, preserving every requirement. Apply required Supabase migrations with matching repository versions and report them. Verify drafts, authorization, review bypass prevention, reversible archive, duplicate/move integrity, asset fulfillment recalculation, private list isolation, keyboard/touch controls and responsive layout. Production deployment follows the established checked-PR workflow because the user's admin portal is inaccessible in preview.

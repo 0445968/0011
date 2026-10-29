@@ -9,7 +9,7 @@ const control = 'min-h-11 rounded-lg border border-border bg-background px-3 py-
 
 export function PersonalSettings() {
   const {theme, setTheme} = useTheme();
-  const {density, changeDensity, collapsed, toggleSidebar, showTabs, changeShowTabs} = useWorkspacePreferences();
+  const {density, changeDensity, collapsed, toggleSidebar, showTabs, changeShowTabs,showMenuBar,changeShowMenuBar,showRecordNavigation,changeShowRecordNavigation} = useWorkspacePreferences();
   return <div className="space-y-6">
     <section className={section} aria-labelledby="appearance-heading">
       <h2 id="appearance-heading" className="text-lg font-semibold">Appearance</h2>
@@ -29,7 +29,9 @@ export function PersonalSettings() {
       <label className="flex min-h-11 items-center gap-3 text-sm"><input type="checkbox" checked={collapsed} onChange={toggleSidebar} />Collapse sidebar to icons</label>
     </section>
     <section className={section} aria-labelledby="tabs-heading">
-      <h2 id="tabs-heading" className="text-lg font-semibold">Record tabs</h2>
+      <h2 id="tabs-heading" className="text-lg font-semibold">Workspace bars</h2>
+      <label className="flex min-h-11 items-center gap-3 text-sm"><input type="checkbox" checked={showMenuBar} onChange={event=>changeShowMenuBar(event.target.checked)}/>Show the File / Edit / View menu bar</label>
+      <label className="flex min-h-11 items-center gap-3 text-sm"><input type="checkbox" checked={showRecordNavigation} onChange={event=>changeShowRecordNavigation(event.target.checked)}/>Show the record section bar</label>
       <label className="flex min-h-11 items-center gap-3 text-sm"><input type="checkbox" checked={showTabs} onChange={event => changeShowTabs(event.target.checked)} />Show the record tab bar</label>
       <p className="text-sm text-muted-foreground">Saved for your staff account in this browser. Hiding the bar preserves open records, pins, bookmarks, and tab order. Records remain available through the sidebar and Workspace menu.</p>
     </section>
