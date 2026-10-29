@@ -395,7 +395,10 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     if(column==='due')return <div><TaskDateCell label={'Due date for '+task.title} value={task.dueOn}
       disabled={disabled} icon={<Flag size={13} aria-hidden/>}
       onChange={value=>updateTask(task,{dueOn:value})}/>{task.dueTime&&<span className="block text-[10px] text-muted-foreground">{taskTimeLabel(task.dueTime,task.timeZone)}</span>}</div>;
-    if(column==='start')return <button type="button" className="inline-flex min-h-8 items-center gap-1.5 text-xs" title="Edit start date in full task editor" aria-label={'Edit start date for '+task.title} onClick={()=>openTask(task.id)}><Play size={13}/>{taskDateTimeLabel(taskStartOn(task,schedule.rows.get(task.id)?.start_on??null),task.startTime,task.timeZone)||'—'}</button>;
+    if(column==='start')return <div><TaskDateCell label={'Start date for '+task.title}
+      value={taskStartOn(task,schedule.rows.get(task.id)?.start_on??null)}
+      disabled={disabled} icon={<Play size={13} aria-hidden/>}
+      onChange={value=>updateTask(task,{startOn:value})}/>{task.startTime&&<span className="block text-[10px] text-muted-foreground">{taskTimeLabel(task.startTime,task.timeZone)}</span>}</div>;
     if(column==='phase'){
       const phases=workplanTaskPhases(task,context);
       return phases.length?<Link href={'/projects/'+id+'?tab=phases'}
