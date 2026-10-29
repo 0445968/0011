@@ -19,11 +19,11 @@ type Lifecycle = { requestId:string; phase:ProjectPhase; revision:number; update
 type Event = { id:number; task_id:string; action:string; snapshot:Record<string,unknown>; created_at:string };
 type PhaseLinkCommand = Extract<Parameters<ReturnType<typeof useProjectHierarchy>['save']>[0],{action:'set_milestone_phases'}>;
 
-export function ProjectPhasesPage({id,revision,body,lifecycle,controls,events,phaseStates,phaseColors,readOnly,completionIssues,selectedTask,record,createMilestone,focusMilestone}: {
+export function ProjectPhasesPage({id,revision,body,lifecycle,controls,events,phaseStates,phaseColors,readOnly,completionIssues,selectedTask,record,createMilestone,focusMilestone,timezone='America/Chicago'}: {
   id:string; revision:number; body:ProjectBody; lifecycle:Lifecycle; controls:ProjectTaskControl[]; events:Event[]; selectedTask?:string;
   phaseStates:ProjectPhaseState[]; phaseColors:ProjectPhaseColor[];
   readOnly:boolean; completionIssues:string[];
-  record:{body:ProjectBody;revision:number;state:string};createMilestone?:boolean;focusMilestone?:string;
+  record:{body:ProjectBody;revision:number;state:string};createMilestone?:boolean;focusMilestone?:string;timezone?:string;
 }) {
   const hierarchy=useProjectHierarchy(id,revision,true);
   const colors=useProjectPhaseColors(id,phaseColors);
@@ -46,7 +46,7 @@ export function ProjectPhasesPage({id,revision,body,lifecycle,controls,events,ph
     {!hierarchy.data&&<p role="status" className="rounded-lg border border-border p-3 text-xs text-muted-foreground">Loading phase links and subtasks…</p>}
     <ProjectLifecycleMilestones id={id} record={record} createOnOpen={createMilestone} focusMilestone={focusMilestone}/>
     {hierarchy.data&&<ProjectPhaseCards
-      id={id} body={body} links={hierarchy.data.milestonePhases} initialStates={phaseStates}
+      id={id} body={body} timezone={timezone} links={hierarchy.data.milestonePhases} initialStates={phaseStates}
       colorRows={colors.rows} colorFeedback={colors.feedback} colorSaving={colors.saving} onSaveColor={(phase,color)=>colors.save(phase,color)}
       controls={controls} subtasks={subtasks}
       disabled={readOnly||hierarchy.busy||hierarchy.conflict||hierarchy.data.projectRevision!==revision}

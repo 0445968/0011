@@ -40,7 +40,7 @@ export default async function MyTasksPage({ searchParams: p }: { searchParams: R
       <table className="w-full text-left text-sm">
         <thead className="border-b bg-slate-50 text-slate-600 dark:bg-muted/40 dark:text-muted-foreground"><tr>{['Task', 'Project', 'Status', 'Priority', 'Start', 'Due', 'Phase', 'Assignment'].map(label => <th className="p-4 font-medium" key={label}>{label}</th>)}</tr></thead>
         <tbody>{result.rows.map(task => {
-          const overdue = task.task_status !== 'done' && !!task.due_on && task.due_on < result.today;
+          const overdue = task.task_status !== 'done' && !!task.due_on && (task.due_at?Date.parse(task.due_at)<Date.parse(result.now):task.due_on<result.today);
           const suggested = suggestedTaskPriority(task.start_on, task.due_on, result.today, task.task_status === 'blocked');
           return <tr key={`${task.request_id}:${task.task_id}`} className="group border-b border-border/70 transition-colors hover:bg-slate-50 focus-within:bg-slate-50 last:border-0 dark:hover:bg-muted/40 dark:focus-within:bg-muted/40">
             <td className="p-4"><Link className="font-semibold text-slate-950 hover:underline focus-visible:rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring dark:text-foreground" href={taskHref(task.request_id, task.task_id)}>{task.title}</Link>{task.is_blocked && <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">{task.blocker_owner ? `Waiting on ${task.blocker_owner}` : task.depends_on ? 'Waiting on a task dependency' : 'Blocked'}</p>}</td>
@@ -50,7 +50,7 @@ export default async function MyTasksPage({ searchParams: p }: { searchParams: R
             <td className="p-4">{taskDateTimeLabel(task.start_on,task.start_time,task.time_zone) || 'Not scheduled'}</td>
             <td className="p-4"><span className={overdue ? 'text-red-600 dark:text-red-400' : ''}>{taskDateTimeLabel(task.due_on,task.due_time,task.time_zone) || 'No due date'}{overdue ? ' · Overdue' : ''}</span></td>
             <td className="p-4">{projectPhaseLabels[task.phase]}</td>
-            <td className="p-4"><span>{task.assignee_count > 1 ? `You and ${task.assignee_count - 1} other${task.assignee_count === 2 ? '' : 's'}` : 'Assigned to you'}</span><Link className="ml-2 underline" href={taskHref(task.request_id, task.task_id, 'lifecycle')}>Task settings</Link></td>
+            <td className="p-4"><span>{task.assignee_count > 1 ? `You and ${task.assignee_count - 1} other${task.assignee_count === 2 ? '' : 's'}` : 'Assigned to you'}</span><Link className="ml-2 underline" href={taskHref(task.request_id, task.task_id)}>Task settings</Link></td>
           </tr>;
         })}</tbody>
       </table>

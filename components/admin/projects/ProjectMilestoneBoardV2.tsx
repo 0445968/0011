@@ -21,6 +21,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } f
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {TaskTags,useTaskPresentation} from './TaskPresentation';
 import { TaskProductivity } from './TaskProductivity';
+import {compareTaskDeadlines,taskDeadlineDay,taskDeadlineLabel,taskEvent,localDateTime} from '@/lib/projects/deadlines';
+import {useProjectClock} from './useProjectClock';
 import { taskStartOn, taskTimeLabel, taskDateTimeLabel, DEFAULT_TASK_TIME_ZONE } from '@/lib/projects/task-timing';
 import { WorkplanDraftReminder } from './WorkplanDraftReminder';
 import { TaskActivityPreview } from './TaskActivityPreview';
@@ -153,8 +155,8 @@ function SubtaskEditor({item,disabled,update,requestRemove,today}: {
   </li>;
 }
 
-export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarReady,onTaskChange,onMilestoneChange,onAddTask,onAddMilestone,onEditTask,onEditMilestone,taskControls,onBulkTasks,userId,today,focusTaskId,focusTaskRequest,workflowGate,workflowOverrideReason,onWorkflowOverrideReason,onOverrideTaskStatus,overrideReady,busy,onRemoveTask,onBulkTaskChange,onBulkTaskRemove,onReorderTask,onSaveTask,taskSaveDisabled,onSaveOrder,onVerifyOrder,orderSaveIssue=null,orderVerifyRequired=false,orderDirty=false,advanced=false,onAdvancedToggle,dirtyTaskIds=[],toolbarActions}: {
-  onAdvancedToggle?:()=>void;dirtyTaskIds?:string[];toolbarActions?:ReactNode;advanced?:boolean;id:string;revision:number;body:ProjectBody;disabled:boolean;dirty:boolean;sidecarReady:boolean;today:string;focusTaskId?:string|null;focusTaskRequest?:number;
+export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarReady,onTaskChange,onMilestoneChange,onAddTask,onAddMilestone,onEditTask,onEditMilestone,taskControls,onBulkTasks,userId,today:initialToday,timezone=DEFAULT_TASK_TIME_ZONE,asOf,focusTaskId,focusTaskRequest,workflowGate,workflowOverrideReason,onWorkflowOverrideReason,onOverrideTaskStatus,overrideReady,busy,onRemoveTask,onBulkTaskChange,onBulkTaskRemove,onReorderTask,onSaveTask,taskSaveDisabled,onSaveOrder,onVerifyOrder,orderSaveIssue=null,orderVerifyRequired=false,orderDirty=false,advanced=false,onAdvancedToggle,dirtyTaskIds=[],toolbarActions}: {
+  onAdvancedToggle?:()=>void;dirtyTaskIds?:string[];toolbarActions?:ReactNode;advanced?:boolean;id:string;revision:number;body:ProjectBody;disabled:boolean;dirty:boolean;sidecarReady:boolean;today:string;timezone?:string;asOf?:string;focusTaskId?:string|null;focusTaskRequest?:number;
   onTaskChange:(index:number,changes:Partial<Task>)=>void;
   onMilestoneChange:(index:number,changes:Partial<Milestone>)=>void;
   onAddTask:(milestoneId:string|null)=>void;
@@ -169,6 +171,8 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   userId:string;
   workflowGate?:ProjectWorkflowGate|null;workflowOverrideReason:string;onWorkflowOverrideReason:(reason:string)=>void;onOverrideTaskStatus:()=>void;overrideReady:boolean;busy:boolean;onRemoveTask:(taskId:string)=>void;
 }) {
+  const now=useProjectClock(asOf);
+  const today=localDateTime(now,timezone).date;
   const presentation=useTaskPresentation(id,revision);
   const [tagFilter,setTagFilter]=useState('');
   const [selectedTaskIds,setSelectedTaskIds]=useState<string[]>([]);
@@ -259,17 +263,18 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const canEditSidecar=!disabled&&!dirty&&sidecarReady&&!hierarchy.busy&&!hierarchy.conflict&&hierarchy.data?.projectRevision===revision;
   const phaseLinks=hierarchy.data?.milestonePhases??[];
   const subtasks=hierarchy.data?.subtasks??[];
-  const context={body,links:phaseLinks,controls:taskControls,assignments:assignments.data?.tasks??[],today};
+  const context={body,links:phaseLinks,controls:taskControls,assignments:assignments.data?.tasks??[],today,timezone,now};
   const matchingTasks=body.tasks.filter(task=>workplanTaskMatches(task,filters,context)&&(!tagFilter||presentation.rows.find(row=>row.task_id===task.id)?.tags.includes(tagFilter)));
   const matchingMilestones=body.milestones.filter(milestone=>workplanMilestoneMatches(milestone,filters,context)&&(!tagFilter||matchingTasks.some(task=>task.milestoneId===milestone.id)));
   const cardGrid='grid grid-cols-1 items-start gap-3 md:grid-cols-2 xl:grid-cols-3';
   const memberOptions=[...new Map([...(assignments.data?.staff??[]),...(assignments.data?.clients??[])].map(person=>[person.id,person])).values()];
   const btn=(name:string, icon:ReactNode, action:()=>void, unavailable=false)=> <button type="button" className={miniButton} title={name} aria-label={name} disabled={unavailable} onClick={action}>{icon}</button>;
   const updateMilestone=(milestone:Milestone,changes:Partial<Milestone>)=>{const index=body.milestones.findIndex(item=>item.id===milestone.id);if(index>=0)onMilestoneChange(index,changes);};
+  const autoStartDate=(task:Task)=>localDateTime(now,task.timeZone??timezone).date;
   const updateTask=(task:Task,changes:Partial<Task>)=>{
     const index=body.tasks.findIndex(item=>item.id===task.id);if(index<0)return;
     if(changes.status&&changes.status!=='todo'&&task.status==='todo'&&!taskStartOn(task,schedule.rows.get(task.id)?.start_on)){
-      changes={...changes,startOn:today};
+      changes={...changes,startOn:autoStartDate(task)};
     }
     if('startOn' in changes&&!changes.startOn)changes={...changes,startTime:null};
     if('dueOn' in changes&&!changes.dueOn)changes={...changes,dueTime:null};
@@ -337,7 +342,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     {dirtyTaskIds.includes(task.id)&&<span role="status" aria-label="Unsaved task changes"
       title="Draft changes — not applied" className="pointer-events-none absolute right-0 top-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-blue-600 dark:border-card"/>}
   </span>;
-  const taskPreview=(task:Task)=><div key={task.id} className="bivi-task-row flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-xs hover:bg-muted/40">{taskSelectControl(task)}<ProjectTaskStateIcon status={task.status}/><button type="button" className="min-w-0 flex-1 text-left hover:underline" onClick={()=>openTask(task.id)} aria-label={`Open task ${task.title}`}>{task.title}</button>{taskPeople(task)}<span className="inline-flex items-center gap-1 text-muted-foreground"><Flag size={12} aria-hidden/>{taskDateTimeLabel(task.dueOn,task.dueTime,task.timeZone)||'—'}</span>{taskEditControl(task)}</div>;
+  const taskPreview=(task:Task)=><div key={task.id} className="bivi-task-row flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-xs hover:bg-muted/40">{taskSelectControl(task)}<ProjectTaskStateIcon status={task.status}/><button type="button" className="min-w-0 flex-1 text-left hover:underline" onClick={()=>openTask(task.id)} aria-label={`Open task ${task.title}`}>{task.title}</button>{taskPeople(task)}<span className="inline-flex items-center gap-1 text-muted-foreground"><Flag size={12} aria-hidden/>{taskDeadlineLabel(task,timezone)||'—'}</span>{taskEditControl(task)}</div>;
   const milestoneCard=(milestone:Milestone)=>{
     const stats=milestoneStats(body,milestone.id);
     const isOpen=expanded[milestone.id]===true;
@@ -364,7 +369,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const priorityOrder:Record<string,number>={urgent:0,high:1,medium:2,low:3};
   const orderedTasks=[...matchingTasks].sort((a,b)=>{
     if(sort==='title')return a.title.localeCompare(b.title);
-    if(sort==='due')return (a.dueOn??'9999-12-31').localeCompare(b.dueOn??'9999-12-31');
+    if(sort==='due')return compareTaskDeadlines(a,b,timezone);
     if(sort==='priority')return (priorityOrder[taskControls.find(row=>row.taskId===a.id)?.priority??'']??4)-(priorityOrder[taskControls.find(row=>row.taskId===b.id)?.priority??'']??4);
     return body.tasks.findIndex(row=>row.id===a.id)-body.tasks.findIndex(row=>row.id===b.id);
   });
@@ -447,7 +452,8 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const setBulkChange=(changes:Partial<Task>)=>{
     if(disabled||!selectedTasks.length)return;
     const autoStartIds=changes.status&&changes.status!=='todo'?selectedTasks.filter(task=>task.status==='todo'&&!taskStartOn(task,schedule.rows.get(task.id)?.start_on)).map(task=>task.id):[];
-    if(autoStartIds.length)onBulkTaskChange(autoStartIds,{startOn:today});
+    const startGroups=new Map<string,string[]>();autoStartIds.forEach(taskId=>{const date=autoStartDate(body.tasks.find(task=>task.id===taskId)!);startGroups.set(date,[...(startGroups.get(date)??[]),taskId]);});
+    startGroups.forEach((taskIds,date)=>onBulkTaskChange(taskIds,{startOn:date}));
     onBulkTaskChange(selectedTasks.map(task=>task.id),{...changes,...('dueOn' in changes&&!changes.dueOn?{dueTime:null}:{})});
     setBulkMessage(`${selectedTasks.length} selected task${selectedTasks.length===1?'':'s'} added to the draft. Use Save all changes to apply.`);
   };
@@ -520,12 +526,13 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const viewTaskButton=(task:Task)=><div key={task.id} className="bivi-task-row flex min-w-0 items-center gap-2 rounded-lg border border-border/60 bg-white p-2 text-xs transition-colors hover:border-border hover:bg-slate-50 dark:bg-card dark:hover:bg-muted/60">
     {taskSelectControl(task)}
     <button type="button" onClick={()=>openTask(task.id)} className="flex min-w-0 flex-1 items-start gap-2 p-1 text-left">
-      <ProjectTaskStateIcon status={task.status}/><span className="min-w-0 flex-1"><span className="block break-words font-medium">{task.title}</span><span className="mt-1 block text-[11px] text-muted-foreground">{task.dueOn?`Due ${taskDateTimeLabel(task.dueOn,task.dueTime,task.timeZone)}`:'No due date'}</span></span><span className="shrink-0">{taskPeople(task)}</span>
+      <ProjectTaskStateIcon status={task.status}/><span className="min-w-0 flex-1"><span className="block break-words font-medium">{task.title}</span><span className="mt-1 block text-[11px] text-muted-foreground">{task.dueOn?`Due ${taskDeadlineLabel(task,timezone)}`:'No due date'}</span></span><span className="shrink-0">{taskPeople(task)}</span>
     </button>
     {taskEditControl(task)}
   </div>;
-  const dateTasks=orderedTasks.filter(task=>task.dueOn).sort((a,b)=>(a.dueOn??'').localeCompare(b.dueOn??''));
-  const intervals=orderedTasks.map(task=>({task,start:taskStartOn(task,schedule.rows.get(task.id)?.start_on??null),end:task.dueOn})).filter(item=>item.start&&item.end&&item.start<=item.end);
+  const dateTasks=orderedTasks.filter(task=>task.dueOn).sort((a,b)=>compareTaskDeadlines(a,b,timezone));
+  const dueDay=(task:Task)=>taskDeadlineDay(task,timezone);
+  const intervals=orderedTasks.map(task=>({task,start:taskEvent(task,'start',timezone,schedule.rows.get(task.id)?.start_on??null).date,end:dueDay(task)})).filter(item=>item.start&&item.end&&item.start<=item.end);
   const firstStart=intervals.map(item=>item.start!).sort()[0];
   const lastDue=intervals.map(item=>item.end!).sort().at(-1);
   const dayDifference=(end:string,start:string)=>Math.round((Date.parse(`${end}T12:00:00Z`)-Date.parse(`${start}T12:00:00Z`))/86400000);
@@ -758,13 +765,15 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
         {view==='list'&&<div className="space-y-3">{(grouping==='none'?[{key:'all',label:'Tasks',tasks:orderedTasks}]:sectionGroups).map(group=><section key={group.key} className="space-y-1">{grouping!=='none'&&<h2 className="text-xs font-semibold">{group.label} <span className="text-muted-foreground">{group.tasks.length}</span></h2>}{group.tasks.map(viewTaskButton)}</section>)}</div>}
         
         {view==='kanban'&&<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{(['todo','doing','blocked','done'] as const).map(status=><section key={status} className="min-w-0 rounded-xl bg-slate-50 p-2 dark:bg-muted/30"><h2 className="mb-2 px-2 text-xs font-semibold capitalize">{status==='todo'?'Backlog':status==='doing'?'In progress':status==='done'?'Completed':'Blocked'} <span className="text-muted-foreground">{orderedTasks.filter(task=>task.status===status).length}</span></h2><div className="space-y-2">{orderedTasks.filter(task=>task.status===status).map(viewTaskButton)}</div></section>)}</div>}
-        {view==='timeline'&&<div className="space-y-3">{[...new Set(dateTasks.map(task=>task.dueOn))].map(date=><section key={date!}><h2 className="mb-2 border-b border-border pb-1 text-xs font-semibold"><Flag size={13} className="mr-1 inline" aria-hidden/>Due {date}</h2><div className="space-y-1">{dateTasks.filter(task=>task.dueOn===date).map(viewTaskButton)}</div></section>)}{undatedTasks.length>0&&<section><h2 className="mb-2 text-xs font-semibold">Without deadlines</h2><div className="space-y-1">{undatedTasks.map(viewTaskButton)}</div></section>}</div>}
+        {view==='timeline'&&<div className="space-y-3">{[...new Set(dateTasks.map(dueDay))].map(date=><section key={date!}><h2 className="mb-2 border-b border-border pb-1 text-xs font-semibold"><Flag size={13} className="mr-1 inline" aria-hidden/>Due {date}</h2><div className="space-y-1">{dateTasks.filter(task=>dueDay(task)===date).map(viewTaskButton)}</div></section>)}{undatedTasks.length>0&&<section><h2 className="mb-2 text-xs font-semibold">Without deadlines</h2><div className="space-y-1">{undatedTasks.map(viewTaskButton)}</div></section>}</div>}
         {view==='gantt'&&<div className="space-y-2 rounded-xl border border-border p-3">
           <p className="text-[11px] text-muted-foreground">Task bars align to the earliest saved start date and latest saved due date. Tasks with missing dates remain visible.</p>
           {firstStart&&lastDue&&<div className="flex justify-between gap-2 text-[11px] font-medium text-muted-foreground"><span>{firstStart}</span><span>{lastDue}</span></div>}
           {orderedTasks.map(task=>{
-            const start=taskStartOn(task,schedule.rows.get(task.id)?.start_on??null);
-            const end=task.dueOn;
+            const startEvent=taskEvent(task,'start',timezone,schedule.rows.get(task.id)?.start_on??null);
+            const endEvent=taskEvent(task,'due',timezone);
+            const start=startEvent.date;
+            const end=endEvent.date;
             const valid=Boolean(start&&end&&start<=end&&firstStart);
             const offset=valid?Math.max(0,dayDifference(start!,firstStart!)):0;
             const duration=valid?Math.max(1,dayDifference(end!,start!)+1):0;
@@ -773,13 +782,13 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
             return <div key={task.id} className="bivi-task-row grid gap-2 border-b border-border/40 py-2 sm:grid-cols-[minmax(175px,1fr)_minmax(180px,2fr)]">
               <div className="flex min-w-0 items-center gap-2">{taskSelectControl(task)}<button type="button" className="min-w-0 truncate text-left text-xs font-medium hover:underline" onClick={()=>openTask(task.id)}>{task.title}</button></div>
               <div className="min-w-0">
-                <p className="mb-1 text-[10px] text-muted-foreground">{taskDateTimeLabel(start,task.startTime,task.timeZone)||'Start not set'} → {taskDateTimeLabel(end,task.dueTime,task.timeZone)||'Due not set'}</p>
+                <p className="mb-1 text-[10px] text-muted-foreground">{taskDateTimeLabel(start,startEvent.time,startEvent.timeZone)||'Start not set'} → {taskDateTimeLabel(end,endEvent.time,endEvent.timeZone)||'Due not set'}</p>
                 {valid?<div className="relative h-4 w-full overflow-hidden rounded bg-slate-100 dark:bg-muted"><div className="absolute inset-y-0 rounded bg-blue-500/80" style={{left:`${left}%`,width:`${width}%`}} title={`${duration} calendar days from ${start} through ${end}`}/></div>:<span className="text-[10px] text-muted-foreground">Set start and due dates to display the schedule bar.</span>}
               </div>
             </div>;
           })}
         </div>}
-        {view==='calendar'&&<div className="rounded-xl border border-border"><div className="flex items-center justify-between border-b border-border p-3"><button type="button" className={miniButton} aria-label="Previous month" onClick={()=>shiftMonth(-1)}><ChevronRight size={16} className="rotate-180"/></button><h2 className="text-sm font-semibold">{new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric',timeZone:'UTC'}).format(monthDate)}</h2><button type="button" className={miniButton} aria-label="Next month" onClick={()=>shiftMonth(1)}><ChevronRight size={16}/></button></div><div className="grid grid-cols-7 border-b border-border text-center text-[10px] font-medium text-muted-foreground">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(day=><div key={day} className="py-2">{day}</div>)}</div><div className="grid grid-cols-7">{dates.map((date,index)=><div key={index} className="min-h-20 border-b border-r border-border/40 p-1 text-[10px]"><span className="text-muted-foreground">{date?.slice(-2)??''}</span>{dateTasks.filter(task=>task.dueOn===date).map(task=><div key={task.id} className="bivi-task-row mt-1 flex min-w-0 items-center gap-1 rounded bg-blue-50 px-1 py-0.5 dark:bg-blue-950">{taskSelectControl(task)}<button type="button" title={taskDateTimeLabel(task.dueOn,task.dueTime,task.timeZone)+' · '+task.title} onClick={()=>openTask(task.id)} className="min-w-0 flex-1 truncate text-left text-[10px] text-blue-950 hover:underline dark:text-blue-100">{task.title}</button></div>)}</div>)}</div><p className="p-2 text-[11px] text-muted-foreground">{undatedTasks.length} tasks without a due date are excluded from this calendar, not deleted.</p></div>}
+        {view==='calendar'&&<div className="rounded-xl border border-border"><div className="flex items-center justify-between border-b border-border p-3"><button type="button" className={miniButton} aria-label="Previous month" onClick={()=>shiftMonth(-1)}><ChevronRight size={16} className="rotate-180"/></button><h2 className="text-sm font-semibold">{new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric',timeZone:'UTC'}).format(monthDate)}</h2><button type="button" className={miniButton} aria-label="Next month" onClick={()=>shiftMonth(1)}><ChevronRight size={16}/></button></div><div className="grid grid-cols-7 border-b border-border text-center text-[10px] font-medium text-muted-foreground">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(day=><div key={day} className="py-2">{day}</div>)}</div><div className="grid grid-cols-7">{dates.map((date,index)=><div key={index} className="min-h-20 border-b border-r border-border/40 p-1 text-[10px]"><span className="text-muted-foreground">{date?.slice(-2)??''}</span>{dateTasks.filter(task=>dueDay(task)===date).map(task=><div key={task.id} className="bivi-task-row mt-1 flex min-w-0 items-center gap-1 rounded bg-blue-50 px-1 py-0.5 dark:bg-blue-950">{taskSelectControl(task)}<button type="button" title={taskDeadlineLabel(task,timezone)+' · '+task.title} onClick={()=>openTask(task.id)} className="min-w-0 flex-1 truncate text-left text-[10px] text-blue-950 hover:underline dark:text-blue-100">{task.title}</button></div>)}</div>)}</div><p className="p-2 text-[11px] text-muted-foreground">Calendar dates use {timezone}. {undatedTasks.length} tasks without a due date are excluded from this calendar, not deleted.</p></div>}
         {!orderedTasks.length&&<p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">{body.tasks.length?'No tasks match the current filters.':'No tasks yet. Use + to create one.'}</p>}
         <footer role="status" className="px-5 py-3 text-[11px] text-muted-foreground">{orderedTasks.length} of {body.tasks.length} tasks · {subtasks.length} saved subtasks</footer>
       </div>

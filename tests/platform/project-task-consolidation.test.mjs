@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {loadProjectTs} from './load-project-ts.mjs';
 
 const read=path=>readFileSync(new URL(`../../${path}`,import.meta.url),'utf8');
 
@@ -47,5 +48,10 @@ test('Overview and milestone previews link to canonical task editing rather than
  assert.doesNotMatch(overview,/editing\.editTask|Edit task &amp; subtasks/);
  assert.doesNotMatch(milestones,/editing\.editTask|Edit task &amp; subtasks/);
  assert.doesNotMatch(milestones,/editing\.editMilestone/);
- assert.match(phases,/tab=plan&task=/);
+ assert.match(phases,/href=\{taskHref\(id,task.id\)\}/);
+ const {taskHref}=loadProjectTs('lib/tasks/links.ts');
+ const target=new URL(taskHref('project','task & detail'),'https://example.test');
+ assert.equal(target.searchParams.get('tab'),'plan');
+ assert.equal(target.searchParams.get('task'),'task & detail');
 });
+

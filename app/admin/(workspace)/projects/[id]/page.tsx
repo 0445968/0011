@@ -333,7 +333,8 @@ export default async function ProjectPage({
   const workPreferences=record&&['calendar','phases','plan','requests','brief'].includes(tab)
     ? await client.from('staff_notification_preferences').select('timezone').eq('user_id',user.id).maybeSingle() : null;
   if(workPreferences?.error)throw new Error('Project timezone preferences could not load.');
-  const calendarPreference=taskToday(workPreferences?.data?.timezone||'America/Chicago');
+  const asOf=new Date().toISOString();
+  const calendarPreference=taskToday(workPreferences?.data?.timezone||'America/Chicago',new Date(asOf));
   const calendarToday=calendarPreference.today;
 
   const brief =
@@ -403,7 +404,7 @@ export default async function ProjectPage({
 
       {tab === 'overview' && record && overview && (
         <ProjectWorkspace id={params.id} userId={user.id} record={record} history={data.history} gateReady={gateReady} operationalStatus={operationalStatus}
-          savedToday={overview.today} taskControls={lifecycle?.controls??[]}
+          savedToday={overview.today} timezone={overview.timezone} asOf={asOf} taskControls={lifecycle?.controls??[]}
           overview={<ProjectOverview
           record={record}
           meetings={overview.meetings}
@@ -411,7 +412,7 @@ export default async function ProjectPage({
           activityResult={overview.activityResult}
           context={overview.context}
           today={overview.today}
-          timezone={overview.timezone}
+          timezone={overview.timezone} asOf={asOf}
           members={overview.members}
           milestonePhases={overview.milestonePhases}
           phaseStates={overview.phaseStates}
@@ -429,7 +430,7 @@ export default async function ProjectPage({
           {requestedTask&&!selectedTask&&<p role="status" className="rounded border p-4 text-sm">This task is no longer in the project. The current work plan remains available below.</p>}
           {requestedMilestone && !selectedMilestone && <p role="status" className="rounded border p-4 text-sm">This milestone is no longer in the project. The current work plan remains available below.</p>}
           <ProjectWorkspace
-            savedToday={calendarToday}
+            savedToday={calendarToday} timezone={calendarPreference.timezone} asOf={asOf}
             key={
               `${params.id}:${selectedTask||''}:${selectedMilestone||''}`
             }
@@ -451,12 +452,13 @@ export default async function ProjectPage({
           LIFECYCLE
           =================================================== */}
 
-      {tab === 'requests' && record && <ProjectWorkspace id={params.id} userId={user.id} record={record} history={data.history} gateReady={gateReady} operationalStatus={operationalStatus} savedToday={calendarToday} taskControls={lifecycle?.controls??[]}
+      {tab === 'requests' && record && <ProjectWorkspace id={params.id} userId={user.id} record={record} history={data.history} gateReady={gateReady} operationalStatus={operationalStatus} savedToday={calendarToday} timezone={calendarPreference.timezone} asOf={asOf} taskControls={lifecycle?.controls??[]}
         overview={<ProjectTaskResponseReview id={params.id} focusRequestId={searchParams.request} tasks={record.body.tasks.map(task=>({id:task.id,title:task.title}))}/>}/>}
 
       {tab === 'phases' && record && lifecycle?.lifecycle && calendarExtras && scheduleRows && (
         <ProjectPhasesPage
           record={record}
+          timezone={calendarPreference.timezone}
           createMilestone={searchParams.newMilestone==='1'}
           focusMilestone={selectedMilestone}
           completionIssues={completionIssueRows}
@@ -484,7 +486,7 @@ export default async function ProjectPage({
           schedule={scheduleRows}
           members={calendarExtras.members}
           milestonePhases={calendarExtras.milestonePhases}
-          today={calendarToday}
+          today={calendarToday} timezone={calendarPreference.timezone}
         /></>
       )}
 

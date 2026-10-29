@@ -1,3 +1,4 @@
+import {calendarItemOverdue} from '@/lib/calendar/links';
 import Link from 'next/link';
 import {ChevronLeft, ChevronRight} from 'lucide-react';
 import {requireStaff} from '@/lib/admin/auth';
@@ -67,7 +68,7 @@ export default async function CalendarPage({searchParams:p}: {searchParams:Recor
     :groups.length ? <div className="space-y-4">{groups.map(date => <section key={date} aria-labelledby={`calendar-${date}`}>
       <div className="mb-3 flex flex-wrap items-center gap-3"><h3 id={`calendar-${date}`} className="text-sm font-semibold"><time dateTime={date}>{calendarDateLabel(date)}</time></h3>{date === result.today && <span className="rounded-full bg-muted px-2 py-1 text-xs">Today</span>}</div>
       <ul className="divide-y divide-border/60 rounded-xl border border-border bg-card">{result.rows.filter(row => row.due_on === date).map(item => {
-        const overdue = item.event_type!=='meeting' && !item.is_done && item.due_on < result.today;
+        const overdue = calendarItemOverdue(item,result.today,result.now);
         return <li key={item.event_key} className="flex flex-col justify-between gap-3 p-4 sm:flex-row sm:items-center">
           <div className="min-w-0"><p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{item.event_type === 'meeting'?'Meeting':item.event_type === 'milestone' ? 'Milestone due' : item.event_type === 'task_start' ? 'Task starts' : 'Task due'}</p><Link href={calendarHref(item)} className="break-words text-sm font-semibold hover:underline">{item.title}</Link>{item.starts_at&&<p className="text-xs">{new Intl.DateTimeFormat('en-US',{timeZone:result.timezone,dateStyle:'medium',timeStyle:'short'}).format(new Date(item.starts_at))}{item.event_type==='meeting'&&item.ends_at&&<> – {new Intl.DateTimeFormat('en-US',{timeZone:result.timezone,dateStyle:'medium',timeStyle:'short'}).format(new Date(item.ends_at))}</>} · {result.timezone}</p>}<p className="mt-1 break-words text-xs text-muted-foreground"><Link href={`/projects/${item.request_id}`} className="hover:underline">{item.project_title}</Link> · {item.project_public_id} · {operationalStatusLabels[item.operational_status as OperationalStatus]}</p></div>
           <div className="flex shrink-0 flex-wrap items-center gap-2 text-xs"><span className="rounded-full bg-muted px-2.5 py-1">{statuses[item.status] || item.status}</span>{overdue && <span className="rounded-full bg-red-500/10 px-2.5 py-1 text-red-700 dark:text-red-300">Overdue</span>}</div>

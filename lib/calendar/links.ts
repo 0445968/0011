@@ -64,3 +64,9 @@ export function calendarRange(p: Record<string, string | undefined>, now = new D
 export function calendarDateLabel(date: string) {
   return new Intl.DateTimeFormat('en-US', {weekday:'long', month:'long', day:'numeric', year:'numeric', timeZone:'UTC'}).format(new Date(`${date}T12:00:00Z`));
 }
+
+/** Starts are schedule markers, not deadlines; timed due events use their actual instant. */
+export function calendarItemOverdue(item:Pick<CalendarItem,'event_type'|'is_done'|'due_on'|'starts_at'>,today:string,now:string){
+  if(item.is_done||item.event_type==='task_start'||item.event_type==='meeting')return false;
+  return item.event_type==='task'&&item.starts_at?Date.parse(item.starts_at)<Date.parse(now):item.due_on<today;
+}
