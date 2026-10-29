@@ -17,7 +17,7 @@ import {
 } from 'next/navigation';
 
 import {
-  canonicalKind, recordDefinitions, isWorkspaceRecordId, normalizeStaffPath, liveStaffDestinations, reorderWorkspaceTabs,
+  canonicalKind,canonicalRecordId, recordDefinitions, isWorkspaceRecordId, normalizeStaffPath, liveStaffDestinations, reorderWorkspaceTabs,
   getWorkspaceRecordHref, getWorkspaceRecordFromPath,
   type WorkspaceRecordKind,
 } from '@/lib/admin/workspace/navigation';
@@ -70,7 +70,7 @@ const MAX_BOOKMARKS = 100;
 const MAX_RECENTLY_CLOSED = 10;
 
 const RECORD_KINDS: WorkspaceRecordKind[] = [
-  'project',
+  'project','task',
   'inquiry',
   'lead',
   'contact',
@@ -97,6 +97,7 @@ function fallbackTitle(
   kind: WorkspaceRecordKind
 ): string {
   switch (kind) {
+    case 'task':return 'Task';
     case 'project':
       return 'Project';
     case 'inquiry':
@@ -153,7 +154,7 @@ function safeTabHref(
 
   if (
     !record ||
-    record.id !== id.toLowerCase() ||
+    record.id !== (kind==='task'?id:id.toLowerCase()) ||
     record.kind !== canonicalKind(kind)
   ) {
     return fallback;
@@ -243,7 +244,7 @@ export function restoreSnapshot(
     const tabs = Array.isArray(parsed.tabs)
       ? parsed.tabs
           .filter(validTab)
-          .map((item) => ({ ...item, kind: canonicalKind(item.kind), id: item.id.toLowerCase(), key: `${canonicalKind(item.kind)}:${item.id.toLowerCase()}` }))
+          .map((item) => ({ ...item, kind: canonicalKind(item.kind), id: canonicalRecordId(item.kind,item.id), key: `${canonicalKind(item.kind)}:${canonicalRecordId(item.kind,item.id)}` }))
           .filter((item, index, all) => all.findIndex(other => other.key === item.key) === index)
           .map((tab) => ({
             ...tab,
@@ -264,7 +265,7 @@ export function restoreSnapshot(
     )
       ? parsed.bookmarks
           .filter(validBookmark)
-          .map((item) => ({ ...item, kind: canonicalKind(item.kind), id: item.id.toLowerCase(), key: `${canonicalKind(item.kind)}:${item.id.toLowerCase()}` }))
+          .map((item) => ({ ...item, kind: canonicalKind(item.kind), id: canonicalRecordId(item.kind,item.id), key: `${canonicalKind(item.kind)}:${canonicalRecordId(item.kind,item.id)}` }))
           .filter((item, index, all) => all.findIndex(other => other.key === item.key) === index)
           .slice(0, MAX_BOOKMARKS)
           .map((bookmark) => ({
@@ -285,7 +286,7 @@ export function restoreSnapshot(
     )
       ? parsed.recentlyClosed
           .filter(validTab)
-          .map((item) => ({ ...item, kind: canonicalKind(item.kind), id: item.id.toLowerCase(), key: `${canonicalKind(item.kind)}:${item.id.toLowerCase()}` }))
+          .map((item) => ({ ...item, kind: canonicalKind(item.kind), id: canonicalRecordId(item.kind,item.id), key: `${canonicalKind(item.kind)}:${canonicalRecordId(item.kind,item.id)}` }))
           .filter((item, index, all) => all.findIndex(other => other.key === item.key) === index)
           .slice(0, MAX_RECENTLY_CLOSED)
           .map((tab) => ({
@@ -378,9 +379,9 @@ export function useStaffWorkspaceTabs(
   const routeRecord = useMemo(
     () =>
       getWorkspaceRecordFromPath(
-        pathname
+        queryString?pathname+'?'+queryString:pathname
       ),
-    [pathname]
+    [pathname,queryString]
   );
 
   const activeKey =

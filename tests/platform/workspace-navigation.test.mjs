@@ -116,3 +116,23 @@ test('Exact proposal-version links stay within the inquiry tab and preserve thei
  globalThis.localStorage={getItem:()=>JSON.stringify({tabs:[tab('inquiry',{href})]})};
  const restored=state.restoreSnapshot('staff');assert.equal(restored.tabs.length,1);assert.equal(restored.tabs[0].href,href);
 });
+
+test('workspace task tabs distinguish project, task and case-sensitive task identities',()=>{
+ const taskId='Header A/研究~?';const compound=nav.taskRecordId(id,taskId);const href=nav.taskWorkspaceHref(id,taskId);
+ assert.deepEqual(nav.parseTaskRecordId(compound),{projectId:id,taskId});
+ assert.equal(nav.getWorkspaceRecordFromPath(href).key,'task:'+compound);
+ assert.equal(nav.getWorkspaceRecordFromPath(href.replace('/projects/','/admin/projects/')).key,'task:'+compound);
+ assert.equal(nav.getWorkspaceRecordFromPath(`/projects/${id}?tab=plan&task=${encodeURIComponent(taskId)}`).key,'project:'+id,'ordinary editor links keep the project tab');
+ assert.notEqual(nav.getWorkspaceRecordFromPath(nav.taskWorkspaceHref(id,'A')).key,nav.getWorkspaceRecordFromPath(nav.taskWorkspaceHref(id,'a')).key);
+ assert.notEqual(nav.taskRecordId(id,'A'),nav.taskRecordId('b0000000-0000-4000-8000-000000000001','A'));
+ assert.equal(nav.canonicalRecordId('task',id.toUpperCase()+'~Header%20A'),nav.taskRecordId(id,'Header A'));
+ assert.equal(nav.parseTaskRecordId('bad~A'),null);assert.equal(nav.parseTaskRecordId(id+'~%ZZ'),null);
+ assert.equal(nav.getWorkspaceRecordFromPath(`/projects/${id}?tab=plan&workspaceTask=1&task=`),null);
+});
+test('task tab restoration preserves pins, bookmarks, names and safe canonical targets',()=>{
+ const taskId='Case Sensitive/✓';const taskKey=nav.taskRecordId(id,taskId);const first=tab('task',{key:'task:'+taskKey,id:taskKey,title:'Header',href:nav.taskWorkspaceHref(id,taskId),pinned:true});
+ const secondId=nav.taskRecordId(id,'Second');const second=tab('task',{key:'task:'+secondId,id:secondId,title:'Second',href:'https://evil.example/'});
+ const snapshot={tabs:[tab(),first,second],bookmarks:[first],recentlyClosed:[first]};
+ const previous=globalThis.localStorage;globalThis.localStorage={getItem:()=>JSON.stringify(snapshot)};
+ try{const restored=state.restoreSnapshot('fixture');assert.equal(restored.tabs.length,3);assert.equal(restored.tabs[1].id,taskKey);assert.equal(restored.tabs[1].pinned,true);assert.equal(restored.bookmarks[0].href,nav.taskWorkspaceHref(id,taskId));assert.equal(restored.recentlyClosed[0].key,first.key);assert.equal(restored.tabs[2].href,nav.taskWorkspaceHref(id,'Second'));}finally{globalThis.localStorage=previous;}
+});

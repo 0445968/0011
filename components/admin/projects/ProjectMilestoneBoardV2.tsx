@@ -1,16 +1,19 @@
 'use client';
+import {useTaskWorkspace} from '../workspace/TaskWorkspaceContext';
+import {WorkspaceRecordDetails} from '../StaffWorkspaceShell';
+import {taskRecordId} from '@/lib/admin/workspace/navigation';
 import {TaskRowMenu,TaskActionButton,type TaskAction} from './TaskActionMenu';
 import {TaskInlineText} from './TaskInlineText';
 import {TaskCategory} from './TaskCategory';
 
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
-import { useRouter } from 'next/navigation';
+import { useRouter,useSearchParams } from 'next/navigation';
 import { postProjectCommand } from '@/lib/projects/immediate-command';
 import { refreshProjectSurfaces } from '@/lib/projects/refresh';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { Check, CheckCheck, ChevronDown, ChevronRight, Clock3, Flag, Play, UserRoundPlus, Pencil, Plus, RefreshCcw, RotateCcw, Trash2, X, GripVertical, Info, AlertCircle, StickyNote, Folder, ArrowLeft } from 'lucide-react';
+import { Check, CheckCheck, ChevronDown, ChevronRight, Clock3, Flag, Play, UserRoundPlus, Pencil, SquareArrowOutUpRight, Plus, RefreshCcw, RotateCcw, Trash2, X, GripVertical, Info, AlertCircle, StickyNote, Folder, ArrowLeft } from 'lucide-react';
 import type { ProjectBody } from '@/lib/projects/schema';
 import { projectPhaseLabels, type ProjectTaskControl } from '@/lib/projects/lifecycle-schema';
 import { milestoneStats, nextStatus, workStatusOrder, milestoneStatusOrder, daysRemaining, remainingLabel, suggestedTaskPriority, type WorkplanView } from '@/lib/projects/workplan-views';
@@ -175,6 +178,8 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   userId:string;
   workflowGate?:ProjectWorkflowGate|null;workflowOverrideReason:string;onWorkflowOverrideReason:(reason:string)=>void;onOverrideTaskStatus:()=>void;overrideReady:boolean;busy:boolean;onRemoveTask:(taskId:string)=>void;
 }) {
+  const taskRoute=useSearchParams();const openTaskWorkspace=useTaskWorkspace();
+  const workspaceTask=taskRoute.get('workspaceTask')==='1'?body.tasks.find(task=>task.id===taskRoute.get('task')):null;
   const now=useProjectClock(asOf);
   const today=localDateTime(now,timezone).date;
   const presentation=useTaskPresentation(id,revision);
@@ -246,6 +251,9 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const [openTasks,setOpenTasks]=useState<Record<string,boolean>>({});
   const [visitedTasks,setVisitedTasks]=useState<Record<string,boolean>>({});
   function openTask(taskId:string, reveal=false) {
+    if(!reveal&&workspaceTask&&workspaceTask.id!==taskId&&presentation.rows.some(row=>row.task_id===taskId)){
+      const task=body.tasks.find(item=>item.id===taskId);if(task)openTaskWorkspace(id,task.id,task.title);return;
+    }
     // Opening an editor from Milestones, Kanban or List must not reset the view.
     // Explicit deep links may still reveal a task hidden by the current filters.
     if(reveal){setFilters({...emptyWorkplanFilters});setTagFilter('');setView('overview');setGrouping('none');}
@@ -348,18 +356,20 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     catch(cause){if(!(cause instanceof Error&&cause.name==='AbortError'))setBulkMessage('Could not share or copy the task link. Check browser permission.');}
   };
   const taskActions=(task:Task):TaskAction[]=>[
+    {label:'Open in workspace tab',disabled:dirty||!sidecarReady||!presentation.rows.some(row=>row.task_id===task.id),run:()=>openTaskWorkspace(id,task.id,task.title)},
     {label:'Rename',disabled,run:()=>{setRenameTaskId(task.id);setRenameValue(task.title);}},
     {label:'Duplicate',disabled:disabled||body.tasks.length>=100,run:()=>{onDuplicateTask(task.id);setBulkMessage('Created a draft copy of the title, description, due date and milestone. Assignments, tags, dependencies, files and history are independent. Use Save all changes to apply it.');}},
     {label:'Move task',disabled,run:()=>setMoveTaskId(task.id)},
     {label:'Copy link',run:()=>{void copyTaskLink(task);}},
     {label:'Share',run:()=>{void copyTaskLink(task,true);}},
   ];
-  const taskEditControl=(task:Task)=><span className="relative inline-flex h-8 w-16 shrink-0 items-center justify-center">
+  const taskEditControl=(task:Task)=><span className="relative inline-flex h-8 w-24 shrink-0 items-center justify-center">
     <button type="button" className={miniButton+' bivi-task-edit-button'}
       title={'Edit '+task.title} aria-label={'Edit task '+task.title}
       onClick={()=>openTask(task.id)}><Pencil size={15} aria-hidden/></button>
     {dirtyTaskIds.includes(task.id)&&<span role="status" aria-label="Unsaved task changes"
       title="Draft changes — not applied" className="pointer-events-none absolute right-0 top-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-blue-600 dark:border-card"/>}
+    <button type="button" className={miniButton+' bivi-task-edit-button'} aria-label={'Open task '+task.title+' in workspace tab'} title={dirty?'Save task changes before opening a workspace tab':'Open in workspace tab'} disabled={dirty||!sidecarReady||!presentation.rows.some(row=>row.task_id===task.id)} onClick={()=>openTaskWorkspace(id,task.id,task.title)}><SquareArrowOutUpRight size={15}/></button>
   <TaskActionButton title={task.title} actions={taskActions(task)}/></span>;
   const taskPreview=(task:Task)=><TaskRowMenu key={task.id} actions={taskActions(task)}><div className="bivi-task-row flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-xs hover:bg-transparent">{taskSelectControl(task)}<ProjectTaskStateIcon status={task.status}/><button type="button" className="min-w-0 flex-1 text-left hover:underline" onClick={()=>openTask(task.id)} aria-label={`Open task ${task.title}`}>{task.title}</button>{taskPeople(task)}<span className="inline-flex items-center gap-1 text-muted-foreground"><Flag size={12} aria-hidden/>{taskDeadlineLabel(task,timezone)||'—'}</span>{taskEditControl(task)}</div></TaskRowMenu>;
   const milestoneCard=(milestone:Milestone)=>{
@@ -396,8 +406,8 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const columnWidths='minmax(260px,2.5fr) '+visibleColumns.map(column=>
     column==='tags'||column==='phase'?'minmax(155px,1.2fr)':
     column==='due'||column==='start'?'minmax(140px,1fr)':
-    column==='assignee'?'minmax(120px,1fr)':'minmax(100px,0.8fr)').join(' ')+' 68px';
-  const tableMinWidth=Math.max(666,328+visibleColumns.reduce((sum,column)=>sum+(
+    column==='assignee'?'minmax(120px,1fr)':'minmax(100px,0.8fr)').join(' ')+' 100px';
+  const tableMinWidth=Math.max(698,360+visibleColumns.reduce((sum,column)=>sum+(
     column==='tags'||column==='phase'?155:
     column==='start'||column==='due'?140:
     column==='assignee'?120:100),0));
@@ -736,6 +746,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   );
   const canReorderMilestones=!disabled&&!busy&&sidecarReady&&sort==='default'&&!orderFiltersActive;
   return <section aria-label="Project tasks" className="bivi-workplan space-y-3 bg-white text-slate-950 dark:bg-background dark:text-foreground">
+    {workspaceTask&&<WorkspaceRecordDetails kind="task" id={taskRecordId(id,workspaceTask.id)} title={workspaceTask.title} status={workspaceTask.status} dueDate={workspaceTask.dueOn??undefined}/>}
     <ProjectWorkplanToolbar actions={toolbarActions} onAdvancedToggle={onAdvancedToggle} advanced={advanced} projectId={id} filters={filters} onChange={change=>setFilters(previous=>({...previous,...change}))}
       view={view} onView={next=>{setView(next);if(next==='milestone')setSort('default');}} grouping={grouping} onGrouping={setGrouping} sort={sort} onSort={setSort}
       columns={visibleColumns} onColumns={changeColumns} showColumnLabels={showColumnLabels} onShowColumnLabels={changeColumnLabels} assignees={memberOptions}

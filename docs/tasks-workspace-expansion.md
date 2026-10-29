@@ -16,6 +16,12 @@ Migration: private_task_notes, recorded remotely as 20261029193740. Existing sta
 
 Remaining: reversible archive, dedicated workspace task tabs/open-tab hover action, sidebar subitem preferences, colored tags, weekday/time column options, subtask list visibility, assets/deliverables, review flow and personal to-do lists. Move currently means moving between milestones in the same project; cross-project moves require explicit handling of dependencies and related records.
 
+## Workspace task tabs patch
+
+Implemented: explicit Open in workspace tab action/hover button for saved tasks; stable task record identity keyed by project and case-sensitive task ID; multiple task tabs distinct from the parent project; pin/bookmark/recently-closed restoration; preserved task titles; safe canonical links; project section navigation from task tabs; account-scoped sidebar choices for projects, tasks, inquiries, people and companies. Hiding a record type in the sidebar preserves tabs and bookmarks. Regular task-editor links retain project-tab behavior. Unsaved work must be saved before opening a saved task in a dedicated workspace tab. No migration is required.
+
+Reversible archive remains a separate backend patch: it must retain dependencies, subtask history and completion obligations across all saved views. Milestone record tabs/sidebar choices remain pending alongside other future subitem types.
+
 ## 1. Workspace controls and task interaction
 
 - Remove the Requests/decline-policy explanatory link from Tasks.

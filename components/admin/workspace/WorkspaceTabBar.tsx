@@ -59,6 +59,7 @@ const recordColors: Record<
     icon: string;
   }
 > = {
+  task:{active:'bg-violet-100 dark:bg-violet-950 border-violet-300',inactive:'bg-violet-50/45 dark:bg-violet-950/15 hover:bg-violet-100/65',accent:'bg-violet-500 dark:bg-violet-400',icon:'text-violet-600 dark:text-violet-400'},
   company: { active: 'bg-teal-100 dark:bg-teal-950 border-teal-300', inactive: 'bg-teal-50/45 dark:bg-teal-950/15 hover:bg-teal-100/65 dark:hover:bg-teal-950/35', accent: 'bg-teal-500 dark:bg-teal-400', icon: 'text-teal-600 dark:text-teal-400' },
   project: {
     active:

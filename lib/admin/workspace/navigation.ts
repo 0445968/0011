@@ -1,5 +1,5 @@
 /** Staff URLs are clean paths on staff.bivi.pro; middleware maps them to /admin. */
-export type WorkspaceRecordKind = 'project' | 'inquiry' | 'lead' | 'contact' | 'company';
+export type WorkspaceRecordKind = 'project' | 'inquiry' | 'lead' | 'contact' | 'company' | 'task';
 export type SectionId = 'overview' | 'sales' | 'workspace' | 'resources' | 'business' | 'system';
 export interface StaffDestination {
   id: string;
@@ -30,7 +30,7 @@ export const staffDestinations: StaffDestination[] = [
   { id: 'clients', label: 'Clients', href: '/clients', icon: 'Users', permission: 'staff', status: 'existing', subgroup: 'sales' },
   { id: 'proposals', label: 'Proposals', href: '/proposals', icon: 'FileSignature', permission: 'staff', status: 'existing', subgroup: 'sales' },
   { id: 'projects', label: 'Projects', href: '/projects', icon: 'FolderKanban', permission: 'staff', status: 'existing', subgroup: 'workspace', kind: 'project' },
-  { id: 'tasks', label: 'My Tasks', href: '/tasks', icon: 'ListChecks', permission: 'staff', status: 'existing', subgroup: 'workspace' },
+  { id: 'tasks', label: 'My Tasks', href: '/tasks', icon: 'ListChecks', permission: 'staff', status: 'existing', subgroup: 'workspace', kind:'task' },
   { id: 'approvals', label: 'Approvals', href: '/approvals', icon: 'CheckCheck', permission: 'staff', status: 'existing', subgroup: 'workspace' },
   { id: 'files', label: 'Files', href: '/files', icon: 'Files', permission: 'staff', status: 'existing', subgroup: 'workspace' },
   { id: 'forms', label: 'Forms', href: '/forms', icon: 'ClipboardList', permission: 'staff', status: 'existing', subgroup: 'resources' },
@@ -51,18 +51,34 @@ export function normalizeStaffPath(path: string): string {
   return path.startsWith('/admin/') ? path.slice(6) : path;
 }
 export const recordDefinitions = {
+  task: {label:'Task',directory:'/tasks',base:'/projects',icon:'ListChecks'},
   project: { label: 'Project', directory: '/projects', base: '/projects', icon: 'FolderKanban' },
   inquiry: { label: 'Inquiry', directory: '/inquiries', base: '/leads', icon: 'Inbox' },
   lead: { label: 'Inquiry', directory: '/inquiries', base: '/leads', icon: 'Inbox' },
   company: { label: 'Company', directory: '/companies', base: '/companies', icon: 'Building2' },
   contact: { label: 'Person', directory: '/people', base: '/people', icon: 'ContactRound' },
 } as const;
+export function taskRecordId(projectId:string,taskId:string){return projectId.toLowerCase()+'~'+encodeURIComponent(taskId);}
+export function parseTaskRecordId(id:string){
+ const split=id.indexOf('~');if(split<0||id.length>512)return null;
+ const projectId=id.slice(0,split);let taskId:string;try{taskId=decodeURIComponent(id.slice(split+1));}catch{return null;}
+ return UUID_PATTERN.test(projectId)&&taskId.length>0&&taskId.length<=100&&taskId.trim()===taskId?{projectId:projectId.toLowerCase(),taskId}:null;
+}
+export function canonicalRecordId(kind:WorkspaceRecordKind,id:string){if(kind==='task'){const task=parseTaskRecordId(id);return task?taskRecordId(task.projectId,task.taskId):id;}return id.toLowerCase();}
+export function taskWorkspaceHref(projectId:string,taskId:string){return '/projects/'+projectId.toLowerCase()+'?'+new URLSearchParams({tab:'plan',task:taskId,workspaceTask:'1'});}
 export function getWorkspaceRecordHref(kind: WorkspaceRecordKind, id: string): string {
+  if(kind==='task'){const task=parseTaskRecordId(id);return task?taskWorkspaceHref(task.projectId,task.taskId):'/tasks';}
   return `${recordDefinitions[kind].base}/${id}`;
 }
 export function getWorkspaceRecordFromPath(path: string) {
   const [section, rawId] = normalizeStaffPath(path.split(/[?#]/)[0]).split('/').filter(Boolean);
   if (!rawId || (section === 'people' ? !/^[1-9]\d{0,8}$/.test(rawId) : !UUID_PATTERN.test(rawId))) return null;
+  const query=new URLSearchParams(path.split('?')[1]?.split('#')[0]??'');
+  if(section==='projects'&&query.get('workspaceTask')==='1'&&query.get('tab')==='plan'){
+    const taskId=query.get('task')??'';const id=taskRecordId(rawId,taskId);
+    if(!parseTaskRecordId(id))return null;
+    return {key:'task:'+id,id,kind:'task' as const,href:taskWorkspaceHref(rawId,taskId)};
+  }
   const kind: WorkspaceRecordKind | undefined = section === 'projects' ? 'project'
     : section === 'leads' || section === 'inquiries' ? 'inquiry'
     : section === 'people' ? 'contact' : section === 'companies' ? 'company' : undefined;
@@ -96,5 +112,6 @@ export function reorderWorkspaceTabs<T extends { key: string }>(tabs: T[], activ
 }
 
 export function isWorkspaceRecordId(kind: WorkspaceRecordKind, id: string): boolean {
+ if(kind==='task')return Boolean(parseTaskRecordId(id));
  return canonicalKind(kind) === 'contact' ? /^[1-9]\d{0,8}$/.test(id) : UUID_PATTERN.test(id);
 }

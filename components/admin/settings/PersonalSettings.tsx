@@ -1,5 +1,6 @@
 'use client';
 
+import {recordDefinitions,type WorkspaceRecordKind} from '@/lib/admin/workspace/navigation';
 import {useTheme} from 'next-themes';
 import {NotificationPreferencesForm} from '../notifications/NotificationPreferencesForm';
 import {useWorkspacePreferences} from '../workspace/WorkspacePreferences';
@@ -9,7 +10,7 @@ const control = 'min-h-11 rounded-lg border border-border bg-background px-3 py-
 
 export function PersonalSettings() {
   const {theme, setTheme} = useTheme();
-  const {density, changeDensity, collapsed, toggleSidebar, showTabs, changeShowTabs,showMenuBar,changeShowMenuBar,showRecordNavigation,changeShowRecordNavigation} = useWorkspacePreferences();
+  const {density, changeDensity, collapsed, toggleSidebar, showTabs, changeShowTabs,showMenuBar,changeShowMenuBar,showRecordNavigation,changeShowRecordNavigation,sidebarRecords,changeSidebarRecords} = useWorkspacePreferences();
   return <div className="space-y-6">
     <section className={section} aria-labelledby="appearance-heading">
       <h2 id="appearance-heading" className="text-lg font-semibold">Appearance</h2>
@@ -35,6 +36,7 @@ export function PersonalSettings() {
       <label className="flex min-h-11 items-center gap-3 text-sm"><input type="checkbox" checked={showTabs} onChange={event => changeShowTabs(event.target.checked)} />Show the record tab bar</label>
       <p className="text-sm text-muted-foreground">Saved for your staff account in this browser. Hiding the bar preserves open records, pins, bookmarks, and tab order. Records remain available through the sidebar and Workspace menu.</p>
     </section>
+    <section className={section} aria-labelledby="sidebar-records-heading"><h2 id="sidebar-records-heading" className="text-lg font-semibold">Sidebar records</h2><p className="text-sm text-muted-foreground">Choose which open, pinned and bookmarked records appear under their sidebar directory. Open tabs remain available in the tab bar and Window menu.</p>{(['project','task','inquiry','contact','company'] as WorkspaceRecordKind[]).map(kind=><label key={kind} className="flex min-h-11 items-center gap-3 text-sm"><input type="checkbox" checked={sidebarRecords[kind]!==false} onChange={event=>changeSidebarRecords(kind,event.target.checked)}/>Show {recordDefinitions[kind].label.toLowerCase()} records</label>)}</section>
     <section className={section} aria-labelledby="notifications-heading">
       <h2 id="notifications-heading" className="text-lg font-semibold">In-app notifications</h2>
       <NotificationPreferencesForm />
