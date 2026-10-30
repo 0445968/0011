@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { projectBodySchema } from './schema';
+import { projectBodySchema,taskDraftEditsSchema } from './schema';
 
 // Drafts may contain a temporarily empty title while staff are editing.
 // Publishing still uses the stricter projectBodySchema and server RPC validation.
@@ -17,6 +17,7 @@ export const workplanDraftBodySchema = z.object({
     status: z.enum(['planned', 'in_progress', 'done']),
   }).strict()).max(20),
   tasks: z.array(z.object({
+    edits:taskDraftEditsSchema.optional(),
     archived:z.boolean().optional(),
     id: text(100).min(1),
     title: text(300),

@@ -28,7 +28,7 @@ export function useProjectEditingController(id:string,record:RecordState,initial
   const [workflowGate,setWorkflowGate]=useState<ProjectWorkflowGate|null>(null);
   const [advanced,setAdvanced]=useState(initialAdvanced);
   const pending=useRef(false),active=useRef(true);
-  const submitted=useRef<{body:ProjectBody;revision:number}|null>(null);
+  const submitted=useRef<{body:ProjectBody;revision:number;saveId:string}|null>(null);
   useEffect(()=>{active.current=true;return()=>{active.current=false;};},[]);
   const completed=record?.state==='completed';
   const drafts=useProjectWorkDraft({id,userId,initialRevision:record?.revision??0,revision:revisionState,body:bodyState,savedBody:savedState,
@@ -38,12 +38,12 @@ export function useProjectEditingController(id:string,record:RecordState,initial
   async function adoptSaved(candidate:ProjectBody,current:SavedProject,warning?:string){
     const cleared=await drafts.clearSavedDraft(candidate);
     if(!active.current)return false;
+    const newer=Boolean(local.current&&!projectBodiesEqual(local.current,candidate));
     drafts.acceptSaved(candidate,current.body,current.revision);
     submitted.current=null;
     setServerBlockers([]);setWorkflowGate(null);setSaveOutcomeUnknown(false);setBlocked(false);
     // Compare with the submitted snapshot, not the server-normalized result.
     // Trigger-side milestone normalization is not a newer user edit.
-    const newer=Boolean(local.current&&!projectBodiesEqual(local.current,candidate));
     setSavePhase(newer?'idle':'saved');
     setMessage(`Submitted work-plan changes saved.${newer?' Newer edits remain in your private draft.':''}${warning?` ${warning}`:!cleared?' The private draft could not be cleared; refresh draft status before continuing.':''}`);
     try{refreshProjectSurfaces(id,router);}catch{setMessage('Submitted changes saved. Refresh saved views to update their display.');}
@@ -56,6 +56,7 @@ export function useProjectEditingController(id:string,record:RecordState,initial
     submitted.current=null;
     setBlocked(false);setSaveOutcomeUnknown(false);
     setSavePhase(result.conflicts.length?'failed':'idle');
+    try{refreshProjectSurfaces(id,router);}catch{/* The canonical read already succeeded. */}
     setMessage(result.conflicts.length?'The saved project changed. Resolve the conflicting fields before saving.':'The latest saved project is loaded. Your nonconflicting edits remain for review and Save all.');
   }
 
@@ -64,10 +65,10 @@ export function useProjectEditingController(id:string,record:RecordState,initial
     pending.current=true;setBusy(true);
     try{
       await drafts.suspendAutosaves();
-      const current=await readSavedProject(id);
+      const current=await readSavedProject(id,submitted.current?.saveId);
       if(!active.current)return false;
       const attempt=submitted.current;
-      if(attempt&&savedCandidateMatches(attempt.body,attempt.revision,current))return await adoptSaved(attempt.body,current);
+      if(attempt&&savedCandidateMatches(attempt.body,attempt.revision,current,attempt.saveId))return await adoptSaved(attempt.body,current);
       if(current.revision!==revision.current||!baseline.current||!projectBodiesEqual(current.body,baseline.current))await reconcileLatest(current);
       else{setSaveOutcomeUnknown(false);setBlocked(false);setSavePhase('idle');setMessage(local.current&&baseline.current&&projectBodiesEqual(local.current,baseline.current)?'Saved project data is current.':'The latest saved revision has not changed. Your edits remain available for a revision-checked retry.');}
       router.refresh();
@@ -95,10 +96,10 @@ export function useProjectEditingController(id:string,record:RecordState,initial
     if(!candidate||!dirty)return false;
     if(!projectBodySchema.safeParse(candidate).success){setSavePhase('failed');setMessage('Check the project title, task names, dates, times and milestone assignments.');return false;}
     pending.current=true;setBusy(true);setSavePhase('saving');setMessage('Saving submitted work-plan changes…');
-    const attempt={body:candidate,revision:revision.current};submitted.current=attempt;
+    const attempt={body:candidate,revision:revision.current,saveId:crypto.randomUUID()};submitted.current=attempt;
     try{
       await drafts.suspendAutosaves();
-      const outcome=await submitProjectWorkplan(id,attempt.body,attempt.revision);
+      const outcome=await submitProjectWorkplan(id,attempt.body,attempt.revision,attempt.saveId);
       if(!active.current)return false;
       if(outcome.kind==='saved')return await adoptSaved(attempt.body,{body:outcome.body??normalizeWorkplanBodyForSave(attempt.body),revision:outcome.revision},outcome.refreshWarning);
       if(outcome.kind==='revision_conflict'){await reconcileLatest(await readSavedProject(id));return false;}
@@ -108,9 +109,9 @@ export function useProjectEditingController(id:string,record:RecordState,initial
     }catch(cause){
       if(!active.current)return false;
       try{
-        const current=await readSavedProject(id);
+        const current=await readSavedProject(id,attempt.saveId);
         if(!active.current)return false;
-        if(savedCandidateMatches(attempt.body,attempt.revision,current))return await adoptSaved(attempt.body,current);
+        if(savedCandidateMatches(attempt.body,attempt.revision,current,attempt.saveId))return await adoptSaved(attempt.body,current);
         if(current.revision!==attempt.revision){await reconcileLatest(current);return false;}
       }catch{/* Preserve edits and require an explicit check before retry. */}
       if(active.current){setSavePhase('uncertain');setSaveOutcomeUnknown(true);setMessage(`Save outcome is uncertain. Check save status before retrying. ${cause instanceof Error?cause.message:''}`);}

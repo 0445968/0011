@@ -25,13 +25,13 @@ const tableColumns: {value:TaskColumn;label:string}[] = [
 function Field({label,children}:{label:string;children:ReactNode}) {
   return <label className="min-w-0 space-y-1 text-[11px] font-medium text-muted-foreground"><span>{label}</span>{children}</label>;
 }
-export function ProjectWorkplanToolbar({projectId,filters,onChange,view,onView,grouping,onGrouping,sort,onSort,columns,onColumns,showColumnLabels=true,onShowColumnLabels,showDateWeekday=false,onShowDateWeekday,showDateTime=true,onShowDateTime,assignees,phasesReady,assignmentsReady,
+export function ProjectWorkplanToolbar({projectId,filters,onChange,view,onView,grouping,onGrouping,sort,onSort,columns,onColumns,showColumnLabels=true,onShowColumnLabels,showDateWeekday=false,onShowDateWeekday,showDateTime=true,onShowDateTime,showDateTimezone=false,onShowDateTimezone,assignees,phasesReady,assignmentsReady,
   tagFilter,onTagFilter,tags,showEditor,onToggleEditor,onAddTask,onAddMilestone,disabled=false,onAdvancedToggle,advanced=false,actions,
   selectedCount=0, visibleCount=0, allVisibleSelected=false, onToggleAllVisible, onClearSelection, onBulkStatus, onBulkDueDate, onBulkMilestone, onBulkDelete, onCopySelectedLinks, milestoneChoices=[]}: {
   actions?:ReactNode;onAdvancedToggle?:()=>void;advanced?:boolean;projectId:string;filters:WorkplanFilters;onChange:(changes:Partial<WorkplanFilters>)=>void;
   view:TasksDisplayView;onView:(view:TasksDisplayView)=>void;grouping:TaskGrouping;onGrouping:(value:TaskGrouping)=>void;
   sort:TaskSort;onSort:(value:TaskSort)=>void;columns:TaskColumn[];onColumns:(values:TaskColumn[])=>void;
-  showColumnLabels?:boolean;onShowColumnLabels:(show:boolean)=>void;showDateWeekday?:boolean;onShowDateWeekday?:(show:boolean)=>void;showDateTime?:boolean;onShowDateTime?:(show:boolean)=>void;
+  showColumnLabels?:boolean;onShowColumnLabels:(show:boolean)=>void;showDateWeekday?:boolean;onShowDateWeekday?:(show:boolean)=>void;showDateTime?:boolean;onShowDateTime?:(show:boolean)=>void;showDateTimezone?:boolean;onShowDateTimezone?:(show:boolean)=>void;
   assignees:{id:string;label:string}[];phasesReady:boolean;assignmentsReady:boolean;
   tagFilter:string;onTagFilter:(tag:string)=>void;tags:{value:string;label:string}[];
   showEditor:boolean;onToggleEditor:()=>void;onAddTask:()=>void;onAddMilestone:()=>void;disabled?:boolean;
@@ -92,6 +92,32 @@ export function ProjectWorkplanToolbar({projectId,filters,onChange,view,onView,g
     };
   },[]);
 
+  // Fixed menus escape the horizontal scrolling row. Overflow-x:auto causes
+  // overflow-y:visible to compute to auto, otherwise clipping every dropdown.
+  useEffect(()=>{
+    const toolbar=toolbarRef.current;if(!toolbar)return;
+    const position=()=>{
+      toolbar.querySelectorAll<HTMLDetailsElement>('details[open]').forEach(details=>{
+        const summary=details.querySelector('summary');
+        const menu=Array.from(details.children).find(child=>child!==summary) as HTMLElement|undefined;
+        if(!summary||!menu)return;
+        const trigger=summary.getBoundingClientRect();
+        menu.style.position='fixed';menu.style.zIndex='80';menu.style.right='auto';menu.style.marginTop='0';
+        menu.style.maxWidth='calc(100vw - 16px)';menu.style.overflowY='auto';
+        const width=Math.min(menu.getBoundingClientRect().width,window.innerWidth-16);
+        const below=window.innerHeight-trigger.bottom-12;
+        const above=trigger.top-12;
+        const upwards=below<160&&above>below;
+        menu.style.maxHeight=Math.max(80,Math.min(window.innerHeight-24,upwards?above:below))+'px';
+        menu.style.left=Math.max(8,Math.min(trigger.left,window.innerWidth-width-8))+'px';
+        menu.style.top=(upwards?Math.max(8,trigger.top-menu.getBoundingClientRect().height-4):trigger.bottom+4)+'px';
+      });
+    };
+    toolbar.addEventListener('toggle',position,true);
+    window.addEventListener('resize',position);window.addEventListener('scroll',position,true);
+    return()=>{toolbar.removeEventListener('toggle',position,true);window.removeEventListener('resize',position);window.removeEventListener('scroll',position,true);};
+  },[]);
+
   const applied=[filters.phase!=='all',filters.side!=='all',filters.assignee!=='all',filters.status!=='all',filters.deadline!=='all',Boolean(filters.from||filters.to),Boolean(filters.query.trim()),Boolean(tagFilter)].filter(Boolean).length;
   const clear=()=>{onChange({query:'',phase:'all',side:'all',assignee:'all',status:'all',deadline:'all',from:'',to:''});onTagFilter('');};
   const selectView=(next:TasksDisplayView,button:HTMLButtonElement)=>{onView(next);const menu=button.closest('details');if(menu)menu.open=false;};
@@ -135,7 +161,7 @@ export function ProjectWorkplanToolbar({projectId,filters,onChange,view,onView,g
       <details className="relative shrink-0"><summary className={control+' cursor-pointer list-none [&::-webkit-details-marker]:hidden'}><SlidersHorizontal size={15}/><span className="hidden xl:inline">Sort by</span><ChevronDown size={13}/></summary>
         <div className={popup+' left-0'}>{([{value:'default',label:'Manual order'},{value:'due',label:'Due date'},{value:'priority',label:'Priority'},{value:'title',label:'Name'}] as {value:TaskSort;label:string}[]).map(item=><button type="button" key={item.value} className={optionClass} onClick={event=>chooseSort(item.value,event.currentTarget)}><span className="flex-1">{item.label}</span>{sort===item.value&&<Check size={14}/>}</button>)}</div>
       </details>
-      <details className="relative"><summary className={`${control} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}><Columns3 size={14}/><span className="hidden md:inline">Columns</span></summary><fieldset className="absolute right-0 z-30 mt-1 min-w-48 space-y-2 rounded-xl border border-border bg-popover p-3 text-xs shadow-lg"><legend className="sr-only">Visible task columns</legend><label className="flex items-center gap-2 border-b border-border pb-2"><input type="checkbox" checked={showColumnLabels} onChange={event=>onShowColumnLabels(event.target.checked)}/>Show column labels</label><label className="flex items-center gap-2"><input type="checkbox" checked={showDateWeekday} onChange={event=>onShowDateWeekday?.(event.target.checked)}/>Show weekday in date columns</label><label className="flex items-center gap-2 border-b border-border pb-2"><input type="checkbox" checked={showDateTime} onChange={event=>onShowDateTime?.(event.target.checked)}/>Show time in date columns</label>{tableColumns.map(col=><div key={col.value} className="flex items-center gap-1"><label className="flex flex-1 items-center gap-2"><input type="checkbox" checked={columns.includes(col.value)} onChange={e=>onColumns(e.target.checked?[...columns,col.value]:columns.filter(x=>x!==col.value))}/>{col.label}</label><button type="button" aria-label={"Move "+col.label+" left"} disabled={!columns.includes(col.value)||columns.indexOf(col.value)===0} className="rounded p-1 hover:bg-muted disabled:opacity-30" onClick={()=>moveColumn(col.value,-1)}><ArrowUp size={13}/></button><button type="button" aria-label={"Move "+col.label+" right"} disabled={!columns.includes(col.value)||columns.indexOf(col.value)===columns.length-1} className="rounded p-1 hover:bg-muted disabled:opacity-30" onClick={()=>moveColumn(col.value,1)}><ArrowDown size={13}/></button></div>)}</fieldset></details>
+      <details className="relative"><summary className={`${control} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}><Columns3 size={14}/><span className="hidden md:inline">Columns</span></summary><fieldset className="absolute right-0 z-30 mt-1 min-w-48 space-y-2 rounded-xl border border-border bg-popover p-3 text-xs shadow-lg"><legend className="sr-only">Visible task columns</legend><label className="flex items-center gap-2 border-b border-border pb-2"><input type="checkbox" checked={showColumnLabels} onChange={event=>onShowColumnLabels(event.target.checked)}/>Show column labels</label><label className="flex items-center gap-2"><input type="checkbox" checked={showDateWeekday} onChange={event=>onShowDateWeekday?.(event.target.checked)}/>Show weekday in date columns</label><label className="flex items-center gap-2 border-b border-border pb-2"><input type="checkbox" checked={showDateTime} onChange={event=>onShowDateTime?.(event.target.checked)}/>Show time in date columns</label><label className="flex items-center gap-2 border-b border-border pb-2"><input type="checkbox" checked={showDateTimezone} onChange={event=>onShowDateTimezone?.(event.target.checked)}/>Show timezone</label>{tableColumns.map(col=><div key={col.value} className="flex items-center gap-1"><label className="flex flex-1 items-center gap-2"><input type="checkbox" checked={columns.includes(col.value)} onChange={e=>onColumns(e.target.checked?[...columns,col.value]:columns.filter(x=>x!==col.value))}/>{col.label}</label><button type="button" aria-label={"Move "+col.label+" left"} disabled={!columns.includes(col.value)||columns.indexOf(col.value)===0} className="rounded p-1 hover:bg-muted disabled:opacity-30" onClick={()=>moveColumn(col.value,-1)}><ArrowUp size={13}/></button><button type="button" aria-label={"Move "+col.label+" right"} disabled={!columns.includes(col.value)||columns.indexOf(col.value)===columns.length-1} className="rounded p-1 hover:bg-muted disabled:opacity-30" onClick={()=>moveColumn(col.value,1)}><ArrowDown size={13}/></button></div>)}</fieldset></details>
       <details className="relative shrink-0">
         <summary className={control+' cursor-pointer list-none [&::-webkit-details-marker]:hidden'} title="Quick actions for selected tasks" aria-label="Quick actions for selected tasks"><ListChecks size={15}/><span className="hidden lg:inline">Quick actions</span>{selectedCount>0&&<span className="rounded-full bg-blue-600 px-1.5 text-[10px] text-white">{selectedCount}</span>}<ChevronDown size={13}/></summary>
         <div className={popup+' left-0 w-60 max-h-[75vh] overflow-auto'} aria-label="Bulk task actions">

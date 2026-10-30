@@ -66,3 +66,15 @@ test('Save task can create a new task without applying a different draft',async(
  assert.equal(work.server.body.tasks[0].title,'Task');assert.equal(work.server.body.tasks[1].title,'New task');
  assert.equal(work.current.body.tasks[0].title,'Unrelated draft');work.unmount();
 });
+
+test('task settings join the same draft and are acknowledged after an uncertain explicit save',async()=>{
+ const work=projectEditor({controls:{loseReply:true}});try{
+  await work.flush();
+  work.edit(body=>{body.tasks[0].edits={controlRevision:1,priority:'high',assignment:{side:'bivi',userIds:[]},review:{requiresStaffReview:true,requiresClientReview:false}};});
+  work.fireTimers();await work.flush();
+  assert.equal(work.server.posts,0);assert.equal(work.server.draft.body.tasks[0].edits.priority,'high');
+  assert.equal(await work.current.save('t'),true);await work.flush();
+  assert.equal(work.server.posts,1);assert.equal(work.current.dirty,false);
+  assert.equal(work.current.body.tasks[0].edits,undefined);
+ }finally{work.unmount();}
+});

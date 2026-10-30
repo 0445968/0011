@@ -472,7 +472,8 @@ export function ProjectWorkspace({
       tasks: previous.tasks.map((task, i) => {
         if(i!==index)return task;
         const control=taskControls.find(row=>row.taskId===task.id);
-        const requested=changes.status==='done'&&control?.requiresStaffReview&&(!isWorkflowAdmin||task.status!=='in_review')?'in_review':changes.status;
+        const review=task.edits?.review??control;
+        const requested=changes.status==='done'&&(review?.requiresStaffReview||review?.requiresClientReview)&&(!isWorkflowAdmin||task.status!=='in_review')?'in_review':changes.status;
         return {...task,...changes,...(requested?{status:requested}:{})};
       }),
     } : previous);
@@ -490,7 +491,8 @@ export function ProjectWorkspace({
       const candidate={...previous,tasks:previous.tasks.map(task=>{
         if(!selected.has(task.id))return task;
         const control=taskControls.find(row=>row.taskId===task.id);
-        const status=changes.status==='done'&&control?.requiresStaffReview&&(!isWorkflowAdmin||task.status!=='in_review')?'in_review':changes.status;
+        const review=task.edits?.review??control;
+        const status=changes.status==='done'&&(review?.requiresStaffReview||review?.requiresClientReview)&&(!isWorkflowAdmin||task.status!=='in_review')?'in_review':changes.status;
         return {...task,...changes,...(status?{status}:{})};
       })};
       if(!('status' in changes)&&!('milestoneId' in changes))return candidate;
