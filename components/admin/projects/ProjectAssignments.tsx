@@ -116,7 +116,7 @@ function MemberChoices({ options, values, change, side, search }: {
   </div>;
 }
 
-export function TaskMemberPicker({ taskId, disabled, controls }: { taskId: string; disabled: boolean; controls: AssignmentControls }) {
+export function TaskMemberPicker({ taskId, disabled, controls, onDraft }: { taskId: string; disabled: boolean; controls: AssignmentControls; onDraft?:(value:{side:Side;userIds:string[]})=>void }) {
   const { data, busy, save } = controls;
   const task = data?.tasks.find(t => t.task_id === taskId);
   const [open, setOpen] = useState(false);
@@ -144,6 +144,7 @@ export function TaskMemberPicker({ taskId, disabled, controls }: { taskId: strin
   }
   async function commit() {
     if (!task || !data || busy || task.revision!==expectedRevision || ids.length > 12) return;
+    if(onDraft){onDraft({side,userIds:ids});setOpen(false);return;}
     const okay = await save({ action: 'task', taskId, side, userIds: ids, expectedRevision });
     if (okay) setOpen(false);
   }
@@ -169,7 +170,7 @@ export function TaskMemberPicker({ taskId, disabled, controls }: { taskId: strin
         {task&&task.revision!==expectedRevision&&<div role="alert" className="text-xs"><p>Saved responsibility changed: {task.side}, {task.assignees.map(id=>[...(data?.staff??[]),...(data?.clients??[])].find(person=>person.id===id)?.label??id).join(', ')||'no assignees'}. Your selections remain unchanged.</p><button type="button" className={buttonClass} onClick={()=>{setSide(task.side);setIds(task.assignees);setExpectedRevision(task.revision);}}>Use saved</button><button type="button" className={buttonClass} onClick={()=>setExpectedRevision(task.revision)}>Keep selections after review</button></div>}
         <div className="flex justify-end gap-2">
           <button type="button" className={buttonClass} disabled={busy} onClick={() => setOpen(false)}>Cancel</button>
-          <button type="button" className="rounded-lg bg-foreground px-4 py-2 text-xs font-semibold text-background disabled:opacity-40" disabled={busy || !changed || task?.revision!==expectedRevision || ids.length > 12} onClick={() => void commit()}>{busy ? 'Saving…' : 'Save responsibility'}</button>
+          <button type="button" className="rounded-lg bg-foreground px-4 py-2 text-xs font-semibold text-background disabled:opacity-40" disabled={busy || !changed || task?.revision!==expectedRevision || ids.length > 12} onClick={() => void commit()}>{busy ? 'Saving…' : onDraft?'Apply to draft':'Save responsibility'}</button>
         </div>
         {controls.error && <p role="alert" className="text-xs text-red-600">{controls.error}</p>}
       </PopoverContent>

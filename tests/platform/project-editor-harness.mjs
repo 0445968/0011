@@ -2,6 +2,7 @@ import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import path from 'node:path';
 import vm from 'node:vm';
+import {webcrypto} from 'node:crypto';
 import ts from 'typescript';
 const require=createRequire(import.meta.url);
 export const copy=value=>JSON.parse(JSON.stringify(value));
@@ -44,12 +45,12 @@ export function projectEditor(options={}){
    server.posts++;if(controls.postGate)await controls.postGate.promise;
    if(command.expectedRevision!==server.revision)return reply({code:'revision_conflict',error:'Changed elsewhere'},409);
    if(controls.validation)return reply({code:'task_subtasks_incomplete',error:'Unfinished subtasks',blockers:[]},422);
-   server.body=copy(command.body);server.revision++;
+   server.body=copy(command.body);server.body.tasks=server.body.tasks.map(({edits,...task})=>task);server.saveId=command.saveId;server.revision++;
    if(controls.loseReply)throw new TypeError('Lost response');
    return reply({saved:true,body:server.body,revision:server.revision});
   }
   server.reads++;if(controls.readFails)throw new TypeError('Read unavailable');
-  return reply({body:server.body,revision:server.revision});
+  return reply({body:server.body,revision:server.revision,...(url.includes('saveId='+server.saveId)?{saveId:server.saveId}:{})});
  }
  const storage=options.storage??new Map();
  const localStorage={getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value),removeItem:key=>storage.delete(key)};
@@ -58,7 +59,7 @@ export function projectEditor(options={}){
   if(cache.has(file))return cache.get(file);const exports={};cache.set(file,exports);
   const source=readFileSync(new URL(`../../${file}`,import.meta.url),'utf8');
   const resolve=name=>name==='react'?react:name==='next/navigation'?{useRouter:()=>router}:name.startsWith('@/')?load(`${name.slice(2)}.ts`):name.startsWith('.')?load(`${path.posix.normalize(path.posix.join(path.posix.dirname(file),name))}.ts`):require(name);
-  vm.runInNewContext(ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText,{exports,module:{exports},require:resolve,fetch,window:fakeWindow,CustomEvent,Event,AbortSignal,console});return exports;
+  vm.runInNewContext(ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText,{exports,module:{exports},require:resolve,fetch,window:fakeWindow,CustomEvent,Event,AbortSignal,console,crypto:webcrypto});return exports;
  }
  const {useProjectEditingController}=load('components/admin/projects/useProjectEditingController.ts');
  function render(){cursor=0;changed=false;effects=[];value=useProjectEditingController(props.id,props.record,false,props.userId);effects.forEach(effect=>effect());}

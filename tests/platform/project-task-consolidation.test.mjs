@@ -10,8 +10,8 @@ test('single task inspector uses shared controls, productivity, hierarchy, and c
  assert.match(board,/const editorTaskContent=\(task:Task\)=>/);
  assert.match(board,/return task\?editorTaskContent\(task\):null/);
  assert.doesNotMatch(board,/<details key=\{task\.id\}/);
- assert.equal((board.match(/<ProjectLifecycleControls/g)||[]).length,1);
- assert.match(board,/<ProjectLifecycleControls[\s\S]*taskOnlyTaskId=\{task\.id\}/);
+ assert.equal((board.match(/<TaskDraftControlSettings/g)||[]).length,1);
+ assert.match(board,/<TaskDraftControlSettings[\s\S]*onChange=\{control=>draftSettings\(task,\{control\}\)\}/);
  assert.match(board,/<TaskProductivity[\s\S]*taskId=\{task\.id\}/);
  assert.match(board,/Subtasks \(\{hierarchy\.data\?children\.length/);
  assert.match(board,/Override and change status/);

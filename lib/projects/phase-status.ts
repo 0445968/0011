@@ -24,7 +24,7 @@ export function expectedMilestoneStatus(body: ProjectBody, milestoneId: string) 
   if (!milestone) return null;
   if (milestone.status === 'done') return 'done' as const;
   const tasks = body.tasks.filter(task => task.milestoneId === milestoneId);
-  return tasks.some(task => task.status === 'doing' || task.status === 'blocked' || task.status === 'in_review')
+  return tasks.some(task => task.status === 'doing' || task.status === 'blocked' || task.status === 'in_review' || task.status === 'rejected')
     ? 'in_progress' as const : 'planned' as const;
 }
 

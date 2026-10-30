@@ -14,7 +14,7 @@ import { milestoneCompletionBlockers } from '@/lib/projects/workplan-completion'
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(_request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: { id: string } }) {
   if (!z.string().uuid().safeParse(params.id).success) return adminReply({ error: 'Project not found.' }, 404);
   const access = await getStaffAccess();
   if (!access.allowed) return adminReply({ error: 'Staff access is required.' }, access.status);
@@ -24,7 +24,10 @@ export async function GET(_request: Request, { params }: { params: { id: string 
   if (!data) return adminReply({ error: 'Project not found.' }, 404);
   const body = projectBodySchema.safeParse(data.body);
   if (!body.success || !Number.isInteger(data.revision)) return adminReply({ error: 'The saved project could not be verified.' }, 503);
-  return adminReply({ requestId: data.request_id, state: data.state, body: body.data, revision: data.revision });
+  const saveId=new URL(request.url).searchParams.get('saveId');
+  const receipt=saveId&&z.string().uuid().safeParse(saveId).success?await access.client.from('project_workplan_save_receipts').select('save_id,saved_revision').eq('save_id',saveId).eq('request_id',params.id).eq('staff_id',access.user.id).maybeSingle():null;
+  if(receipt?.error)return adminReply({error:'Save confirmation could not be checked.'},503);
+  return adminReply({ requestId: data.request_id, state: data.state, body: body.data, revision: data.revision,...(receipt?.data?.saved_revision===data.revision?{saveId:receipt?.data?.save_id}:{}) });
 }
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
@@ -63,11 +66,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
       };
     }
 
-    const { data, error } = await access.client.rpc('manage_inquiry_project', {
-      p_request_id: params.id,
-      p_command: command,
-    });
+    const {data,error}=parsed.data.action==='save'
+      ?await access.client.rpc('save_project_workplan_bundle',{p_request:params.id,p_body:parsed.data.body,p_revision:parsed.data.expectedRevision,p_save_id:parsed.data.saveId??crypto.randomUUID()})
+      :await access.client.rpc('manage_inquiry_project',{p_request_id:params.id,p_command:command});
     if (error) {
+      if(error.code==='40001')return adminReply({error:error.message,code:'revision_conflict'},409);
       const domainError = classifyProjectSaveDatabaseError(error.code, error.message);
       if (domainError && parsed.data.action === 'save') {
         const blockers: unknown[] = [];
@@ -106,6 +109,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
         }
         return adminReply({ error: domainError.error, code: domainError.code, blockers, workflowGate }, 422);
       }
+      if(error.code==='23514'&&parsed.data.action==='save')return adminReply({error:error.message||'Task settings could not be applied. Your draft is preserved.',code:'task_settings_validation'},422);
       if (error.code === '23514' && parsed.data.action !== 'save') {
         return adminReply({ error: error.message || 'The project transition failed a completion rule.', code: 'project_transition_rejected' }, 409);
       }
