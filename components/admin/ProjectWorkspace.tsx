@@ -341,7 +341,7 @@ export function ProjectWorkspace({
     window.dispatchEvent(new CustomEvent('bivi:project-workplan-dirty', { detail: { projectId: id, dirty, ready: drafts.ready&&!drafts.recoverable&&!drafts.conflict } }));
   }, [id, dirty, drafts.ready,drafts.recoverable,drafts.conflict]);
 
-  const markWorkspaceSaved = useWorkspaceUnsavedChanges(dirty, 'Project work plan', async () => {
+  const markWorkspaceSaved = useWorkspaceUnsavedChanges(dirty||Boolean(drafts.recoverable), 'Project work plan', async () => {
     const saved = await command('save');
     if (saved !== true) throw new Error('Project changes were not saved. Review the editor message.');
   },async()=>{if(!await controller.discard())throw new Error('Private draft discard could not be confirmed. Your edits remain available.');},async()=>{if(!await drafts.saveDraft())throw new Error('Draft could not be saved. Stay to keep your edits.');});

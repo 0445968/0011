@@ -64,5 +64,5 @@ export function projectEditor(options={}){
  function render(){cursor=0;changed=false;effects=[];value=useProjectEditingController(props.id,props.record,false,props.userId);effects.forEach(effect=>effect());}
  async function flush(){for(let step=0;step<40;step++){await new Promise(done=>setImmediate(done));if(!changed)return;render();}throw new Error('Editor did not settle');}
  render();
- return {server,controls,props,storage,flush,render,get current(){return value;},edit(fn){value.setBody(body=>{const next=copy(body);fn(next);return next;});render();},fireTimers(){const pending=[...timers.values()];timers.clear();pending.forEach(fn=>fn());},notify(){fakeWindow.dispatchEvent(new CustomEvent('bivi:project-mutation',{detail:{projectId:props.id}}));},unmount(){for(const slot of slots)slot?.cleanup?.();alive=false;}};
+ return {server,controls,props,storage,flush,render,get current(){return value;},edit(fn){value.setBody(body=>{const next=copy(body);fn(next);return next;});render();},fireTimers(){const pending=[...timers.values()];timers.clear();pending.forEach(fn=>fn());},renew(){fakeWindow.dispatchEvent(new Event('bivi:staff-session-renewed'));},notify(){fakeWindow.dispatchEvent(new CustomEvent('bivi:project-mutation',{detail:{projectId:props.id}}));},unmount(){for(const slot of slots)slot?.cleanup?.();alive=false;}};
 }

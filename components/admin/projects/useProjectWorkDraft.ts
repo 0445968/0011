@@ -33,6 +33,7 @@ export function useProjectWorkDraft({ id, userId, initialRevision, revision, bod
   const [recoveryPrompt,setRecoveryPrompt]=useState(false);
   const [recoveryCopy,setRecoveryCopy]=useState<StoredDraft|null>(null);
   const [checkpointError,setCheckpointError]=useState('');
+  const [loadRequest,setLoadRequest]=useState(0);
   const [ready, setReady] = useState(false);
   const [recoverable, setRecoverable] = useState<StoredDraft | null>(null);
   const [state, setState] = useState<DraftState>('loading');
@@ -101,7 +102,7 @@ export function useProjectWorkDraft({ id, userId, initialRevision, revision, bod
   useEffect(() => {
     if (!enabled) { loadedInitialRevision.current=null;setReady(false); setState('idle'); return; }
     if (busy) return;
-    if(loadedInitialRevision.current===initialRevision)return;
+    if(loadedInitialRevision.current===initialRevision&&loadRequest===0)return;
     let active = true;
     setReady(false);
     setState('loading');
@@ -151,7 +152,7 @@ export function useProjectWorkDraft({ id, userId, initialRevision, revision, bod
           setState('idle');
         }
         setReady(true);
-        loadedInitialRevision.current=initialRevision;
+        loadedInitialRevision.current=initialRevision;setLoadRequest(0);
       } catch (cause) {
         if (!active) return;
         setReady(false);
@@ -162,7 +163,7 @@ export function useProjectWorkDraft({ id, userId, initialRevision, revision, bod
     return () => { active = false; };
   // Reconcile after authoritative revisions and after a coordinated command settles.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [url, initialRevision, enabled, busy, snapshot, applyRebase, setBody, setRevision, setSavedBody, cancelPendingAutosave,checkpointKey]);
+  }, [url, initialRevision,loadRequest, enabled, busy, snapshot, applyRebase, setBody, setRevision, setSavedBody, cancelPendingAutosave,checkpointKey]);
 
   const waitForDraft = useCallback(async () => {
     cancelPendingAutosave();
@@ -231,8 +232,8 @@ export function useProjectWorkDraft({ id, userId, initialRevision, revision, bod
     if(!checkpointKey)return;
     const flush=()=>checkpoint();
     const preference=(event:Event)=>{retention.current=Number((event as CustomEvent).detail)||30;checkpoint();};
-    window.addEventListener('beforeunload',flush);window.addEventListener('pagehide',flush);window.addEventListener('bivi:recovery-retention',preference);
-    return()=>{window.removeEventListener('beforeunload',flush);window.removeEventListener('pagehide',flush);window.removeEventListener('bivi:recovery-retention',preference);};
+    window.addEventListener('beforeunload',flush);window.addEventListener('pagehide',flush);window.addEventListener('bivi:staff-signing-out',flush);window.addEventListener('bivi:recovery-retention',preference);
+    return()=>{window.removeEventListener('beforeunload',flush);window.removeEventListener('pagehide',flush);window.removeEventListener('bivi:staff-signing-out',flush);window.removeEventListener('bivi:recovery-retention',preference);};
   },[checkpoint,checkpointKey]);
 
   useEffect(() => {
@@ -251,6 +252,12 @@ export function useProjectWorkDraft({ id, userId, initialRevision, revision, bod
       timer.current = null;
     };
   }, [enabled, ready, dirty, body, recoverable, conflict, busy, revision, persist]);
+
+  useEffect(()=>{
+    if(!checkpointKey)return;
+    const renewed=()=>{if(enabled&&!ready){setLoadRequest(value=>value+1);return;}if(enabled&&ready&&dirty&&!recoverable&&!conflict&&!busy&&latest.current){cancelPendingAutosave();void persist(latest.current,revision);}};
+    window.addEventListener('bivi:staff-session-renewed',renewed);return()=>window.removeEventListener('bivi:staff-session-renewed',renewed);
+  },[checkpointKey,enabled,ready,dirty,recoverable,conflict,busy,revision,persist,cancelPendingAutosave]);
 
   const saveDraft = useCallback(async () => {
     if (!ready || !body || !enabled || recoverable || conflict) return false;
