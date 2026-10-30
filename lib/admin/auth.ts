@@ -1,4 +1,5 @@
 import 'server-only';
+import {staffAuthFailureStatus} from './staff-session';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createClient, type SupabaseClient, type User } from '@supabase/supabase-js';
@@ -33,7 +34,7 @@ export async function authorizeStaff(token: string | undefined): Promise<StaffAc
     const client = createStaffClient(token);
     // This network call verifies the token with Supabase, rather than trusting decoded claims.
     const { data, error } = await client.auth.getUser(token);
-    if (error || !data.user) return { allowed: false, status: error && error.status && error.status >= 500 ? 503 : 401 };
+    if (error || !data.user) return { allowed: false, status: staffAuthFailureStatus(error) };
     const membership = await client.rpc('is_inquiry_staff');
     if (membership.error) return { allowed: false, status: 503 };
     if (membership.data !== true) return { allowed: false, status: 403 };

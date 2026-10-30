@@ -1,28 +1,35 @@
 'use client';
 
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { createContext,useContext,useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import {writeUnsavedTab,unsavedTabKey,type UnsavedTab} from '@/lib/admin/workspace/unsaved-tabs';
 import {discardWorkspaceEditors} from '@/lib/admin/workspace/navigation-discard';
 
-type Editor = { label: string; save?: () => Promise<unknown>; discard?:()=>Promise<unknown>; saveDraft?:()=>Promise<unknown> };
+const StaffDirtyContext=createContext('');
+function track(staffId:string,href:string,label:string,dirty:boolean,draft:boolean){try{if(staffId){writeUnsavedTab(window.localStorage,staffId,href,label,dirty,draft);window.dispatchEvent(new Event('bivi:unsaved-tabs'));}}catch{/* Active editor registry still protects this page. */}}
+type Editor = { staffId:string;href:string;label: string; save?: () => Promise<unknown>; discard?:()=>Promise<unknown>; saveDraft?:()=>Promise<unknown> };
 const editors = new Map<string, Editor>();
+export function liveUnsavedTabs(staffId:string):UnsavedTab[]{return [...editors.values()].filter(editor=>editor.staffId===staffId).map(editor=>({key:unsavedTabKey(editor.href),href:editor.href,label:editor.label,draft:Boolean(editor.saveDraft),updatedAt:Date.now()}));}
 let requestNavigation: ((action: () => void) => void) | undefined;
 
 /** Register actual editor dirty state; navigation never guesses from input events. */
 export function useWorkspaceUnsavedChanges(dirty: boolean, label: string, save?: () => Promise<unknown>,discard?:()=>Promise<unknown>,saveDraft?:()=>Promise<unknown>) {
   const id = useId();
+  const staffId=useContext(StaffDirtyContext);
+  const href=typeof window!=='undefined'?window.location.pathname+window.location.search:'';
   const latest = useRef({ label, save,discard,saveDraft });
   latest.current = { label, save,discard,saveDraft };
   const hasSave = Boolean(save);
   const hasDraft=Boolean(saveDraft);
   useEffect(() => {
-    if (dirty) editors.set(id, { label, save: hasSave ? () => latest.current.save!() : undefined,saveDraft:hasDraft?()=>latest.current.saveDraft!():undefined,discard:()=>latest.current.discard?.()??Promise.resolve() });
+    if (dirty) editors.set(id, { staffId,href,label, save: hasSave ? () => latest.current.save!() : undefined,saveDraft:hasDraft?()=>latest.current.saveDraft!():undefined,discard:()=>latest.current.discard?.()??Promise.resolve() });
     else editors.delete(id);
-    return () => { editors.delete(id); };
-  }, [id, dirty, label, hasSave,hasDraft]);
-  return () => { editors.delete(id); };
+    track(staffId,href,label,dirty,hasDraft);
+    return () => { editors.delete(id);if(!hasDraft)track(staffId,href,label,false,false); };
+  }, [id, dirty, label, hasSave,hasDraft,staffId,href]);
+  return () => { editors.delete(id);track(staffId,href,label,false,hasDraft); };
 }
 
 export function guardWorkspaceNavigation(action: () => void) {
@@ -33,7 +40,7 @@ export function guardWorkspaceNavigation(action: () => void) {
   else action();
 }
 
-export function WorkspaceNavigationGuard({ children }: { children: ReactNode }) {
+export function WorkspaceNavigationGuard({ children,staffId='' }: { children: ReactNode;staffId?:string }) {
   const router = useRouter();
   const [pending, setPending] = useState<(() => void) | null>(null);
   const [saving, setSaving] = useState(false);
@@ -66,7 +73,9 @@ export function WorkspaceNavigationGuard({ children }: { children: ReactNode }) 
     document.addEventListener('keydown',keydown);
     document.addEventListener('click', click, true);
     window.addEventListener('beforeunload', beforeUnload);
+    const heartbeat=window.setInterval(()=>{for(const editor of editors.values())track(editor.staffId,editor.href,editor.label,true,Boolean(editor.saveDraft));},30000);
     return () => {
+      window.clearInterval(heartbeat);
       requestNavigation = undefined;
       document.removeEventListener('keydown',keydown);
       document.removeEventListener('click', click, true);
@@ -74,7 +83,7 @@ export function WorkspaceNavigationGuard({ children }: { children: ReactNode }) 
     };
   }, [router]);
 
-  return <>
+  return <StaffDirtyContext.Provider value={staffId}>
     {children}
     <Dialog open={Boolean(pending)} onOpenChange={open => { if (!open && !saving) setPending(null); }}>
       <DialogContent className="bivi-staff-surface" onEscapeKeyDown={event => { if (saving) event.preventDefault(); }} onInteractOutside={event => { if (saving) event.preventDefault(); }}>
@@ -89,6 +98,7 @@ export function WorkspaceNavigationGuard({ children }: { children: ReactNode }) 
             setSaving(true);setSaveError('');
             try{
               await discardWorkspaceEditors(editors.values());
+              for(const editor of editors.values())track(editor.staffId,editor.href,editor.label,false,Boolean(editor.saveDraft));
               const action=pendingRef.current;editors.clear();setPending(null);action?.();
             }catch(cause){setSaveError(cause instanceof Error?cause.message:'Discard could not be confirmed. Stay to keep your edits.');}
             finally{setSaving(false);}
@@ -97,12 +107,12 @@ export function WorkspaceNavigationGuard({ children }: { children: ReactNode }) 
           {dirtyEditors.length === 1 && dirtyEditors[0].save && <Button disabled={saving} onClick={async () => {
             setSaving(true);
             setSaveError('');
-            try { await dirtyEditors[0].save!(); const action=pendingRef.current;editors.clear();setPending(null);action?.(); }
+            try { await dirtyEditors[0].save!();track(dirtyEditors[0].staffId,dirtyEditors[0].href,dirtyEditors[0].label,false,Boolean(dirtyEditors[0].saveDraft)); const action=pendingRef.current;editors.clear();setPending(null);action?.(); }
             catch (error) { setSaveError(error instanceof Error ? error.message : 'Unable to save changes.'); }
             finally { setSaving(false); }
           }}>{saving ? 'Saving…' : 'Save changes'}</Button>}
         </div>
       </DialogContent>
     </Dialog>
-  </>;
+  </StaffDirtyContext.Provider>;
 }

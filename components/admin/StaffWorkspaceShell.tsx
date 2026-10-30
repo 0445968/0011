@@ -21,6 +21,7 @@ import { projectRecordSections, projectSectionHref } from '@/lib/admin/workspace
 import { WorkspacePreferencesContext } from './workspace/WorkspacePreferences';
 import { NotificationsBell } from './notifications/NotificationsBell';
 import { WorkspaceItemMenu } from './workspace/WorkspaceItemMenu';
+import {StaffSessionWarning} from './workspace/StaffSessionWarning';
 import { WorkspaceNavigationGuard, guardWorkspaceNavigation } from './workspace/WorkspaceNavigationGuard';
 import { staffNavigationItems as navItems, recordIcons } from './workspace/navigationUi';
 import Image from 'next/image';
@@ -1239,7 +1240,7 @@ useEffect(() => {
 
   async function signOut() {
     if (signingOut) {
-      return;
+      return false;
     }
 
     setSigningOut(true);
@@ -1269,10 +1270,12 @@ useEffect(() => {
       );
 
       router.refresh();
+      return true;
     } catch {
       setLogoutError(
         'Could not sign out. Please try again.'
       );
+      return false;
     } finally {
       setSigningOut(false);
     }
@@ -1283,7 +1286,8 @@ useEffect(() => {
      ======================================================= */
 
   return (
-    <WorkspaceNavigationGuard>
+    <WorkspaceNavigationGuard staffId={staffId}>
+    {staffId&&<StaffSessionWarning staffId={staffId} email={staffEmail||''} tabs={tabs} onSignOut={signOut}/>}
     <WorkspacePreferencesContext.Provider value={{density, changeDensity, collapsed, toggleSidebar, showTabs, changeShowTabs,showMenuBar,changeShowMenuBar,showRecordNavigation,changeShowRecordNavigation,sidebarRecords,changeSidebarRecords}}>
     <TaskWorkspaceContext.Provider value={openTaskTab}>
     <RecordMetadataContext.Provider
