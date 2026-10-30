@@ -26,7 +26,7 @@ export function TaskTags({projectId,projectRevision,row,catalog,disabled,reload}
  return <div className="text-xs">
   <Popover>
     <PopoverTrigger asChild>
-      <button type="button" aria-label="Task tags" className="inline-flex min-h-8 items-center gap-2 rounded-lg px-2 hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring">
+      <button type="button" aria-label="Task tags" className="inline-flex min-h-8 items-center gap-2 rounded-lg bg-blue-50 px-2 text-blue-700 hover:bg-blue-100 dark:bg-blue-950 dark:text-blue-300 dark:hover:bg-blue-900 focus-visible:ring-2 focus-visible:ring-ring">
         <Tag size={14} aria-hidden/><span className="font-medium">Tags</span>{Boolean(row?.tags.length)&&<span className="rounded-full bg-muted px-1.5 text-[10px]">{row?.tags.length}</span>}
       </button>
     </PopoverTrigger>

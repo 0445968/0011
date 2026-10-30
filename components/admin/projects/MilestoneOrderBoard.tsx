@@ -77,7 +77,7 @@ function MilestoneColumn({ milestone, tasks, disabled, addDisabled, canReorder, 
   >
     <div className="flex min-w-0 items-start justify-between gap-2 px-2 py-2">
       <div className="min-w-0">
-        <h2 className="truncate text-sm font-semibold" title={milestone?.title ?? 'No milestone'}><Folder size={16} className="mr-1.5 inline shrink-0" style={{color:milestone&&folderColor?folderColor(milestone.id):'#64748B'}}/>{milestone?.title ?? 'No milestone'}</h2>
+        <h2 className="truncate text-sm font-semibold" title={milestone?.title ?? 'No milestone'}><Folder size={16} fill="currentColor" strokeWidth={0} className="mr-1.5 inline shrink-0 opacity-60" style={{color:milestone&&folderColor?folderColor(milestone.id):'#64748B'}}/>{milestone?.title ?? 'No milestone'}</h2>
         <p className="mt-1 text-[11px] text-muted-foreground">{done} of {tasks.length} completed{completed ? ' · Milestone locked' : ''}</p>
       </div>
       <button type="button"
