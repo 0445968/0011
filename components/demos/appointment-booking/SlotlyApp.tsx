@@ -18,10 +18,7 @@ import {
   motion,
 } from 'framer-motion';
 
-import {
-  Cormorant_Garamond,
-  DM_Sans,
-} from 'next/font/google';
+import localFont from 'next/font/local';
 
 import { BookingCalendar } from './BookingCalendar';
 import {
@@ -33,15 +30,15 @@ import {
 import { SpaMap } from './SpaMap';
 import { useBookingState } from './useBookingState';
 
-const displayFont = Cormorant_Garamond({
-  subsets: ['latin'],
-  weight: ['500', '600', '700'],
+const displayFont = localFont({
+  src:'../../../public/fonts/google/CormorantGaramond.woff2',
+  weight:'500 700',
   variable: '--font-verdant-display',
 });
 
-const uiFont = DM_Sans({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
+const uiFont = localFont({
+  src:'../../../public/fonts/google/DMSans.woff2',
+  weight:'400 700',
   variable: '--font-verdant-ui',
 });
 

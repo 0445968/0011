@@ -1,11 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  DM_Sans,
-  Space_Grotesk,
-  IBM_Plex_Mono,
-} from 'next/font/google';
+import localFont from 'next/font/local';
 
 import { AnimatePresence, motion } from 'framer-motion';
 import { Menu } from 'lucide-react';
@@ -34,23 +30,22 @@ import {
 /* Demo-specific fonts                                                        */
 /* -------------------------------------------------------------------------- */
 
-const bodyFont = DM_Sans({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
+const bodyFont = localFont({
+  src:'../../../public/fonts/google/DMSans.woff2',
+  weight:'400 700',
   variable: '--font-business-body',
   display: 'swap',
 });
 
-const headingFont = Space_Grotesk({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
+const headingFont = localFont({
+  src:'../../../public/fonts/google/SpaceGrotesk.woff2',
+  weight:'400 700',
   variable: '--font-business-heading',
   display: 'swap',
 });
 
-const monoFont = IBM_Plex_Mono({
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
+const monoFont = localFont({
+  src:[{path:'../../../public/fonts/google/IBMPlexMono-400.woff2',weight:'400'},{path:'../../../public/fonts/google/IBMPlexMono-500.woff2',weight:'500'},{path:'../../../public/fonts/google/IBMPlexMono-600.woff2',weight:'600'}],
   variable: '--font-business-mono',
   display: 'swap',
 });
