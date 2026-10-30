@@ -43,6 +43,13 @@ export function classifyProjectSaveDatabaseError(code: string | undefined, messa
       } } : {}),
     };
   }
+  if(detail.includes('staff_task_review_required|task=')){
+    const taskId=(message??'').match(/staff_task_review_required\|task=([^\s|]+)/i)?.[1];
+    return {code:'staff_task_review_required',error:`${taskId?`Task ${taskId}`:'This task'} must enter In Review before it can be completed.`};
+  }
+  if(detail.includes('staff_task_review_admin_required|task=')){
+    return {code:'staff_task_review_admin_required',error:'Only a workspace admin can reject a task from In Review.'};
+  }
   if (detail.includes('client') && (detail.includes('approval') || detail.includes('review'))) {
     return { code: 'client_completion_review_required', error: 'Client task completion requires a current Bivi review.' };
   }

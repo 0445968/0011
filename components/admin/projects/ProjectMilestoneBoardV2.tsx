@@ -44,6 +44,7 @@ import { MilestoneOrderBoard } from './MilestoneOrderBoard';
 import { emptyWorkplanFilters, groupWorkplanTasks, workplanMilestoneMatches, workplanTaskMatches, workplanTaskPhases, type WorkplanFilters, type TaskGrouping } from '@/lib/projects/workplan-filters';
 import { ProfileImage } from '@/components/profile-images/ProfileImage';
 import { ProjectLifecycleControls } from '@/components/admin/ProjectLifecycleControls';
+import { TaskReviewRequirements } from './TaskReviewRequirements';
 import type { ProjectWorkflowGate } from '@/lib/projects/workplan-save-outcome';
 
 const priorityChoices: {value:string|null;label:string}[]=[
@@ -165,7 +166,7 @@ function SubtaskEditor({item,disabled,update,requestRemove,today}: {
   </li>;
 }
 
-export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarReady,onTaskChange,onMilestoneChange,onAddTask,onDuplicateTask,onAddMilestone,onEditTask,onEditMilestone,taskControls,onBulkTasks,userId,today:initialToday,timezone=DEFAULT_TASK_TIME_ZONE,asOf,focusTaskId,focusTaskRequest,workflowGate,workflowOverrideReason,onWorkflowOverrideReason,onOverrideTaskStatus,overrideReady,busy,onRemoveTask,onBulkTaskChange,onBulkTaskRemove,onReorderTask,onSaveTask,taskSaveDisabled,onSaveOrder,onVerifyOrder,orderSaveIssue=null,orderVerifyRequired=false,orderDirty=false,advanced=false,onAdvancedToggle,dirtyTaskIds=[],toolbarActions}: {
+export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarReady,onTaskChange,onMilestoneChange,onAddTask,onDuplicateTask,onAddMilestone,onEditTask,onEditMilestone,taskControls,isWorkflowAdmin=false,onBulkTasks,userId,today:initialToday,timezone=DEFAULT_TASK_TIME_ZONE,asOf,focusTaskId,focusTaskRequest,workflowGate,workflowOverrideReason,onWorkflowOverrideReason,onOverrideTaskStatus,overrideReady,busy,onRemoveTask,onBulkTaskChange,onBulkTaskRemove,onReorderTask,onSaveTask,taskSaveDisabled,onSaveOrder,onVerifyOrder,orderSaveIssue=null,orderVerifyRequired=false,orderDirty=false,advanced=false,onAdvancedToggle,dirtyTaskIds=[],toolbarActions}: {
   onAdvancedToggle?:()=>void;dirtyTaskIds?:string[];toolbarActions?:ReactNode;advanced?:boolean;id:string;revision:number;body:ProjectBody;disabled:boolean;dirty:boolean;sidecarReady:boolean;today:string;timezone?:string;asOf?:string;focusTaskId?:string|null;focusTaskRequest?:number;
   onDuplicateTask:(taskId:string)=>void;
   onTaskChange:(index:number,changes:Partial<Task>)=>void;
@@ -173,6 +174,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   onAddTask:(milestoneId:string|null)=>void;
   onAddMilestone:()=>void; onEditTask:(taskId:string)=>void; onEditMilestone:(milestoneId:string)=>void;
   taskControls:ProjectTaskControl[];
+  isWorkflowAdmin?:boolean;
   onBulkTasks:(milestoneId:string,status:'done'|'todo')=>void;
   onBulkTaskChange:(taskIds:string[],changes:Partial<Task>)=>void;
   onBulkTaskRemove:(taskIds:string[])=>void;
@@ -473,7 +475,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const statusMenu=(task:Task)=><Popover>
     <PopoverTrigger asChild><button type="button" disabled={disabled||(!schedule.ready&&task.startOn===undefined)} title={!schedule.ready&&task.startOn===undefined?'Loading the saved start date…':undefined} aria-label={'Change status of '+task.title} className="inline-flex min-h-8 items-center gap-1.5 rounded-lg px-1.5 hover:bg-muted disabled:opacity-50"><ProjectTaskStateIcon status={displayStatus(task)}/><span className="sr-only">{task.status}</span></button></PopoverTrigger>
     <PopoverContent align="start" className="w-44 space-y-1 p-2">
-      {([{value:'todo',label:'Backlog'},{value:'doing',label:'In progress'},{value:'blocked',label:'Blocked'},{value:'done',label:'Completed'}] as {value:Task['status'];label:string}[]).map(option=><button type="button" key={option.value} aria-pressed={task.status===option.value} disabled={disabled} className="flex min-h-9 w-full items-center gap-2 rounded-md px-2 text-left text-xs hover:bg-muted" onClick={()=>updateTask(task,{status:option.value})}><ProjectTaskStateIcon status={option.value}/><span className="flex-1">{option.label}</span>{task.status===option.value&&<Check size={13}/>}</button>)}
+      {([{value:'todo',label:'Backlog'},{value:'doing',label:'In progress'},{value:'blocked',label:'Blocked'},{value:'in_review',label:'In review'},{value:'rejected',label:'Rejected'},{value:'done',label:'Completed'}] as {value:Task['status'];label:string}[]).filter(option=>option.value!=='rejected'||isWorkflowAdmin).map(option=><button type="button" key={option.value} aria-pressed={task.status===option.value} disabled={disabled} className="flex min-h-9 w-full items-center gap-2 rounded-md px-2 text-left text-xs hover:bg-muted" onClick={()=>updateTask(task,{status:option.value})}><ProjectTaskStateIcon status={option.value}/><span className="flex-1">{option.label}</span>{task.status===option.value&&<Check size={13}/>}</button>)}
     </PopoverContent>
   </Popover>;
   const openFullEditor=(taskId:string)=>{openTask(taskId);};
@@ -606,6 +608,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     const children=subtasks.filter(item=>item.taskId===task.id);
     const startOn=taskStartOn(task,schedule.rows.get(task.id)?.start_on??null);
     const priority=taskControls.find(row=>row.taskId===task.id)?.priority??null;
+    const reviewControl=taskControls.find(row=>row.taskId===task.id);
     const code=presentation.rows.find(row=>row.task_id===task.id)?.code??'Draft';
     const canEditDates=!disabled;
     const completionBlocked=workflowGate?.taskId===task.id;
@@ -615,6 +618,8 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
         {task.archived&&<p role="status" className="rounded-lg bg-muted p-3 text-xs">Archived task. History, dependencies and completion requirements are retained. <button type="button" disabled={workplanDisabled} className="underline" onClick={()=>{updateTask(task,{archived:false});setBulkMessage('Restore added to your draft. Save task or Save all changes to apply.');}}>Restore in draft</button></p>}
         <TaskInlineText taskId={task.id} value={task.title} disabled={disabled} onChange={title=>updateTask(task,{title})}/>
       </div>
+
+      {isWorkflowAdmin&&reviewControl&&<TaskReviewRequirements projectId={id} projectRevision={revision} control={reviewControl} disabled={disabled||dirty}/ >}
 
       <div className="grid grid-cols-2 gap-3">
         <section className="min-w-0 space-y-1.5" aria-label="Task status">

@@ -26,7 +26,7 @@ export const workplanDraftBodySchema = z.object({
     startTime: text(5).nullable().optional(),
     dueTime: text(5).nullable().optional(),
     timeZone: text(100).optional(),
-    status: z.enum(['todo', 'doing', 'blocked', 'done']),
+    status: z.enum(['todo', 'doing', 'blocked', 'in_review', 'rejected', 'done']),
     milestoneId: text(100).nullable(),
     notes: text(2000),
   }).strict()).max(100),

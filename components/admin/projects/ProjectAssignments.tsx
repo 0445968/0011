@@ -66,7 +66,10 @@ export function useProjectAssignments(projectId: string, projectRevision?: numbe
       return true;
     } catch (cause) {
       if(cause instanceof ProjectCommandError&&cause.kind==='conflict')await load();
-      setError(cause instanceof Error ? cause.message : 'Assignment could not save.');
+      if(cause instanceof ProjectCommandError&&cause.kind==='unknown'){
+        const refreshed=await load();
+        setError(refreshed?'Assignment result was uncertain. The latest saved members were refreshed; check them before trying again.':cause.message);
+      }else setError(cause instanceof Error ? cause.message : 'Assignment could not save.');
       return false;
     } finally { pending.current=false;setBusy(false); }
   }, [busy, load, projectId, router]);

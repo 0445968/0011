@@ -74,6 +74,7 @@ type Props = {
   selectedTask?:string;
   selectedMilestone?:string;
   taskControls?: ProjectTaskControl[];
+  isWorkflowAdmin?:boolean;
   id: string;
   userId: string;
   record: ProjectRecord | null;
@@ -247,6 +248,7 @@ export function ProjectWorkspace({
   selectedTask,
   selectedMilestone,
   taskControls = [],
+  isWorkflowAdmin=false,
 }: Props) {
   const router = useRouter();
 
@@ -263,7 +265,6 @@ export function ProjectWorkspace({
   const [overviewTaskId,setOverviewTaskId]=useState<string|null>(selectedTask??null);
   const [taskFocusRequest,setTaskFocusRequest]=useState(0);
   useEffect(()=>{if(selectedTask){setOverviewTaskId(selectedTask);setTaskFocusRequest(value=>value+1);}},[selectedTask]);
-  useEffect(()=>{if(workflowGate){setAdvanced(false);setOverviewTaskId(workflowGate.taskId);setTaskFocusRequest(value=>value+1);}},[workflowGate?.taskId]);
   function focusTaskDetails(taskId:string) {
     setAdvanced(false);setOverviewTaskId(taskId);
     setTaskFocusRequest(value=>value+1);
@@ -465,19 +466,16 @@ export function ProjectWorkspace({
     index: number,
     changes: Partial<Task>
   ) {
-    setBody((previous) =>
-      previous
-        ? {
-            ...previous,
-            tasks: previous.tasks.map(
-              (task, i) =>
-                i === index
-                  ? { ...task, ...changes }
-                  : task
-            ),
-          }
-        : previous
-    );
+    setWorkflowGate(current=>current?.taskId===body?.tasks[index]?.id&&changes.status&&changes.status!=='done'?null:current);
+    setBody((previous) => previous ? {
+      ...previous,
+      tasks: previous.tasks.map((task, i) => {
+        if(i!==index)return task;
+        const control=taskControls.find(row=>row.taskId===task.id);
+        const requested=changes.status==='done'&&control?.requiresStaffReview&&(!isWorkflowAdmin||task.status!=='in_review')?'in_review':changes.status;
+        return {...task,...changes,...(requested?{status:requested}:{})};
+      }),
+    } : previous);
   }
 
   /* =======================================================
@@ -489,8 +487,12 @@ export function ProjectWorkspace({
     const selected=new Set(taskIds);
     setBody(previous=>{
       if(!previous)return previous;
-      const candidate={...previous,tasks:previous.tasks.map(task=>
-        selected.has(task.id)?{...task,...changes}:task)};
+      const candidate={...previous,tasks:previous.tasks.map(task=>{
+        if(!selected.has(task.id))return task;
+        const control=taskControls.find(row=>row.taskId===task.id);
+        const status=changes.status==='done'&&control?.requiresStaffReview&&(!isWorkflowAdmin||task.status!=='in_review')?'in_review':changes.status;
+        return {...task,...changes,...(status?{status}:{})};
+      })};
       if(!('status' in changes)&&!('milestoneId' in changes))return candidate;
       return {...candidate,milestones:candidate.milestones.map(milestone=>{
         if(milestone.status==='done')return milestone;
@@ -520,7 +522,7 @@ export function ProjectWorkspace({
      ======================================================= */
 
   function reorderTask(taskId:string,milestoneId:string|null,overTaskId:string|null,position:'before'|'after'|'end'){
-    if(!body||locked||!drafts.ready||drafts.recoverable||drafts.conflict||saveOutcomeUnknown||workflowGate)return false;
+    if(!body||locked||!drafts.ready||drafts.recoverable||drafts.conflict||saveOutcomeUnknown)return false;
     const next=reorderProjectTasks(body,taskId,milestoneId,overTaskId,position);
     if(next===body)return false;
     setBody(previous=>{
@@ -998,7 +1000,7 @@ export function ProjectWorkspace({
       {drafts.error && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-100"><p>Draft reconciliation unavailable: {drafts.error}. Your edits remain in the editor until a discard is confirmed.</p><button type="button" className={controlClass} disabled={busy} onClick={() => { if (window.confirm('Discard the private draft and load the latest saved project?')) void controller.discard().then(ok => { if (ok) setMessage('The private draft was discarded. The latest saved project is loaded.'); }); }}>Discard draft and load latest</button></div>}
       {serverBlockers.length > 0 && <section role="alert" className="space-y-2 rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-950 dark:border-red-800 dark:bg-red-950 dark:text-red-100"><p className="font-semibold">Complete these tasks before completing this milestone.</p>{serverBlockers.map(milestone => <div key={milestone.milestoneId}><p className="font-medium">{milestone.milestoneTitle}{milestone.needsTask ? ' — add at least one linked task' : ''}</p><ul className="ml-4 mt-1 list-disc">{milestone.tasks.map(task => <li key={task.taskId}><a className="underline" href={`#${taskDomId(task.taskId)}`} onClick={event=>{event.preventDefault();openAdvanced(task.taskId);}}>{task.title}</a>{task.taskIncomplete ? ' — task is not completed' : ''}{task.subtasks.map(subtask => <span key={subtask.id}>; unfinished subtask: {subtask.title}</span>)}</li>)}</ul></div>)}</section>}
       {workflowGate && <section role="alert" aria-label="Task workflow requirement" className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
-        <p className="font-semibold">{workflowGate.title}: {workflowGate.requirement}</p>
+        <div className="flex items-start justify-between gap-3"><p className="font-semibold">{workflowGate.title}: {workflowGate.requirement}</p><button type="button" className="shrink-0 underline" onClick={()=>setWorkflowGate(null)}>Dismiss</button></div>
         <p>The status change is still a private draft. <button type="button" className="underline" onClick={()=>focusTaskDetails(workflowGate.taskId)}>Open the highlighted task settings</button> to review its saved and draft values.</p>
         <ul className="ml-4 list-disc">{workflowGate.correctiveActions.map(action=><li key={action}>{action}</li>)}</ul>
         {!workflowGate.overrideAvailable&&<p className="font-medium">This action is available only to a designated project workflow admin, and only for a new client-task completion transition.</p>}
@@ -1028,6 +1030,7 @@ export function ProjectWorkspace({
         onEditTask={taskId=>focusTaskDetails(taskId)}
         onEditMilestone={milestoneId=>router.push('/projects/'+id+'?tab=phases&milestone='+encodeURIComponent(milestoneId))}
         taskControls={taskControls}
+        isWorkflowAdmin={isWorkflowAdmin}
         workflowGate={workflowGate}
         workflowOverrideReason={workflowOverrideReason}
         onWorkflowOverrideReason={setWorkflowOverrideReason}
