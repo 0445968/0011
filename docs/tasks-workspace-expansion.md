@@ -98,3 +98,14 @@ Bundle smaller requests with the next substantive patch; no standalone small-cha
 - Desktop search slides into reserved space, otherwise expands as a full-width second row without moving toolbar controls. Mobile full-width search above filters. Keep the toggle in the toolbar, omit the field icon in expanded mode.
 - Move task timezone editing to Project Brief with explicit project-default and existing-task timezone semantics.
 - Colored tag catalog and date-column weekday/time display preferences remain queued.
+
+
+## Work recovery and task controls follow-up
+- Existing saved task priority and assignees can be edited without saving unrelated task drafts. Assignment popovers open beside their triggers in table, list, milestone previews and full editor. New task records must exist before sidecar assignment.
+- Empty task starts read Not started; due dates retain the dash. Clock-fading In progress, purple-pink Loader In review, and Octagon-X Rejected.
+- Review displays/categories derive from the latest existing completion-review request; completed tasks leave active review categories. Generalized client-review routing for staff-owned tasks remains in the review-workflow roadmap.
+- Local per-staff/project checkpoints protect edits before server debounce; server private drafts remain authoritative and recover through an upfront prompt. Recovery rebases against newer canonical projects and requires choices for conflicting fields.
+- Discard flushes a recoverable server snapshot first. The last recovery copy remains accessible in Draft changes, even after intentional discard; discard does not automatically restore it on reload.
+- Workspace Work recovery settings preserve copies for 1/7/14/30/60 days (30 default). RLS hides expired copies immediately; a daily authenticated cleanup removes them. Primary intentionally saved private drafts are distinct from expiring recovery copies.
+- Internal navigation/refresh and standard reload shortcuts offer Save changes, Save as draft, Discard and Stay. Browser Reload/Close retains the browser's standard warning because custom beforeunload dialogs are prohibited by browsers.
+- Migration: workplan_recovery adds private recovery storage, retention preferences, trigger-only snapshot preservation and security-invoker review display view.

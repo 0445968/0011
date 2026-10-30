@@ -5,14 +5,11 @@ import {
   Upload,
 } from 'lucide-react';
 
-import { Caveat } from 'next/font/google';
+import localFont from 'next/font/local';
 
 import { Reveal } from '@/components/portfolio/Reveal';
 
-const caveat = Caveat({
-  subsets: ['latin'],
-  weight: ['500', '600', '700'],
-});
+const caveat = localFont({src:'../../public/fonts/google/Caveat.woff2',weight:'500 700',display:'swap'});
 
 export const metadata: Metadata = {
   title: 'Careers',

@@ -1,3 +1,4 @@
+import {taskDisplayState,type ReviewStates} from './task-review-state';
 import {taskDeadlineDay,taskIsOverdue} from './deadlines';
 import type { ProjectBody } from './schema';
 import { effectiveTaskPhases } from './metrics';
@@ -23,6 +24,7 @@ export type WorkplanFilterContext = {
   links: ProjectHierarchyResponse['milestonePhases'];
   controls: ProjectTaskControl[];
   assignments: ProjectAssignmentWorkspace['tasks'];
+  reviewStates?:ReviewStates;
   today: string;
   timezone?:string;now?:string;
 };
@@ -81,9 +83,9 @@ export function workplanMilestoneMatches(milestone: Milestone, filters: Workplan
 export type TaskGrouping = 'none' | 'milestone' | 'status' | 'side';
 export function groupWorkplanTasks(tasks: Task[], grouping: TaskGrouping, context: WorkplanFilterContext) {
   const groups=new Map<string,{key:string;label:string;tasks:Task[]}>();
-  const labels: Record<string,string>={todo:'To do',doing:'In progress',blocked:'Blocked',done:'Completed',bivi:'Bivi',client:'Client',unknown:'Responsibility not saved'};
+  const labels: Record<string,string>={in_review:'In review',rejected:'Rejected',todo:'To do',doing:'In progress',blocked:'Blocked',done:'Completed',bivi:'Bivi',client:'Client',unknown:'Responsibility not saved'};
   for (const task of tasks) {
-    const key=grouping==='milestone' ? task.milestoneId??'unassigned' : grouping==='status' ? task.status
+    const key=grouping==='milestone' ? task.milestoneId??'unassigned' : grouping==='status' ? taskDisplayState(task,context.reviewStates)
       : grouping==='side' ? context.assignments.find(row=>row.task_id===task.id)?.side??'unknown' : 'all';
     const label=grouping==='milestone' ? context.body.milestones.find(row=>row.id===key)?.title??'Unassigned tasks' : grouping==='none' ? 'Tasks' : labels[key];
     if (!groups.has(key)) groups.set(key,{key,label,tasks:[]});

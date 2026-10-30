@@ -1,4 +1,6 @@
 'use client';
+import {taskDisplayState,type ReviewStates} from '@/lib/projects/task-review-state';
+import {useProjectMutationRefresh} from './useProjectMutationRefresh';
 import {useTaskWorkspace} from '../workspace/TaskWorkspaceContext';
 import {WorkspaceRecordDetails} from '../StaffWorkspaceShell';
 import {taskRecordId} from '@/lib/admin/workspace/navigation';
@@ -6,7 +8,7 @@ import {TaskRowMenu,TaskActionButton,type TaskAction} from './TaskActionMenu';
 import {TaskInlineText} from './TaskInlineText';
 import {TaskCategory} from './TaskCategory';
 
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useCallback,useEffect, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter,useSearchParams } from 'next/navigation';
 import { postProjectCommand } from '@/lib/projects/immediate-command';
@@ -81,7 +83,7 @@ function TaskPriorityCell({projectId,taskId,priority,revision,disabled,overdue=f
     <PopoverTrigger asChild><button type="button" disabled={disabled||busy} className="inline-flex min-h-8 items-center gap-2 rounded-lg px-2 hover:bg-muted disabled:opacity-50" aria-label={'Change task priority, currently '+(overdue?'urgent (overdue)':current??'not set')}><PriorityBars priority={overdue?'urgent':current}/><span className="capitalize">{overdue?'Urgent':current??'Not set'}</span></button></PopoverTrigger>
     <PopoverContent align="start" className="w-44 space-y-1 p-2">
       {priorityChoices.map(option=><button key={option.label} type="button" className="flex min-h-8 w-full items-center gap-3 rounded-md px-2 text-left text-xs hover:bg-muted" aria-pressed={current===option.value} disabled={busy||disabled||saveRequired} onClick={()=>void choose(option.value)}><PriorityBars priority={option.value}/>{option.label}{current===option.value&&<Check size={13}/>}</button>)}
-      {saveRequired&&<p role="status" className="p-1 text-[11px] text-muted-foreground">Save task changes first to edit priority.</p>}{overdue&&<p className="p-1 text-[11px] text-muted-foreground">Urgent while overdue. Your chosen priority returns when completed or rescheduled.</p>}
+      {saveRequired&&<p role="status" className="p-1 text-[11px] text-muted-foreground">Save this new task once before assigning its priority.</p>}{overdue&&<p className="p-1 text-[11px] text-muted-foreground">Urgent while overdue. Your chosen priority returns when completed or rescheduled.</p>}
       {error&&<p role="alert" className="p-1 text-[11px] text-destructive">{error}</p>}
     </PopoverContent>
   </Popover>;
@@ -89,10 +91,10 @@ function TaskPriorityCell({projectId,taskId,priority,revision,disabled,overdue=f
 
 /** A native date input covers the full icon-and-date control so any click opens
  * the calendar, including when the field has no date. */
-function TaskDateCell({label,value,disabled,icon,onChange,overdue=false}:{
-  label:string;value:string|null;disabled:boolean;icon:ReactNode;overdue?:boolean;onChange:(value:string|null)=>void;
+function TaskDateCell({label,value,disabled,icon,onChange,overdue=false,emptyLabel='—'}:{
+  label:string;value:string|null;disabled:boolean;icon:ReactNode;overdue?:boolean;emptyLabel?:string;onChange:(value:string|null)=>void;
 }){
-  const formatted=value?new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'UTC'}).format(new Date(value+'T12:00:00Z')):'—';
+  const formatted=value?new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'UTC'}).format(new Date(value+'T12:00:00Z')):emptyLabel;
   return <label title={label+(value?': '+formatted:': Not set')}
     className={(overdue?'text-red-600 dark:text-red-400 ':'text-muted-foreground ')+"relative inline-flex min-h-8 max-w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 text-[11px] hover:bg-muted/50 focus-within:ring-2 focus-within:ring-ring has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50"}>
     {icon}<span className="truncate tabular-nums">{formatted}</span>
@@ -184,6 +186,15 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const now=useProjectClock(asOf);
   const today=localDateTime(now,timezone).date;
   const presentation=useTaskPresentation(id,revision);
+  const [reviewStates,setReviewStates]=useState<ReviewStates>({});
+  const [reviewFilter,setReviewFilter]=useState('all');
+  const [reviewError,setReviewError]=useState('');
+  const reviewGeneration=useRef(0);
+  const loadReviews=useCallback(async()=>{const generation=++reviewGeneration.current;try{const response=await fetch('/api/admin/projects/'+id+'/review-states',{cache:'no-store'});const data=await response.json();if(generation!==reviewGeneration.current)return;if(!response.ok)throw new Error(data.error);setReviewStates(data.states);setReviewError('');}catch{if(generation===reviewGeneration.current)setReviewError('Review states could not load.');}},[id]);
+  const cancelReviews=useCallback(()=>{reviewGeneration.current++;},[]);
+  useEffect(()=>{void loadReviews();return cancelReviews;},[loadReviews,revision,cancelReviews]);
+  useProjectMutationRefresh(id,loadReviews);
+  const displayStatus=(task:Task)=>taskDisplayState(task,reviewStates) as Task['status']|'in_review'|'rejected';
   const [tagFilter,setTagFilter]=useState('');
   const [selectedTaskIds,setSelectedTaskIds]=useState<string[]>([]);
   const [bulkMessage,setBulkMessage]=useState('');
@@ -277,8 +288,8 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const canEditSidecar=!disabled&&!dirty&&sidecarReady&&!hierarchy.busy&&!hierarchy.conflict&&hierarchy.data?.projectRevision===revision;
   const phaseLinks=hierarchy.data?.milestonePhases??[];
   const subtasks=hierarchy.data?.subtasks??[];
-  const context={body,links:phaseLinks,controls:taskControls,assignments:assignments.data?.tasks??[],today,timezone,now};
-  const matchingTasks=body.tasks.filter(task=>Boolean(task.archived)===archivedView&&workplanTaskMatches(task,filters,context)&&(!tagFilter||presentation.rows.find(row=>row.task_id===task.id)?.tags.includes(tagFilter)));
+  const context={body,links:phaseLinks,controls:taskControls,assignments:assignments.data?.tasks??[],today,timezone,now,reviewStates};
+  const matchingTasks=body.tasks.filter(task=>Boolean(task.archived)===archivedView&&(reviewFilter==='all'||displayStatus(task)===reviewFilter)&&workplanTaskMatches(task,filters,context)&&(!tagFilter||presentation.rows.find(row=>row.task_id===task.id)?.tags.includes(tagFilter)));
   const matchingMilestones=body.milestones.filter(milestone=>workplanMilestoneMatches(milestone,filters,context)&&(!tagFilter||matchingTasks.some(task=>task.milestoneId===milestone.id)));
   const cardGrid='grid grid-cols-1 items-start gap-3 md:grid-cols-2 xl:grid-cols-3';
   const memberOptions=[...new Map([...(assignments.data?.staff??[]),...(assignments.data?.clients??[])].map(person=>[person.id,person])).values()];
@@ -375,7 +386,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
       title="Draft changes — not applied" className="pointer-events-none absolute right-0 top-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-blue-600 dark:border-card"/>}
     <button type="button" className={miniButton+' bivi-task-edit-button'} aria-label={'Open task '+task.title+' in workspace tab'} title={dirty?'Save task changes before opening a workspace tab':'Open in workspace tab'} disabled={dirty||!sidecarReady||!presentation.rows.some(row=>row.task_id===task.id)} onClick={()=>openTaskWorkspace(id,task.id,task.title)}><SquareArrowOutUpRight size={15}/></button>
   <TaskActionButton title={task.title} actions={taskActions(task)}/></span>;
-  const taskPreview=(task:Task)=><TaskRowMenu key={task.id} actions={taskActions(task)}><div className="bivi-task-row flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-xs hover:bg-transparent">{taskSelectControl(task)}<ProjectTaskStateIcon status={task.status}/><button type="button" className="min-w-0 flex-1 text-left hover:underline" onClick={()=>openTask(task.id)} aria-label={`Open task ${task.title}`}>{task.title}</button>{taskPeople(task)}<span className={'inline-flex items-center gap-1 '+(taskIsOverdue(task,context)?'text-red-600 dark:text-red-400':'text-muted-foreground')}><Flag size={12} aria-hidden/>{taskDeadlineLabel(task,timezone)||'—'}</span>{taskEditControl(task)}</div></TaskRowMenu>;
+  const taskPreview=(task:Task)=><TaskRowMenu key={task.id} actions={taskActions(task)}><div className="bivi-task-row flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-xs hover:bg-transparent">{taskSelectControl(task)}<ProjectTaskStateIcon status={displayStatus(task)}/><button type="button" className="min-w-0 flex-1 text-left hover:underline" onClick={()=>openTask(task.id)} aria-label={`Open task ${task.title}`}>{task.title}</button><TaskMemberPicker taskId={task.id} controls={assignments} disabled={disabled||Boolean(task.archived)}/><span className={'inline-flex items-center gap-1 '+(taskIsOverdue(task,context)?'text-red-600 dark:text-red-400':'text-muted-foreground')}><Flag size={12} aria-hidden/>{taskDeadlineLabel(task,timezone)||'—'}</span>{taskEditControl(task)}</div></TaskRowMenu>;
   const milestoneCard=(milestone:Milestone)=>{
     const stats=milestoneStats(body,milestone.id);
     const isOpen=expanded[milestone.id]===true;
@@ -423,7 +434,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const columnValue=(task:Task,column:TaskColumn):ReactNode=>{
     if(column==='priority'){
       const priority=taskControls.find(row=>row.taskId===task.id)?.priority??null;
-      return <TaskPriorityCell projectId={id} taskId={task.id} priority={priority} revision={revision} disabled={disabled||Boolean(task.archived)} saveRequired={dirty||!sidecarReady} overdue={taskIsOverdue(task,context)}/>;
+      return <TaskPriorityCell projectId={id} taskId={task.id} priority={priority} revision={revision} disabled={disabled||Boolean(task.archived)} saveRequired={!taskControls.some(row=>row.taskId===task.id)} overdue={taskIsOverdue(task,context)}/>;
     }
     if(column==='status')return statusMenu(task);
     if(column==='milestone'){
@@ -433,7 +444,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     if(column==='due')return <div className={taskIsOverdue(task,context)?'text-red-600 dark:text-red-400':''}><TaskDateCell label={'Due date for '+task.title} value={task.dueOn} overdue={taskIsOverdue(task,context)}
       disabled={disabled} icon={<Flag size={13} aria-hidden/>}
       onChange={value=>updateTask(task,{dueOn:value})}/>{task.dueTime&&<span className="block text-[10px]">{taskTimeLabel(task.dueTime,task.timeZone)}</span>}</div>;
-    if(column==='start')return <div><TaskDateCell label={'Start date for '+task.title}
+    if(column==='start')return <div><TaskDateCell emptyLabel="Not started" label={'Start date for '+task.title}
       value={taskStartOn(task,schedule.rows.get(task.id)?.start_on??null)}
       disabled={disabled} icon={<Rocket size={13} aria-hidden/>}
       onChange={value=>updateTask(task,{startOn:value})}/>{task.startTime&&<span className="block text-[10px] text-muted-foreground">{taskTimeLabel(task.startTime,task.timeZone)}</span>}</div>;
@@ -451,10 +462,10 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
       const tags=presentation.rows.find(item=>item.task_id===task.id)?.tags??[];
       return <button type="button" className="min-h-8 max-w-full truncate text-left text-xs" title="Edit tags in full task editor" aria-label={'Edit tags for '+task.title} onClick={()=>openTask(task.id)}>{tags.join(', ')||'—'}</button>;
     }
-    return <button type="button" className="min-h-8" title="Edit assignees in full task editor" aria-label={'Edit assignees for '+task.title} onClick={()=>openTask(task.id)}>{taskPeople(task)}</button>;
+    return <TaskMemberPicker taskId={task.id} controls={assignments} disabled={disabled||Boolean(task.archived)}/>;
   };
   const statusMenu=(task:Task)=><Popover>
-    <PopoverTrigger asChild><button type="button" disabled={disabled||(!schedule.ready&&task.startOn===undefined)} title={!schedule.ready&&task.startOn===undefined?'Loading the saved start date…':undefined} aria-label={'Change status of '+task.title} className="inline-flex min-h-8 items-center gap-1.5 rounded-lg px-1.5 hover:bg-muted disabled:opacity-50"><ProjectTaskStateIcon status={task.status}/><span className="sr-only">{task.status}</span></button></PopoverTrigger>
+    <PopoverTrigger asChild><button type="button" disabled={disabled||(!schedule.ready&&task.startOn===undefined)} title={!schedule.ready&&task.startOn===undefined?'Loading the saved start date…':undefined} aria-label={'Change status of '+task.title} className="inline-flex min-h-8 items-center gap-1.5 rounded-lg px-1.5 hover:bg-muted disabled:opacity-50"><ProjectTaskStateIcon status={displayStatus(task)}/><span className="sr-only">{task.status}</span></button></PopoverTrigger>
     <PopoverContent align="start" className="w-44 space-y-1 p-2">
       {([{value:'todo',label:'Backlog'},{value:'doing',label:'In progress'},{value:'blocked',label:'Blocked'},{value:'done',label:'Completed'}] as {value:Task['status'];label:string}[]).map(option=><button type="button" key={option.value} aria-pressed={task.status===option.value} disabled={disabled} className="flex min-h-9 w-full items-center gap-2 rounded-md px-2 text-left text-xs hover:bg-muted" onClick={()=>updateTask(task,{status:option.value})}><ProjectTaskStateIcon status={option.value}/><span className="flex-1">{option.label}</span>{task.status===option.value&&<Check size={13}/>}</button>)}
     </PopoverContent>
@@ -557,8 +568,9 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const viewTaskButton=(task:Task)=><TaskRowMenu key={task.id} actions={taskActions(task)}><div className="bivi-task-row flex min-w-0 items-center gap-2 rounded-lg border border-border/60 bg-white p-2 text-xs transition-colors hover:border-border/60 hover:bg-transparent dark:bg-card dark:hover:bg-transparent">
     {taskSelectControl(task)}
     <button type="button" onClick={()=>openTask(task.id)} className="flex min-w-0 flex-1 items-start gap-2 p-1 text-left">
-      <ProjectTaskStateIcon status={task.status}/><span className="min-w-0 flex-1"><span className="block break-words font-medium">{task.title}</span><span className={'mt-1 block text-[11px] '+(taskIsOverdue(task,context)?'text-red-600 dark:text-red-400':'text-muted-foreground')}>{task.dueOn?`Due ${taskDeadlineLabel(task,timezone)}`:'No due date'}</span></span><span className="shrink-0">{taskPeople(task)}</span>
+      <ProjectTaskStateIcon status={displayStatus(task)}/><span className="min-w-0 flex-1"><span className="block break-words font-medium">{task.title}</span><span className={'mt-1 block text-[11px] '+(taskIsOverdue(task,context)?'text-red-600 dark:text-red-400':'text-muted-foreground')}>{task.dueOn?`Due ${taskDeadlineLabel(task,timezone)}`:'No due date'}</span></span>
     </button>
+    <TaskMemberPicker taskId={task.id} controls={assignments} disabled={disabled||Boolean(task.archived)}/>
     {taskEditControl(task)}
   </div></TaskRowMenu>;
   const dateTasks=orderedTasks.filter(task=>task.dueOn).sort((a,b)=>compareTaskDeadlines(a,b,timezone));
@@ -601,17 +613,17 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
       <div className="grid grid-cols-2 gap-3">
         <section className="min-w-0 space-y-1.5" aria-label="Task status">
           <p className="text-[11px] font-medium text-muted-foreground">Status</p>
-          <div className="flex min-h-[40px] items-center rounded-lg border border-border/70 bg-white px-2 dark:bg-card">{task.archived?<ProjectTaskStateIcon status={task.status}/>:statusMenu(task)}<span className="ml-1 truncate text-xs">{task.status==='todo'?'Backlog':task.status==='doing'?'In progress':task.status==='done'?'Completed':'Blocked'}</span></div>
+          <div className="flex min-h-[40px] items-center rounded-lg border border-border/70 bg-white px-2 dark:bg-card">{task.archived?<ProjectTaskStateIcon status={displayStatus(task)}/>:statusMenu(task)}<span className="ml-1 truncate text-xs">{displayStatus(task)==='in_review'?'In review':displayStatus(task)==='rejected'?'Rejected':task.status==='todo'?'Backlog':task.status==='doing'?'In progress':task.status==='done'?'Completed':'Blocked'}</span></div>
         </section>
         <section className="min-w-0 space-y-1.5" aria-label="Task priority">
           <p className="text-[11px] font-medium text-muted-foreground">Priority</p>
           <div className="flex min-h-[40px] items-center rounded-lg border border-border/70 bg-white px-1.5 dark:bg-card">
-            <TaskPriorityCell projectId={id} taskId={task.id} priority={priority} revision={revision} disabled={disabled} saveRequired={dirty||!sidecarReady} overdue={taskIsOverdue(task,context)}/>
+            <TaskPriorityCell projectId={id} taskId={task.id} priority={priority} revision={revision} disabled={disabled} saveRequired={!taskControls.some(row=>row.taskId===task.id)} overdue={taskIsOverdue(task,context)}/>
           </div>
         </section>
         <section className="min-w-0 space-y-1.5" aria-label="Task start date">
           <p className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground"><Rocket size={13} aria-hidden/>Start date</p>
-          <div className="flex min-h-[40px] items-center rounded-lg border border-border/70 bg-white px-2 dark:bg-card"><TaskDateCell label={'Start date for '+task.title} value={startOn} disabled={!canEditDates} icon={<Rocket size={13} aria-hidden/>} onChange={value=>updateTask(task,{startOn:value})}/></div>
+          <div className="flex min-h-[40px] items-center rounded-lg border border-border/70 bg-white px-2 dark:bg-card"><TaskDateCell emptyLabel="Not started" label={'Start date for '+task.title} value={startOn} disabled={!canEditDates} icon={<Rocket size={13} aria-hidden/>} onChange={value=>updateTask(task,{startOn:value})}/></div>
         </section>
         <label className="min-w-0 space-y-1.5">
           <span className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground"><Flag size={13} aria-hidden/>Due date</span>
@@ -666,7 +678,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
             <p className="text-[11px] font-medium text-muted-foreground">Milestone</p>
             {assignment(task)}
           </div>
-          <TaskMemberPicker taskId={task.id} controls={assignments} disabled={disabled||dirty||!sidecarReady}/>
+          <TaskMemberPicker taskId={task.id} controls={assignments} disabled={disabled}/>
           {dependencyPreview(task)}
           <ProjectLifecycleControls id={id} controls={taskControls} tasks={body.tasks} events={[]} taskOnlyTaskId={task.id}
             taskOnlyDisabled={disabled||dirty||!sidecarReady} showTaskManagement={false}/>
@@ -737,7 +749,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
           })()}
           {(!selectedTaskId||!openTasks[selectedTaskId])&&<div className="space-y-3">
             <p className="text-xs text-muted-foreground">Choose a recently opened task or select one from the table.</p>
-            {recentTaskIds.filter(taskId=>body.tasks.some(task=>task.id===taskId)).slice(0,showMoreRecent?10:5).map(taskId=>{const task=body.tasks.find(task=>task.id===taskId)!;return <button key={taskId} type="button" className="flex min-h-11 w-full items-center gap-2 rounded-lg border border-border p-3 text-left text-xs hover:bg-muted" onClick={()=>openTask(taskId)}><ProjectTaskStateIcon status={task.status}/><span className="min-w-0 flex-1 truncate">{task.title}</span></button>;})}
+            {recentTaskIds.filter(taskId=>body.tasks.some(task=>task.id===taskId)).slice(0,showMoreRecent?10:5).map(taskId=>{const task=body.tasks.find(task=>task.id===taskId)!;return <button key={taskId} type="button" className="flex min-h-11 w-full items-center gap-2 rounded-lg border border-border p-3 text-left text-xs hover:bg-muted" onClick={()=>openTask(taskId)}><ProjectTaskStateIcon status={displayStatus(task)}/><span className="min-w-0 flex-1 truncate">{task.title}</span></button>;})}
             {!recentTaskIds.some(taskId=>body.tasks.some(task=>task.id===taskId))&&<p className="py-4 text-xs text-muted-foreground">No recently opened tasks yet.</p>}
             {recentTaskIds.filter(taskId=>body.tasks.some(task=>task.id===taskId)).length>5&&<button type="button" className="min-h-9 text-xs font-medium underline" onClick={()=>setShowMoreRecent(value=>!value)}>{showMoreRecent?'Show less':'Show more'}</button>}
           </div>}
@@ -750,8 +762,11 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
     filters.assignee!=='all' || filters.status!=='all' || filters.deadline!=='all' ||
     filters.from || filters.to || tagFilter
   );
+  const reviewCount=(state:string)=>body.tasks.filter(task=>!task.archived&&displayStatus(task)===state).length;
   const canReorderMilestones=!disabled&&!busy&&sidecarReady&&sort==='default'&&!orderFiltersActive;
   return <section aria-label="Project tasks" className="bivi-workplan space-y-3 bg-white text-slate-950 dark:bg-background dark:text-foreground">
+    {reviewError&&<p role="alert" className="text-xs text-destructive">{reviewError}</p>}
+    {(reviewCount('in_review')>0||reviewCount('rejected')>0||reviewFilter!=='all')&&<div className="flex gap-2" aria-label="Completion review categories"><button type="button" className="rounded px-3 py-2 text-xs" aria-pressed={reviewFilter==='all'} onClick={()=>setReviewFilter('all')}>All tasks</button>{(['in_review','rejected'] as const).filter(state=>reviewCount(state)>0||reviewFilter===state).map(state=><button type="button" key={state} aria-pressed={reviewFilter===state} className="inline-flex items-center gap-2 rounded bg-muted px-3 py-2 text-xs" onClick={()=>setReviewFilter(state)}><ProjectTaskStateIcon status={state}/>{state==='in_review'?'In review':'Rejected'} ({reviewCount(state)})</button>)}</div>}
     {workspaceTask&&<WorkspaceRecordDetails kind="task" id={taskRecordId(id,workspaceTask.id)} title={workspaceTask.title} status={workspaceTask.status} dueDate={workspaceTask.dueOn??undefined}/>}
     <ProjectWorkplanToolbar actions={toolbarActions} onAdvancedToggle={onAdvancedToggle} advanced={advanced} projectId={id} filters={filters} onChange={change=>setFilters(previous=>({...previous,...change}))}
       view={view} onView={next=>{setView(next);if(next==='milestone')setSort('default');}} grouping={grouping} onGrouping={setGrouping} sort={sort} onSort={setSort}
@@ -805,7 +820,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
             return <div key={task.id} className="bivi-task-row grid gap-2 border-b border-border/40 py-2 sm:grid-cols-[minmax(175px,1fr)_minmax(180px,2fr)]">
               <div className="flex min-w-0 items-center gap-2">{taskSelectControl(task)}<button type="button" className="min-w-0 truncate text-left text-xs font-medium hover:underline" onClick={()=>openTask(task.id)}>{task.title}</button></div>
               <div className="min-w-0">
-                <p className="mb-1 text-[10px] text-muted-foreground">{taskDateTimeLabel(start,startEvent.time,startEvent.timeZone)||'Start not set'} → {taskDateTimeLabel(end,endEvent.time,endEvent.timeZone)||'Due not set'}</p>
+                <p className="mb-1 text-[10px] text-muted-foreground">{taskDateTimeLabel(start,startEvent.time,startEvent.timeZone)||'Not started'} → {taskDateTimeLabel(end,endEvent.time,endEvent.timeZone)||'—'}</p>
                 {valid?<div className="relative h-4 w-full overflow-hidden rounded bg-slate-100 dark:bg-muted"><div className="absolute inset-y-0 rounded bg-blue-500/80" style={{left:`${left}%`,width:`${width}%`}} title={`${duration} calendar days from ${start} through ${end}`}/></div>:<span className="text-[10px] text-muted-foreground">Set start and due dates to display the schedule bar.</span>}
               </div>
             </div>;
