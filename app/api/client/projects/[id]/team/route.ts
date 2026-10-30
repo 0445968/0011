@@ -12,7 +12,10 @@ export async function GET(_request: Request, { params }: { params: { id: string 
   const result = await access.client.rpc('client_project_assignment_workspace', { p_request: params.id });
   if (result.error) return adminReply({ error: 'Project team could not load.' }, result.error.code === '42501' ? 403 : 503);
   const parsed = clientProjectAssignmentWorkspaceSchema.safeParse(result.data);
-  return parsed.success ? adminReply(parsed.data) : adminReply({ error: 'Project team data was invalid.' }, 503);
+  if(!parsed.success)return adminReply({error:'Project team data was invalid.'},503);
+  const receipts=await access.client.rpc('client_project_task_change_receipts',{p_request:params.id});
+  if(receipts.error)return adminReply({error:'Task proposal receipts could not load.'},503);
+  return adminReply({...parsed.data,pendingChanges:receipts.data??[]});
 }
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
@@ -37,5 +40,5 @@ export async function POST(request: Request, { params }: { params: { id: string 
     phase_closed: [409, 'Choose a currently active project phase.'],
   };
   if (failures[outcome]) return adminReply({ error: failures[outcome][1] }, failures[outcome][0]);
-  return outcome === 'saved' ? adminReply({ saved: true, taskId: result.data?.taskId ?? null }) : adminReply({ error: 'The project team change could not be confirmed.' }, 503);
+  return outcome==='submitted'?adminReply({saved:true,submitted:true,taskId:result.data?.taskId??null,proposalIds:result.data?.proposalIds??[]}):outcome === 'saved' ? adminReply({ saved: true, taskId: result.data?.taskId ?? null }) : adminReply({ error: 'The project team change could not be confirmed.' }, 503);
 }

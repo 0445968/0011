@@ -12,6 +12,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
   if (!access.allowed) return adminReply({ error: 'Staff access required.' }, access.status);
   if (!z.string().uuid().safeParse(params.id).success) return adminReply({ error: 'Project unavailable.' }, 404);
   const result = await access.client.rpc('project_task_response_workspace', { p_request: params.id });
+  if(result.error?.code==='42501')return adminReply({error:'Only a workspace admin can record this task review decision.',code:'permission_denied'},403);
   if (result.error) return adminReply({ error: 'Client task responses could not load. Check migration 036.' }, 503);
   const url=new URL(_request.url),status=url.searchParams.get('status')||'pending',kind=url.searchParams.get('kind')||'all';
   const page=Math.max(1,Math.min(10000,Math.floor(Number(url.searchParams.get('page'))||1)));
@@ -60,6 +61,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
         p_response: command.responseId, p_action: command.decision,
         p_note: command.note, p_revision: command.projectRevision,
       });
+  if(result.error?.code==='42501')return adminReply({error:'Only a workspace admin can record this task review decision.',code:'permission_denied'},403);
   if (result.error) return adminReply({ error: result.error.code === '23514' ? 'Completion rejected. Complete subtasks, resolve dependencies, and reopen affected completed milestones or phases before review.' : 'The action could not be saved.',code:result.error.code==='23514'?'validation_rejected':'database_error' }, result.error.code === '23514' ? 422 : 503);
   const failures: Record<string, [number, string]> = {
     not_found: [404, 'Task or request no longer exists.'],

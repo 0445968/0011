@@ -463,7 +463,7 @@ export default async function ProjectPage({
           =================================================== */}
 
       {tab === 'requests' && record && <ProjectWorkspace id={params.id} userId={user.id} record={record} history={data.history} gateReady={gateReady} operationalStatus={operationalStatus} savedToday={calendarToday} timezone={calendarPreference.timezone} asOf={asOf} taskControls={lifecycle?.controls??[]} isWorkflowAdmin={isWorkflowAdmin}
-        overview={<ProjectTaskResponseReview id={params.id} focusRequestId={searchParams.request} tasks={record.body.tasks.map(task=>({id:task.id,title:task.title}))}/>}/>}
+        overview={<ProjectTaskResponseReview isWorkflowAdmin={isWorkflowAdmin} id={params.id} focusRequestId={searchParams.request} tasks={record.body.tasks.map(task=>({id:task.id,title:task.title}))}/>}/>}
 
       {tab === 'phases' && record && lifecycle?.lifecycle && calendarExtras && scheduleRows && (
         <ProjectPhasesPage

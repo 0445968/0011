@@ -6,6 +6,7 @@ export type ProjectWorkflowGate = {
 };
 
 export type ProjectSaveOutcome =
+  | {kind:'approval_submitted';revision:number;body:ProjectBody;proposalIds:string[]}
   | { kind: 'saved'; revision: number; body?: ProjectBody; refreshWarning?: string }
   | { kind: 'revision_conflict'; error: string }
   | { kind: 'validation_rejected'; code: string; error: string; blockers: unknown[]; workflowGate?: ProjectWorkflowGate }
@@ -14,6 +15,7 @@ export type ProjectSaveOutcome =
 
 /** Interpret domain result codes, never HTTP status alone, as the save outcome. */
 export function interpretProjectSaveOutcome(status: number, payload: Record<string, unknown>): ProjectSaveOutcome {
+  if(payload.submitted===true&&Number.isInteger(payload.revision)&&payload.body&&Array.isArray(payload.proposalIds))return {kind:'approval_submitted',revision:payload.revision as number,body:payload.body as ProjectBody,proposalIds:payload.proposalIds as string[]};
   if (payload.saved === true && Number.isInteger(payload.revision)) {
     return {
       kind: 'saved',

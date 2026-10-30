@@ -13,7 +13,7 @@ export function deferred(){let resolve;const promise=new Promise(done=>{resolve=
 export function projectEditor(options={}){
  const slots=[],timers=new Map(),events=new EventTarget(),cache=new Map();let cursor=0,changed=false,effects=[],value,nextTimer=0,alive=true;
  const server={body:copy(plan),revision:1,generation:0,draft:null,posts:0,deletes:0,reads:0,...options.server};
- const controls={postGate:null,draftGate:null,deleteGate:null,validation:false,loseReply:false,readFails:false,refreshFails:false,...options.controls};
+ const controls={postGate:null,draftGate:null,deleteGate:null,validation:false,submitForApproval:false,loseReply:false,readFails:false,refreshFails:false,...options.controls};
  const props={id:'project',userId:options.userId,record:{body:copy(plan),revision:1,state:'active'}};
  const router={refresh(){if(controls.refreshFails)throw new Error('Refresh failed');},replace(){}};
  const same=(a,b)=>a&&b&&a.length===b.length&&a.every((item,index)=>Object.is(item,b[index]));
@@ -45,12 +45,13 @@ export function projectEditor(options={}){
    server.posts++;if(controls.postGate)await controls.postGate.promise;
    if(command.expectedRevision!==server.revision)return reply({code:'revision_conflict',error:'Changed elsewhere'},409);
    if(controls.validation)return reply({code:'task_subtasks_incomplete',error:'Unfinished subtasks',blockers:[]},422);
-   server.body=copy(command.body);server.body.tasks=server.body.tasks.map(({edits,...task})=>task);server.saveId=command.saveId;server.revision++;
+   if(controls.submitForApproval){server.saveId=command.saveId;server.saveOutcome='submitted';server.submittedBody=copy(command.body);if(controls.loseReply)throw new TypeError('Lost response');return reply({submitted:true,body:server.body,revision:server.revision,proposalIds:['proposal']});}
+   server.saveOutcome='saved';server.body=copy(command.body);server.body.tasks=server.body.tasks.map(({edits,...task})=>task);server.saveId=command.saveId;server.revision++;
    if(controls.loseReply)throw new TypeError('Lost response');
    return reply({saved:true,body:server.body,revision:server.revision});
   }
   server.reads++;if(controls.readFails)throw new TypeError('Read unavailable');
-  return reply({body:server.body,revision:server.revision,...(url.includes('saveId='+server.saveId)?{saveId:server.saveId}:{})});
+  return reply({body:server.body,revision:server.revision,...(url.includes('saveId='+server.saveId)?{saveId:server.saveId,saveOutcome:server.saveOutcome}:{})});
  }
  const storage=options.storage??new Map();
  const localStorage={getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value),removeItem:key=>storage.delete(key)};

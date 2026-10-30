@@ -2,13 +2,13 @@ import {projectBodySchema,type ProjectBody} from './schema';
 import {normalizeWorkplanBodyForSave,projectBodiesEqual} from './workplan-merge';
 import {interpretProjectSaveOutcome} from './workplan-save-outcome';
 
-export type SavedProject={body:ProjectBody;revision:number;saveId?:string};
+export type SavedProject={body:ProjectBody;revision:number;saveId?:string;saveOutcome?:string;proposalIds?:string[]};
 export async function readSavedProject(id:string,saveId?:string):Promise<SavedProject>{
   const response=await fetch(`/api/admin/projects/${id}${saveId?"?saveId="+encodeURIComponent(saveId):""}`,{cache:'no-store',signal:AbortSignal.timeout(20000)});
   const json=await response.json();
   const body=projectBodySchema.safeParse(json.body);
   if(!response.ok||!body.success||!Number.isInteger(json.revision))throw new Error(json.error||'The latest saved project could not be verified.');
-  return {body:body.data,revision:json.revision,saveId:json.saveId};
+  return {body:body.data,revision:json.revision,saveId:json.saveId,saveOutcome:json.saveOutcome,proposalIds:json.proposalIds};
 }
 
 /** The captured submission, never the changing editor body, determines an uncertain result. */

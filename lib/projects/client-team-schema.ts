@@ -10,6 +10,7 @@ export const clientProjectTeamCommandSchema = z.discriminatedUnion('action', [
 ]);
 
 export const clientProjectAssignmentWorkspaceSchema = z.object({
+  pendingChanges:z.array(z.object({id:uuid,taskId:z.string(),title:z.string(),version:z.number(),status:z.string(),submittedAt:z.string(),reviewNote:z.string()})).optional(),
   currentUserId: uuid,
   ownerId: uuid.nullable(),
   isOwner: z.boolean(),
