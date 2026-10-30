@@ -78,7 +78,9 @@ Older `R7`/`R8` labels are **historical phase names**; do not schedule all of th
 | PR / date | Source → final production SHA | Delivered | DB change (repository name → actual ledger version) | Checks | Signed-in production acceptance | Next |
 | --- | --- | --- | --- | --- | --- | --- |
 | [#29](https://github.com/0445968/0011/pull/29) / 2026-10-30 | `915681f` → `bff39ec` | Task ownership/creation and change proposals; managers; optional weekday-first dates | `20261030203102_task_authority_and_change_approvals` → `20261030203102` | PR reports typecheck, build, 251 platform checks and database regressions | **Not tested** in signed-in browser by this audit | Task editor usability; staff email invitation; ordered completion approval |
-| Documentation setup / 2026-10-30 | See the pull request that introduces these three tracking files | Documentation only, no task/DB behavior | None | GitHub diff and CI if available | Not applicable | Next substantive task patch |
+| Documentation setup [#30](https://github.com/0445968/0011/pull/30) / 2026-10-30 | Documentation branch `bivi-persistent-dev-tracking-20261030`; verify merged SHA once deployed | Documentation only, no task/DB behavior | None | GitHub diff and CI if available | Not applicable | Next substantive task patch |
+
+**The documentation-only PR is #30. It is not the task-editor feature patch and does not alter any application feature status.**
 
 **Append a row after every release** with actual PR, merged/deployed SHA, tests and user acceptance. Keep prior entries; only update this snapshot header when a new known release baseline is verified. A documentation-only release must never be marked as delivering planned application features.
 
