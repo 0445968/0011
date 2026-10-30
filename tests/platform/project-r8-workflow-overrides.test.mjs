@@ -8,6 +8,8 @@ const extract=(file,name)=>read(file).match(new RegExp(`create (?:or replace )?f
 const migration=read('supabase/migrations/20261023181806_r8_task_status_validation_overrides.sql');
 const freshnessMigration=read('supabase/migrations/20261023182352_r8_relevant_review_freshness.sql');
 const removalMigration=read('supabase/migrations/20261023192405_project_task_removal_integrity.sql');
+const taskReviewMigration=read('supabase/migrations/20261030161430_staff_task_review_and_roles.sql');
+const taskReviewValidationMigration=read('supabase/migrations/20261030171500_task_review_status_validation.sql');
 const integrity='supabase/migrations/20261023130000_r7b_project_integrity.sql';
 const workspace='supabase/migrations/202610140024_my_tasks.sql';
 const projectId='00000000-0000-0000-0000-000000000010';
@@ -51,6 +53,7 @@ async function setup(initialTasks=[task('legacy-client','done'),task('bivi-task'
   create function project_phase_rank(text) returns integer language sql immutable as $$select case when $1='invalid' then 999 else 1 end$$;
  `);
  await db.exec(extract('supabase/migrations/202610060006_project_workspace.sql','valid_project_body'));
+ await db.exec(`create function public.valid_project_task_timing(jsonb,boolean) returns boolean language sql stable as $$select true$$;`);
  await db.exec(extract(workspace,'manage_inquiry_project'));
  await db.exec(extract(integrity,'project_effective_task_phases'));
  await db.exec(extract(integrity,'project_task_completion_approved'));
@@ -69,6 +72,8 @@ async function setup(initialTasks=[task('legacy-client','done'),task('bivi-task'
  await db.exec(migration);
  await db.exec(freshnessMigration);
  await db.exec(removalMigration);
+ await db.exec(taskReviewMigration);
+ await db.exec(taskReviewValidationMigration);
  await db.query(`select set_config('app.test_uid',$1,false)`,[admin]);
  return db;
 }
@@ -188,4 +193,30 @@ test('classifier returns an item-scoped corrective gate instead of mislabeling v
  assert.match(source,/client_completion_review_required\|task=/);
  assert.match(source,/correctiveActions/);
  assert.match(source,/current accepted Bivi review/);
+});
+
+test('admin review requirements route regular completion to In Review and enforce review before Done',async()=>{
+ const db=await setup([task('staff-review')]);try{
+  await db.query(`insert into project_workflow_override_admins(user_id) values($1)`,[admin]);
+  const policy=(await db.query(`select set_project_task_review_policy($1,'staff-review',true,false,1,1) result`,[projectId])).rows[0].result;
+  assert.equal(policy.result,'saved');
+  await db.query(`select set_config('app.test_uid',$1,false)`,[otherStaff]);
+  await assert.rejects(save(db,body([task('staff-review','done')]),1),/staff_task_review_required\|task=staff-review/);
+  assert.equal((await savedBody(db)).revision,1);
+  assert.equal((await save(db,body([task('staff-review','in_review')]),1)).rows[0].result.result,'saved');
+  await assert.rejects(save(db,body([task('staff-review','done')]),2),/staff_task_review_required\|task=staff-review/,'ordinary staff cannot approve their own review gate');
+  await db.query(`select set_config('app.test_uid',$1,false)`,[admin]);
+  assert.equal((await save(db,body([task('staff-review','done')]),2)).rows[0].result.result,'saved','admin approval completes the reviewed task');
+ }finally{await db.close();}
+});
+
+test('client-owned tasks default to client completion review and an admin can waive that gate',async()=>{
+ const db=await setup([task('client-policy')]);try{
+  await db.query(`insert into project_workflow_override_admins(user_id) values($1)`,[admin]);
+  const initial=(await db.query(`select requires_client_review from project_task_controls where request_id=$1 and task_id='client-policy'`,[projectId])).rows[0];
+  assert.equal(initial.requires_client_review,true);
+  await assert.rejects(save(db,body([task('client-policy','done')]),1),/client_completion_review_required\|task=client-policy/);
+  assert.equal((await db.query(`select set_project_task_review_policy($1,'client-policy',false,false,1,1) result`,[projectId])).rows[0].result.result,'saved');
+  assert.equal((await save(db,body([task('client-policy','done')]),1)).rows[0].result.result,'saved');
+ }finally{await db.close();}
 });

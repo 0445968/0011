@@ -13,7 +13,7 @@ export type WorkplanFilters = {
   phase: 'all' | 'unassigned' | ProjectPhase;
   side: 'all' | 'bivi' | 'client' | 'unknown';
   assignee: string;
-  status: 'all' | 'open' | 'not_started' | 'in_progress' | 'blocked' | 'done';
+  status: 'all' | 'open' | 'not_started' | 'in_progress' | 'blocked' | 'in_review' | 'rejected' | 'done';
   deadline: 'all' | 'overdue' | 'today' | 'next7' | 'dated' | 'undated';
   from: string;
   to: string;
@@ -34,7 +34,7 @@ export function workplanTaskPhases(task: Task, context: WorkplanFilterContext): 
   return effectiveTaskPhases(task,context.controls,context.links);
 }
 
-function statusMatches(status: Task['status'] | Milestone['status'], filter: WorkplanFilters['status']) {
+function statusMatches(status: string, filter: WorkplanFilters['status']) {
   return filter==='all' || (filter==='open' ? status!=='done' : filter==='not_started' ? status==='todo'||status==='planned'
     : filter==='in_progress' ? status==='doing'||status==='in_progress' : status===filter);
 }
@@ -67,7 +67,7 @@ export function workplanTaskMatches(task: Task, filters: WorkplanFilters, contex
   if (filters.side!=='all' && (assignment?.side??'unknown')!==filters.side) return false;
   if (filters.assignee==='unassigned' && (!assignment || assignment.assignees.length>0)) return false;
   if (filters.assignee!=='all' && filters.assignee!=='unassigned' && !assignment?.assignees.includes(filters.assignee)) return false;
-  return statusMatches(task.status,filters.status) && dateMatches(task.dueOn,task.status,filters,context.today,task,context);
+  return statusMatches(taskDisplayState(task,context.reviewStates),filters.status) && dateMatches(task.dueOn,taskDisplayState(task,context.reviewStates),filters,context.today,task,context);
 }
 
 /** Child criteria must match the same task; unrelated children cannot satisfy different filters. */

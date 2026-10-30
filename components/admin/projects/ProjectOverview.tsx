@@ -31,11 +31,13 @@ const statusStyles = {
   todo: 'bg-muted text-muted-foreground',
   planned: 'bg-muted text-muted-foreground',
   doing: 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200',
+  in_review: 'bg-fuchsia-50 text-fuchsia-800 dark:bg-fuchsia-950 dark:text-fuchsia-200',
+  rejected: 'bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200',
   in_progress: 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200',
   blocked: 'bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-200',
   done: 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200',
 };
-const statusLabels = {todo:'To do',planned:'Planned',doing:'In progress',in_progress:'In progress',blocked:'Blocked',done:'Completed'};
+const statusLabels = {todo:'To do',planned:'Planned',doing:'In progress',in_progress:'In progress',blocked:'Blocked',in_review:'In review',rejected:'Rejected',done:'Completed'};
 function WorkStatus({status}: {status: keyof typeof statusStyles}) {
   return <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium ${statusStyles[status]}`}><ProjectTaskStateIcon status={status} />{statusLabels[status]}</span>;
 }

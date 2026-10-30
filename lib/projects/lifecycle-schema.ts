@@ -54,6 +54,8 @@ export const projectTaskControlSchema = z.object({
   service_id: z.string().nullable(),
   depends_on: z.string().nullable(),
   blocker_owner: blockerOwnerSchema,
+  requires_staff_review:z.boolean().optional(),
+  requires_client_review:z.boolean().optional(),
   client_note: z.string(),
   updated_at: z.string(),
 }).transform((row) => ({
@@ -68,6 +70,8 @@ export const projectTaskControlSchema = z.object({
   dependsOn: row.depends_on,
   blockerOwner: row.blocker_owner,
   clientNote: row.client_note,
+  requiresStaffReview:row.requires_staff_review??false,
+  requiresClientReview:row.requires_client_review??false,
   updatedAt: row.updated_at,
 }));
 

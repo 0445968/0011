@@ -316,6 +316,9 @@ export default async function ProjectPage({
           params.id
         )
       : null;
+  const workflowAdminResult=record&&['plan','requests'].includes(tab)?await client.rpc('is_project_workflow_admin'):null;
+  if(workflowAdminResult?.error)throw new Error('Workspace role could not load.');
+  const isWorkflowAdmin=workflowAdminResult?.data===true;
 
   const [calendarExtras, scheduleRows, phaseStatesResult, phaseColorsResult] = record && (tab === 'calendar' || tab === 'phases')
     ? await Promise.all([
@@ -450,6 +453,7 @@ export default async function ProjectPage({
             selectedTask={selectedTask}
             selectedMilestone={selectedMilestone}
             taskControls={lifecycle?.controls ?? []}
+            isWorkflowAdmin={isWorkflowAdmin}
           />
         </div>
       )}
@@ -458,7 +462,7 @@ export default async function ProjectPage({
           LIFECYCLE
           =================================================== */}
 
-      {tab === 'requests' && record && <ProjectWorkspace id={params.id} userId={user.id} record={record} history={data.history} gateReady={gateReady} operationalStatus={operationalStatus} savedToday={calendarToday} timezone={calendarPreference.timezone} asOf={asOf} taskControls={lifecycle?.controls??[]}
+      {tab === 'requests' && record && <ProjectWorkspace id={params.id} userId={user.id} record={record} history={data.history} gateReady={gateReady} operationalStatus={operationalStatus} savedToday={calendarToday} timezone={calendarPreference.timezone} asOf={asOf} taskControls={lifecycle?.controls??[]} isWorkflowAdmin={isWorkflowAdmin}
         overview={<ProjectTaskResponseReview id={params.id} focusRequestId={searchParams.request} tasks={record.body.tasks.map(task=>({id:task.id,title:task.title}))}/>}/>}
 
       {tab === 'phases' && record && lifecycle?.lifecycle && calendarExtras && scheduleRows && (
