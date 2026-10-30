@@ -40,3 +40,8 @@ export function compareTaskDeadlines(a:Task,b:Task,timezone=DEFAULT_TASK_TIME_ZO
   return (left.date??'9999-12-31').localeCompare(right.date??'9999-12-31')||
     (left.time??'24:00').localeCompare(right.time??'24:00')||((left.instant??0)-(right.instant??0));
 }
+
+/** Overdue urgency never overwrites the manually selected priority. */
+export function effectiveTaskPriority(task:Task,priority:string|null|undefined,context:DeadlineContext){
+  return taskIsOverdue(task,context)?'urgent':priority??null;
+}

@@ -84,3 +84,17 @@ Terminology: Asset types is the reusable directory in Templates; Required assets
 ## Delivery and verification
 
 Bundle smaller requests with the next substantive patch; no standalone small-change releases unless explicitly requested. Use coherent patches in the sequence above, preserving every requirement. Apply required Supabase migrations with matching repository versions and report them. Verify drafts, authorization, review bypass prevention, reversible archive, duplicate/move integrity, asset fulfillment recalculation, private list isolation, keyboard/touch controls and responsive layout. Production deployment follows the established checked-PR workflow because the user's admin portal is inaccessible in preview.
+
+
+## Task controls and overdue feedback (next bundle)
+- Inline priority popover in lists and full editor; pending draft/save reconciliation is explained in the popover rather than hiding the control.
+- Calculated overdue Urgent priority retains manual priority, returns after completion/rescheduling, and sorts consistently. My Tasks uses the same overdue meaning.
+- Red overdue date text, filled phase-colored milestone folders at 60% opacity, diagonal rocket start icon, empty start-date calendar control, blue Tags button, conditional Description heading.
+- Archived toggle moves into the count footer. Category focus no longer keeps the selection checkbox visible after collapsing.
+
+## Queued additions from latest feedback
+- Logo-row breadcrumbs on the left; workspace bar visibility menu in the staff avatar menu.
+- Single-row responsive toolbar: labels disappear from right-side Save controls first, then left-side filters; mobile Filters menu and horizontally scrollable labeled filter row.
+- Desktop search slides into reserved space, otherwise expands as a full-width second row without moving toolbar controls. Mobile full-width search above filters. Keep the toggle in the toolbar, omit the field icon in expanded mode.
+- Move task timezone editing to Project Brief with explicit project-default and existing-task timezone semantics.
+- Colored tag catalog and date-column weekday/time display preferences remain queued.
