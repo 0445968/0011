@@ -820,7 +820,7 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
             return <div key={task.id} className="bivi-task-row grid gap-2 border-b border-border/40 py-2 sm:grid-cols-[minmax(175px,1fr)_minmax(180px,2fr)]">
               <div className="flex min-w-0 items-center gap-2">{taskSelectControl(task)}<button type="button" className="min-w-0 truncate text-left text-xs font-medium hover:underline" onClick={()=>openTask(task.id)}>{task.title}</button></div>
               <div className="min-w-0">
-                <p className="mb-1 text-[10px] text-muted-foreground">{taskDateTimeLabel(start,startEvent.time,startEvent.timeZone)||'Start not set'} → {taskDateTimeLabel(end,endEvent.time,endEvent.timeZone)||'Due not set'}</p>
+                <p className="mb-1 text-[10px] text-muted-foreground">{taskDateTimeLabel(start,startEvent.time,startEvent.timeZone)||'Not started'} → {taskDateTimeLabel(end,endEvent.time,endEvent.timeZone)||'—'}</p>
                 {valid?<div className="relative h-4 w-full overflow-hidden rounded bg-slate-100 dark:bg-muted"><div className="absolute inset-y-0 rounded bg-blue-500/80" style={{left:`${left}%`,width:`${width}%`}} title={`${duration} calendar days from ${start} through ${end}`}/></div>:<span className="text-[10px] text-muted-foreground">Set start and due dates to display the schedule bar.</span>}
               </div>
             </div>;
