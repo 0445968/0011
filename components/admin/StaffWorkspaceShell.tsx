@@ -3,7 +3,7 @@
 
 import {TaskWorkspaceContext} from './workspace/TaskWorkspaceContext';
 import {taskRecordId,taskWorkspaceHref,parseTaskRecordId} from '@/lib/admin/workspace/navigation';
-import {WorkspaceBarsMenu,WorkspaceBarsButton} from './workspace/WorkspaceBarsMenu';
+import {WorkspaceBarsMenu,WorkspaceBarsAccountItems} from './workspace/WorkspaceBarsMenu';
 import {ProfileImage} from '@/components/profile-images/ProfileImage';
 import {ImageEditorDialog} from '@/components/profile-images/ImageEditor';
 import {
@@ -1622,7 +1622,6 @@ useEffect(() => {
               sm:px-6
             "
           >
-            <WorkspaceBarsButton/>
             <div
               className="
                 flex
@@ -1864,6 +1863,8 @@ useEffect(() => {
                     )}
                   </DropdownMenuLabel>
 
+                  <DropdownMenuSeparator />
+                  <WorkspaceBarsAccountItems />
                   <DropdownMenuSeparator />
                   {staffPublicId&&<DropdownMenuLabel className="font-mono text-xs">Staff ID {staffPublicId}</DropdownMenuLabel>}
                   <DropdownMenuItem onSelect={()=>setAvatarOpen(true)}>Edit profile image</DropdownMenuItem>
