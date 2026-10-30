@@ -63,6 +63,11 @@ test('unified task drafts autosave privately, commit atomically and verify retri
   const newSaved=(await db.query('select save_project_workplan_bundle($1,$2,2,$3) r',[request,fresh,randomUUID()])).rows[0].r;
   assert.equal(newSaved.result,'saved');assert.ok(newSaved.revision>2);
   assert.equal((await db.query("select priority from project_task_controls where request_id=$1 and task_id='new-task'",[request])).rows[0].priority,'medium');
+  for(const status of ['in_review','rejected']){
+   const current=await get();const reviewBody=structuredClone(current.body);reviewBody.tasks[0].status=status;
+   assert.equal((await db.query('select save_project_workplan_bundle($1,$2,$3,$4) r',[request,reviewBody,current.revision,randomUUID()])).rows[0].r.result,'saved');
+   assert.equal((await get()).body.milestones[0].status,'in_progress','unfinished review work keeps its milestone active');
+  }
   await db.query("select set_config('request.jwt.claim.sub',$1,false)",[other]);
   assert.equal((await db.query('select count(*)::int n from project_workplan_save_receipts where request_id=$1',[request])).rows[0].n,0,'receipts are private to the saving staff member');
  }finally{await db.close();}

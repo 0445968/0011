@@ -25,3 +25,5 @@ Toolbar dropdowns use viewport positioning outside the scrolling row's clipping 
 Assets/deliverable requirements and private personal to-do lists remain in the broader workspace expansion roadmap. Small UI requests stay bundled with substantive patches. Each production release follows the established checked PR workflow; preview does not provide the user's usable admin session.
 
 Migration `20261030193625_unified_task_drafts.sql` was applied to production and verified for the bundle RPC, receipt RLS, and anonymous denial. Platform verification passes 246 tests, including full-database transactional rollback, new-task settings, private draft persistence, stale settings and idempotent receipt checks; typecheck and production build pass.
+
+The same patch includes `20261030194407_review_milestone_activity.sql`, applied and verified in production. It preserves existing milestone completion guards and counts In Review/Rejected tasks as active work. The task editor now resolves completion-to-review routing before calculating milestone progress, preventing a premature milestone-completion prompt.

@@ -313,6 +313,8 @@ export function ProjectMilestoneBoard({id,revision,body,disabled,dirty,sidecarRe
   const updateTask=(task:Task,changes:Partial<Task>)=>{
     if(task.archived&&!Object.prototype.hasOwnProperty.call(changes,'archived')){setBulkMessage('Restore this task before editing it.');return;}
     const index=body.tasks.findIndex(item=>item.id===task.id);if(index<0)return;
+    const review=taskControls.find(row=>row.taskId===task.id);
+    if(changes.status==='done'&&(review?.requiresStaffReview||review?.requiresClientReview)&&(!isWorkflowAdmin||task.status!=='in_review'))changes={...changes,status:'in_review'};
     if(changes.status&&changes.status!=='todo'&&task.status==='todo'&&!taskStartOn(task,schedule.rows.get(task.id)?.start_on)){
       changes={...changes,startOn:autoStartDate(task)};
     }

@@ -152,7 +152,7 @@ export function normalizeWorkplanBodyForSave(body: ProjectBody): ProjectBody {
     tasks:body.tasks.map(({edits,...task})=>task),
     milestones: body.milestones.map(milestone => {
       if (milestone.status === 'done') return milestone;
-      const active = body.tasks.some(task => task.milestoneId === milestone.id && (task.status === 'doing' || task.status === 'blocked'));
+      const active = body.tasks.some(task => task.milestoneId === milestone.id && (task.status === 'doing' || task.status === 'blocked' || task.status === 'in_review' || task.status === 'rejected'));
       return { ...milestone, status: active ? 'in_progress' : 'planned' };
     }),
   };
