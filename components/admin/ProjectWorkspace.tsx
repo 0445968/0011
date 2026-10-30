@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 11047)
-Total output lines: 1064
-
 
 'use client';
 import {milestoneDomId} from '@/lib/calendar/links';
@@ -511,7 +508,435 @@ export function ProjectWorkspace({
   function bulkRemoveTasks(taskIds:string[]){
     if(!body||locked||drafts.conflict||saveOutcomeUnknown||!taskIds.length)return;
     const selected=new Set(taskIds);
-    const dependent=taskControls.find(control=>selected.has(cont…3047 tokens truncated…or);
+    const dependent=taskControls.find(control=>selected.has(control.dependsOn??''));
+    if(dependent){
+      setMessage('Selected tasks include a prerequisite for another task. Reassign dependencies before removal.');
+      return;
+    }
+    setBody(previous=>previous?{...previous,tasks:previous.tasks.filter(task=>!selected.has(task.id))}:previous);
+    setMessage(`${selected.size} tasks removed from the work-plan draft. Their saved history remains recorded; use Save all changes to apply the removal.`);
+  }
+
+  /* =======================================================
+     PROJECT-WIDE MANUAL COMPLETION ORDER
+     ======================================================= */
+
+  function reorderTask(taskId:string,milestoneId:string|null,overTaskId:string|null,position:'before'|'after'|'end'){
+    if(!body||locked||!drafts.ready||drafts.recoverable||drafts.conflict||saveOutcomeUnknown)return false;
+    const next=reorderProjectTasks(body,taskId,milestoneId,overTaskId,position);
+    if(next===body)return false;
+    setBody(previous=>{
+      if(!previous)return previous;
+      // Apply against the newest draft, preserving edits made during a drag.
+      const moved=reorderProjectTasks(previous,taskId,milestoneId,overTaskId,position);
+      if(moved===previous)return previous;
+      return {...moved,milestones:moved.milestones.map(milestone=>{
+        if(milestone.status==='done')return milestone;
+        const expected=expectedMilestoneStatus(moved,milestone.id);
+        return expected&&expected!=='done'&&expected!==milestone.status
+          ? {...milestone,status:expected}:milestone;
+      })};
+    });
+    setMessage('Project completion order changed. Use Save all changes to apply the draft order.');
+    return true;
+  }
+
+  /* =======================================================
+     UPDATE MILESTONE
+     ======================================================= */
+
+  function editMilestone(
+    index: number,
+    changes: Partial<Milestone>
+  ) {
+    setBody((previous) =>
+      previous
+        ? {
+            ...previous,
+            milestones:
+              previous.milestones.map(
+                (milestone, i) =>
+                  i === index
+                    ? {
+                        ...milestone,
+                        ...changes,
+                      }
+                    : milestone
+              ),
+          }
+        : previous
+    );
+  }
+
+  /* =======================================================
+     ADD TASK
+     ======================================================= */
+
+  function addTask(milestoneId: string | null = null) {
+    if (
+      !body ||
+      body.tasks.length >= 100
+    ) {
+      return;
+    }
+
+    const task: Task = {
+      id: crypto.randomUUID(),
+      title: 'New task',
+      owner: '',
+      dueOn: null,
+      status: 'todo',
+      milestoneId,
+      notes: '',
+    };
+
+    field('tasks', [
+      ...body.tasks,
+      task,
+    ]);
+
+    setTaskFilter('all');
+    setTaskQuery('');
+
+    setTaskPage(
+      Math.ceil(
+        (body.tasks.length + 1) /
+          TASK_PAGE_SIZE
+      )
+    );
+
+    setExpandedTaskId(task.id);
+    return task.id;
+  }
+
+  function duplicateTask(taskId:string){
+    const source=body?.tasks.find(task=>task.id===taskId);
+    if(!body||locked||!source||body.tasks.length>=100)return;
+    const task={...source,id:crypto.randomUUID(),title:(source.title+' (copy)').slice(0,300),owner:'',archived:false,status:'todo' as const,startOn:null,startTime:null};
+    field('tasks',[...body.tasks,task]);focusTaskDetails(task.id);
+  }
+
+  function bulkMilestoneTasks(milestoneId:string,status:'done'|'todo'){
+    if(!body||locked)return;
+    bulkEditTasks(body.tasks.filter(task=>task.milestoneId===milestoneId).map(task=>task.id),{status});
+  }
+
+  /* =======================================================
+     ADD MILESTONE
+     ======================================================= */
+
+  function addMilestone() {
+    if (
+      !body ||
+      body.milestones.length >= 20
+    ) {
+      return;
+    }
+
+    const milestoneId = crypto.randomUUID();
+    field('milestones', [
+      ...body.milestones,
+      {
+        id: milestoneId,
+        title: 'New milestone',
+        dueOn: null,
+        status: 'planned',
+      },
+    ]);
+
+    setMilestonePage(
+      Math.ceil(
+        (body.milestones.length + 1) /
+          MILESTONE_PAGE_SIZE
+      )
+    );
+    return milestoneId;
+  }
+
+  /* =======================================================
+     REMOVE TASK
+     ======================================================= */
+
+  function removeTask(taskId: string) {
+    const task = body?.tasks.find(item=>item.id===taskId);
+    if (!task) return;
+    const dependent = taskControls.find(control=>control.dependsOn===task.id);
+    if (dependent) {
+      setMessage(`Cannot remove “${task.title}” while “${body?.tasks.find(item=>item.id===dependent.taskId)?.title ?? dependent.taskId}” depends on it. Change that dependency first in Tasks & Milestones.`);
+      return;
+    }
+    if (
+      !window.confirm(
+        `Remove “${task.title}” from the work plan? Existing activity, notes, files and discussion history stay recorded. Save changes to confirm removal.`
+      )
+    ) {
+      return;
+    }
+
+    setBody((previous) =>
+      previous
+        ? {
+            ...previous,
+            tasks: previous.tasks.filter(item=>item.id!==taskId),
+          }
+        : previous
+    );
+
+    setExpandedTaskId(null);
+  }
+
+  /* =======================================================
+     REMOVE MILESTONE
+     ======================================================= */
+
+  function removeMilestone(
+    index: number,
+    milestoneId: string
+  ) {
+    if (
+      body?.tasks.some(
+        (task) =>
+          task.milestoneId === milestoneId
+      )
+    ) {
+      return;
+    }
+
+    if (
+      !window.confirm(
+        'Remove this milestone from the work plan?'
+      )
+    ) {
+      return;
+    }
+
+    setBody((previous) =>
+      previous
+        ? {
+            ...previous,
+            milestones:
+              previous.milestones.filter(
+                (_, i) => i !== index
+              ),
+          }
+        : previous
+    );
+  }
+
+  /* =======================================================
+     PROJECT COMMANDS
+     ======================================================= */
+
+  async function command(action: Command) {
+    if (busy || blocked) return false;
+
+    if(action==='save')return controller.save();
+    {
+      /* PROJECT STATE CHANGE */
+
+      if (dirty) {
+        setMessage(
+          'Save or discard your work-plan changes before changing project state.'
+        );
+        return;
+      }
+
+      if (
+        action !== 'activate' &&
+        !reason.trim()
+      ) {
+        return;
+      }
+
+      if (
+        (
+          action === 'activate' ||
+          action === 'resume' ||
+          action === 'complete'
+        ) &&
+        !gateReady
+      ) {
+        return;
+      }
+
+      if (
+        action === 'complete' &&
+        (
+          !body?.tasks.length ||
+          body.tasks.some(
+            (task) =>
+              task.status !== 'done'
+          ) ||
+          body.milestones.some(
+            (milestone) =>
+              milestone.status !== 'done'
+          )
+        )
+      ) {
+        return;
+      }
+
+      if (
+        !window.confirm(
+          confirmation[action]
+        )
+      ) {
+        return;
+      }
+    }
+
+    setBusy(true);
+    setMessage('');
+
+    try {
+      const response = await fetch(
+        `/api/admin/projects/${id}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type':
+              'application/json',
+          },
+          body: JSON.stringify({
+            action,
+            expectedRevision:
+              savedRevision,
+
+            ...(action === 'activate'
+                ? {}
+                : { reason }),
+          }),
+          signal:
+            AbortSignal.timeout(20000),
+        }
+      );
+
+      const result =
+        await response.json();
+
+      if (
+        response.status === 401
+      ) {
+        router.replace('/admin/login');
+        router.refresh();
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          result.error ||
+            'Project could not be saved.'
+        );
+      }
+
+      markWorkspaceSaved();
+      router.refresh();
+      return true;
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Project could not be saved.');
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function overrideTaskStatus() {
+    const gate=workflowGate;
+    if (!gate || !gate.overrideAvailable || !workflowOverrideReason.trim() || busy || !savedRevision) return false;
+    setBusy(true);setMessage('Saving admin workflow override…');
+    await drafts.suspendAutosaves();
+    try {
+      const result=await postProjectCommand(`/api/admin/projects/${id}/task-status-override`,{
+        taskId:gate.taskId,targetStatus:gate.targetStatus,expectedProjectRevision:savedRevision,reason:workflowOverrideReason.trim(),
+      });
+      if (!result.body || !Number.isInteger(result.revision)) throw new Error('The override was saved, but its canonical task and revision could not be confirmed. Refresh before retrying.');
+      const merged=drafts.reconcile(result.body,result.revision);
+      setWorkflowGate(null);setServerBlockers([]);setWorkflowOverrideReason('');
+      setMessage(`Admin workflow override saved for “${gate.title}”.${merged.conflicts.length?' Review the draft conflicts before saving.':' Other unsaved work-plan edits remain in your private draft.'}`);
+      refreshProjectSurfaces(id,router);
+      return true;
+    } catch(cause) {
+      setMessage(cause instanceof Error?cause.message:'The override could not be confirmed. Your work-plan draft remains available.');
+      return false;
+    } finally {
+      drafts.resumeAutosaves();setBusy(false);
+    }
+  }
+
+  const [draftPulse,setDraftPulse]=useState(false);
+  useEffect(()=>{
+    let timer:ReturnType<typeof setTimeout>;
+    const dismissed=(event:Event)=>{
+      const detail=(event as CustomEvent).detail;
+      if(detail?.projectId!==id||detail?.userId!==userId)return;
+      setDraftPulse(true);clearTimeout(timer);
+      timer=setTimeout(()=>setDraftPulse(false),4000);
+    };
+    window.addEventListener('bivi:draft-reminder-dismissed',dismissed);
+    return()=>{clearTimeout(timer);window.removeEventListener('bivi:draft-reminder-dismissed',dismissed);};
+  },[id,userId]);
+
+  /* =======================================================
+     ACTIVATION VIEW
+     ======================================================= */
+
+  if (!record || !body) {
+    return (
+      <section className="rounded-xl border border-border bg-card p-4">
+        <h2 className="text-sm font-semibold">
+          Activate project
+        </h2>
+
+        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+          {gateReady
+            ? 'The accepted scope, agreement/deposit readiness and onboarding completion are verified.'
+            : 'Review qualification, accepted scope, readiness and onboarding before activation.'}
+        </p>
+
+        <Button
+          type="button"
+          className="mt-4"
+          disabled={
+            busy ||
+            blocked ||
+            !gateReady
+          }
+          onClick={() =>
+            void command('activate')
+          }
+        >
+          {busy
+            ? 'Activating…'
+            : 'Activate project'}
+        </Button>
+
+        {message && (
+          <p
+            role="status"
+            className="mt-3 text-xs text-destructive"
+          >
+            {message}
+          </p>
+        )}
+
+        {blocked && (
+          <Button
+            type="button"
+            variant="outline"
+            className="ml-2 mt-3"
+            onClick={() =>
+              void controller.checkUncertainSave()
+            }
+          >
+            Reload
+          </Button>
+        )}
+      </section>
+    );
+  }
+
+  const hasTaskMessage=Boolean(drafts.recoverable||message||drafts.error||blocked||saveOutcomeUnknown);
+  const taskMessageKey=String(drafts.recoverable?.updatedAt??'')+'|'+message+'|'+String(blocked)+'|'+String(saveOutcomeUnknown)+'|'+String(drafts.error);
   const showMessageDot=hasTaskMessage&&lastReadMessage!==taskMessageKey;
   const toolbarIcon='relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-white hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40 dark:bg-card';
   const toolbarActions=!overview?<div className="ml-1 flex shrink-0 items-center gap-1.5" aria-label="Workplan save and messages">
