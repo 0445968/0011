@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {PGlite} from '@electric-sql/pglite';
 import {loadProjectTs} from './load-project-ts.mjs';
-import {plan,projectEditor} from './project-editor-harness.mjs';
+import {plan,projectEditor,deferred} from './project-editor-harness.mjs';
 const {recoveryKey,readCheckpoint,writeCheckpoint}=loadProjectTs('lib/projects/work-recovery.ts');
 const {taskDisplayState}=loadProjectTs('lib/projects/task-review-state.ts');
 test('local recovery isolates staff and project, expires on retention changes, and preserves discarded snapshots',()=>{
@@ -54,4 +54,12 @@ test('intentional discard stays discarded on reload while its last checkpoint re
  await first.current.discard();await first.flush();const storage=first.storage;first.unmount();
  const next=projectEditor({userId:'staff',storage});await next.flush();assert.equal(next.current.drafts.recoverable,null);
  assert.equal(next.current.drafts.recoveryCopy.body.tasks[0].title,'Accidentally discarded');next.current.drafts.reviewRecovery();await next.flush();assert.equal(next.current.drafts.recoveryPrompt,true);next.unmount();
+});
+
+test('new edits typed during a manual save retain their interruption checkpoint',async()=>{
+ const first=projectEditor({userId:'staff'});await first.flush();first.edit(body=>body.tasks[0].title='Submitted title');await first.flush();
+ first.controls.postGate=deferred();const saving=first.current.save();await first.flush();first.edit(body=>body.tasks[0].notes='Newer than submitted save');await first.flush();
+ first.controls.postGate.resolve();await saving;await first.flush();assert.equal(first.server.body.tasks[0].notes,'');
+ const storage=first.storage;first.unmount();const next=projectEditor({userId:'staff',storage,server:{body:first.server.body,revision:first.server.revision}});await next.flush();
+ assert.equal(next.current.drafts.recoverable.body.tasks[0].notes,'Newer than submitted save');next.unmount();
 });

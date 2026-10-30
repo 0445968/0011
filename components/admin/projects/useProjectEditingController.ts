@@ -36,7 +36,7 @@ export function useProjectEditingController(id:string,record:RecordState,initial
   const dirty=Boolean(bodyState&&savedState&&!projectBodiesEqual(bodyState,savedState));
 
   async function adoptSaved(candidate:ProjectBody,current:SavedProject,warning?:string){
-    const cleared=await drafts.clearSavedDraft();
+    const cleared=await drafts.clearSavedDraft(candidate);
     if(!active.current)return false;
     drafts.acceptSaved(candidate,current.body,current.revision);
     submitted.current=null;

@@ -320,11 +320,11 @@ export function useProjectWorkDraft({ id, userId, initialRevision, revision, bod
   }, [suspendAutosaves, deletePrivateDraft, setSavedBody, setRevision, setBody,applyRebase,recoverable,revision,checkpointKey,persist]);
 
   /** Clear a private draft after the canonical project save has already succeeded. */
-  const clearSavedDraft = useCallback(async () => {
+  const clearSavedDraft = useCallback(async (submitted?:ProjectBody) => {
     await suspendAutosaves();
     try {
       await deletePrivateDraft();
-      if(checkpointKey){try{window.localStorage.removeItem(checkpointKey);}catch{/* Server recovery remains. */}}
+      if(checkpointKey&&(!submitted||latest.current&&projectBodiesEqual(latest.current,submitted))){try{window.localStorage.removeItem(checkpointKey);}catch{/* Server recovery remains. */}}
       setRecoverable(null);setRecoveryPrompt(false);
       setRebase(null);
       setConflict(false);
