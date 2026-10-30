@@ -6,7 +6,7 @@ Requested 29 October 2026. Baseline: production PR #17, bfa439ef0be7b7316d26a250
 
 Implemented: whole menu-bar and record-section-bar visibility in Workspace Settings; top-bar right-click menu and an accessible hamburger button for bar visibility, sidebar expansion and guarded refresh; transparent task-row hover; inline responsive search; collapsible Table/List categories with add, select, clear and collapse actions; removal of the Requests explanatory link. Existing task drafts and selection identities are preserved. No database migration is required.
 
-Remaining in subsequent coordinated patches: per-task action/context menus and archive semantics; workspace task tabs/sidebar subitems; editor/title/description/tabs; colored tags; weekday/time column toggles; list subtasks; asset types/requirements/deliverables; review flow; private to-do lists. Review routing defaults to internal or client, chosen per task, following the recommendation in the conversation.
+Remaining in subsequent coordinated patches: per-task action/context menus and archive semantics; workspace task tabs/sidebar subitems; editor/title/description/tabs; list subtasks; asset types/requirements/deliverables; review flow; private to-do lists. Review routing defaults to internal or client, chosen per task, following the recommendation in the conversation.
 
 ## Editor and task menu patch
 
@@ -14,7 +14,7 @@ Implemented in this patch: click-to-edit task title and description, empty Add d
 
 Migration: private_task_notes, recorded remotely as 20261029193740. Existing staff task notes and their history are now visible only to their authors; note mutation already requires author identity. Direct reads and privileged activity readers enforce the same ownership. Notes with no remaining author stay inaccessible.
 
-Remaining: reversible archive, dedicated workspace task tabs/open-tab hover action, sidebar subitem preferences, colored tags, weekday/time column options, subtask list visibility, assets/deliverables, review flow and personal to-do lists. Move currently means moving between milestones in the same project; cross-project moves require explicit handling of dependencies and related records.
+Remaining: reversible archive, dedicated workspace task tabs/open-tab hover action, sidebar subitem preferences, weekday/time column options, subtask list visibility, assets/deliverables, review flow and personal to-do lists. Move currently means moving between milestones in the same project; cross-project moves require explicit handling of dependencies and related records.
 
 ## Workspace task tabs patch
 
@@ -41,7 +41,7 @@ Archive does not remove tasks from the existing project task limit. Restore reta
 - Define duplicate/move/archive using existing permissions, revisions, associations and private-draft safeguards. Archive is reversible and distinct from delete. Sharing never grants access implicitly.
 - Collapsible task categories with counts and a three-dot menu: add task, select category tasks, category-wide actions. Empty header space toggles collapse; child controls do not.
 - Show/hide subtasks in task lists, preserving hierarchy and distinct selection identities.
-- Independent weekday and time display options for start/due columns. Match supplied weekday/date reference.
+- Independent weekday and time display options for start/due columns. Match supplied weekday/date reference. (Implemented in PR #26.)
 
 ## 2. Task editor, tags and navigation
 
@@ -49,7 +49,7 @@ Archive does not remove tasks from the existing project task limit. Restore reta
 - Empty description offers Add description. Existing description edits on click in a muted box, darker while editing.
 - Preserve private draft, Save task and Save all semantics, including keyboard commit/cancel and safe navigation.
 - Activity, Files, Comments and Notes (private) become sliding/underlined tabs matching the reference. Preserve contents, counts and drafts when changing tabs. Verify private notes authorization.
-- Colored label tags default to gray. Create/select color in task editor; manage names/colors in Project Brief. Stable tag identity keeps references intact when renamed.
+- Colored label tags default to gray. Create/select color in task editor; manage names/colors in Project Brief. Stable tag identity keeps references intact when renamed. (Implemented in PR #26.)
 - Tasks can open as distinct persistent workspace tabs, with canonical record identity and direct links.
 - Workspace Settings controls which project records, milestones, tasks and other supported subitems appear in sidebar. Settings must not discard open tabs or bookmarks.
 
@@ -97,9 +97,11 @@ Bundle smaller requests with the next substantive patch; no standalone small-cha
 - The task toolbar stays on one row. Labels progressively collapse as width decreases, including the Save all changes label, while icon controls remain available. The strip scrolls horizontally on narrow/mobile screens.
 - Desktop search expands into the toolbar's reserved flex space when at least 220px is available; otherwise a full-width field appears below without moving the controls. Mobile search is full width above the scrollable toolbar. The field has no search icon; the toggle remains in the toolbar.
 
-## Queued additions from latest feedback
-- Move task timezone editing to Project Brief with explicit project-default and existing-task timezone semantics.
-- Colored tag catalog and date-column weekday/time display preferences remain queued.
+## Project timezone, colored tags and date columns (PR #26)
+- Project timezone is configured in Project Brief and is the default for newly entered or changed task dates/times. Existing task timestamps keep their stored timezone and instant.
+- Tags retain stable assignment keys while Project Brief controls display labels and colors. New tags can be created with a color in the task editor; existing tags default to gray. Catalog edits are audited.
+- Start/due date columns can independently show weekday and time through the Columns menu; preferences are per user and project.
+- Migration `20261030163000_project_timezone_and_task_tag_catalog` seeds project timezone settings and existing tags, adds staff-only catalog/settings access, audit history, and revision-checked staff RPCs. Applied to production.
 
 
 ## Work recovery and task controls follow-up
