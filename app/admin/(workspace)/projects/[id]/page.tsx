@@ -63,6 +63,7 @@ import { ProjectCalendar } from '@/components/admin/projects/ProjectCalendar';
 import { ProjectPhasesPage } from '@/components/admin/projects/ProjectPhasesPage';
 import { ProjectTaskResponseReview } from '@/components/admin/projects/ProjectTaskResponseReview';
 import {ProjectBriefIdentity} from '@/components/admin/projects/ProjectBriefIdentity';
+import {ProjectWorkspaceSettings} from '@/components/admin/projects/ProjectWorkspaceSettings';
 import {ProjectOperationalStatus} from '@/components/admin/projects/ProjectOperationalStatus';
 import {ProjectBriefGovernance} from '@/components/admin/projects/ProjectBriefGovernance';
 import type {OperationalStatus} from '@/lib/projects/operational-status';
@@ -337,6 +338,12 @@ export default async function ProjectPage({
   const calendarPreference=taskToday(workPreferences?.data?.timezone||'America/Chicago',new Date(asOf));
   const calendarToday=calendarPreference.today;
 
+  const workspaceSettingsResult=record&&['plan','brief'].includes(tab)
+    ? await client.from('project_workspace_settings').select('timezone,revision').eq('request_id',params.id).maybeSingle()
+    : null;
+  if(workspaceSettingsResult?.error)throw new Error('Project settings could not load.');
+  const workspaceSettings=workspaceSettingsResult?.data??{timezone:'America/Chicago',revision:1};
+
   const brief =
     record &&
     tab === 'brief'
@@ -430,7 +437,7 @@ export default async function ProjectPage({
           {requestedTask&&!selectedTask&&<p role="status" className="rounded border p-4 text-sm">This task is no longer in the project. The current work plan remains available below.</p>}
           {requestedMilestone && !selectedMilestone && <p role="status" className="rounded border p-4 text-sm">This milestone is no longer in the project. The current work plan remains available below.</p>}
           <ProjectWorkspace
-            savedToday={calendarToday} timezone={calendarPreference.timezone} asOf={asOf}
+            savedToday={calendarToday} timezone={calendarPreference.timezone} projectTimezone={workspaceSettings.timezone} asOf={asOf}
             key={
               `${params.id}:${selectedTask||''}:${selectedMilestone||''}`
             }
@@ -495,6 +502,7 @@ export default async function ProjectPage({
 
       {tab === 'brief' && record && (
         <div className="space-y-3">
+          <ProjectWorkspaceSettings key={params.id+':'+workspaceSettings.revision} id={params.id} projectRevision={record.revision} timezone={workspaceSettings.timezone} timezoneRevision={workspaceSettings.revision} readOnly={record.state==='completed'}/>
           <ProjectBriefIdentity id={params.id} state={record.state} activatedAt={record.activated_at}
             proposalVersion={record.proposal_version} revision={record.revision}
             title={record.body.title} timezone={calendarPreference.timezone}/>

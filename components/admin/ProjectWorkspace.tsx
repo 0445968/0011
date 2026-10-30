@@ -80,6 +80,7 @@ type Props = {
   history: ProjectEvent[];
   gateReady: boolean;
   operationalStatus?: import('@/lib/projects/operational-status').OperationalStatus;
+  projectTimezone?:string;
 };
 
 /* =========================================================
@@ -242,6 +243,7 @@ export function ProjectWorkspace({
   record,
   gateReady,
   operationalStatus,
+  projectTimezone,
   selectedTask,
   selectedMilestone,
   taskControls = [],
@@ -1008,7 +1010,7 @@ export function ProjectWorkspace({
         advanced={advanced}
         focusTaskId={overviewTaskId}
         focusTaskRequest={taskFocusRequest}
-        today={today} timezone={timezone} asOf={asOf}
+        today={today} timezone={projectTimezone??timezone} asOf={asOf}
         id={id}
         userId={userId}
         revision={savedRevision}
