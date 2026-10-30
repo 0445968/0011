@@ -6,7 +6,8 @@ import {refreshProjectSurfaces} from '@/lib/projects/refresh';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Check, ChevronDown, Users, UserRoundPlus } from 'lucide-react';
+import { Check, ChevronDown, Users, UserRoundPlus, Menu } from 'lucide-react';
+import {Popover,PopoverTrigger,PopoverContent} from '@/components/ui/popover';
 import { ProfileImage } from '@/components/profile-images/ProfileImage';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from '@/components/ui/dialog';
 import type { ProjectAssignmentWorkspace } from '@/lib/projects/assignment-schema';
@@ -143,15 +144,14 @@ export function TaskMemberPicker({ taskId, disabled, controls }: { taskId: strin
     const okay = await save({ action: 'task', taskId, side, userIds: ids, expectedRevision });
     if (okay) setOpen(false);
   }
-  return <>
+  return <Popover open={open} onOpenChange={value=>{if(!busy){if(value)show();else setOpen(false);}}}><PopoverTrigger asChild>
     <button type="button" className="flex max-w-full shrink-0 items-center gap-1.5 rounded-lg p-1 hover:bg-muted disabled:opacity-50" disabled={disabled || busy || !available} onClick={show}
       title="Choose responsible side and task assignees" aria-label="Responsible side and assignees">
       {data && task ? <><SideLogo side={task.side} data={data} /><Faces ids={task.assignees} options={chosen} side={task.side} /></> : <span className="text-[11px] text-muted-foreground">Members…</span>}
-    </button>
-    <Dialog open={open} onOpenChange={value => { if (!busy) setOpen(value); }}>
-      <DialogContent className="bivi-staff-surface max-h-[90dvh] overflow-y-auto">
-        <DialogTitle>Responsible side & assignees</DialogTitle>
-        <DialogDescription>Only Bivi staff can change responsibility. Choose verified members associated with the project. Other team members are not shown.</DialogDescription>
+    <Menu size={13} aria-hidden/></button></PopoverTrigger>
+      <PopoverContent align="start" className="bivi-staff-surface max-h-[75dvh] w-[min(90vw,380px)] space-y-3 overflow-y-auto">
+        <p className="text-sm font-semibold">Responsible side & assignees</p>
+        <p className="text-xs text-muted-foreground">Only Bivi staff can change responsibility. Choose verified members associated with the project. Other team members are not shown.</p>
         <div className="flex flex-wrap gap-2">
           {(['bivi','client'] as const).map(value => <button type="button" key={value} aria-pressed={value === side} className={`${buttonClass} ${side === value ? 'border-foreground bg-muted' : ''}`} onClick={() => pickSide(value)}>
             {data && <SideLogo side={value} data={data} />}{value === 'bivi' ? 'Bivi' : 'Client'}
@@ -164,14 +164,13 @@ export function TaskMemberPicker({ taskId, disabled, controls }: { taskId: strin
         <MemberChoices side={side} options={options} values={ids} change={setIds} search={search} />
         <p className="text-xs text-muted-foreground">{ids.length} selected · Every active Bivi assignee appears in My Tasks.</p>
         {task&&task.revision!==expectedRevision&&<div role="alert" className="text-xs"><p>Saved responsibility changed: {task.side}, {task.assignees.map(id=>[...(data?.staff??[]),...(data?.clients??[])].find(person=>person.id===id)?.label??id).join(', ')||'no assignees'}. Your selections remain unchanged.</p><button type="button" className={buttonClass} onClick={()=>{setSide(task.side);setIds(task.assignees);setExpectedRevision(task.revision);}}>Use saved</button><button type="button" className={buttonClass} onClick={()=>setExpectedRevision(task.revision)}>Keep selections after review</button></div>}
-        <DialogFooter>
+        <div className="flex justify-end gap-2">
           <button type="button" className={buttonClass} disabled={busy} onClick={() => setOpen(false)}>Cancel</button>
           <button type="button" className="rounded-lg bg-foreground px-4 py-2 text-xs font-semibold text-background disabled:opacity-40" disabled={busy || !changed || task?.revision!==expectedRevision || ids.length > 12} onClick={() => void commit()}>{busy ? 'Saving…' : 'Save responsibility'}</button>
-        </DialogFooter>
+        </div>
         {controls.error && <p role="alert" className="text-xs text-red-600">{controls.error}</p>}
-      </DialogContent>
-    </Dialog>
-  </>;
+      </PopoverContent>
+  </Popover>;
 }
 
 export function ProjectManagersButton({ controls, disabled }: { controls: AssignmentControls; disabled: boolean }) {

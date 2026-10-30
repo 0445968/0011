@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import {readCheckpoint,writeCheckpoint,recoveryKey} from '@/lib/projects/work-recovery';
 import type { ProjectBody } from '@/lib/projects/schema';
 import { workplanDraftBodySchema } from '@/lib/projects/workplan-draft-schema';
 import { projectBodiesEqual, mergeProjectBodies, type MergeChoice, type WorkplanMergeConflict } from '@/lib/projects/workplan-merge';
@@ -11,6 +12,7 @@ type Rebase = { baseline: ProjectBody; draft: ProjectBody; latest: ProjectBody; 
 
 type Props = {
   id: string;
+  userId?:string;
   initialRevision: number;
   revision: number;
   body: ProjectBody | undefined;
@@ -23,9 +25,14 @@ type Props = {
 };
 
 /** Server-backed drafts with revision baselines and a generation fence for discards. */
-export function useProjectWorkDraft({ id, initialRevision, revision, body, savedBody, enabled, busy, setBody, setSavedBody, setRevision }: Props) {
+export function useProjectWorkDraft({ id, userId, initialRevision, revision, body, savedBody, enabled, busy, setBody, setSavedBody, setRevision }: Props) {
   const url = `/api/admin/projects/${id}/draft`;
   const snapshotUrl = `/api/admin/projects/${id}`;
+  const checkpointKey=userId?recoveryKey(userId,id):null;
+  const retention=useRef(30);
+  const [recoveryPrompt,setRecoveryPrompt]=useState(false);
+  const [recoveryCopy,setRecoveryCopy]=useState<StoredDraft|null>(null);
+  const [checkpointError,setCheckpointError]=useState('');
   const [ready, setReady] = useState(false);
   const [recoverable, setRecoverable] = useState<StoredDraft | null>(null);
   const [state, setState] = useState<DraftState>('loading');
@@ -115,7 +122,12 @@ export function useProjectWorkDraft({ id, initialRevision, revision, body, saved
         setSavedBody(current.body);
         setRevision(current.revision);
         baseBody.current = current.body;
-        const draft = json.draft as StoredDraft | null;
+        retention.current=[1,7,14,30,60].includes(json.retentionDays)?json.retentionDays:30;
+        const local=checkpointKey?readCheckpoint(window.localStorage,checkpointKey,Date.now(),retention.current):null;
+        const previous=json.recovery as StoredDraft|null;
+        setRecoveryCopy(local?.discarded?local:previous&&workplanDraftBodySchema.safeParse(previous.body).success?previous:null);
+        let draft = json.draft as StoredDraft | null;
+        if(local&&!local.discarded&&(!draft||Date.parse(local.updatedAt)>Date.parse(draft.updatedAt)))draft=local;
         if (draft && !workplanDraftBodySchema.safeParse(draft.body).success) throw new Error('Saved draft is invalid. It has not been deleted.');
         if(unresolved.current){
           const previous=unresolved.current;
@@ -127,17 +139,10 @@ export function useProjectWorkDraft({ id, initialRevision, revision, body, saved
         } else if (draft && !projectBodiesEqual(draft.body,current.body)) {
           setSavedAt(draft.updatedAt);
           const baseline = draft.baseBody ?? (draft.baseRevision === current.revision ? current.body : null);
-          if (baseline && draft.baseRevision !== current.revision) {
-            applyRebase(baseline, draft.body, current.body, current.revision);
-          } else if (baseline) {
-            setRecoverable(draft);
-            setState('idle');
-          } else {
-            setRecoverable(draft);
-            setConflict(true);
-            setState('conflict');
-            setError('This older draft has no recoverable saved baseline. Export it before choosing Discard draft.');
-          }
+          setRecoverable({...draft,baseBody:baseline});setRecoveryPrompt(true);
+          setConflict(!baseline);
+          setState(baseline?'idle':'conflict');
+          if(!baseline)setError('This draft has no saved baseline. Export it before discarding.');
         } else {
           setBody(current.body);
           setRecoverable(null);
@@ -157,18 +162,18 @@ export function useProjectWorkDraft({ id, initialRevision, revision, body, saved
     return () => { active = false; };
   // Reconcile after authoritative revisions and after a coordinated command settles.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [url, initialRevision, enabled, busy, snapshot, applyRebase, setBody, setRevision, setSavedBody, cancelPendingAutosave]);
+  }, [url, initialRevision, enabled, busy, snapshot, applyRebase, setBody, setRevision, setSavedBody, cancelPendingAutosave,checkpointKey]);
 
   const waitForDraft = useCallback(async () => {
     cancelPendingAutosave();
     if (inFlight.current) await inFlight.current;
   }, [cancelPendingAutosave]);
 
-  const persist = useCallback(async (snapshotBody: ProjectBody, baseRevision: number) => {
+  const persist = useCallback(async (snapshotBody: ProjectBody, baseRevision: number, baselineOverride?:ProjectBody|null) => {
     if (inFlight.current) await inFlight.current;
     const op = operation.current;
     const expectedGeneration = generation.current;
-    const draftBaseline = baseBody.current ?? currentSaved.current;
+    const draftBaseline = baselineOverride??baseBody.current??currentSaved.current;
     if (!draftBaseline) { setError('The saved work-plan baseline is unavailable.'); setState('error'); return false; }
     const signature = `${baseRevision}:${JSON.stringify(snapshotBody)}`;
     const promise = (async () => {
@@ -181,6 +186,7 @@ export function useProjectWorkDraft({ id, initialRevision, revision, body, saved
         const json = await response.json();
         if (!response.ok) throw new Error(json.error || 'Draft could not be saved.');
         generation.current = Math.max(generation.current, json.generation);
+        setRecoveryCopy({body:snapshotBody,baseBody:draftBaseline,baseRevision,updatedAt:json.savedAt||new Date().toISOString()});
         lastAttempt.current = signature;
         if (op !== operation.current || autosavesSuspended.current) return true;
         setSavedAt(json.savedAt || null);
@@ -215,6 +221,20 @@ export function useProjectWorkDraft({ id, initialRevision, revision, body, saved
   }, [url, snapshot, applyRebase]);
 
   const dirty = Boolean(body && savedBody && !projectBodiesEqual(body,savedBody));
+  const checkpoint=useCallback((discarded=false)=>{
+    if(!checkpointKey||!latest.current||!currentSaved.current||projectBodiesEqual(latest.current,currentSaved.current))return;
+    try{writeCheckpoint(window.localStorage,checkpointKey,{body:latest.current,baseBody:currentSaved.current,baseRevision:revision,updatedAt:new Date().toISOString()},retention.current,discarded);setCheckpointError('');}
+    catch{setCheckpointError('Local recovery storage is unavailable. Wait for server Draft saved before leaving.');}
+  },[checkpointKey,revision]);
+  useEffect(()=>{if(enabled&&ready&&dirty&&!recoverable)checkpoint();},[enabled,ready,dirty,body,recoverable,checkpoint]);
+  useEffect(()=>{
+    if(!checkpointKey)return;
+    const flush=()=>checkpoint();
+    const preference=(event:Event)=>{retention.current=Number((event as CustomEvent).detail)||30;checkpoint();};
+    window.addEventListener('beforeunload',flush);window.addEventListener('pagehide',flush);window.addEventListener('bivi:recovery-retention',preference);
+    return()=>{window.removeEventListener('beforeunload',flush);window.removeEventListener('pagehide',flush);window.removeEventListener('bivi:recovery-retention',preference);};
+  },[checkpoint,checkpointKey]);
+
   useEffect(() => {
     if (!enabled || !ready || !dirty || !body || recoverable || conflict || busy || autosavesSuspended.current) return;
     const signature = `${revision}:${JSON.stringify(body)}`;
@@ -263,8 +283,12 @@ export function useProjectWorkDraft({ id, initialRevision, revision, body, saved
   /** User-requested discard adopts the latest authoritative body and only clears after DELETE confirms. */
   const discardDraft = useCallback(async () => {
     const discardedBody=latest.current;
+    const copy=recoverable??(discardedBody&&currentSaved.current?{body:discardedBody,baseBody:currentSaved.current,baseRevision:revision,updatedAt:new Date().toISOString()}:null);
+    if(copy&&checkpointKey){try{writeCheckpoint(window.localStorage,checkpointKey,copy,retention.current,true);}catch{setCheckpointError('Local recovery unavailable; server copies remain available.');}}
+    if(copy)setRecoveryCopy(copy);
     await suspendAutosaves();
     try {
+      if(copy&&!await persist(copy.body,copy.baseRevision,copy.baseBody))throw new Error('Recovery backup could not be confirmed. Your edits remain available.');
       const current = await deletePrivateDraft();
       if(discardedBody&&latest.current&&!projectBodiesEqual(discardedBody,latest.current)){
         applyRebase(discardedBody,latest.current,current.body,current.revision);
@@ -277,7 +301,7 @@ export function useProjectWorkDraft({ id, initialRevision, revision, body, saved
       setRevision(current.revision);
       const newer=discardedBody&&latest.current ? mergeProjectBodies(discardedBody,latest.current,current.body) : null;
       setBody(newer?.body??current.body);
-      setRecoverable(null);
+      setRecoverable(null);setRecoveryPrompt(false);
       setRebase(null);
       setConflict(false);
       setSavedAt(null);
@@ -287,19 +311,21 @@ export function useProjectWorkDraft({ id, initialRevision, revision, body, saved
       autosavesSuspended.current = false;
       return true;
     } catch (cause) {
+      if(copy&&checkpointKey){try{writeCheckpoint(window.localStorage,checkpointKey,copy,retention.current,false);}catch{/* Existing server backup remains. */}}
       setError(cause instanceof Error ? cause.message : 'Draft discard could not be confirmed. Your edits remain available.');
       setState('error');
       autosavesSuspended.current = false;
       return false;
     }
-  }, [suspendAutosaves, deletePrivateDraft, setSavedBody, setRevision, setBody,applyRebase]);
+  }, [suspendAutosaves, deletePrivateDraft, setSavedBody, setRevision, setBody,applyRebase,recoverable,revision,checkpointKey,persist]);
 
   /** Clear a private draft after the canonical project save has already succeeded. */
   const clearSavedDraft = useCallback(async () => {
     await suspendAutosaves();
     try {
       await deletePrivateDraft();
-      setRecoverable(null);
+      if(checkpointKey){try{window.localStorage.removeItem(checkpointKey);}catch{/* Server recovery remains. */}}
+      setRecoverable(null);setRecoveryPrompt(false);
       setRebase(null);
       setConflict(false);
       setSavedAt(null);
@@ -314,18 +340,20 @@ export function useProjectWorkDraft({ id, initialRevision, revision, body, saved
       autosavesSuspended.current = false;
       return false;
     }
-  }, [suspendAutosaves, deletePrivateDraft]);
+  }, [suspendAutosaves, deletePrivateDraft,checkpointKey]);
 
   const restore = useCallback(() => {
-    if (!recoverable || recoverable.baseRevision !== revision) return false;
+    if(!recoverable||!savedBody)return false;
+    setRecoveryPrompt(false);
+    if(recoverable.baseRevision!==revision){
+      if(!recoverable.baseBody)return false;
+      applyRebase(recoverable.baseBody,recoverable.body,savedBody,revision);return true;
+    }
     setBody(recoverable.body);
-    baseBody.current = recoverable.baseBody ?? savedBody;
-    setConflict(false);
-    setState('saved');
-    lastAttempt.current = `${revision}:${JSON.stringify(recoverable.body)}`;
-    setRecoverable(null);
-    return true;
-  }, [recoverable, revision, savedBody, setBody]);
+    baseBody.current=recoverable.baseBody??savedBody;
+    setConflict(false);setState('pending');lastAttempt.current='';setRecoverable(null);return true;
+  },[recoverable,revision,savedBody,setBody,applyRebase]);
+  const reviewRecovery=useCallback(()=>{if(!recoveryCopy)return;setRecoverable(recoveryCopy);setRecoveryPrompt(true);},[recoveryCopy]);
 
   const chooseConflict = useCallback((path: string, choice: MergeChoice) => {
     if (!rebase) return;
@@ -339,7 +367,7 @@ export function useProjectWorkDraft({ id, initialRevision, revision, body, saved
   },[applyRebase]);
 
   return {
-    state, ready, recoverable, conflict, rebase, error, savedAt, dirty,
+    state, ready, recoverable, recoveryCopy,reviewRecovery,recoveryPrompt,setRecoveryPrompt,checkpointError, conflict, rebase, error, savedAt, dirty,
     saveDraft, discardDraft, clearSavedDraft, restore, waitForDraft,
     suspendAutosaves, resumeAutosaves, reconcile, chooseConflict, acceptSaved,
   };

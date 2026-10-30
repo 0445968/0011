@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Check, Minus } from 'lucide-react';
+import { Check, Minus,Loader,OctagonX } from 'lucide-react';
 import { ProfileImage } from '@/components/profile-images/ProfileImage';
 import type { ProjectSummary } from '@/lib/projects/data';
 import type { ProjectDirectoryContext } from '@/lib/projects/directory-types';
@@ -17,7 +17,7 @@ export function ProjectTaskStateIcon({
   status,
   size = 'h-4 w-4',
 }: {
-  status: 'todo' | 'doing' | 'blocked' | 'done' | 'planned' | 'in_progress';
+  status: 'todo' | 'doing' | 'blocked' | 'done' | 'planned' | 'in_progress' | 'in_review' | 'rejected';
   size?: string;
 }) {
   if (status === 'done') {
@@ -25,11 +25,9 @@ export function ProjectTaskStateIcon({
       <Check size={11} strokeWidth={3} aria-hidden="true" />
     </span>;
   }
-  if (status === 'doing' || status === 'in_progress') {
-    return <span role="img" aria-label="In progress" className={`inline-flex shrink-0 items-center justify-center rounded-full border-2 border-amber-500 bg-white dark:bg-background ${size}`}>
-      <span aria-hidden="true" className="h-2 w-2 rounded-full bg-amber-400" />
-    </span>;
-  }
+  if(status==='in_review')return <Loader role="img" aria-label="In review" className={`shrink-0 text-fuchsia-500 dark:text-fuchsia-400 ${size}`}/>;
+  if(status==='rejected')return <OctagonX role="img" aria-label="Rejected" className={`shrink-0 text-red-600 dark:text-red-400 ${size}`}/>;
+  if(status==='doing'||status==='in_progress')return <svg role="img" aria-label="In progress" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`shrink-0 text-amber-500 ${size}`}><path d="M12 2a10 10 0 1 1-7.07 17.07M12 8v4l3 2M2 12h.01M3 7h.01M7 3h.01M3 17h.01"/></svg>;
   if (status === 'blocked') {
     return <span role="img" aria-label="Blocked" className={`inline-flex shrink-0 items-center justify-center rounded-full border-2 border-red-500 bg-red-50 dark:bg-red-950 ${size}`}>
       <Minus size={10} strokeWidth={3} className="text-red-600 dark:text-red-300" aria-hidden="true" />

@@ -37,7 +37,15 @@ export async function GET(_request: Request, { params }: Params) {
       updatedAt: draft.updatedAt,
     };
   }
+  const [recovery,prefs]=await Promise.all([
+    access.client.from('project_workplan_recovery').select('body,base_body,base_revision,updated_at').eq('request_id',params.id).eq('staff_id',access.user.id).gt('expires_at',new Date().toISOString()).maybeSingle(),
+    access.client.from('staff_work_recovery_preferences').select('retention_days').eq('staff_id',access.user.id).maybeSingle(),
+  ]);
+  if(recovery.error||prefs.error)return adminReply({error:'Work recovery could not load. Your draft has not been deleted.'},503);
+  const copy=recovery.data;
   return adminReply({
+    recovery:copy?{body:copy.body,baseBody:copy.base_body,baseRevision:copy.base_revision,updatedAt:copy.updated_at}:null,
+    retentionDays:prefs.data?.retention_days??30,
     draft,
     currentRevision: context.currentRevision,
     generation: context.generation,

@@ -12,7 +12,7 @@ type RecordState={body:ProjectBody;revision:number;state:string}|null;
 type Blocker={milestoneId:string;milestoneTitle:string;needsTask:boolean;tasks:{taskId:string;title:string;taskIncomplete:boolean;subtasks:{id:string;title:string}[]}[]};
 
 /** One canonical editor for Overview, compact Plan and advanced Plan. */
-export function useProjectEditingController(id:string,record:RecordState,initialAdvanced=false){
+export function useProjectEditingController(id:string,record:RecordState,initialAdvanced=false,userId?:string){
   const router=useRouter();
   const [bodyState,setBodyState]=useState<ProjectBody|undefined>(record?.body);
   const [savedState,setSavedState]=useState<ProjectBody|undefined>(record?.body);
@@ -31,7 +31,7 @@ export function useProjectEditingController(id:string,record:RecordState,initial
   const submitted=useRef<{body:ProjectBody;revision:number}|null>(null);
   useEffect(()=>{active.current=true;return()=>{active.current=false;};},[]);
   const completed=record?.state==='completed';
-  const drafts=useProjectWorkDraft({id,initialRevision:record?.revision??0,revision:revisionState,body:bodyState,savedBody:savedState,
+  const drafts=useProjectWorkDraft({id,userId,initialRevision:record?.revision??0,revision:revisionState,body:bodyState,savedBody:savedState,
     enabled:Boolean(record&&!completed),busy,setBody,setSavedBody,setRevision:setSavedRevision});
   const dirty=Boolean(bodyState&&savedState&&!projectBodiesEqual(bodyState,savedState));
 

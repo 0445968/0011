@@ -13,7 +13,7 @@ export function projectEditor(options={}){
  const slots=[],timers=new Map(),events=new EventTarget(),cache=new Map();let cursor=0,changed=false,effects=[],value,nextTimer=0,alive=true;
  const server={body:copy(plan),revision:1,generation:0,draft:null,posts:0,deletes:0,reads:0,...options.server};
  const controls={postGate:null,draftGate:null,deleteGate:null,validation:false,loseReply:false,readFails:false,refreshFails:false,...options.controls};
- const props={id:'project',record:{body:copy(plan),revision:1,state:'active'}};
+ const props={id:'project',userId:options.userId,record:{body:copy(plan),revision:1,state:'active'}};
  const router={refresh(){if(controls.refreshFails)throw new Error('Refresh failed');},replace(){}};
  const same=(a,b)=>a&&b&&a.length===b.length&&a.every((item,index)=>Object.is(item,b[index]));
  const react={
@@ -51,7 +51,9 @@ export function projectEditor(options={}){
   server.reads++;if(controls.readFails)throw new TypeError('Read unavailable');
   return reply({body:server.body,revision:server.revision});
  }
- const fakeWindow={addEventListener:(...args)=>events.addEventListener(...args),removeEventListener:(...args)=>events.removeEventListener(...args),dispatchEvent:event=>events.dispatchEvent(event),setTimeout:fn=>{timers.set(++nextTimer,fn);return nextTimer;},clearTimeout:id=>timers.delete(id)};
+ const storage=options.storage??new Map();
+ const localStorage={getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value),removeItem:key=>storage.delete(key)};
+ const fakeWindow={localStorage,addEventListener:(...args)=>events.addEventListener(...args),removeEventListener:(...args)=>events.removeEventListener(...args),dispatchEvent:event=>events.dispatchEvent(event),setTimeout:fn=>{timers.set(++nextTimer,fn);return nextTimer;},clearTimeout:id=>timers.delete(id)};
  function load(file){
   if(cache.has(file))return cache.get(file);const exports={};cache.set(file,exports);
   const source=readFileSync(new URL(`../../${file}`,import.meta.url),'utf8');
@@ -59,8 +61,8 @@ export function projectEditor(options={}){
   vm.runInNewContext(ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText,{exports,module:{exports},require:resolve,fetch,window:fakeWindow,CustomEvent,Event,AbortSignal,console});return exports;
  }
  const {useProjectEditingController}=load('components/admin/projects/useProjectEditingController.ts');
- function render(){cursor=0;changed=false;effects=[];value=useProjectEditingController(props.id,props.record);effects.forEach(effect=>effect());}
+ function render(){cursor=0;changed=false;effects=[];value=useProjectEditingController(props.id,props.record,false,props.userId);effects.forEach(effect=>effect());}
  async function flush(){for(let step=0;step<40;step++){await new Promise(done=>setImmediate(done));if(!changed)return;render();}throw new Error('Editor did not settle');}
  render();
- return {server,controls,props,flush,render,get current(){return value;},edit(fn){value.setBody(body=>{const next=copy(body);fn(next);return next;});render();},fireTimers(){const pending=[...timers.values()];timers.clear();pending.forEach(fn=>fn());},notify(){fakeWindow.dispatchEvent(new CustomEvent('bivi:project-mutation',{detail:{projectId:props.id}}));},unmount(){for(const slot of slots)slot?.cleanup?.();alive=false;}};
+ return {server,controls,props,storage,flush,render,get current(){return value;},edit(fn){value.setBody(body=>{const next=copy(body);fn(next);return next;});render();},fireTimers(){const pending=[...timers.values()];timers.clear();pending.forEach(fn=>fn());},notify(){fakeWindow.dispatchEvent(new CustomEvent('bivi:project-mutation',{detail:{projectId:props.id}}));},unmount(){for(const slot of slots)slot?.cleanup?.();alive=false;}};
 }
