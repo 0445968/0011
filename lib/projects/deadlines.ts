@@ -31,7 +31,7 @@ export function taskEvent(task:Task,kind:'start'|'due',timezone=DEFAULT_TASK_TIM
 export function taskDeadlineDay(task:Task,timezone=DEFAULT_TASK_TIME_ZONE){return taskEvent(task,'due',timezone).date;}
 export function taskDeadlineLabel(task:Task,timezone=DEFAULT_TASK_TIME_ZONE){const event=taskEvent(task,'due',timezone);return taskDateTimeLabel(event.date,event.time,event.timeZone);}
 export function taskIsOverdue(task:Task,context:DeadlineContext){
-  if(task.status==='done'||!task.dueOn)return false;
+  if(task.archived||task.status==='done'||!task.dueOn)return false;
   const instant=taskInstant(task.dueOn,task.dueTime,task.timeZone);
   return instant===null?task.dueOn<context.today:instant<new Date(context.now??Date.now()).getTime();
 }

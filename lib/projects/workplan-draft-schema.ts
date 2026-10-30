@@ -17,6 +17,7 @@ export const workplanDraftBodySchema = z.object({
     status: z.enum(['planned', 'in_progress', 'done']),
   }).strict()).max(20),
   tasks: z.array(z.object({
+    archived:z.boolean().optional(),
     id: text(100).min(1),
     title: text(300),
     owner: text(200),

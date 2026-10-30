@@ -5,7 +5,7 @@ import { distinctById, taskMetrics } from './metrics';
 /** Saved deadlines share the viewer's calendar day and exact instants for timed tasks. */
 export function projectOverviewSummary(body: ProjectBody, today: string,context?:Omit<DeadlineContext,'today'>) {
   const metrics=taskMetrics(body.tasks,today,context);
-  const openTasks = distinctById(body.tasks).filter(task => task.status !== 'done').sort((a, b) =>
+  const openTasks = distinctById(body.tasks).filter(task => !task.archived&&task.status !== 'done').sort((a, b) =>
     compareTaskDeadlines(a,b,context?.timezone) || a.title.localeCompare(b.title)
   );
   const milestones = [...body.milestones].sort((a, b) =>

@@ -12,10 +12,10 @@ export function taskMetrics(tasks: ProjectBody['tasks'], today?: string,context?
   const done=rows.filter(task=>task.status==='done').length;
   const open=rows.filter(task=>task.status!=='done');
   return {total:rows.length,done,open:rows.length-done,
-    blocked:open.filter(task=>task.status==='blocked').length,
+    blocked:open.filter(task=>!task.archived&&task.status==='blocked').length,
     percent:rows.length ? Math.round(done/rows.length*100) : null,
     overdue:today ? open.filter(task=>taskIsOverdue(task,{today,...context})).length : null,
-    dueToday:today ? open.filter(task=>taskDeadlineDay(task,context?.timezone)===today).length : null};
+    dueToday:today ? open.filter(task=>!task.archived&&taskDeadlineDay(task,context?.timezone)===today).length : null};
 }
 
 /** Direct phase is independent; milestone links add scope without replacing it. */
