@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect,useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -15,6 +15,8 @@ async function saveTeam(id: string, body: object) {
   });
   const result = await response.json();
   if (!response.ok || !result.saved) throw new Error(result.error || 'Project team change could not be saved.');
+  if(result.submitted)window.dispatchEvent(new Event('bivi:client-task-proposals-changed'));
+  return result;
 }
 
 function MemberChecks({ team, selected, setSelected }: {
@@ -40,14 +42,14 @@ function ClientTaskCreator({ id, work, team }: { id: string; work: ClientProject
   async function create() {
     setBusy(true); setMessage('');
     try {
-      await saveTeam(id, { action: 'create_task', title, notes, phase, userIds: assignees, projectRevision: work.projectRevision });
-      setTitle(''); setNotes(''); router.refresh();
+      const result=await saveTeam(id, { action: 'create_task', title, notes, phase, userIds: assignees, projectRevision: work.projectRevision });
+      setTitle(''); setNotes('');setMessage(result.submitted?'Task submitted for Bivi admin approval. It will appear in the task list after acceptance.':'Task created.'); router.refresh();
     } catch (error) { setMessage(error instanceof Error ? error.message : 'Task could not be created.'); }
     finally { setBusy(false); }
   }
   return <div className="rounded-xl border border-border p-4">
     <h3 className="font-medium">Create a client task</h3>
-    <p className="mt-1 text-xs text-muted-foreground">New tasks start as To do and do not change Bivi-owned work.</p>
+    <p className="mt-1 text-xs text-muted-foreground">New tasks are submitted for Bivi admin approval and start as To do after acceptance.</p>
     <label className="mt-3 block text-sm">Task title<input maxLength={300} value={title} onChange={event => setTitle(event.target.value)} className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2" /></label>
     <label className="mt-3 block text-sm">Details<Textarea rows={3} maxLength={2000} value={notes} onChange={event => setNotes(event.target.value)} /></label>
     <label className="mt-3 block text-sm">Active phase<select value={phase} onChange={event => setPhase(event.target.value)} className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2">
@@ -69,7 +71,7 @@ function ClientTaskAssignees({ id, taskId, team }: { id: string; taskId: string;
   const taskRevision = record.revision;
   async function save() {
     setBusy(true); setMessage('');
-    try { await saveTeam(id, { action: 'task', taskId, userIds: selected, expectedRevision: taskRevision }); router.refresh(); }
+    try { const result=await saveTeam(id, { action: 'task', taskId, userIds: selected, expectedRevision: taskRevision });setMessage(result.submitted?'Assignment changes submitted for Bivi admin approval.':'Assignees saved.'); router.refresh(); }
     catch (error) { setMessage(error instanceof Error ? error.message : 'Task assignees could not be saved.'); }
     finally { setBusy(false); }
   }
@@ -88,6 +90,8 @@ export function ClientProjectManagement({ id, work, team }: { id: string; work: 
   const [managers, setManagers] = useState(team?.managers ?? []);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const [pendingChanges,setPendingChanges]=useState<NonNullable<ClientProjectAssignmentWorkspace['pendingChanges']>>([]);
+  useEffect(()=>{let active=true;const load=()=>{void fetch(`/api/client/projects/${id}/team`,{cache:'no-store'}).then(response=>response.json()).then(value=>{if(active&&Array.isArray(value.pendingChanges))setPendingChanges(value.pendingChanges);}).catch(()=>{});};load();window.addEventListener('bivi:client-task-proposals-changed',load);return()=>{active=false;window.removeEventListener('bivi:client-task-proposals-changed',load);};},[id,work.projectRevision]);
   if (work.state !== 'active' || !team || (!team.isOwner && !team.isManager)) return null;
   const currentTeam = team;
   const selectedChanged = managers.length !== currentTeam.managers.length || managers.some(value => !currentTeam.managers.includes(value));
@@ -107,5 +111,5 @@ export function ClientProjectManagement({ id, work, team }: { id: string; work: 
     {message && <p role="alert" className="text-sm text-red-700">{message}</p>}
     {currentTeam.activePhases.length > 0 && <ClientTaskCreator id={id} work={work} team={currentTeam} />}
     <div className="space-y-3"><h3 className="font-medium">Assign client tasks</h3>{work.tasks.filter(task => currentTeam.tasks.some(row => row.taskId === task.id)).map(task => <div key={task.id} className="rounded-xl border border-border p-4"><p className="text-sm font-medium">{task.title}</p><ClientTaskAssignees id={id} taskId={task.id} team={currentTeam} /></div>)}</div>
-  </section>;
+  {pendingChanges.length>0&&<div className="mt-4 space-y-2 rounded-lg border border-border p-3"><h3 className="text-sm font-medium">Task change requests</h3>{pendingChanges.map(row=><div key={row.id} className="text-xs"><p>{row.title} · {row.status} · Version {row.version}</p>{row.reviewNote&&<p className="mt-1 whitespace-pre-wrap text-muted-foreground">{row.reviewNote}</p>}</div>)}</div>}</section>;
 }

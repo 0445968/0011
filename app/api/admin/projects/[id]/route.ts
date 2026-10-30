@@ -25,9 +25,9 @@ export async function GET(request: Request, { params }: { params: { id: string }
   const body = projectBodySchema.safeParse(data.body);
   if (!body.success || !Number.isInteger(data.revision)) return adminReply({ error: 'The saved project could not be verified.' }, 503);
   const saveId=new URL(request.url).searchParams.get('saveId');
-  const receipt=saveId&&z.string().uuid().safeParse(saveId).success?await access.client.from('project_workplan_save_receipts').select('save_id,saved_revision').eq('save_id',saveId).eq('request_id',params.id).eq('staff_id',access.user.id).maybeSingle():null;
+  const receipt=saveId&&z.string().uuid().safeParse(saveId).success?await access.client.from('project_workplan_save_receipts').select('save_id,saved_revision,outcome,proposal_ids').eq('save_id',saveId).eq('request_id',params.id).eq('staff_id',access.user.id).maybeSingle():null;
   if(receipt?.error)return adminReply({error:'Save confirmation could not be checked.'},503);
-  return adminReply({ requestId: data.request_id, state: data.state, body: body.data, revision: data.revision,...(receipt?.data?.saved_revision===data.revision?{saveId:receipt?.data?.save_id}:{}) });
+  return adminReply({ requestId: data.request_id, state: data.state, body: body.data, revision: data.revision,...(receipt?.data?.saved_revision===data.revision?{saveId:receipt?.data?.save_id,saveOutcome:receipt?.data?.outcome,proposalIds:receipt?.data?.proposal_ids}:{}) });
 }
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
@@ -125,6 +125,12 @@ export async function POST(request: Request, { params }: { params: { id: string 
       dependency: [409, 'A remaining task depends on a task you removed. Update the task dependency first.', 'task_dependency_reference'],
       incomplete: [400, 'Record at least one task and complete all tasks and milestones before completing the project.', 'project_incomplete'],
     };
+    if(data?.result==='submitted'){
+      const current=await access.client.from('inquiry_projects').select('body,revision').eq('request_id',params.id).single();
+      const canonical=projectBodySchema.safeParse(current.data?.body);
+      if(current.error||!canonical.success)return adminReply({error:'Task changes were submitted, but the saved task view could not be refreshed. Check save status.'},503);
+      revalidateProjectSurfaces(params.id);return adminReply({submitted:true,proposalIds:data.proposalIds,body:canonical.data,revision:current.data.revision});
+    }
     if (failures[data?.result]) {
       const [status, message, code] = failures[data.result];
       return adminReply({ error: message, code }, status);

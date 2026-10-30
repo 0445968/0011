@@ -18,7 +18,7 @@ function taskStatus(status: ClientProjectTask['status']) {
     todo: 'To do',
     doing: 'In progress',
     blocked: 'Blocked',
-    done: 'Complete',
+    done: 'Complete',in_review:'In review',rejected:'Rejected',
   }[status];
 }
 
@@ -31,6 +31,7 @@ function ClientTaskCard({ id, work, task }: { id: string; work: ClientProjectWor
   const currentRank = projectPhaseOrder.indexOf(work.currentPhase);
   const taskRank = projectPhaseOrder.indexOf(task.phase);
   const future = work.activePhases ? !(task.phases??[task.phase]).some(phase=>work.activePhases!.includes(phase)) : taskRank > currentRank;
+  const canProgress=task.canProgress!==false&&task.status!=='in_review';
   const blocked = Boolean(task.blockerOwner || !task.dependencyComplete || task.status === 'blocked');
   const briefApproval = task.id === 'project-brief-client-approval';
 
@@ -71,6 +72,8 @@ function ClientTaskCard({ id, work, task }: { id: string; work: ClientProjectWor
         <span className="rounded-full bg-muted px-2.5 py-1 text-xs">{taskStatus(task.status)}</span>
       </div>
       <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
+        {task.responsibleSide==='bivi'&&<span>Bivi responsible · Client-owned task</span>}
+        {task.status==='in_review'&&<span>Waiting for the current review decision</span>}
         {task.dueOn && <span>Due {task.dueOn}</span>}
         {future && <span>Upcoming</span>}
         {task.dependsOn && !task.dependencyComplete && <span>Blocked by another task</span>}
@@ -82,11 +85,11 @@ function ClientTaskCard({ id, work, task }: { id: string; work: ClientProjectWor
       ) : (
         <>
           <label htmlFor={`client-task-note-${task.id}`} className="mb-2 mt-4 block text-sm">Your note</label>
-          <Textarea id={`client-task-note-${task.id}`} rows={3} maxLength={2000} value={note} onChange={(event) => setNote(event.target.value)} disabled={busy || future || blocked || work.state !== 'active'} />
+          <Textarea id={`client-task-note-${task.id}`} rows={3} maxLength={2000} value={note} onChange={(event) => setNote(event.target.value)} disabled={busy || !canProgress || future || blocked || work.state !== 'active'} />
           <div className="mt-4 flex flex-wrap gap-3">
-            {task.status === 'todo' && <Button type="button" variant="outline" disabled={busy || future || blocked || work.state !== 'active'} onClick={() => void save('doing')}>Start task</Button>}
-            <ClientTaskResponseActions projectId={id} taskId={task.id} projectRevision={work.projectRevision} disabled={busy || work.state !== 'active'} completed={task.status === 'done'} completionUnavailable={future || blocked} />
-            {task.status === 'doing' && <Button type="button" variant="outline" disabled={busy || future || blocked || work.state !== 'active'} onClick={() => void save('doing')}>Save note</Button>}
+            {(task.status === 'todo'||task.status==='rejected') && <Button type="button" variant="outline" disabled={busy || !canProgress || future || blocked || work.state !== 'active'} onClick={() => void save('doing')}>{task.status==='rejected'?'Resume task':'Start task'}</Button>}
+            <ClientTaskResponseActions projectId={id} taskId={task.id} projectRevision={work.projectRevision} disabled={busy || !canProgress || work.state !== 'active'} completed={task.status === 'done'} completionUnavailable={future || blocked} />
+            {task.status === 'doing' && <Button type="button" variant="outline" disabled={busy || !canProgress || future || blocked || work.state !== 'active'} onClick={() => void save('doing')}>Save note</Button>}
           </div>
         </>
       )}

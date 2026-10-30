@@ -50,6 +50,16 @@ export function useProjectEditingController(id:string,record:RecordState,initial
     return !newer;
   }
 
+  async function adoptSubmitted(candidate:ProjectBody,current:SavedProject){
+    await drafts.clearSavedDraft(candidate);if(!active.current)return false;
+    const newer=Boolean(local.current&&!projectBodiesEqual(local.current,candidate));
+    drafts.acceptSubmitted(candidate,current.body,current.revision);submitted.current=null;
+    setServerBlockers([]);setWorkflowGate(null);setSaveOutcomeUnknown(false);setBlocked(false);setSavePhase(newer?'idle':'saved');
+    setMessage(`Task changes submitted for Bivi admin approval. Published tasks are unchanged.${newer?' Newer edits remain in your draft.':''}`);
+    try{refreshProjectSurfaces(id,router);}catch{/* The proposal is persisted. */}
+    return !newer;
+  }
+
   async function reconcileLatest(current:SavedProject){
     if(!active.current)return;
     const result=drafts.reconcile(current.body,current.revision);
@@ -68,6 +78,7 @@ export function useProjectEditingController(id:string,record:RecordState,initial
       const current=await readSavedProject(id,submitted.current?.saveId);
       if(!active.current)return false;
       const attempt=submitted.current;
+      if(attempt&&current.saveId===attempt.saveId&&current.saveOutcome==='submitted')return await adoptSubmitted(attempt.body,current);
       if(attempt&&savedCandidateMatches(attempt.body,attempt.revision,current,attempt.saveId))return await adoptSaved(attempt.body,current);
       if(current.revision!==revision.current||!baseline.current||!projectBodiesEqual(current.body,baseline.current))await reconcileLatest(current);
       else{setSaveOutcomeUnknown(false);setBlocked(false);setSavePhase('idle');setMessage(local.current&&baseline.current&&projectBodiesEqual(local.current,baseline.current)?'Saved project data is current.':'The latest saved revision has not changed. Your edits remain available for a revision-checked retry.');}
@@ -101,6 +112,7 @@ export function useProjectEditingController(id:string,record:RecordState,initial
       await drafts.suspendAutosaves();
       const outcome=await submitProjectWorkplan(id,attempt.body,attempt.revision,attempt.saveId);
       if(!active.current)return false;
+      if(outcome.kind==='approval_submitted')return await adoptSubmitted(attempt.body,{body:outcome.body,revision:outcome.revision});
       if(outcome.kind==='saved')return await adoptSaved(attempt.body,{body:outcome.body??normalizeWorkplanBodyForSave(attempt.body),revision:outcome.revision},outcome.refreshWarning);
       if(outcome.kind==='revision_conflict'){await reconcileLatest(await readSavedProject(id));return false;}
       if(outcome.kind==='validation_rejected'){setSavePhase('failed');submitted.current=null;setServerBlockers(outcome.blockers as Blocker[]);setWorkflowGate(outcome.workflowGate??null);setMessage(outcome.error);return false;}
@@ -111,6 +123,7 @@ export function useProjectEditingController(id:string,record:RecordState,initial
       try{
         const current=await readSavedProject(id,attempt.saveId);
         if(!active.current)return false;
+        if(current.saveId===attempt.saveId&&current.saveOutcome==='submitted')return await adoptSubmitted(attempt.body,current);
         if(savedCandidateMatches(attempt.body,attempt.revision,current,attempt.saveId))return await adoptSaved(attempt.body,current);
         if(current.revision!==attempt.revision){await reconcileLatest(current);return false;}
       }catch{/* Preserve edits and require an explicit check before retry. */}

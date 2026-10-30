@@ -368,6 +368,16 @@ export function useProjectWorkDraft({ id, userId, initialRevision, revision, bod
     applyRebase(rebase.baseline, rebase.draft, rebase.latest, rebase.revision, choices);
   }, [rebase, applyRebase]);
 
+  const acceptSubmitted=useCallback((submitted:ProjectBody,canonical:ProjectBody,nextRevision:number)=>{
+    const before=currentSaved.current??canonical;const local=latest.current??submitted;
+    const remaining={...local,tasks:local.tasks.flatMap(task=>{
+      const sent=submitted.tasks.find(item=>item.id===task.id);const saved=before.tasks.find(item=>item.id===task.id);
+      if(sent&&projectBodiesEqual({...before,tasks:[sent]},{...before,tasks:[task]})&&(!saved||!projectBodiesEqual({...before,tasks:[sent]},{...before,tasks:[saved]})))return saved?[saved]:[];
+      return [task];
+    })};
+    return applyRebase(before,remaining,canonical,nextRevision);
+  },[applyRebase]);
+
   const acceptSaved=useCallback((submitted:ProjectBody,canonical:ProjectBody,nextRevision:number)=>{
     // Only the submitted snapshot is acknowledged. Edits typed later remain a draft.
     return applyRebase(submitted,latest.current??submitted,canonical,nextRevision);
@@ -376,6 +386,6 @@ export function useProjectWorkDraft({ id, userId, initialRevision, revision, bod
   return {
     state, ready, recoverable, recoveryCopy,reviewRecovery,recoveryPrompt,setRecoveryPrompt,checkpointError, conflict, rebase, error, savedAt, dirty,
     saveDraft, discardDraft, clearSavedDraft, restore, waitForDraft,
-    suspendAutosaves, resumeAutosaves, reconcile, chooseConflict, acceptSaved,
+    suspendAutosaves, resumeAutosaves, reconcile, chooseConflict, acceptSaved,acceptSubmitted,
   };
 }
