@@ -92,10 +92,12 @@ Bundle smaller requests with the next substantive patch; no standalone small-cha
 - Red overdue date text, filled phase-colored milestone folders at 60% opacity, diagonal rocket start icon, empty start-date calendar control, blue Tags button, conditional Description heading.
 - Archived toggle moves into the count footer. Category focus no longer keeps the selection checkbox visible after collapsing.
 
+## Responsive workspace navigation and task toolbar (PR #25)
+- Breadcrumbs remain at the left of the logo row; workspace bar visibility and guarded refresh are now in the staff account menu. Right-click on the top bar still opens the workspace menu.
+- The task toolbar stays on one row. Labels progressively collapse as width decreases, including the Save all changes label, while icon controls remain available. The strip scrolls horizontally on narrow/mobile screens.
+- Desktop search expands into the toolbar's reserved flex space when at least 220px is available; otherwise a full-width field appears below without moving the controls. Mobile search is full width above the scrollable toolbar. The field has no search icon; the toggle remains in the toolbar.
+
 ## Queued additions from latest feedback
-- Logo-row breadcrumbs on the left; workspace bar visibility menu in the staff avatar menu.
-- Single-row responsive toolbar: labels disappear from right-side Save controls first, then left-side filters; mobile Filters menu and horizontally scrollable labeled filter row.
-- Desktop search slides into reserved space, otherwise expands as a full-width second row without moving toolbar controls. Mobile full-width search above filters. Keep the toggle in the toolbar, omit the field icon in expanded mode.
 - Move task timezone editing to Project Brief with explicit project-default and existing-task timezone semantics.
 - Colored tag catalog and date-column weekday/time display preferences remain queued.
 
