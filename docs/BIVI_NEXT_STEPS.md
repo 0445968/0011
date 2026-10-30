@@ -1,9 +1,9 @@
 # Bivi — Next Development Steps / Cross-Computer Handoff
 
 **Read with:** [Master Plan](./BIVI_MASTER_PLAN.md) and [Release & Progress Log](./BIVI_PROGRESS.md).  
-**Status checked:** 2026-10-30. **Last verified functional release:** merged [PR #29](https://github.com/0445968/0011/pull/29), `restore` `bff39ec15aed096efa6fca786a2d950cf72565d0`; Vercel `staff.bivi.pro` READY at the same SHA; Supabase task-authority migration in live ledger. **This snapshot becomes historical after any newer release.**  
+**Status checked:** 2026-10-30. **Last verified functional release:** merged [PR #29](https://github.com/0445968/0011/pull/29), `restore` `bff39ec15aed096efa6fca786a2d950cf72565d0`; Vercel `staff.bivi.pro` READY at the same SHA; Supabase task-authority migration in live ledger. **This snapshot becomes historical after any newer functional release.** Documentation-only PR #30 adds these tracking files; the next functional PR number is not reserved.  
 **CURRENT GOAL:** Finish the Project **Tasks** page and its usability before expanding completion reviews and scheduling.  
-**NEXT SUBSTANTIVE PATCH:** Task-editor fixes; staff invitation email can be bundled if coherent. **Do not assume a PR number** (a docs-only tracking PR may consume #30).
+**NEXT SUBSTANTIVE PATCH:** Task-editor fixes; staff invitation email can be bundled if coherent. **Do not assume a PR number** (documentation tracking PR is [#30](https://github.com/0445968/0011/pull/30)).
 
 ## First actions in every new chat / on any computer
 
