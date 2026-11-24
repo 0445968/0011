@@ -53,7 +53,7 @@ Each batch must log: baseline SHA; branch; PR URL; changed paths; new repo/proje
 - [x] Create private Studio initiative branch (not `restore`).
 - [x] Write master blueprint and vendor/ownership/estimator/handoff standard.
 - [x] Commit implementation ledger and next-chat handoff.
-- [ ] Open a reviewable PR against `restore`; do **not** merge without approval.
+- [x] Open [PR #31](https://github.com/0445968/0011/pull/31) against the production branch for review; **open/not merged**; do not merge without approval.
 - [x] Record branch and [PR #31](https://github.com/0445968/0011/pull/31); docs-only, no features. Check current PR head SHA at time of review.
 
 **Explicitly not done:** new application, vendor selections in production, service account creation, Bolt execution, runtime code changes, tests or signed-in acceptance.
@@ -139,7 +139,7 @@ Each batch must log: baseline SHA; branch; PR URL; changed paths; new repo/proje
 
 | Date | Initiative | Branch / PR / SHA | Changes | Checks and limits | Acceptance |
 | --- | --- | --- | --- | --- | --- |
-| 2026-11-23 | BTP-00 | `planning/bivi-private-template-studio-2026-11-23` (PR pending at document creation) | Planning docs and checklists only | Remote Bivi source/docs inspected; no app tests needed for Markdown-only documents; no production deployment | **Planning review pending** |
+| 2026-11-23 | BTP-00 | `planning/bivi-private-template-studio-2026-11-23` ([PR #31](https://github.com/0445968/0011/pull/31) open/not merged) | Planning docs and checklists only | Remote Bivi source/docs inspected; no app tests needed for Markdown-only documents; no production deployment | **Planning review pending** |
 
 **Future entries must use real PR URLs and SHAs**, never invented numbers. Preserve append-only history after accepted batches. A planning PR is not BTP-01 or a deployed feature.
 
