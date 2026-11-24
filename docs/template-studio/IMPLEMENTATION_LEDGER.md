@@ -1,6 +1,6 @@
 # Bivi Template Studio — Implementation Ledger
 
-> **Ledger status:** initialized 2026-11-23. All application features below are **PENDING**. The only completed work in this initiative is documentation on a **planning branch** until the planning PR is merged. This ledger is separate from Bivi Projects' `docs/BIVI_PROGRESS.md` and does not imply any existing staff/client application changes.
+> **Ledger status:** initialized 2026-11-23. All application features below are **PENDING**. The only completed work in this initiative is documentation on a **planning branch** in [PR #31](https://github.com/0445968/0011/pull/31), **open/not merged**. This ledger is separate from Bivi Projects' `docs/BIVI_PROGRESS.md` and does not imply any existing staff/client application changes.
 >
 > Read [MASTER_BLUEPRINT.md](./MASTER_BLUEPRINT.md), [VENDOR_OWNERSHIP_COST_STANDARD.md](./VENDOR_OWNERSHIP_COST_STANDARD.md), and [NEXT_CHAT_HANDOFF.md](./NEXT_CHAT_HANDOFF.md).
 
@@ -32,7 +32,7 @@ Each batch must log: baseline SHA; branch; PR URL; changed paths; new repo/proje
 
 | Batch | Name | Status at creation | First proof / checkpoint |
 | --- | --- | --- | --- |
-| **BTP-00** | Planning package | **IN PROGRESS — docs-only branch** | Master plan, vendor/cost/ownership standard, ledger, handoff, PR |
+| **BTP-00** | Planning package | **DELIVERED — BRANCH; PR #31 OPEN / NOT MERGED** | Master plan, vendor/cost/ownership standard, ledger, handoff, PR |
 | **BTP-01** | Platform repo and contracts | PLANNED | New isolated repo, design tokens, module/estimator contracts, mock fixtures, test harness, approved Bolt gate |
 | **BTP-02** | Bolt salon design pilot | PLANNED / WAIT FOR GATE | Website + owner dashboard + staff/customer portal interactive mocks, exported reviewed source, credit metrics |
 | **BTP-03** | Functional salon reference | PLANNED | Auth/RLS, booking, customer/staff roles, notifications, provider adapters, real integration tests |
@@ -52,9 +52,9 @@ Each batch must log: baseline SHA; branch; PR URL; changed paths; new repo/proje
 - [x] Verify branch `restore` and base SHA before planning.
 - [x] Create private Studio initiative branch (not `restore`).
 - [x] Write master blueprint and vendor/ownership/estimator/handoff standard.
-- [ ] Commit implementation ledger and next-chat handoff.
+- [x] Commit implementation ledger and next-chat handoff.
 - [ ] Open a reviewable PR against `restore`; do **not** merge without approval.
-- [ ] Record exact branch tip/PR URL and distinguish docs-only change from features.
+- [x] Record branch and [PR #31](https://github.com/0445968/0011/pull/31); docs-only, no features. Check current PR head SHA at time of review.
 
 **Explicitly not done:** new application, vendor selections in production, service account creation, Bolt execution, runtime code changes, tests or signed-in acceptance.
 
