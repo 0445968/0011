@@ -1,6 +1,6 @@
 # Bivi Template Studio — Next-Chat Implementation Handoff
 
-**Last planning update:** 2026-11-23. **State:** BTP-00 planning documentation; **no Studio code, service accounts, deployments, or Bolt work have been created** by this plan. Branch `planning/bivi-private-template-studio-2026-11-23` was based on Bivi `restore` commit `5f584c62dbb9994505fb765a3c428a1ae397a0a8`; verify newer HEAD/PR before writing any code.
+**Last planning update:** 2026-11-23. **State:** BTP-00 planning documentation; **no Studio code, service accounts, deployments, or Bolt work have been created** by this plan. Planning [PR #31](https://github.com/0445968/0011/pull/31) is **open/not merged**. Branch `planning/bivi-private-template-studio-2026-11-23` was based on Bivi `restore` commit `5f584c62dbb9994505fb765a3c428a1ae397a0a8`; verify newer HEAD/PR before writing any code.
 
 ## Required reading, in order
 
